@@ -33,42 +33,56 @@ func TestTableColumns(t *testing.T) {
 	schema, err := GetModelSchema(StructWithoutTags{})
 	is.NoError(err)
 
-	is.Equal(map[string]string{
-		"ID":                          "foo.id",
-		"FirstName":                   "foo.first_name",
-		"LastName":                    "foo.last_name",
-		"ThisIsAVeryLongFieldName123": "foo.this_is_a_very_long_field_name123",
-	}, schema.Columns)
+	var results = []struct {
+		field    string
+		table    string
+		name     string
+		prefixed string
+	}{
+		{"ID", "foo", "id", "foo.id"},
+		{"FirstName", "foo", "first_name", "foo.first_name"},
+		{"LastName", "foo", "last_name", "foo.last_name"},
+		{"ThisIsAVeryLongFieldName123", "foo", "this_is_a_very_long_field_name123", "foo.this_is_a_very_long_field_name123"},
+	}
 
-	is.Equal(schema.Associations["User"], RelatedField{
-		FK:          "foo.user_id",
-		FKReference: "users.id",
-	})
+	for _, r := range results {
+		is.Equal(schema.Columns[r.field].TableName, r.table)
+		is.Equal(schema.Columns[r.field].Name, r.name)
+		is.Equal(schema.Columns[r.field].PrefixedName, r.prefixed)
+	}
 
-	is.Equal(schema.Associations["UserPtr"], RelatedField{
-		FK:          "foo.user_ptr_id",
-		FKReference: "users.id",
-	})
+	is.Equal(schema.Associations["User"].FK.PrefixedName, "foo.user_id")
+	is.Equal(schema.Associations["User"].FKReference.PrefixedName, "users.id")
+
+	is.Equal(schema.Associations["UserPtr"].FK.PrefixedName, "foo.user_ptr_id")
+	is.Equal(schema.Associations["UserPtr"].FKReference.PrefixedName, "users.id")
 
 	schema, err = GetModelSchema(StructWithTags{})
 	is.NoError(err)
 
-	is.Equal(map[string]string{
-		"ID":                          "foo.public_id",
-		"FirstName":                   "foo.firstname",
-		"LastName":                    "foo.last_name",
-		"ThisIsAVeryLongFieldName123": "foo.short_field",
-	}, schema.Columns)
+	results = []struct {
+		field    string
+		table    string
+		name     string
+		prefixed string
+	}{
+		{"ID", "foo", "public_id", "foo.public_id"},
+		{"FirstName", "foo", "firstname", "foo.firstname"},
+		{"LastName", "foo", "last_name", "foo.last_name"},
+		{"ThisIsAVeryLongFieldName123", "foo", "short_field", "foo.short_field"},
+	}
 
-	is.Equal(schema.Associations["User"], RelatedField{
-		FK:          "foo.member_id",
-		FKReference: "users.custom_id",
-	})
+	for _, r := range results {
+		is.Equal(schema.Columns[r.field].TableName, r.table)
+		is.Equal(schema.Columns[r.field].Name, r.name)
+		is.Equal(schema.Columns[r.field].PrefixedName, r.prefixed)
+	}
 
-	is.Equal(schema.Associations["UserPtr"], RelatedField{
-		FK:          "foo.member_id",
-		FKReference: "users.custom_id",
-	})
+	is.Equal(schema.Associations["User"].FK.PrefixedName, "foo.member_id")
+	is.Equal(schema.Associations["User"].FKReference.PrefixedName, "users.custom_id")
+
+	is.Equal(schema.Associations["UserPtr"].FK.PrefixedName, "foo.member_id")
+	is.Equal(schema.Associations["UserPtr"].FKReference.PrefixedName, "users.custom_id")
 }
 
 // ----------------------------------------------------------------------------

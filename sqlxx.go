@@ -47,14 +47,21 @@ type Model interface {
 
 // ModelSchema is a model schema.
 type ModelSchema struct {
-	Columns      map[string]string
+	Columns      map[string]Column
 	Associations map[string]RelatedField
+}
+
+// Column is a database column
+type Column struct {
+	TableName    string
+	Name         string
+	PrefixedName string
 }
 
 // RelatedField represents an related field between two models.
 type RelatedField struct {
-	FK          string
-	FKReference string
+	FK          Column
+	FKReference Column
 }
 
 // Preloader is a custom preloader.
@@ -62,7 +69,27 @@ type Preloader func(d Driver) (Driver, error)
 
 // GetByParams executes a WHERE with params and populates the given model
 // instance with related data.
-func GetByParams(driver Driver, out Model, params map[string]string) error {
+func GetByParams(driver Driver, model Model, params map[string]interface{}) error {
+	schema, err := GetModelSchema(model)
+	if err != nil {
+		return err
+	}
+
+	columns := []string{}
+	for _, column := range schema.Columns {
+		columns = append(columns, column.PrefixedName)
+	}
+
+	wheres := []string{}
+	for k := range params {
+		wheres = append(wheres, fmt.Sprintf("%s.%s=:%s", model.TableName(), k, k))
+	}
+
+	_, err = driver.NamedQuery(fmt.Sprintf("SELECT %s FROM %s WHERE %s", strings.Join(columns, ", "), model.TableName(), wheres), params)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -85,7 +112,7 @@ func GetModelSchema(model Model) (*ModelSchema, error) {
 	}
 
 	schema := &ModelSchema{
-		Columns:      map[string]string{},
+		Columns:      map[string]Column{},
 		Associations: map[string]RelatedField{},
 	}
 
@@ -103,7 +130,7 @@ func GetModelSchema(model Model) (*ModelSchema, error) {
 				return nil, err
 			}
 
-			schema.Associations[field] = *relatedField
+			schema.Associations[field] = relatedField
 
 			continue
 		}
@@ -115,39 +142,53 @@ func GetModelSchema(model Model) (*ModelSchema, error) {
 			return nil, err
 		}
 
-		schema.Columns[field] = columnName(model, field, tag, false, false)
+		col, err := newColumn(model, field, tag, false, false)
+		if err != nil {
+			return nil, err
+		}
+
+		schema.Columns[field] = col
 	}
 
 	return schema, nil
 }
 
 // newRelatedField creates a new related field.
-func newRelatedField(model Model, field string) (*RelatedField, error) {
+func newRelatedField(model Model, field string) (RelatedField, error) {
+	relatedField := RelatedField{}
+
 	relatedValue, err := reflections.GetField(model, field)
 	if err != nil {
-		return nil, err
+		return relatedField, err
 	}
 
 	dbTag, err := reflections.GetFieldTag(model, field, SQLXStructTagName)
 	if err != nil {
-		return nil, err
+		return relatedField, err
 	}
 
 	tag, err := reflections.GetFieldTag(model, field, StructTagName)
 	if err != nil {
-		return nil, err
+		return relatedField, err
 	}
 
 	related := relatedValue.(Model)
 
-	return &RelatedField{
-		FK:          columnName(model, field, dbTag, true, false),
-		FKReference: columnName(related, field, tag, true, true),
-	}, nil
+	relatedField.FK, err = newColumn(model, field, dbTag, true, false)
+	if err != nil {
+		return relatedField, err
+	}
+
+	relatedField.FKReference, err = newColumn(related, field, tag, true, true)
+	if err != nil {
+		return relatedField, err
+	}
+
+	return relatedField, nil
 }
 
-// columnName returns full column name from model, field and tag.
-func columnName(model Model, field string, tag string, isRelated bool, isReference bool) string {
+// newColumn returns full column name from model, field and tag.
+func newColumn(model Model, field string, tag string, isRelated bool, isReference bool) (Column, error) {
 	// Retrieve the model type
 	reflectType := reflect.ValueOf(model).Type()
 
@@ -169,7 +210,11 @@ func columnName(model Model, field string, tag string, isRelated bool, isReferen
 
 	// It's not a related field, early return
 	if !isRelated {
-		return fmt.Sprintf("%s.%s", reflected.TableName(), column)
+		return Column{
+			TableName:    reflected.TableName(),
+			Name:         column,
+			PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
+		}, nil
 	}
 
 	// Reference primary key fields are "id" and "field_id"
@@ -180,7 +225,11 @@ func columnName(model Model, field string, tag string, isRelated bool, isReferen
 			column = tag
 		}
 
-		return fmt.Sprintf("%s.%s", reflected.TableName(), column)
+		return Column{
+			TableName:    reflected.TableName(),
+			Name:         column,
+			PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
+		}, nil
 	}
 
 	// It's a foreign key
@@ -189,7 +238,11 @@ func columnName(model Model, field string, tag string, isRelated bool, isReferen
 		column = tag
 	}
 
-	return fmt.Sprintf("%s.%s", reflected.TableName(), column)
+	return Column{
+		TableName:    reflected.TableName(),
+		Name:         column,
+		PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
+	}, nil
 }
 
 // toSnakeCase converts camelcased string to snakecase.
