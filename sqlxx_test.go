@@ -30,7 +30,7 @@ func TestToSnakeCase(t *testing.T) {
 func TestTableColumns(t *testing.T) {
 	is := assert.New(t)
 
-	schema, err := GetModelSchema(StructWithoutTags{})
+	schema, err := GetSchema(StructWithoutTags{})
 	is.NoError(err)
 
 	var results = []struct {
@@ -57,7 +57,7 @@ func TestTableColumns(t *testing.T) {
 	is.Equal(schema.Associations["UserPtr"].FK.PrefixedName, "foo.user_ptr_id")
 	is.Equal(schema.Associations["UserPtr"].FKReference.PrefixedName, "users.id")
 
-	schema, err = GetModelSchema(StructWithTags{})
+	schema, err = GetSchema(StructWithTags{})
 	is.NoError(err)
 
 	results = []struct {
