@@ -1,34 +1,44 @@
 package sqlxx
 
 import (
-	"fmt"
-	"strings"
+	"database/sql"
+
+	"github.com/jmoiron/sqlx"
 )
 
-// GetByParams executes a WHERE with params and populates the given model
-// instance with related data.
+// Driver can either be a *sqlx.DB or a *sqlx.Tx.
+type Driver interface {
+	sqlx.Execer
+	sqlx.Queryer
+	sqlx.Preparer
+	BindNamed(query string, arg interface{}) (string, []interface{}, error)
+	DriverName() string
+	Get(dest interface{}, query string, args ...interface{}) error
+	MustExec(query string, args ...interface{}) sql.Result
+	NamedExec(query string, arg interface{}) (sql.Result, error)
+	NamedQuery(query string, arg interface{}) (*sqlx.Rows, error)
+	PrepareNamed(query string) (*sqlx.NamedStmt, error)
+	Preparex(query string) (*sqlx.Stmt, error)
+	Rebind(query string) string
+	Select(dest interface{}, query string, args ...interface{}) error
+}
+
+// Model represents a database table.
+type Model interface {
+	TableName() string
+}
+
+// Preloader is a custom preloader.
+type Preloader func(d Driver) (Driver, error)
+
+// GetByParams executes a where with the given params and populates the given model.
 func GetByParams(driver Driver, model Model, params map[string]interface{}) error {
-	schema, err := GetSchema(model)
-	if err != nil {
-		return err
-	}
+	return where(driver, []Model{model}, params)
+}
 
-	columns := []string{}
-	for _, column := range schema.Columns {
-		columns = append(columns, column.PrefixedName)
-	}
-
-	wheres := []string{}
-	for k := range params {
-		wheres = append(wheres, fmt.Sprintf("%s.%s=:%s", model.TableName(), k, k))
-	}
-
-	_, err = driver.NamedQuery(fmt.Sprintf("SELECT %s FROM %s WHERE %s", strings.Join(columns, ", "), model.TableName(), wheres), params)
-	if err != nil {
-		return err
-	}
-
-	return nil
+// FindByParams executes a where with the given params and populates the given models.
+func FindByParams(driver Driver, models []Model, params map[string]interface{}) error {
+	return where(driver, models, params)
 }
 
 // Preload preloads related fields.
