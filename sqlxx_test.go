@@ -1,138 +1,97 @@
 package sqlxx
 
 import (
+	"database/sql"
+	"fmt"
+	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/stretchr/testify/assert"
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
-func TestToSnakeCase(t *testing.T) {
-	var results = []struct {
-		in  string
-		out string
-	}{
-		{"FooBar", "foo_bar"},
-		{"ID", "id"},
-		{"UserID", "user_id"},
-		{"User1234", "user1234"},
-		{"blahBlah", "blah_blah"},
-	}
-
-	for _, tt := range results {
-		s := toSnakeCase(tt.in)
-		assert.Equal(t, s, tt.out)
-	}
+var dbDefaultParams = map[string]string{
+	"USER":     "root",
+	"PASSWORS": "",
+	"HOST":     "localhost",
+	"PORT":     "5432",
+	"NAME":     "sqlxx_test",
 }
 
-func TestTableColumns(t *testing.T) {
-	is := assert.New(t)
+var dbSchema = `
+CREATE TABLE avatar (
+	id serial primary key not null,
+	path varchar(255) not null,
+	user_id integer references user(id),
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp
+);
 
-	schema, err := GetSchema(StructWithoutTags{})
-	is.NoError(err)
+CREATE TABLE author (
+	id serial primary key not null, 
+	name varchar(30) not null,
+	birthday timestamp with time zone,
+	is_active boolean default true,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp
+);
 
-	var results = []struct {
-		field    string
-		table    string
-		name     string
-		prefixed string
-	}{
-		{"ID", "foo", "id", "foo.id"},
-		{"FirstName", "foo", "first_name", "foo.first_name"},
-		{"LastName", "foo", "last_name", "foo.last_name"},
-		{"ThisIsAVeryLongFieldName123", "foo", "this_is_a_very_long_field_name123", "foo.this_is_a_very_long_field_name123"},
-	}
+CREATE TABLE article (
+	id serial primary key not null, 
+	title varchar(255) not null,
+	body text,
+	author_id integer references user(id),
+	is_published boolean default true,
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp
+);`
 
-	for _, r := range results {
-		is.Equal(schema.Columns[r.field].TableName, r.table)
-		is.Equal(schema.Columns[r.field].Name, r.name)
-		is.Equal(schema.Columns[r.field].PrefixedName, r.prefixed)
-	}
-
-	is.Equal(schema.Associations["User"].FK.PrefixedName, "foo.user_id")
-	is.Equal(schema.Associations["User"].FKReference.PrefixedName, "users.id")
-
-	is.Equal(schema.Associations["UserPtr"].FK.PrefixedName, "foo.user_ptr_id")
-	is.Equal(schema.Associations["UserPtr"].FKReference.PrefixedName, "users.id")
-
-	schema, err = GetSchema(StructWithTags{})
-	is.NoError(err)
-
-	results = []struct {
-		field    string
-		table    string
-		name     string
-		prefixed string
-	}{
-		{"ID", "foo", "public_id", "foo.public_id"},
-		{"FirstName", "foo", "firstname", "foo.firstname"},
-		{"LastName", "foo", "last_name", "foo.last_name"},
-		{"ThisIsAVeryLongFieldName123", "foo", "short_field", "foo.short_field"},
-	}
-
-	for _, r := range results {
-		is.Equal(schema.Columns[r.field].TableName, r.table)
-		is.Equal(schema.Columns[r.field].Name, r.name)
-		is.Equal(schema.Columns[r.field].PrefixedName, r.prefixed)
-	}
-
-	is.Equal(schema.Associations["User"].FK.PrefixedName, "foo.member_id")
-	is.Equal(schema.Associations["User"].FKReference.PrefixedName, "users.custom_id")
-
-	is.Equal(schema.Associations["UserPtr"].FK.PrefixedName, "foo.member_id")
-	is.Equal(schema.Associations["UserPtr"].FKReference.PrefixedName, "users.custom_id")
+type Avatar struct {
+	ID     int
+	Path   string
+	UserID int
 }
-
-// ----------------------------------------------------------------------------
-// Test data
-// ----------------------------------------------------------------------------
 
 type User struct {
-	ID   int
-	Name string
+	ID       int
+	Name     string
+	Birthday time.Time
+	IsActive bool
+	Avatars  []Avatar
 }
 
-func (User) TableName() string {
-	return "users"
+type Article struct {
+	ID          int
+	Title       string
+	AuthorID    int
+	Author      User `sqlxx:"author_id"`
+	IsPublished bool
 }
 
-type StructWithoutTags struct {
-	ID                          int
-	FirstName                   string
-	LastName                    string
-	ThisIsAVeryLongFieldName123 string
-	User                        User
-	UserPtr                     *User
+func dbParam(param string) string {
+	param = strings.ToUpper(param)
+
+	if v := os.Getenv(fmt.Sprintf("DB_%s", param)); len(v) != 0 {
+		return v
+	}
+
+	return dbDefaultParams[param]
 }
 
-func (StructWithoutTags) TableName() string {
-	return "foo"
-}
+func dbConnection(t *testing.T) (*sqlx.DB, func()) {
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=false;timezone=UTC",
+		dbParam("user"),
+		dbParam("password"),
+		dbParam("host"),
+		dbParam("port"),
+		dbParam("name")))
 
-type StructWithTags struct {
-	ID                          int    `db:"public_id"`
-	FirstName                   string `db:"firstname"`
-	LastName                    string
-	ThisIsAVeryLongFieldName123 string `db:"short_field"`
-	User                        User   `db:"member_id" sqlxx:"custom_id"`
-	UserPtr                     *User  `db:"member_id" sqlxx:"custom_id"`
-}
-
-func (StructWithTags) TableName() string {
-	return "foo"
-}
-
-// ----------------------------------------------------------------------------
-// Helpers
-// ----------------------------------------------------------------------------
-
-func prepareDB(t *testing.T, driverName string) (*sqlx.DB, sqlmock.Sqlmock, func()) {
-	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 
-	return sqlx.NewDb(db, driverName), mock, func() {
+	return sqlx.NewDb(db, "postgres"), func() {
 		require.NoError(t, db.Close())
 	}
 }

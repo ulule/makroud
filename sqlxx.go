@@ -27,26 +27,3 @@ type Driver interface {
 type Model interface {
 	TableName() string
 }
-
-// Preloader is a custom preloader.
-type Preloader func(d Driver) (Driver, error)
-
-// GetByParams executes a where with the given params and populates the given model.
-func GetByParams(driver Driver, model Model, params map[string]interface{}) error {
-	return where(driver, []Model{model}, params)
-}
-
-// FindByParams executes a where with the given params and populates the given models.
-func FindByParams(driver Driver, models []Model, params map[string]interface{}) error {
-	return where(driver, models, params)
-}
-
-// Preload preloads related fields.
-func Preload(driver Driver, out Model, related ...string) error {
-	return nil
-}
-
-// PreloadFuncs preloads with the given preloader functions.
-func PreloadFuncs(driver Driver, out Model, preloaders ...Preloader) error {
-	return nil
-}
