@@ -1,7 +1,9 @@
 package sqlxx
 
 import (
+	"database/sql"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -60,6 +62,19 @@ func TestGetSchema(t *testing.T) {
 	is.Equal(schema.Associations["RelatedModel"].FKReference.PrefixedName, "related.custom_id")
 	is.Equal(schema.Associations["RelatedModelPtr"].FK.PrefixedName, "foo.member_id")
 	is.Equal(schema.Associations["RelatedModelPtr"].FKReference.PrefixedName, "related.custom_id")
+}
+
+func TestIsModel(t *testing.T) {
+	is := assert.New(t)
+	is.True(isModel(RelatedModel{}))
+	is.True(isModel(&RelatedModel{}))
+	is.True(isModel(User{}))
+	is.True(isModel(&User{}))
+	is.False(isModel(struct{ ID int }{1}))
+	is.False(isModel(time.Time{}))
+	is.False(isModel(8))
+	is.False(isModel("hello"))
+	is.False(isModel(sql.NullInt64{}))
 }
 
 // ----------------------------------------------------------------------------

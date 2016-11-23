@@ -14,61 +14,89 @@ import (
 )
 
 var dbDefaultParams = map[string]string{
-	"USER":     "root",
+	"USER":     "postgres",
 	"PASSWORS": "",
 	"HOST":     "localhost",
 	"PORT":     "5432",
 	"NAME":     "sqlxx_test",
 }
 
-var dbSchema = `
-CREATE TABLE avatar (
-	id serial primary key not null,
-	path varchar(255) not null,
-	user_id integer references user(id),
-    created_at timestamp default current_timestamp,
-    updated_at timestamp default current_timestamp
+var dropTables = `
+	DROP TABLE IF EXISTS users CASCADE;
+	DROP TABLE IF EXISTS avatars CASCADE;
+	DROP TABLE IF EXISTS articles CASCADE;
+`
+
+var dbSchema = `CREATE TABLE users (
+	id 				serial primary key not null,
+	username 	    varchar(30) not null,
+	is_active 		boolean default true,
+    created_at 		timestamp default current_timestamp,
+    updated_at 		timestamp default current_timestamp
 );
 
-CREATE TABLE author (
-	id serial primary key not null, 
-	name varchar(30) not null,
-	birthday timestamp with time zone,
-	is_active boolean default true,
-    created_at timestamp default current_timestamp,
-    updated_at timestamp default current_timestamp
+CREATE TABLE avatars (
+	id 				serial primary key not null,
+	path 			varchar(255) not null,
+	user_id 		integer references users(id),
+    created_at 		timestamp default current_timestamp,
+    updated_at 		timestamp default current_timestamp
 );
 
-CREATE TABLE article (
-	id serial primary key not null, 
-	title varchar(255) not null,
-	body text,
-	author_id integer references user(id),
-	is_published boolean default true,
-    created_at timestamp default current_timestamp,
-    updated_at timestamp default current_timestamp
+CREATE TABLE articles (
+	id 				serial primary key not null,
+	title 			varchar(255) not null,
+	author_id 		integer references users(id),
+	is_published 	boolean default true,
+    created_at 		timestamp default current_timestamp,
+    updated_at 		timestamp default current_timestamp
 );`
 
-type Avatar struct {
-	ID     int
-	Path   string
-	UserID int
+type TestData struct {
+	User     User
+	Avatars  []Avatar
+	Articles []Article
 }
 
 type User struct {
-	ID       int
-	Name     string
-	Birthday time.Time
-	IsActive bool
-	Avatars  []Avatar
+	ID        int       `db:"id"`
+	Username  string    `db:"username"`
+	IsActive  bool      `db:"is_active"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+
+	// Avatars []Avatar
+}
+
+func (User) TableName() string {
+	return "users"
+}
+
+type Avatar struct {
+	ID        int       `db:"id"`
+	Path      string    `db:"path"`
+	UserID    int       `db:"user_id"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
+func (Avatar) TableName() string {
+	return "avatars"
 }
 
 type Article struct {
-	ID          int
-	Title       string
-	AuthorID    int
-	Author      User `sqlxx:"author_id"`
-	IsPublished bool
+	ID          int       `db:"id"`
+	Title       string    `db:"title"`
+	AuthorID    int       `db:"author_id"`
+	IsPublished bool      `db:"is_published"`
+	CreatedAt   time.Time `db:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at"`
+
+	Author User `sqlxx:"author_id"`
+}
+
+func (Article) TableName() string {
+	return "articles"
 }
 
 func dbParam(param string) string {
@@ -81,8 +109,36 @@ func dbParam(param string) string {
 	return dbDefaultParams[param]
 }
 
-func dbConnection(t *testing.T) (*sqlx.DB, func()) {
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=false;timezone=UTC",
+func loadData(t *testing.T, driver Driver) *TestData {
+	driver.MustExec("INSERT INTO users (username) VALUES ($1)", "jdoe")
+
+	user := User{}
+	require.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", "jdoe"))
+
+	for i := 0; i < 5; i++ {
+		driver.MustExec("INSERT INTO avatars (path, user_id) VALUES ($1, $2)", fmt.Sprintf("/avatars/%s-%d.png", user.Username, i), user.ID)
+
+	}
+
+	avatars := []Avatar{}
+	require.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars WHERE user_id=$1", user.ID))
+
+	for i := 0; i < 5; i++ {
+		driver.MustExec("INSERT INTO articles (title, author_id) VALUES ($1, $2)", fmt.Sprintf("Title #%d", i), user.ID)
+	}
+
+	articles := []Article{}
+	require.NoError(t, driver.Select(&articles, "SELECT * FROM articles WHERE author_id=$1", user.ID))
+
+	return &TestData{
+		User:     user,
+		Avatars:  avatars,
+		Articles: articles,
+	}
+}
+
+func dbConnection(t *testing.T) (*sqlx.DB, *TestData, func()) {
+	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable;timezone=UTC",
 		dbParam("user"),
 		dbParam("password"),
 		dbParam("host"),
@@ -91,7 +147,12 @@ func dbConnection(t *testing.T) (*sqlx.DB, func()) {
 
 	require.NoError(t, err)
 
-	return sqlx.NewDb(db, "postgres"), func() {
+	dbx := sqlx.NewDb(db, "postgres")
+	dbx.MustExec(dropTables)
+	dbx.MustExec(dbSchema)
+
+	return dbx, loadData(t, dbx), func() {
+		dbx.MustExec(dropTables)
 		require.NoError(t, db.Close())
 	}
 }

@@ -40,23 +40,23 @@ func GetSchema(model Model) (*Schema, error) {
 	}
 
 	for _, field := range fields {
-		kind, err := reflections.GetFieldKind(model, field)
+		value, err := reflections.GetField(model, field)
 		if err != nil {
 			return nil, err
 		}
 
 		// Associations
 
-		if kind == reflect.Struct || kind == reflect.Ptr {
+		if isModel(value) {
 			relatedField, err := newRelatedField(model, field)
 			if err != nil {
 				return nil, err
 			}
-
 			schema.Associations[field] = relatedField
-
 			continue
 		}
+
+		// TODO: handle slice of models here
 
 		// Columns
 
@@ -166,4 +166,23 @@ func newColumn(model Model, field string, tag string, isRelated bool, isReferenc
 		Name:         column,
 		PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
 	}, nil
+}
+
+// isModel returns true if the given reflect value is sqlxx.Model.
+func isModel(value interface{}) bool {
+	kind := reflect.TypeOf(value).Kind()
+
+	if !(kind == reflect.Struct || kind == reflect.Ptr) {
+		return false
+	}
+
+	typ := reflect.ValueOf(value).Type()
+
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	_, ok := reflect.New(typ).Interface().(Model)
+
+	return ok
 }

@@ -3,6 +3,8 @@ package sqlxx
 import (
 	"fmt"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // GetByParams executes a where with the given params and populates the given model.
@@ -16,10 +18,10 @@ func FindByParams(driver Driver, models []Model, params map[string]interface{}) 
 }
 
 // whereQuery returns SQL where clause from model and params.
-func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (string, error) {
+func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (string, []interface{}, error) {
 	schema, err := GetSchema(model)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	columns := []string{}
@@ -32,13 +34,16 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 		wheres = append(wheres, fmt.Sprintf("%s.%s=:%s", model.TableName(), k, k))
 	}
 
-	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s", strings.Join(columns, ", "), model.TableName(), wheres)
+	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s",
+		strings.Join(columns, ", "),
+		model.TableName(),
+		strings.Join(wheres, ","))
 
 	if fetchOne {
 		q = fmt.Sprintf("%s LIMIT 1", q)
 	}
 
-	return q, nil
+	return sqlx.Named(q, params)
 }
 
 // where executes a where clause.
@@ -51,19 +56,14 @@ func where(driver Driver, models []Model, params map[string]interface{}) error {
 
 	fetchOne := count == 1
 
-	query, err := whereQuery(models[0], params, fetchOne)
+	query, args, err := whereQuery(models[0], params, fetchOne)
 	if err != nil {
 		return err
 	}
 
 	if fetchOne {
-		if err = driver.Get(&models[0], query, params); err != nil {
-			return err
-		}
-		return nil
+		return driver.Get(&models[0], driver.Rebind(query), args...)
 	}
 
-	// TODO Find with driver.Selec()
-
-	return nil
+	return driver.Select(&models, driver.Rebind(query), args...)
 }
