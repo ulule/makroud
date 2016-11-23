@@ -2,19 +2,20 @@ package sqlxx
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
 
 // GetByParams executes a where with the given params and populates the given model.
-func GetByParams(driver Driver, model Model, params map[string]interface{}) error {
-	return where(driver, []Model{model}, params)
+func GetByParams(driver Driver, out interface{}, params map[string]interface{}) error {
+	return where(driver, out, params, true)
 }
 
 // FindByParams executes a where with the given params and populates the given models.
-func FindByParams(driver Driver, models []Model, params map[string]interface{}) error {
-	return where(driver, models, params)
+func FindByParams(driver Driver, out interface{}, params map[string]interface{}) error {
+	return where(driver, out, params, false)
 }
 
 // whereQuery returns SQL where clause from model and params.
@@ -47,23 +48,17 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 }
 
 // where executes a where clause.
-func where(driver Driver, models []Model, params map[string]interface{}) error {
-	count := len(models)
+func where(driver Driver, out interface{}, params map[string]interface{}, fetchOne bool) error {
+	v := reflect.ValueOf(out).Interface().(Model)
 
-	if count == 0 {
-		return nil
-	}
-
-	fetchOne := count == 1
-
-	query, args, err := whereQuery(models[0], params, fetchOne)
+	query, args, err := whereQuery(v, params, fetchOne)
 	if err != nil {
 		return err
 	}
 
 	if fetchOne {
-		return driver.Get(&models[0], driver.Rebind(query), args...)
+		return driver.Get(&out, driver.Rebind(query), args...)
 	}
 
-	return driver.Select(&models, driver.Rebind(query), args...)
+	return driver.Select(&out, driver.Rebind(query), args...)
 }
