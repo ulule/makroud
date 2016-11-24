@@ -59,7 +59,7 @@ type TestData struct {
 }
 
 type User struct {
-	ID        int       `db:"id"`
+	ID        int       `db:"id" sqlxx:"primary_key:true"`
 	Username  string    `db:"username"`
 	IsActive  bool      `db:"is_active"`
 	CreatedAt time.Time `db:"created_at"`
@@ -73,7 +73,7 @@ func (User) TableName() string {
 }
 
 type Avatar struct {
-	ID        int       `db:"id"`
+	ID        int       `db:"id" sqlxx:"primary_key:true"`
 	Path      string    `db:"path"`
 	UserID    int       `db:"user_id"`
 	CreatedAt time.Time `db:"created_at"`
@@ -85,14 +85,14 @@ func (Avatar) TableName() string {
 }
 
 type Article struct {
-	ID          int       `db:"id"`
+	ID          int       `db:"id" sqlxx:"primary_key:true"`
 	Title       string    `db:"title"`
 	AuthorID    int       `db:"author_id"`
 	IsPublished bool      `db:"is_published"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 
-	Author User `sqlxx:"author_id"`
+	Author User `sqlxx:"related:author_id"`
 }
 
 func (Article) TableName() string {

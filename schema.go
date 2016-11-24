@@ -3,6 +3,7 @@ package sqlxx
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/oleiade/reflections"
 	"github.com/serenize/snaker"
@@ -79,6 +80,29 @@ func GetSchema(model Model) (*Schema, error) {
 	return schema, nil
 }
 
+func extractTags(model Model, field string) (map[string]string, error) {
+	tag, err := reflections.GetFieldTag(model, field, StructTagName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	results := map[string]string{}
+
+	if tag == "" {
+		return results, err
+	}
+
+	parts := strings.Split(tag, " ")
+
+	for _, part := range parts {
+		splits := strings.Split(part, ":")
+		results[splits[0]] = splits[1]
+	}
+
+	return results, err
+}
+
 // newRelatedField creates a new related field.
 func newRelatedField(model Model, field string) (RelatedField, error) {
 	relatedField := RelatedField{}
@@ -89,14 +113,18 @@ func newRelatedField(model Model, field string) (RelatedField, error) {
 	}
 
 	dbTag, err := reflections.GetFieldTag(model, field, SQLXStructTagName)
+
 	if err != nil {
 		return relatedField, err
 	}
 
-	tag, err := reflections.GetFieldTag(model, field, StructTagName)
+	tags, err := extractTags(model, field)
+
 	if err != nil {
 		return relatedField, err
 	}
+
+	tag, _ := tags["related"]
 
 	related := relatedValue.(Model)
 

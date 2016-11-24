@@ -108,8 +108,8 @@ type StructWithTags struct {
 	FirstName                   string `db:"firstname"`
 	LastName                    string
 	ThisIsAVeryLongFieldName123 string        `db:"short_field"`
-	RelatedModel                RelatedModel  `db:"member_id" sqlxx:"custom_id"`
-	RelatedModelPtr             *RelatedModel `db:"member_id" sqlxx:"custom_id"`
+	RelatedModel                RelatedModel  `db:"member_id" sqlxx:"related:custom_id"`
+	RelatedModelPtr             *RelatedModel `db:"member_id" sqlxx:"related:custom_id"`
 }
 
 func (StructWithTags) TableName() string {
