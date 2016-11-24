@@ -38,7 +38,7 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 
 	columns := []string{}
 	for _, column := range schema.Columns {
-		columns = append(columns, column.PrefixedName)
+		columns = append(columns, column.PrefixedName())
 	}
 
 	wheres := []string{}

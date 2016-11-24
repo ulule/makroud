@@ -17,10 +17,15 @@ type Schema struct {
 
 // Column is a database column
 type Column struct {
-	TableName    string
-	Name         string
-	PrefixedName string
-	Value        interface{}
+	TableName string
+	Name      string
+	Value     interface{}
+	Tags      map[string]string
+}
+
+// PrefixedName returns the column name prefixed with the table name
+func (c Column) PrefixedName() string {
+	return fmt.Sprintf("%s.%s", c.TableName, c.Name)
 }
 
 // RelatedField represents an related field between two models.
@@ -62,14 +67,7 @@ func GetSchema(model Model) (*Schema, error) {
 
 		// TODO: handle slice of models here
 
-		// Columns
-
-		tag, err := reflections.GetFieldTag(model, field, SQLXStructTagName)
-		if err != nil {
-			return nil, err
-		}
-
-		col, err := newColumn(model, field, tag, value, false, false)
+		col, err := newColumn(model, field)
 		if err != nil {
 			return nil, err
 		}
@@ -80,6 +78,7 @@ func GetSchema(model Model) (*Schema, error) {
 	return schema, nil
 }
 
+// extractTags return the struct tags (Map[key => value]) with sqlxx prefix
 func extractTags(model Model, field string) (map[string]string, error) {
 	tag, err := reflections.GetFieldTag(model, field, StructTagName)
 
@@ -88,6 +87,16 @@ func extractTags(model Model, field string) (map[string]string, error) {
 	}
 
 	results := map[string]string{}
+
+	column, err := reflections.GetFieldTag(model, field, SQLXStructTagName)
+
+	if err != nil {
+		return results, err
+	}
+
+	if len(column) > 0 {
+		results[SQLXStructTagName] = column
+	}
 
 	if tag == "" {
 		return results, err
@@ -112,28 +121,16 @@ func newRelatedField(model Model, field string) (RelatedField, error) {
 		return relatedField, err
 	}
 
-	dbTag, err := reflections.GetFieldTag(model, field, SQLXStructTagName)
-
-	if err != nil {
-		return relatedField, err
-	}
-
-	tags, err := extractTags(model, field)
-
-	if err != nil {
-		return relatedField, err
-	}
-
-	tag, _ := tags["related"]
-
 	related := relatedValue.(Model)
 
-	relatedField.FK, err = newColumn(model, field, dbTag, relatedValue, true, false)
+	relatedField.FK, err = newRelatedColumn(model, field)
+
 	if err != nil {
 		return relatedField, err
 	}
 
-	relatedField.FKReference, err = newColumn(related, field, tag, relatedValue, true, true)
+	relatedField.FKReference, err = newForeignColumn(related, "ID")
+
 	if err != nil {
 		return relatedField, err
 	}
@@ -141,8 +138,24 @@ func newRelatedField(model Model, field string) (RelatedField, error) {
 	return relatedField, nil
 }
 
-// newColumn returns full column name from model, field and tag.
-func newColumn(model Model, field string, tag string, value interface{}, isRelated bool, isReference bool) (Column, error) {
+func newRelatedColumn(model Model, field string) (Column, error) {
+	column, err := newColumn(model, field)
+
+	if err != nil {
+		return Column{}, err
+	}
+
+	columnName, _ := column.Tags[SQLXStructTagName]
+
+	if len(columnName) == 0 {
+		columnName := fmt.Sprintf("%s_id", column.Name)
+		column.Name = columnName
+	}
+
+	return column, nil
+}
+
+func newForeignColumn(model Model, field string) (Column, error) {
 	// Retrieve the model type
 	reflectType := reflect.ValueOf(model).Type()
 
@@ -154,51 +167,40 @@ func newColumn(model Model, field string, tag string, value interface{}, isRelat
 	// Then we can safely cast
 	reflected := reflect.New(reflectType).Interface().(Model)
 
-	hasTag := len(tag) > 0
+	column, err := newColumn(reflected, field)
 
-	// Build column name from tag or field
-	column := tag
-	if !hasTag {
+	if err != nil {
+		return Column{}, err
+	}
+
+	return column, nil
+}
+
+// newColumn returns full column name from model, field and tag.
+func newColumn(model Model, field string) (Column, error) {
+	tags, err := extractTags(model, field)
+
+	if err != nil {
+		return Column{}, err
+	}
+
+	column, _ := tags[SQLXStructTagName]
+
+	if len(column) == 0 {
 		column = snaker.CamelToSnake(field)
 	}
 
-	// It's not a related field, early return
-	if !isRelated {
-		return Column{
-			TableName:    reflected.TableName(),
-			Name:         column,
-			PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
-			Value:        value,
-		}, nil
-	}
+	value, err := reflections.GetField(model, field)
 
-	// Reference primary key fields are "id" and "field_id"
-	if isReference {
-		column = "id"
-
-		if hasTag {
-			column = tag
-		}
-
-		return Column{
-			TableName:    reflected.TableName(),
-			Name:         column,
-			PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
-			Value:        value,
-		}, nil
-	}
-
-	// It's a foreign key
-	column = fmt.Sprintf("%s_id", column)
-	if hasTag {
-		column = tag
+	if err != nil {
+		return Column{}, err
 	}
 
 	return Column{
-		TableName:    reflected.TableName(),
-		Name:         column,
-		PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
-		Value:        value,
+		TableName: model.TableName(),
+		Name:      column,
+		Value:     value,
+		Tags:      tags,
 	}, nil
 }
 

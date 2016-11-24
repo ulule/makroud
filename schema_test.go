@@ -29,13 +29,13 @@ func TestGetSchema(t *testing.T) {
 	for _, r := range results {
 		is.Equal(schema.Columns[r.field].TableName, r.table)
 		is.Equal(schema.Columns[r.field].Name, r.name)
-		is.Equal(schema.Columns[r.field].PrefixedName, r.prefixed)
+		is.Equal(schema.Columns[r.field].PrefixedName(), r.prefixed)
 	}
 
-	is.Equal(schema.Associations["RelatedModel"].FK.PrefixedName, "foo.related_model_id")
-	is.Equal(schema.Associations["RelatedModel"].FKReference.PrefixedName, "related.id")
-	is.Equal(schema.Associations["RelatedModelPtr"].FK.PrefixedName, "foo.related_model_ptr_id")
-	is.Equal(schema.Associations["RelatedModelPtr"].FKReference.PrefixedName, "related.id")
+	is.Equal(schema.Associations["RelatedModel"].FK.PrefixedName(), "foo.related_model_id")
+	is.Equal(schema.Associations["RelatedModel"].FKReference.PrefixedName(), "related.custom_id")
+	is.Equal(schema.Associations["RelatedModelPtr"].FK.PrefixedName(), "foo.related_model_ptr_id")
+	is.Equal(schema.Associations["RelatedModelPtr"].FKReference.PrefixedName(), "related.custom_id")
 
 	schema, err = GetSchema(StructWithTags{})
 	is.NoError(err)
@@ -55,13 +55,13 @@ func TestGetSchema(t *testing.T) {
 	for _, r := range results {
 		is.Equal(schema.Columns[r.field].TableName, r.table)
 		is.Equal(schema.Columns[r.field].Name, r.name)
-		is.Equal(schema.Columns[r.field].PrefixedName, r.prefixed)
+		is.Equal(schema.Columns[r.field].PrefixedName(), r.prefixed)
 	}
 
-	is.Equal(schema.Associations["RelatedModel"].FK.PrefixedName, "foo.member_id")
-	is.Equal(schema.Associations["RelatedModel"].FKReference.PrefixedName, "related.custom_id")
-	is.Equal(schema.Associations["RelatedModelPtr"].FK.PrefixedName, "foo.member_id")
-	is.Equal(schema.Associations["RelatedModelPtr"].FKReference.PrefixedName, "related.custom_id")
+	is.Equal(schema.Associations["RelatedModel"].FK.PrefixedName(), "foo.member_id")
+	is.Equal(schema.Associations["RelatedModel"].FKReference.PrefixedName(), "related.custom_id")
+	is.Equal(schema.Associations["RelatedModelPtr"].FK.PrefixedName(), "foo.member_id")
+	is.Equal(schema.Associations["RelatedModelPtr"].FKReference.PrefixedName(), "related.custom_id")
 }
 
 func TestIsModel(t *testing.T) {
@@ -82,7 +82,7 @@ func TestIsModel(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 type RelatedModel struct {
-	ID   int
+	ID   int `db:"custom_id" sqlxx:"primary_key:true"`
 	Name string
 }
 
@@ -108,8 +108,8 @@ type StructWithTags struct {
 	FirstName                   string `db:"firstname"`
 	LastName                    string
 	ThisIsAVeryLongFieldName123 string        `db:"short_field"`
-	RelatedModel                RelatedModel  `db:"member_id" sqlxx:"related:custom_id"`
-	RelatedModelPtr             *RelatedModel `db:"member_id" sqlxx:"related:custom_id"`
+	RelatedModel                RelatedModel  `db:"member_id"`
+	RelatedModelPtr             *RelatedModel `db:"member_id"`
 }
 
 func (StructWithTags) TableName() string {
