@@ -11,12 +11,14 @@ import (
 
 // Schema is a model schema.
 type Schema struct {
-	Columns      map[string]Column
-	Associations map[string]RelatedField
+	PrimaryColumn Column
+	Columns       map[string]Column
+	Associations  map[string]RelatedField
 }
 
 // Column is a database column
 type Column struct {
+	IsPrimary bool
 	TableName string
 	Name      string
 	Value     interface{}
@@ -26,6 +28,11 @@ type Column struct {
 // PrefixedName returns the column name prefixed with the table name
 func (c Column) PrefixedName() string {
 	return fmt.Sprintf("%s.%s", c.TableName, c.Name)
+}
+
+// HasValue returns if a column value is zero value or not
+func (c Column) HasValue() bool {
+	return !isZeroValue(c.Value)
 }
 
 // RelatedField represents an related field between two models.
@@ -68,6 +75,13 @@ func GetSchema(model Model) (*Schema, error) {
 		// TODO: handle slice of models here
 
 		col, err := newColumn(model, field)
+
+		_, exists := col.Tags["primary_key"]
+
+		if exists {
+			schema.PrimaryColumn = col
+		}
+
 		if err != nil {
 			return nil, err
 		}

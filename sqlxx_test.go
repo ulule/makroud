@@ -62,7 +62,7 @@ type User struct {
 	ID        int       `db:"id" sqlxx:"primary_key:true ignored:true"`
 	Username  string    `db:"username"`
 	IsActive  bool      `db:"is_active" sqlxx:"default:true"`
-	CreatedAt time.Time `db:"created_at" sqlxx:"auto_now_add:now()"`
+	CreatedAt time.Time `db:"created_at" sqlxx:"auto_now_add:true"`
 	UpdatedAt time.Time `db:"updated_at" sqlxx:"default:now()"`
 
 	// Avatars []Avatar

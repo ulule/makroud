@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -57,4 +58,20 @@ func TestSave(t *testing.T) {
 	is.NotZero(user.ID)
 	is.Equal(true, user.IsActive)
 	is.NotZero(user.UpdatedAt)
+
+	user.Username = "gilles"
+	require.NoError(t, Save(db, &user))
+
+	m := map[string]interface{}{"username": "gilles"}
+
+	stmt, err := db.PrepareNamed(fmt.Sprintf("SELECT count(*) FROM %s where username = :username", user.TableName()))
+
+	require.NoError(t, err)
+
+	var count int
+	err = stmt.Get(&count, m)
+
+	require.NoError(t, err)
+
+	is.Equal(1, count)
 }

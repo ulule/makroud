@@ -35,10 +35,28 @@ func Save(driver Driver, out Model) error {
 		}
 	}
 
-	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
-		out.TableName(),
-		strings.Join(columns, ", "),
-		strings.Join(values, ", "))
+	var query string
+
+	if !schema.PrimaryColumn.HasValue() {
+		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+			out.TableName(),
+			strings.Join(columns, ", "),
+			strings.Join(values, ", "))
+
+	} else {
+		updates := []string{}
+
+		for i := range columns {
+			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
+		}
+
+		wheres := []string{fmt.Sprintf("%s = :%s", schema.PrimaryColumn.Name, schema.PrimaryColumn.Name)}
+
+		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s",
+			out.TableName(),
+			strings.Join(updates, ", "),
+			strings.Join(wheres, ", "))
+	}
 
 	if len(ignoredColumns) > 0 {
 		query = fmt.Sprintf("%s RETURNING %s", query, strings.Join(ignoredColumns, ", "))
