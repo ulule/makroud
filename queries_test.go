@@ -23,22 +23,21 @@ func TestGetByParams(t *testing.T) {
 	is.NotZero(user.UpdatedAt)
 }
 
-// func TestFindByParams(t *testing.T) {
-// 	is := assert.New(t)
+func TestFindByParams(t *testing.T) {
+	is := assert.New(t)
 
-// 	db, _, shutdown := dbConnection(t)
-// 	defer shutdown()
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
 
-// 	// TODO: handle interface conversion for []sqlxx.User
-// 	users := []User{}
-// 	require.NoError(t, FindByParams(db, &users, nil))
+	users := []User{}
+	require.NoError(t, FindByParams(db, &users, map[string]interface{}{"is_active": true}))
 
-// 	is.Len(users, 1)
+	is.Len(users, 1)
 
-// 	user := users[0]
-// 	is.Equal(1, user.ID)
-// 	is.Equal("jdoe", user.Username)
-// 	is.True(user.IsActive)
-// 	is.NotZero(user.CreatedAt)
-// 	is.NotZero(user.UpdatedAt)
-// }
+	user := users[0]
+	is.Equal(1, user.ID)
+	is.Equal("jdoe", user.Username)
+	is.True(user.IsActive)
+	is.NotZero(user.CreatedAt)
+	is.NotZero(user.UpdatedAt)
+}

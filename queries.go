@@ -49,16 +49,29 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 
 // where executes a where clause.
 func where(driver Driver, out interface{}, params map[string]interface{}, fetchOne bool) error {
-	value := reflect.ValueOf(out).Interface()
+	var (
+		model Model
+		typ   reflect.Type
+	)
 
-	query, args, err := whereQuery(value.(Model), params, fetchOne)
+	value := reflect.ValueOf(out)
+
+	if reflect.Indirect(value).Kind() == reflect.Slice {
+		typ = value.Type().Elem().Elem()
+		model = reflect.New(typ).Interface().(Model)
+	} else {
+		typ = reflect.Indirect(value).Type()
+		model = reflect.New(typ).Interface().(Model)
+	}
+
+	query, args, err := whereQuery(model, params, fetchOne)
 	if err != nil {
 		return err
 	}
 
 	if fetchOne {
-		return driver.Get(value, driver.Rebind(query), args...)
+		return driver.Get(value.Interface(), driver.Rebind(query), args...)
 	}
 
-	return driver.Select(&out, driver.Rebind(query), args...)
+	return driver.Select(value.Interface(), driver.Rebind(query), args...)
 }
