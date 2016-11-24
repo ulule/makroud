@@ -8,6 +8,48 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// SoftDelete soft deletes the model in the database
+func SoftDelete(driver Driver, out Model, field string) error {
+	schema, err := GetSchema(out)
+
+	if err != nil {
+		return err
+	}
+
+	primaryColumn := schema.PrimaryColumn
+
+	// GO TO HELL ZERO VALUES DELETION
+	if !primaryColumn.HasValue() {
+		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
+	}
+
+	wheres := []string{fmt.Sprintf("%s = :%s", primaryColumn.Name, primaryColumn.Name)}
+
+	column := schema.Columns[field]
+
+	now := now()
+
+	query := fmt.Sprintf("UPDATE %s SET %s = :%s WHERE %s",
+		out.TableName(),
+		column.Name,
+		column.Name,
+		strings.Join(wheres, ", "))
+
+	m := map[string]interface{}{
+		column.Name:        now,
+		primaryColumn.Name: primaryColumn.Value,
+	}
+
+	_, err = driver.NamedExec(query, m)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 // Delete deletes the model in the database
 func Delete(driver Driver, out Model) error {
 	schema, err := GetSchema(out)

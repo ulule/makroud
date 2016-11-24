@@ -31,16 +31,17 @@ var dbSchema = `CREATE TABLE users (
 	id 				serial primary key not null,
 	username 	    varchar(30) not null,
 	is_active 		boolean default true,
-    created_at 		timestamp default current_timestamp,
-    updated_at 		timestamp default current_timestamp
+    created_at 		timestamp with time zone default current_timestamp,
+    updated_at 		timestamp with time zone default current_timestamp,
+    deleted_at 		timestamp with time zone
 );
 
 CREATE TABLE avatars (
 	id 				serial primary key not null,
 	path 			varchar(255) not null,
 	user_id 		integer references users(id),
-    created_at 		timestamp default current_timestamp,
-    updated_at 		timestamp default current_timestamp
+    created_at 		timestamp with time zone default current_timestamp,
+    updated_at 		timestamp with time zone default current_timestamp
 );
 
 CREATE TABLE articles (
@@ -48,8 +49,8 @@ CREATE TABLE articles (
 	title 			varchar(255) not null,
 	author_id 		integer references users(id),
 	is_published 	boolean default true,
-    created_at 		timestamp default current_timestamp,
-    updated_at 		timestamp default current_timestamp
+    created_at 		timestamp with time zone default current_timestamp,
+    updated_at 		timestamp with time zone default current_timestamp
 );`
 
 type TestData struct {
@@ -59,11 +60,12 @@ type TestData struct {
 }
 
 type User struct {
-	ID        int       `db:"id" sqlxx:"primary_key:true ignored:true"`
-	Username  string    `db:"username"`
-	IsActive  bool      `db:"is_active" sqlxx:"default:true"`
-	CreatedAt time.Time `db:"created_at" sqlxx:"auto_now_add:true"`
-	UpdatedAt time.Time `db:"updated_at" sqlxx:"default:now()"`
+	ID        int        `db:"id" sqlxx:"primary_key:true ignored:true"`
+	Username  string     `db:"username"`
+	IsActive  bool       `db:"is_active" sqlxx:"default:true"`
+	CreatedAt time.Time  `db:"created_at" sqlxx:"auto_now_add:true"`
+	UpdatedAt time.Time  `db:"updated_at" sqlxx:"default:now()"`
+	DeletedAt *time.Time `db:"deleted_at"`
 
 	// Avatars []Avatar
 }
@@ -152,7 +154,12 @@ func dbConnection(t *testing.T) (*sqlx.DB, *TestData, func()) {
 	dbx.MustExec(dbSchema)
 
 	return dbx, loadData(t, dbx), func() {
-		dbx.MustExec(dropTables)
+		value := os.Getenv("KEEP_DB")
+
+		if len(value) == 0 {
+			dbx.MustExec(dropTables)
+		}
+
 		require.NoError(t, db.Close())
 	}
 }
