@@ -69,12 +69,12 @@ func newRelation(model Model, field string, typ RelationType) (Relation, error) 
 
 	related := relatedValue.(Model)
 
-	relatedField.FK, err = newRelated(model, field)
+	relatedField.FK, err = newForeignKeyField(model, field)
 	if err != nil {
 		return relatedField, err
 	}
 
-	relatedField.FKReference, err = newForeignKeyField(related, "ID")
+	relatedField.FKReference, err = newForeignKeyReferenceField(related, "ID")
 	if err != nil {
 		return relatedField, err
 	}
@@ -108,31 +108,7 @@ func newField(model Model, field string) (Field, error) {
 	}, nil
 }
 
-// newRelatedField creates a new related field.
-func newRelatedField(model Model, field string) (Relation, error) {
-	relatedField := Relation{}
-
-	relatedValue, err := reflections.GetField(model, field)
-	if err != nil {
-		return relatedField, err
-	}
-
-	related := relatedValue.(Model)
-
-	relatedField.FK, err = newRelated(model, field)
-	if err != nil {
-		return relatedField, err
-	}
-
-	relatedField.FKReference, err = newForeignKeyField(related, "ID")
-	if err != nil {
-		return relatedField, err
-	}
-
-	return relatedField, nil
-}
-
-func newRelated(model Model, field string) (Field, error) {
+func newForeignKeyField(model Model, field string) (Field, error) {
 	f, err := newField(model, field)
 	if err != nil {
 		return Field{}, err
@@ -145,8 +121,8 @@ func newRelated(model Model, field string) (Field, error) {
 	return f, nil
 }
 
-// newForeignKeyField returns a foreign key field.
-func newForeignKeyField(model Model, field string) (Field, error) {
+// newForeignKeyReferenceField returns a foreign key reference field.
+func newForeignKeyReferenceField(model Model, field string) (Field, error) {
 	// Retrieve the model type
 	reflectType := reflect.ValueOf(model).Type()
 
