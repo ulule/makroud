@@ -55,3 +55,11 @@ func getFieldTag(structField reflect.StructField, name string) (map[string]strin
 
 	return results, nil
 }
+
+func isStruct(i interface{}) bool {
+	return reflect.TypeOf(i).Kind() == reflect.Struct
+}
+
+func isPointer(i interface{}) bool {
+	return reflect.TypeOf(i).Kind() == reflect.Ptr
+}

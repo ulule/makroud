@@ -47,6 +47,7 @@ func GetSchema(model Model) (*Schema, error) {
 				if err != nil {
 					return nil, err
 				}
+
 				continue
 			}
 		}

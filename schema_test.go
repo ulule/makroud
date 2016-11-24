@@ -31,9 +31,9 @@ func TestGetSchema(t *testing.T) {
 	}
 
 	is.Equal("foo.related_model_id", schema.Relations["RelatedModel"].FK.PrefixedName())
-	is.Equal("related.id", schema.Relations["RelatedModel"].FKReference.PrefixedName())
+	is.Equal("related.custom_id", schema.Relations["RelatedModel"].FKReference.PrefixedName())
 	is.Equal("foo.related_model_ptr_id", schema.Relations["RelatedModelPtr"].FK.PrefixedName())
-	is.Equal("related.id", schema.Relations["RelatedModelPtr"].FKReference.PrefixedName())
+	is.Equal("related.custom_id", schema.Relations["RelatedModelPtr"].FKReference.PrefixedName())
 
 	schema, err = GetSchema(StructWithTags{})
 	is.NoError(err)

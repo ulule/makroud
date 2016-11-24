@@ -74,7 +74,7 @@ func newRelation(model Model, field string, typ RelationType) (Relation, error) 
 		return relatedField, err
 	}
 
-	relatedField.FKReference, err = newForeignKeyField(related, field)
+	relatedField.FKReference, err = newForeignKeyField(related, "ID")
 	if err != nil {
 		return relatedField, err
 	}
