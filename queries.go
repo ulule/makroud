@@ -58,11 +58,11 @@ func where(driver Driver, out interface{}, params map[string]interface{}, fetchO
 
 	if reflect.Indirect(value).Kind() == reflect.Slice {
 		typ = value.Type().Elem().Elem()
-		model = reflect.New(typ).Interface().(Model)
 	} else {
 		typ = reflect.Indirect(value).Type()
-		model = reflect.New(typ).Interface().(Model)
 	}
+
+	model = reflect.New(typ).Interface().(Model)
 
 	query, args, err := whereQuery(model, params, fetchOne)
 	if err != nil {
