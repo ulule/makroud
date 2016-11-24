@@ -18,6 +18,7 @@ func Delete(driver Driver, out Model) error {
 
 	primaryColumn := schema.PrimaryColumn
 
+	// GO TO HELL ZERO VALUES DELETION
 	if !primaryColumn.HasValue() {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
