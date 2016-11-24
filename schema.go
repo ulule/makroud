@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/oleiade/reflections"
+	"github.com/serenize/snaker"
 )
 
 // Schema is a model schema.
@@ -128,7 +129,7 @@ func newColumn(model Model, field string, tag string, isRelated bool, isReferenc
 	// Build column name from tag or field
 	column := tag
 	if !hasTag {
-		column = toSnakeCase(field)
+		column = snaker.CamelToSnake(field)
 	}
 
 	// It's not a related field, early return
