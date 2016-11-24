@@ -1,9 +1,7 @@
 package sqlxx
 
 import (
-	"database/sql"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -27,15 +25,15 @@ func TestGetSchema(t *testing.T) {
 	}
 
 	for _, r := range results {
-		is.Equal(schema.Columns[r.field].TableName, r.table)
-		is.Equal(schema.Columns[r.field].Name, r.name)
-		is.Equal(schema.Columns[r.field].PrefixedName, r.prefixed)
+		is.Equal(r.table, schema.Fields[r.field].TableName)
+		is.Equal(r.name, schema.Fields[r.field].Name)
+		is.Equal(r.prefixed, schema.Fields[r.field].PrefixedName())
 	}
 
-	is.Equal(schema.Associations["RelatedModel"].FK.PrefixedName, "foo.related_model_id")
-	is.Equal(schema.Associations["RelatedModel"].FKReference.PrefixedName, "related.id")
-	is.Equal(schema.Associations["RelatedModelPtr"].FK.PrefixedName, "foo.related_model_ptr_id")
-	is.Equal(schema.Associations["RelatedModelPtr"].FKReference.PrefixedName, "related.id")
+	is.Equal("foo.related_model_id", schema.Relations["RelatedModel"].FK.PrefixedName())
+	is.Equal("related.id", schema.Relations["RelatedModel"].FKReference.PrefixedName())
+	is.Equal("foo.related_model_ptr_id", schema.Relations["RelatedModelPtr"].FK.PrefixedName())
+	is.Equal("related.id", schema.Relations["RelatedModelPtr"].FKReference.PrefixedName())
 
 	schema, err = GetSchema(StructWithTags{})
 	is.NoError(err)
@@ -53,28 +51,15 @@ func TestGetSchema(t *testing.T) {
 	}
 
 	for _, r := range results {
-		is.Equal(schema.Columns[r.field].TableName, r.table)
-		is.Equal(schema.Columns[r.field].Name, r.name)
-		is.Equal(schema.Columns[r.field].PrefixedName, r.prefixed)
+		is.Equal(r.table, schema.Fields[r.field].TableName)
+		is.Equal(r.name, schema.Fields[r.field].Name)
+		is.Equal(r.prefixed, schema.Fields[r.field].PrefixedName())
 	}
 
-	is.Equal(schema.Associations["RelatedModel"].FK.PrefixedName, "foo.member_id")
-	is.Equal(schema.Associations["RelatedModel"].FKReference.PrefixedName, "related.custom_id")
-	is.Equal(schema.Associations["RelatedModelPtr"].FK.PrefixedName, "foo.member_id")
-	is.Equal(schema.Associations["RelatedModelPtr"].FKReference.PrefixedName, "related.custom_id")
-}
-
-func TestIsModel(t *testing.T) {
-	is := assert.New(t)
-	is.True(isModel(RelatedModel{}))
-	is.True(isModel(&RelatedModel{}))
-	is.True(isModel(User{}))
-	is.True(isModel(&User{}))
-	is.False(isModel(struct{ ID int }{1}))
-	is.False(isModel(time.Time{}))
-	is.False(isModel(8))
-	is.False(isModel("hello"))
-	is.False(isModel(sql.NullInt64{}))
+	is.Equal("foo.member_id", schema.Relations["RelatedModel"].FK.PrefixedName())
+	is.Equal("related.custom_id", schema.Relations["RelatedModel"].FKReference.PrefixedName())
+	is.Equal("foo.member_id", schema.Relations["RelatedModelPtr"].FK.PrefixedName())
+	is.Equal("related.custom_id", schema.Relations["RelatedModelPtr"].FKReference.PrefixedName())
 }
 
 // ----------------------------------------------------------------------------
@@ -82,7 +67,7 @@ func TestIsModel(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 type RelatedModel struct {
-	ID   int
+	ID   int `db:"custom_id" sqlxx:"primary_key:true"`
 	Name string
 }
 
@@ -108,8 +93,8 @@ type StructWithTags struct {
 	FirstName                   string `db:"firstname"`
 	LastName                    string
 	ThisIsAVeryLongFieldName123 string        `db:"short_field"`
-	RelatedModel                RelatedModel  `db:"member_id" sqlxx:"custom_id"`
-	RelatedModelPtr             *RelatedModel `db:"member_id" sqlxx:"custom_id"`
+	RelatedModel                RelatedModel  `db:"member_id"`
+	RelatedModelPtr             *RelatedModel `db:"member_id"`
 }
 
 func (StructWithTags) TableName() string {
