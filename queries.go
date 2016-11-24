@@ -13,8 +13,7 @@ func Save(driver Driver, out Model) error {
 	schema, err := GetSchema(out)
 
 	columns := []string{}
-	escapes := []string{}
-	values := []interface{}{}
+	values := []string{}
 	ignoredColumns := []string{}
 
 	for _, column := range schema.Columns {
@@ -27,12 +26,11 @@ func Save(driver Driver, out Model) error {
 
 		if !isIgnored {
 			columns = append(columns, column.Name)
-			escapes = append(escapes, fmt.Sprintf(":%s", column.Name))
 
-			if !hasDefault {
-				values = append(values, column.Value)
-			} else {
+			if hasDefault {
 				values = append(values, defaultValue)
+			} else {
+				values = append(values, fmt.Sprintf(":%s", column.Name))
 			}
 		}
 	}
@@ -40,7 +38,7 @@ func Save(driver Driver, out Model) error {
 	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
 		out.TableName(),
 		strings.Join(columns, ", "),
-		strings.Join(escapes, ", "))
+		strings.Join(values, ", "))
 
 	if len(ignoredColumns) > 0 {
 		query = fmt.Sprintf("%s RETURNING %s", query, strings.Join(ignoredColumns, ", "))

@@ -55,6 +55,6 @@ func TestSave(t *testing.T) {
 	require.NoError(t, Save(db, &user))
 
 	is.NotZero(user.ID)
-	is.NotZero(user.CreatedAt)
+	is.Equal(true, user.IsActive)
 	is.NotZero(user.UpdatedAt)
 }
