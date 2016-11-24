@@ -59,11 +59,11 @@ type TestData struct {
 }
 
 type User struct {
-	ID        int       `db:"id" sqlxx:"primary_key:true"`
+	ID        int       `db:"id" sqlxx:"primary_key:true ignored:true"`
 	Username  string    `db:"username"`
 	IsActive  bool      `db:"is_active"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	CreatedAt time.Time `db:"created_at" sqlxx:"default:now()"`
+	UpdatedAt time.Time `db:"updated_at" sqlxx:"default:now()"`
 
 	// Avatars []Avatar
 }

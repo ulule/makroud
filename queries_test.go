@@ -43,6 +43,8 @@ func TestFindByParams(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
+	is := assert.New(t)
+
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -51,4 +53,8 @@ func TestSave(t *testing.T) {
 	}
 
 	require.NoError(t, Save(db, &user))
+
+	is.NotZero(user.ID)
+	is.NotZero(user.CreatedAt)
+	is.NotZero(user.UpdatedAt)
 }

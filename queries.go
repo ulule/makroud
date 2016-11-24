@@ -10,7 +10,49 @@ import (
 
 // Save saves the model and populate it to the database
 func Save(driver Driver, out Model) error {
-	_, err := GetSchema(out)
+	schema, err := GetSchema(out)
+
+	columns := []string{}
+	escapes := []string{}
+	values := []interface{}{}
+	ignoredColumns := []string{}
+
+	for _, column := range schema.Columns {
+		_, isIgnored := column.Tags["ignored"]
+		defaultValue, hasDefault := column.Tags["default"]
+
+		if isIgnored || hasDefault {
+			ignoredColumns = append(ignoredColumns, column.Name)
+		}
+
+		if !isIgnored {
+			columns = append(columns, column.Name)
+			escapes = append(escapes, fmt.Sprintf(":%s", column.Name))
+
+			if !hasDefault {
+				values = append(values, column.Value)
+			} else {
+				values = append(values, defaultValue)
+			}
+		}
+	}
+
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		out.TableName(),
+		strings.Join(columns, ", "),
+		strings.Join(escapes, ", "))
+
+	if len(ignoredColumns) > 0 {
+		query = fmt.Sprintf("%s RETURNING %s", query, strings.Join(ignoredColumns, ", "))
+	}
+
+	stmt, err := driver.PrepareNamed(query)
+
+	if err != nil {
+		return err
+	}
+
+	err = stmt.Get(out, out)
 
 	if err != nil {
 		return err
