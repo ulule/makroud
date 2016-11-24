@@ -19,6 +19,7 @@ type Column struct {
 	TableName    string
 	Name         string
 	PrefixedName string
+	Value        interface{}
 }
 
 // RelatedField represents an related field between two models.
@@ -42,6 +43,7 @@ func GetSchema(model Model) (*Schema, error) {
 
 	for _, field := range fields {
 		value, err := reflections.GetField(model, field)
+
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +68,7 @@ func GetSchema(model Model) (*Schema, error) {
 			return nil, err
 		}
 
-		col, err := newColumn(model, field, tag, false, false)
+		col, err := newColumn(model, field, tag, value, false, false)
 		if err != nil {
 			return nil, err
 		}
@@ -98,12 +100,12 @@ func newRelatedField(model Model, field string) (RelatedField, error) {
 
 	related := relatedValue.(Model)
 
-	relatedField.FK, err = newColumn(model, field, dbTag, true, false)
+	relatedField.FK, err = newColumn(model, field, dbTag, relatedValue, true, false)
 	if err != nil {
 		return relatedField, err
 	}
 
-	relatedField.FKReference, err = newColumn(related, field, tag, true, true)
+	relatedField.FKReference, err = newColumn(related, field, tag, relatedValue, true, true)
 	if err != nil {
 		return relatedField, err
 	}
@@ -112,7 +114,7 @@ func newRelatedField(model Model, field string) (RelatedField, error) {
 }
 
 // newColumn returns full column name from model, field and tag.
-func newColumn(model Model, field string, tag string, isRelated bool, isReference bool) (Column, error) {
+func newColumn(model Model, field string, tag string, value interface{}, isRelated bool, isReference bool) (Column, error) {
 	// Retrieve the model type
 	reflectType := reflect.ValueOf(model).Type()
 
@@ -138,6 +140,7 @@ func newColumn(model Model, field string, tag string, isRelated bool, isReferenc
 			TableName:    reflected.TableName(),
 			Name:         column,
 			PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
+			Value:        value,
 		}, nil
 	}
 
@@ -153,6 +156,7 @@ func newColumn(model Model, field string, tag string, isRelated bool, isReferenc
 			TableName:    reflected.TableName(),
 			Name:         column,
 			PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
+			Value:        value,
 		}, nil
 	}
 
@@ -166,6 +170,7 @@ func newColumn(model Model, field string, tag string, isRelated bool, isReferenc
 		TableName:    reflected.TableName(),
 		Name:         column,
 		PrefixedName: fmt.Sprintf("%s.%s", reflected.TableName(), column),
+		Value:        value,
 	}, nil
 }
 

@@ -41,3 +41,14 @@ func TestFindByParams(t *testing.T) {
 	is.NotZero(user.CreatedAt)
 	is.NotZero(user.UpdatedAt)
 }
+
+func TestSave(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	user := User{
+		Username: "thoas",
+	}
+
+	require.NoError(t, Save(db, &user))
+}

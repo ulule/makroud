@@ -5,8 +5,22 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
 )
+
+// Save saves the model and populate it to the database
+func Save(driver Driver, out Model) error {
+	schema, err := GetSchema(out)
+
+	if err != nil {
+		return err
+	}
+
+	spew.Dump(schema)
+
+	return nil
+}
 
 // GetByParams executes a where with the given params and populates the given model.
 func GetByParams(driver Driver, out interface{}, params map[string]interface{}) error {
