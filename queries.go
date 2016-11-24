@@ -8,9 +8,42 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// Delete deletes the model in the database
+func Delete(driver Driver, out Model) error {
+	schema, err := GetSchema(out)
+
+	if err != nil {
+		return err
+	}
+
+	primaryColumn := schema.PrimaryColumn
+
+	if !primaryColumn.HasValue() {
+		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
+	}
+
+	wheres := []string{fmt.Sprintf("%s = :%s", primaryColumn.Name, primaryColumn.Name)}
+
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s",
+		out.TableName(),
+		strings.Join(wheres, ", "))
+
+	_, err = driver.NamedExec(query, out)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Save saves the model and populate it to the database
 func Save(driver Driver, out Model) error {
 	schema, err := GetSchema(out)
+
+	if err != nil {
+		return err
+	}
 
 	columns := []string{}
 	values := []string{}
@@ -37,7 +70,9 @@ func Save(driver Driver, out Model) error {
 
 	var query string
 
-	if !schema.PrimaryColumn.HasValue() {
+	primaryColumn := schema.PrimaryColumn
+
+	if !primaryColumn.HasValue() {
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
 			out.TableName(),
 			strings.Join(columns, ", "),
@@ -50,7 +85,7 @@ func Save(driver Driver, out Model) error {
 			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
 		}
 
-		wheres := []string{fmt.Sprintf("%s = :%s", schema.PrimaryColumn.Name, schema.PrimaryColumn.Name)}
+		wheres := []string{fmt.Sprintf("%s = :%s", primaryColumn.Name, primaryColumn.Name)}
 
 		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s",
 			out.TableName(),

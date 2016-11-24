@@ -64,7 +64,13 @@ func TestSave(t *testing.T) {
 
 	m := map[string]interface{}{"username": "gilles"}
 
-	stmt, err := db.PrepareNamed(fmt.Sprintf("SELECT count(*) FROM %s where username = :username", user.TableName()))
+	query := `
+	SELECT count(*)
+	FROM %s
+	WHERE username = :username
+	`
+
+	stmt, err := db.PrepareNamed(fmt.Sprintf(query, user.TableName()))
 
 	require.NoError(t, err)
 
@@ -74,4 +80,37 @@ func TestSave(t *testing.T) {
 	require.NoError(t, err)
 
 	is.Equal(1, count)
+}
+
+func TestDelete(t *testing.T) {
+	is := assert.New(t)
+
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	user := User{
+		Username: "thoas",
+	}
+
+	require.NoError(t, Save(db, &user))
+	require.NoError(t, Delete(db, &user))
+
+	m := map[string]interface{}{"username": "thoas"}
+
+	query := `
+	SELECT count(*)
+	FROM %s
+	WHERE username = :username
+	`
+
+	stmt, err := db.PrepareNamed(fmt.Sprintf(query, user.TableName()))
+
+	require.NoError(t, err)
+
+	var count int
+	err = stmt.Get(&count, m)
+
+	require.NoError(t, err)
+
+	is.Equal(0, count)
 }
