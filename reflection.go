@@ -2,8 +2,8 @@ package sqlxx
 
 import "reflect"
 
-// deferenceValue deferences the given value if it's a pointer or pointer to interface.
-func deferenceValue(v reflect.Value) reflect.Value {
+// reflectValue deferences the given value if it's a pointer or pointer to interface.
+func reflectValue(v reflect.Value) reflect.Value {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}

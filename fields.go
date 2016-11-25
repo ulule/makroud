@@ -134,7 +134,7 @@ func newField(model Model, meta FieldMeta) (Field, error) {
 		name = snaker.CamelToSnake(meta.Name)
 	}
 
-	v := deferenceValue(meta.Value)
+	v := reflectValue(meta.Value)
 
 	var value interface{}
 	if v.IsValid() {

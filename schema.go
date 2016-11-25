@@ -21,7 +21,7 @@ func GetSchema(model Model) (*Schema, error) {
 		Relations: map[string]Relation{},
 	}
 
-	v = deferenceValue(v)
+	v = reflectValue(v)
 
 	for i := 0; i < v.NumField(); i++ {
 		valueField := v.Field(i)
