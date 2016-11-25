@@ -24,8 +24,9 @@ func GetSchema(model Model) (*Schema, error) {
 	v = deferenceValue(v)
 
 	for i := 0; i < v.NumField(); i++ {
-		valueField := deferenceValue(v.Field(i))
+		valueField := v.Field(i)
 		structField := v.Type().Field(i)
+
 		fieldMeta := makeFieldMeta(structField, valueField)
 
 		if (fieldMeta.Type.Kind() == reflect.Struct) || (fieldMeta.Type.Kind() == reflect.Slice) {
@@ -41,10 +42,17 @@ func GetSchema(model Model) (*Schema, error) {
 			}
 		}
 
-		schema.Fields[fieldMeta.Name], err = newField(model, fieldMeta)
+		field, err := newField(model, fieldMeta)
 		if err != nil {
 			return nil, err
 		}
+
+		if v := fieldMeta.Tags.GetByTag(StructTagName, "primary_key"); len(v) != 0 {
+			schema.PrimaryKey = field
+			field.IsPrimary = true
+		}
+
+		schema.Fields[fieldMeta.Name] = field
 	}
 
 	return schema, nil
