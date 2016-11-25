@@ -8,37 +8,9 @@ import (
 	"github.com/serenize/snaker"
 )
 
-// Struct tags
-const (
-	StructTagName     = "sqlxx"
-	SQLXStructTagName = "db"
-)
-
-// SupportedTags are supported tags.
-var SupportedTags = []string{
-	StructTagName,
-	SQLXStructTagName,
-}
-
-// RelationType is a field relation type.
-type RelationType int
-
-// Field types.
-const (
-	RelationTypeUnknown RelationType = iota
-	RelationTypeOneToOne
-	RelationTypeOneToMany
-	RelationTypeManyToOne
-	RelationTypeManyToMany
-)
-
-// RelationTypes are supported relations types.
-var RelationTypes = map[RelationType]bool{
-	RelationTypeOneToOne:   true,
-	RelationTypeOneToMany:  true,
-	RelationTypeManyToOne:  true,
-	RelationTypeManyToMany: true,
-}
+// ----------------------------------------------------------------------------
+// FieldMeta
+// ----------------------------------------------------------------------------
 
 // FieldMeta are low level field metadata.
 type FieldMeta struct {
@@ -69,6 +41,10 @@ func makeFieldMeta(structField reflect.StructField, value reflect.Value) FieldMe
 	}
 }
 
+// ----------------------------------------------------------------------------
+// Field
+// ----------------------------------------------------------------------------
+
 // Field is a field.
 type Field struct {
 	TableName string
@@ -87,39 +63,6 @@ func (f Field) HasValue() bool {
 // PrefixedName returns the column name prefixed with the table name
 func (f Field) PrefixedName() string {
 	return fmt.Sprintf("%s.%s", f.TableName, f.Name)
-}
-
-// Relation represents an related field between two models.
-type Relation struct {
-	Type        RelationType
-	FK          Field
-	FKReference Field
-}
-
-// newRelatedField creates a new related field.
-func newRelation(model Model, meta FieldMeta, typ RelationType) (Relation, error) {
-	var err error
-
-	relation := Relation{
-		Type: typ,
-	}
-
-	related, err := reflections.GetField(model, meta.Name)
-	if err != nil {
-		return relation, err
-	}
-
-	relation.FK, err = newForeignKeyField(model, meta)
-	if err != nil {
-		return relation, err
-	}
-
-	relation.FKReference, err = newForeignKeyReferenceField(related.(Model), "ID")
-	if err != nil {
-		return relation, err
-	}
-
-	return relation, nil
 }
 
 // newField returns full column name from model, field and tag.
@@ -189,4 +132,41 @@ func newForeignKeyReferenceField(referencedModel Model, name string) (Field, err
 	}
 
 	return field, nil
+}
+
+// ----------------------------------------------------------------------------
+// Relation
+// ----------------------------------------------------------------------------
+
+// Relation represents an related field between two models.
+type Relation struct {
+	Type        RelationType
+	FK          Field
+	FKReference Field
+}
+
+// newRelatedField creates a new related field.
+func newRelation(model Model, meta FieldMeta, typ RelationType) (Relation, error) {
+	var err error
+
+	relation := Relation{
+		Type: typ,
+	}
+
+	related, err := reflections.GetField(model, meta.Name)
+	if err != nil {
+		return relation, err
+	}
+
+	relation.FK, err = newForeignKeyField(model, meta)
+	if err != nil {
+		return relation, err
+	}
+
+	relation.FKReference, err = newForeignKeyReferenceField(related.(Model), "ID")
+	if err != nil {
+		return relation, err
+	}
+
+	return relation, nil
 }
