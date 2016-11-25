@@ -4,9 +4,153 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
+
+// SoftDelete soft deletes the model in the database
+func SoftDelete(driver Driver, out Model, field string) error {
+	schema, err := GetSchema(out)
+	if err != nil {
+		return err
+	}
+
+	primaryKey := schema.PrimaryKey
+
+	// GO TO HELL ZERO VALUES DELETION
+	if !primaryKey.HasValue() {
+		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
+	}
+
+	wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
+
+	column := schema.Fields[field]
+
+	now := time.Now()
+
+	query := fmt.Sprintf("UPDATE %s SET %s = :%s WHERE %s",
+		out.TableName(),
+		column.Name,
+		column.Name,
+		strings.Join(wheres, ", "))
+
+	m := map[string]interface{}{
+		column.Name:     now,
+		primaryKey.Name: primaryKey.Value,
+	}
+
+	_, err = driver.NamedExec(query, m)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+// Delete deletes the model in the database
+func Delete(driver Driver, out Model) error {
+	schema, err := GetSchema(out)
+
+	if err != nil {
+		return err
+	}
+
+	primaryKey := schema.PrimaryKey
+
+	// GO TO HELL ZERO VALUES DELETION
+	if !primaryKey.HasValue() {
+		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
+	}
+
+	wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
+
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s",
+		out.TableName(),
+		strings.Join(wheres, ", "))
+
+	_, err = driver.NamedExec(query, out)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Save saves the model and populate it to the database
+func Save(driver Driver, out Model) error {
+	schema, err := GetSchema(out)
+
+	if err != nil {
+		return err
+	}
+
+	columns := []string{}
+	values := []string{}
+	ignoredColumns := []string{}
+
+	for _, column := range schema.Fields {
+		isIgnored := len(column.Tags.GetByTag(StructTagName, "ignored")) != 0
+		defaultValue := column.Tags.GetByTag(StructTagName, "default")
+		hasDefault := len(defaultValue) != 0
+
+		if isIgnored || hasDefault {
+			ignoredColumns = append(ignoredColumns, column.Name)
+		}
+
+		if !isIgnored {
+			columns = append(columns, column.Name)
+
+			if hasDefault {
+				values = append(values, defaultValue)
+			} else {
+				values = append(values, fmt.Sprintf(":%s", column.Name))
+			}
+		}
+	}
+
+	var query string
+
+	primaryKey := schema.PrimaryKey
+
+	if !primaryKey.HasValue() {
+		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+			out.TableName(),
+			strings.Join(columns, ", "),
+			strings.Join(values, ", "))
+
+	} else {
+		updates := []string{}
+
+		for i := range columns {
+			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
+		}
+
+		wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
+
+		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s",
+			out.TableName(),
+			strings.Join(updates, ", "),
+			strings.Join(wheres, ", "))
+	}
+
+	if len(ignoredColumns) > 0 {
+		query = fmt.Sprintf("%s RETURNING %s", query, strings.Join(ignoredColumns, ", "))
+	}
+
+	stmt, err := driver.PrepareNamed(query)
+	if err != nil {
+		return err
+	}
+
+	err = stmt.Get(&out, out)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 // GetByParams executes a where with the given params and populates the given model.
 func GetByParams(driver Driver, out interface{}, params map[string]interface{}) error {
