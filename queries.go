@@ -94,8 +94,8 @@ func Save(driver Driver, out interface{}) error {
 	ignoredColumns := []string{}
 
 	for _, column := range schema.Fields {
-		isIgnored := len(column.Tags.GetByTag(StructTagName, "ignored")) != 0
-		defaultValue := column.Tags.GetByTag(StructTagName, "default")
+		isIgnored := len(column.Tags.GetByKey(StructTagName, "ignored")) != 0
+		defaultValue := column.Tags.GetByKey(StructTagName, "default")
 		hasDefault := len(defaultValue) != 0
 
 		if isIgnored || hasDefault {

@@ -128,7 +128,7 @@ func newField(model Model, meta FieldMeta) (Field, error) {
 
 	var name string
 
-	if dbName := tags.GetByTag(SQLXStructTagName, "field"); len(dbName) != 0 {
+	if dbName := tags.GetByKey(SQLXStructTagName, "field"); len(dbName) != 0 {
 		name = dbName
 	} else {
 		name = snaker.CamelToSnake(meta.Name)
@@ -160,7 +160,7 @@ func newForeignKeyField(model Model, meta FieldMeta) (Field, error) {
 	field.Name = fmt.Sprintf("%s_id", field.Name)
 
 	// Get the SQLX one if any.
-	if customName := field.Tags.GetByTag(SQLXStructTagName, "field"); len(customName) != 0 {
+	if customName := field.Tags.GetByKey(SQLXStructTagName, "field"); len(customName) != 0 {
 		field.Name = customName
 	}
 

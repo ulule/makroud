@@ -47,7 +47,7 @@ func GetSchema(model Model) (*Schema, error) {
 			return nil, err
 		}
 
-		if v := fieldMeta.Tags.GetByTag(StructTagName, "primary_key"); len(v) != 0 {
+		if v := fieldMeta.Tags.GetByKey(StructTagName, "primary_key"); len(v) != 0 {
 			schema.PrimaryKey = field
 			field.IsPrimary = true
 		}
