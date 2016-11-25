@@ -46,8 +46,8 @@ func getFieldTags(structField reflect.StructField, names ...string) map[string]s
 }
 
 // getType returns type.
-func getReflectedType(entity interface{}) reflect.Type {
-	typ := reflect.ValueOf(entity).Type()
+func getReflectedType(itf interface{}) reflect.Type {
+	typ := reflect.ValueOf(itf).Type()
 
 	if typ.Kind() == reflect.Ptr {
 		typ = typ.Elem()
@@ -56,13 +56,13 @@ func getReflectedType(entity interface{}) reflect.Type {
 	return typ
 }
 
-// getReflectedValue returns reflected value of the given entity.
-func getReflectedValue(entity interface{}) reflect.Value {
-	if reflect.TypeOf(entity).Kind() == reflect.Ptr {
-		return reflect.ValueOf(entity).Elem()
+// getReflectedValue returns reflected value of the given itf.
+func getReflectedValue(itf interface{}) reflect.Value {
+	if reflect.TypeOf(itf).Kind() == reflect.Ptr {
+		return reflect.ValueOf(itf).Elem()
 	}
 
-	return reflect.ValueOf(entity)
+	return reflect.ValueOf(itf)
 }
 
 // isZeroValue returns true if the given interface is a zero value.
