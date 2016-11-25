@@ -64,3 +64,8 @@ func getReflectedValue(entity interface{}) reflect.Value {
 
 	return reflect.ValueOf(entity)
 }
+
+// isZeroValue returns true if the given interface is a zero value.
+func isZeroValue(entity interface{}) bool {
+	return !reflect.Indirect(reflect.ValueOf(entity)).IsValid()
+}
