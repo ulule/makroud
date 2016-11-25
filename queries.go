@@ -2,7 +2,6 @@ package sqlxx
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -10,8 +9,10 @@ import (
 )
 
 // SoftDelete soft deletes the model in the database
-func SoftDelete(driver Driver, out Model, field string) error {
-	schema, err := GetSchema(out)
+func SoftDelete(driver Driver, out interface{}, field string) error {
+	model := interfaceToModel(out)
+
+	schema, err := GetSchema(model)
 	if err != nil {
 		return err
 	}
@@ -30,7 +31,7 @@ func SoftDelete(driver Driver, out Model, field string) error {
 	now := time.Now()
 
 	query := fmt.Sprintf("UPDATE %s SET %s = :%s WHERE %s",
-		out.TableName(),
+		model.TableName(),
 		column.Name,
 		column.Name,
 		strings.Join(wheres, ", "))
@@ -50,9 +51,10 @@ func SoftDelete(driver Driver, out Model, field string) error {
 }
 
 // Delete deletes the model in the database
-func Delete(driver Driver, out Model) error {
-	schema, err := GetSchema(out)
+func Delete(driver Driver, out interface{}) error {
+	model := interfaceToModel(out)
 
+	schema, err := GetSchema(model)
 	if err != nil {
 		return err
 	}
@@ -67,10 +69,10 @@ func Delete(driver Driver, out Model) error {
 	wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s",
-		out.TableName(),
+		model.TableName(),
 		strings.Join(wheres, ", "))
 
-	_, err = driver.NamedExec(query, out)
+	_, err = driver.NamedExec(query, &out)
 	if err != nil {
 		return err
 	}
@@ -79,9 +81,10 @@ func Delete(driver Driver, out Model) error {
 }
 
 // Save saves the model and populate it to the database
-func Save(driver Driver, out Model) error {
-	schema, err := GetSchema(out)
+func Save(driver Driver, out interface{}) error {
+	model := interfaceToModel(out)
 
+	schema, err := GetSchema(model)
 	if err != nil {
 		return err
 	}
@@ -101,7 +104,6 @@ func Save(driver Driver, out Model) error {
 
 		if !isIgnored {
 			columns = append(columns, column.Name)
-
 			if hasDefault {
 				values = append(values, defaultValue)
 			} else {
@@ -116,10 +118,9 @@ func Save(driver Driver, out Model) error {
 
 	if !primaryKey.HasValue() {
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
-			out.TableName(),
+			model.TableName(),
 			strings.Join(columns, ", "),
 			strings.Join(values, ", "))
-
 	} else {
 		updates := []string{}
 
@@ -130,7 +131,7 @@ func Save(driver Driver, out Model) error {
 		wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
 
 		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s",
-			out.TableName(),
+			model.TableName(),
 			strings.Join(updates, ", "),
 			strings.Join(wheres, ", "))
 	}
@@ -144,7 +145,7 @@ func Save(driver Driver, out Model) error {
 		return err
 	}
 
-	err = stmt.Get(&out, out)
+	err = stmt.Get(out, out)
 	if err != nil {
 		return err
 	}
@@ -193,20 +194,7 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 
 // where executes a where clause.
 func where(driver Driver, out interface{}, params map[string]interface{}, fetchOne bool) error {
-	var (
-		model Model
-		typ   reflect.Type
-	)
-
-	value := reflect.ValueOf(out)
-
-	if reflect.Indirect(value).Kind() == reflect.Slice {
-		typ = value.Type().Elem().Elem()
-	} else {
-		typ = reflect.Indirect(value).Type()
-	}
-
-	model = reflect.New(typ).Interface().(Model)
+	model := interfaceToModel(out)
 
 	query, args, err := whereQuery(model, params, fetchOne)
 	if err != nil {
@@ -214,8 +202,8 @@ func where(driver Driver, out interface{}, params map[string]interface{}, fetchO
 	}
 
 	if fetchOne {
-		return driver.Get(value.Interface(), driver.Rebind(query), args...)
+		return driver.Get(out, driver.Rebind(query), args...)
 	}
 
-	return driver.Select(value.Interface(), driver.Rebind(query), args...)
+	return driver.Select(out, driver.Rebind(query), args...)
 }
