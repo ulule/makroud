@@ -72,7 +72,7 @@ func Delete(driver Driver, out interface{}) error {
 		model.TableName(),
 		strings.Join(wheres, ", "))
 
-	_, err = driver.NamedExec(query, &out)
+	_, err = driver.NamedExec(query, out)
 	if err != nil {
 		return err
 	}

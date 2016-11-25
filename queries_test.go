@@ -49,10 +49,7 @@ func TestSave(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
-	user := User{
-		Username: "thoas",
-	}
-
+	user := User{Username: "thoas"}
 	require.NoError(t, Save(db, &user))
 
 	is.NotZero(user.ID)
@@ -87,10 +84,7 @@ func TestDelete(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
-	user := User{
-		Username: "thoas",
-	}
-
+	user := User{Username: "thoas"}
 	require.NoError(t, Save(db, &user))
 	require.NoError(t, Delete(db, &user))
 
@@ -119,10 +113,7 @@ func TestSoftDelete(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
-	user := User{
-		Username: "thoas",
-	}
-
+	user := User{Username: "thoas"}
 	require.NoError(t, Save(db, &user))
 	require.NoError(t, SoftDelete(db, &user, "DeletedAt"))
 

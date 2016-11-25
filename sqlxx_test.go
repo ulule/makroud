@@ -60,7 +60,7 @@ type TestData struct {
 }
 
 type User struct {
-	ID        int        `db:"id" sqlxx:"primary_key:true ignored:true"`
+	ID        int        `db:"id" sqlxx:"primary_key:true; ignored:true"`
 	Username  string     `db:"username"`
 	IsActive  bool       `db:"is_active" sqlxx:"default:true"`
 	CreatedAt time.Time  `db:"created_at" sqlxx:"auto_now_add:true"`
@@ -154,9 +154,7 @@ func dbConnection(t *testing.T) (*sqlx.DB, *TestData, func()) {
 	dbx.MustExec(dbSchema)
 
 	return dbx, loadData(t, dbx), func() {
-		value := os.Getenv("KEEP_DB")
-
-		if len(value) == 0 {
+		if value := os.Getenv("KEEP_DB"); len(value) == 0 {
 			dbx.MustExec(dropTables)
 		}
 
