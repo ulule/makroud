@@ -49,6 +49,26 @@ type FieldMeta struct {
 	Tags  Tags
 }
 
+func makeFieldMeta(structField reflect.StructField, value reflect.Value) FieldMeta {
+	fieldName := structField.Name
+
+	var structFieldType reflect.Type
+
+	if structField.Type.Kind() == reflect.Ptr {
+		structFieldType = structField.Type.Elem()
+	} else {
+		structFieldType = structField.Type
+	}
+
+	return FieldMeta{
+		Name:  fieldName,
+		Value: value,
+		Field: structField,
+		Type:  structFieldType,
+		Tags:  makeTags(structField),
+	}
+}
+
 // Field is a field.
 type Field struct {
 	TableName string
@@ -74,25 +94,6 @@ type Relation struct {
 	Type        RelationType
 	FK          Field
 	FKReference Field
-}
-
-func makeFieldMeta(structField reflect.StructField, value reflect.Value) FieldMeta {
-	fieldName := structField.Name
-
-	var structFieldType reflect.Type
-
-	if structField.Type.Kind() == reflect.Ptr {
-		structFieldType = structField.Type.Elem()
-	} else {
-		structFieldType = structField.Type
-	}
-
-	return FieldMeta{
-		Name:  fieldName,
-		Value: value,
-		Field: structField,
-		Type:  structFieldType,
-	}
 }
 
 // newRelatedField creates a new related field.
@@ -133,10 +134,18 @@ func newField(model Model, meta FieldMeta) (Field, error) {
 		name = snaker.CamelToSnake(meta.Name)
 	}
 
+	v := deferenceValue(meta.Value)
+
+	var value interface{}
+	if v.IsValid() {
+		value = v.Interface()
+	}
+
 	return Field{
 		TableName: model.TableName(),
 		Name:      name,
 		Tags:      tags,
+		Value:     value,
 	}, nil
 }
 
