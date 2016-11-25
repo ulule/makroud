@@ -4,8 +4,9 @@ import "reflect"
 
 // Schema is a model schema.
 type Schema struct {
-	Fields    map[string]Field
-	Relations map[string]Relation
+	PrimaryKey Field
+	Fields     map[string]Field
+	Relations  map[string]Relation
 }
 
 // GetSchema returns model's table columns, extracted by reflection.
