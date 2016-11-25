@@ -23,27 +23,15 @@ func GetSchema(model Model) (*Schema, error) {
 	v = deferenceValue(v)
 
 	for i := 0; i < v.NumField(); i++ {
-		var (
-			structField     reflect.StructField
-			structFieldType reflect.Type
-			fieldName       string
-		)
+		valueField := deferenceValue(v.Field(i))
+		structField := v.Type().Field(i)
+		fieldMeta := makeFieldMeta(structField, valueField)
 
-		// valueField := deference(v.Field(i))
-		structField = v.Type().Field(i)
-		fieldName = structField.Name
-
-		if structField.Type.Kind() == reflect.Ptr {
-			structFieldType = structField.Type.Elem()
-		} else {
-			structFieldType = structField.Type
-		}
-
-		if (structFieldType.Kind() == reflect.Struct) || (structFieldType.Kind() == reflect.Slice) {
-			relationType := getFieldRelationType(structFieldType)
+		if (fieldMeta.Type.Kind() == reflect.Struct) || (fieldMeta.Type.Kind() == reflect.Slice) {
+			relationType := getFieldRelationType(fieldMeta.Type)
 
 			if _, ok := RelationTypes[relationType]; ok {
-				schema.Relations[fieldName], err = newRelation(model, fieldName, relationType)
+				schema.Relations[fieldMeta.Name], err = newRelation(model, fieldMeta, relationType)
 				if err != nil {
 					return nil, err
 				}
@@ -52,7 +40,7 @@ func GetSchema(model Model) (*Schema, error) {
 			}
 		}
 
-		schema.Fields[fieldName], err = newField(model, fieldName)
+		schema.Fields[fieldMeta.Name], err = newField(model, fieldMeta)
 		if err != nil {
 			return nil, err
 		}

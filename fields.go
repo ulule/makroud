@@ -15,6 +15,12 @@ const (
 	SQLXStructTagName = "db"
 )
 
+// SupportedTags are supported tags.
+var SupportedTags = []string{
+	StructTagName,
+	SQLXStructTagName,
+}
+
 // RelationType is a field relation type.
 type RelationType int
 
@@ -36,7 +42,72 @@ var RelationTypes = map[RelationType]bool{
 }
 
 // Tags are field tags.
-type Tags map[string]string
+type Tags map[string]map[string]string
+
+// SQLXFieldName returns SQLX field name.
+func (t Tags) SQLXFieldName() string {
+	var name string
+
+	// Check if we have a "db:field_name". If so, use it.
+	if values, ok := t[SQLXStructTagName]; ok && values != nil {
+		if fieldName, ok := values["field"]; ok {
+			name = fieldName
+		}
+	}
+
+	return name
+}
+
+// makeTags returns field tags formatted.
+func makeTags(structField reflect.StructField) Tags {
+	tags := Tags{}
+
+	rawTags := getFieldTags(structField, SupportedTags...)
+
+	for k, v := range rawTags {
+		splits := strings.Split(v, ";")
+
+		tags[k] = map[string]string{}
+
+		// Properties
+		vals := []string{}
+		for _, s := range splits {
+			if len(s) != 0 {
+				vals = append(vals, strings.TrimSpace(s))
+			}
+		}
+
+		// Key / value
+		for _, v := range vals {
+			splits = strings.Split(v, ":")
+
+			if len(splits) == 0 {
+				continue
+			}
+
+			// format: db:"field_name" -> "field" -> "field_name"
+			if k == SQLXStructTagName {
+				tags[k]["field"] = strings.TrimSpace(splits[0])
+				continue
+			}
+
+			if len(splits) >= 2 {
+				tags[k][strings.TrimSpace(splits[0])] = strings.TrimSpace(splits[1])
+			}
+		}
+	}
+
+	return tags
+}
+
+// FieldMeta are low level field metadata.
+type FieldMeta struct {
+	Name  string
+	Value reflect.Value
+	Field reflect.StructField
+	Type  reflect.Type
+	Tags  Tags
+}
 
 // Field is a field.
 type Field struct {
@@ -44,6 +115,7 @@ type Field struct {
 	Name      string
 	Value     interface{}
 	Tags      Tags
+	Meta      FieldMeta
 }
 
 // PrefixedName returns the column name prefixed with the table name
@@ -58,120 +130,108 @@ type Relation struct {
 	FKReference Field
 }
 
+func makeFieldMeta(structField reflect.StructField, value reflect.Value) FieldMeta {
+	fieldName := structField.Name
+
+	var structFieldType reflect.Type
+
+	if structField.Type.Kind() == reflect.Ptr {
+		structFieldType = structField.Type.Elem()
+	} else {
+		structFieldType = structField.Type
+	}
+
+	return FieldMeta{
+		Name:  fieldName,
+		Value: value,
+		Field: structField,
+		Type:  structFieldType,
+	}
+}
+
 // newRelatedField creates a new related field.
-func newRelation(model Model, field string, typ RelationType) (Relation, error) {
-	relatedField := Relation{Type: typ}
+func newRelation(model Model, meta FieldMeta, typ RelationType) (Relation, error) {
+	var err error
 
-	relatedValue, err := reflections.GetField(model, field)
-	if err != nil {
-		return relatedField, err
+	relation := Relation{
+		Type: typ,
 	}
 
-	related := relatedValue.(Model)
-
-	relatedField.FK, err = newForeignKeyField(model, field)
+	related, err := reflections.GetField(model, meta.Name)
 	if err != nil {
-		return relatedField, err
+		return relation, err
 	}
 
-	relatedField.FKReference, err = newForeignKeyReferenceField(related, "ID")
+	relation.FK, err = newForeignKeyField(model, meta)
 	if err != nil {
-		return relatedField, err
+		return relation, err
 	}
 
-	return relatedField, nil
+	relation.FKReference, err = newForeignKeyReferenceField(related.(Model), "ID")
+	if err != nil {
+		return relation, err
+	}
+
+	return relation, nil
 }
 
 // newField returns full column name from model, field and tag.
-func newField(model Model, field string) (Field, error) {
-	tags, err := extractTags(model, field)
-	if err != nil {
-		return Field{}, err
-	}
+func newField(model Model, meta FieldMeta) (Field, error) {
+	tags := makeTags(meta.Field)
 
-	column, _ := tags[SQLXStructTagName]
+	// Defaults to snakecase version of field name.
+	name := snaker.CamelToSnake(meta.Name)
 
-	if len(column) == 0 {
-		column = snaker.CamelToSnake(field)
-	}
-
-	value, err := reflections.GetField(model, field)
-	if err != nil {
-		return Field{}, err
+	// Get the SQLX one if any.
+	if customName := tags.SQLXFieldName(); len(customName) != 0 {
+		name = customName
 	}
 
 	return Field{
 		TableName: model.TableName(),
-		Name:      column,
-		Value:     value,
+		Name:      name,
 		Tags:      tags,
 	}, nil
 }
 
-func newForeignKeyField(model Model, field string) (Field, error) {
-	f, err := newField(model, field)
+// newForeignKeyField returns foreign key field.
+func newForeignKeyField(model Model, meta FieldMeta) (Field, error) {
+	field, err := newField(model, meta)
 	if err != nil {
 		return Field{}, err
 	}
 
-	if _, ok := f.Tags[SQLXStructTagName]; !ok {
-		f.Name = fmt.Sprintf("%s_id", f.Name)
+	// Defaults to "fieldname_id"
+	field.Name = fmt.Sprintf("%s_id", field.Name)
+
+	// Get the SQLX one if any.
+	if customName := field.Tags.SQLXFieldName(); len(customName) != 0 {
+		field.Name = customName
 	}
 
-	return f, nil
+	return field, nil
 }
 
 // newForeignKeyReferenceField returns a foreign key reference field.
-func newForeignKeyReferenceField(model Model, field string) (Field, error) {
-	// Retrieve the model type
-	reflectType := reflect.ValueOf(model).Type()
+func newForeignKeyReferenceField(referencedModel Model, name string) (Field, error) {
+	reflectType := getReflectedType(referencedModel)
 
-	// If it's a pointer, we must get the elem to avoid double pointer errors
-	if reflectType.Kind() == reflect.Ptr {
-		reflectType = reflectType.Elem()
-	}
-
-	// Then we can safely cast
 	reflected := reflect.New(reflectType).Interface().(Model)
 
-	f, err := newField(reflected, field)
+	f, ok := reflectType.FieldByName(name)
+	if !ok {
+		return Field{}, fmt.Errorf("Field %s does not exist", name)
+	}
+
+	meta := FieldMeta{
+		Name:  name,
+		Field: f,
+	}
+
+	field, err := newField(reflected, meta)
 	if err != nil {
 		return Field{}, err
 	}
 
-	return f, nil
-}
-
-// extractTags return the struct tags (Map[key => value]) with sqlxx prefix
-func extractTags(model Model, field string) (map[string]string, error) {
-	tag, err := reflections.GetFieldTag(model, field, StructTagName)
-
-	if err != nil {
-		return nil, err
-	}
-
-	results := map[string]string{}
-
-	column, err := reflections.GetFieldTag(model, field, SQLXStructTagName)
-
-	if err != nil {
-		return results, err
-	}
-
-	if len(column) > 0 {
-		results[SQLXStructTagName] = column
-	}
-
-	if tag == "" {
-		return results, err
-	}
-
-	parts := strings.Split(tag, " ")
-
-	for _, part := range parts {
-		splits := strings.Split(part, ":")
-		results[splits[0]] = splits[1]
-	}
-
-	return results, err
+	return field, nil
 }

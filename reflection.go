@@ -1,9 +1,6 @@
 package sqlxx
 
-import (
-	"reflect"
-	"strings"
-)
+import "reflect"
 
 // deferenceValue deferences the given value if it's a pointer or pointer to interface.
 func deferenceValue(v reflect.Value) reflect.Value {
@@ -36,30 +33,34 @@ func getFieldRelationType(typ reflect.Type) RelationType {
 	return RelationTypeUnknown
 }
 
-// getFieldTag returns field tag value.
-func getFieldTag(structField reflect.StructField, name string) (map[string]string, error) {
-	value := structField.Tag.Get(name)
+func getFieldTags(structField reflect.StructField, names ...string) map[string]string {
+	tags := map[string]string{}
 
-	if len(value) == 0 {
-		return nil, nil
+	for _, name := range names {
+		if _, ok := tags[name]; !ok {
+			tags[name] = structField.Tag.Get(name)
+		}
 	}
 
-	results := map[string]string{}
+	return tags
+}
 
-	parts := strings.Split(value, " ")
+// getType returns type.
+func getReflectedType(entity interface{}) reflect.Type {
+	typ := reflect.ValueOf(entity).Type()
 
-	for _, part := range parts {
-		splits := strings.Split(part, ":")
-		results[splits[0]] = splits[1]
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
 	}
 
-	return results, nil
+	return typ
 }
 
-func isStruct(i interface{}) bool {
-	return reflect.TypeOf(i).Kind() == reflect.Struct
-}
+// getReflectedValue returns reflected value of the given entity.
+func getReflectedValue(entity interface{}) reflect.Value {
+	if reflect.TypeOf(entity).Kind() == reflect.Ptr {
+		return reflect.ValueOf(entity).Elem()
+	}
 
-func isPointer(i interface{}) bool {
-	return reflect.TypeOf(i).Kind() == reflect.Ptr
+	return reflect.ValueOf(entity)
 }
