@@ -3,7 +3,6 @@ package sqlxx
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/oleiade/reflections"
 	"github.com/serenize/snaker"
@@ -41,65 +40,6 @@ var RelationTypes = map[RelationType]bool{
 	RelationTypeManyToMany: true,
 }
 
-// Tags are field tags.
-type Tags map[string]map[string]string
-
-// SQLXFieldName returns SQLX field name.
-func (t Tags) SQLXFieldName() string {
-	var name string
-
-	// Check if we have a "db:field_name". If so, use it.
-	if values, ok := t[SQLXStructTagName]; ok && values != nil {
-		if fieldName, ok := values["field"]; ok {
-			name = fieldName
-		}
-	}
-
-	return name
-}
-
-// makeTags returns field tags formatted.
-func makeTags(structField reflect.StructField) Tags {
-	tags := Tags{}
-
-	rawTags := getFieldTags(structField, SupportedTags...)
-
-	for k, v := range rawTags {
-		splits := strings.Split(v, ";")
-
-		tags[k] = map[string]string{}
-
-		// Properties
-		vals := []string{}
-		for _, s := range splits {
-			if len(s) != 0 {
-				vals = append(vals, strings.TrimSpace(s))
-			}
-		}
-
-		// Key / value
-		for _, v := range vals {
-			splits = strings.Split(v, ":")
-
-			if len(splits) == 0 {
-				continue
-			}
-
-			// format: db:"field_name" -> "field" -> "field_name"
-			if k == SQLXStructTagName {
-				tags[k]["field"] = strings.TrimSpace(splits[0])
-				continue
-			}
-
-			if len(splits) >= 2 {
-				tags[k][strings.TrimSpace(splits[0])] = strings.TrimSpace(splits[1])
-			}
-		}
-	}
-
-	return tags
-}
-
 // FieldMeta are low level field metadata.
 type FieldMeta struct {
 	Name  string
@@ -116,6 +56,12 @@ type Field struct {
 	Value     interface{}
 	Tags      Tags
 	Meta      FieldMeta
+	IsPrimary bool
+}
+
+// HasValue returns true if value is a zero value.
+func (f Field) HasValue() bool {
+	return !isZeroValue(f.Value)
 }
 
 // PrefixedName returns the column name prefixed with the table name
@@ -179,12 +125,12 @@ func newRelation(model Model, meta FieldMeta, typ RelationType) (Relation, error
 func newField(model Model, meta FieldMeta) (Field, error) {
 	tags := makeTags(meta.Field)
 
-	// Defaults to snakecase version of field name.
-	name := snaker.CamelToSnake(meta.Name)
+	var name string
 
-	// Get the SQLX one if any.
-	if customName := tags.SQLXFieldName(); len(customName) != 0 {
-		name = customName
+	if dbName := tags.GetByTag(SQLXStructTagName, "field"); len(dbName) != 0 {
+		name = dbName
+	} else {
+		name = snaker.CamelToSnake(meta.Name)
 	}
 
 	return Field{
@@ -205,7 +151,7 @@ func newForeignKeyField(model Model, meta FieldMeta) (Field, error) {
 	field.Name = fmt.Sprintf("%s_id", field.Name)
 
 	// Get the SQLX one if any.
-	if customName := field.Tags.SQLXFieldName(); len(customName) != 0 {
+	if customName := field.Tags.GetByTag(SQLXStructTagName, "field"); len(customName) != 0 {
 		field.Name = customName
 	}
 
