@@ -124,8 +124,24 @@ if err := sqlxx.SoftDelete(db, &user, "DeletedAt"); err != nil {
 
 ## Struct Tags
 
-| Key           | Value                                                   |
-|---------------|---------------------------------------------------------|
-| `primary_key` | if `true`, field is consired as a primary key           |
-| `ignored`     | if `true`, field is ignored                             |
-| `default`     | Defaults value for the field (example: `default:now()`) |
+`sqlxx` tags must be separated by a semicolon (example: `tag1; tag2; tag3;`).
+
+| Key           | Type    | Value                                                   |
+|---------------|---------|---------------------------------------------------------|
+| `primary_key` | `bool`  | if `true`, field is consired as a primary key           |
+| `ignored`     | `bool`  | if `true`, field is ignored                             |
+| `default`     | `value` | Default value for the field (example: `default:now()`) |
+
+Tags of type `bool` can be set as `key:true` or just `key` for implicit `true`.
+
+Example:
+
+```go
+type User struct {
+    // We set as true
+    ID int `sqlxx:"primary_key:true"
+
+    // But it is the same as
+    ID int `sqlxx:"primary_key"
+}
+```
