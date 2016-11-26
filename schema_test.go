@@ -82,6 +82,9 @@ type StructWithoutTags struct {
 	ThisIsAVeryLongFieldName123 string
 	RelatedModel                RelatedModel
 	RelatedModelPtr             *RelatedModel
+	RelatedSlice                []RelatedModel
+	RelatedSlicePtr             *[]RelatedModel
+	RelatedPtrSlice             []*RelatedModel
 }
 
 func (StructWithoutTags) TableName() string {
@@ -95,6 +98,9 @@ type StructWithTags struct {
 	ThisIsAVeryLongFieldName123 string        `db:"short_field"`
 	RelatedModel                RelatedModel  `db:"member_id"`
 	RelatedModelPtr             *RelatedModel `db:"member_id"`
+	RelatedSlice                []RelatedModel
+	RelatedSlicePtr             *[]RelatedModel
+	RelatedPtrSlice             []*RelatedModel
 }
 
 func (StructWithTags) TableName() string {

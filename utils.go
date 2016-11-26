@@ -31,21 +31,32 @@ func reflectType(itf interface{}) reflect.Type {
 
 // reflectModel returns interface as a Model interface.
 func reflectModel(itf interface{}) Model {
-	v := reflect.Indirect(reflect.ValueOf(itf))
+	value := reflectValue(reflect.ValueOf(itf))
 
-	if v.IsValid() && v.Kind() != reflect.Slice {
-		return reflect.ValueOf(itf).Interface().(Model)
+	// Instance
+	if value.IsValid() && value.Kind() == reflect.Struct {
+		return value.Interface().(Model)
 	}
 
-	var typ reflect.Type
-
-	if reflect.Indirect(v).Kind() == reflect.Slice {
-		typ = v.Type().Elem()
-	} else {
-		typ = reflect.Indirect(v).Type()
+	// Slice of models
+	if value.Kind() == reflect.Slice {
+		return reflect.New(value.Type().Elem()).Interface().(Model)
 	}
 
-	return reflect.New(typ).Interface().(Model)
+	// Type
+	if reflect.TypeOf(itf).Kind() == reflect.Ptr {
+		typ := reflect.TypeOf(itf).Elem()
+
+		// Struct
+		if typ.Kind() == reflect.Struct {
+			return reflect.New(typ).Interface().(Model)
+		}
+
+		// Slice
+		return reflect.New(typ.Elem()).Interface().(Model)
+	}
+
+	return reflect.New(value.Type()).Interface().(Model)
 }
 
 // isZeroValue returns true if the given interface is a zero value.

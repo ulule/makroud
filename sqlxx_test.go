@@ -67,7 +67,7 @@ type User struct {
 	UpdatedAt time.Time  `db:"updated_at" sqlxx:"default:now()"`
 	DeletedAt *time.Time `db:"deleted_at"`
 
-	// Avatars []Avatar
+	Avatars []Avatar
 }
 
 func (User) TableName() string {
