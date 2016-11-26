@@ -121,3 +121,11 @@ if err := sqlxx.SoftDelete(db, &user, "DeletedAt"); err != nil {
     fmt.Println(user)
 }
 ```
+
+## Struct Tags
+
+| Key           | Value                                                   |
+|---------------|---------------------------------------------------------|
+| `primary_key` | if `true`, field is consired as a primary key           |
+| `ignored`     | if `true`, field is ignored                             |
+| `default`     | Defaults value for the field (example: `default:now()`) |
