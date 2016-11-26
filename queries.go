@@ -89,14 +89,24 @@ func Save(driver Driver, out interface{}) error {
 		return err
 	}
 
-	columns := []string{}
-	values := []string{}
-	ignoredColumns := []string{}
+	var (
+		columns        = []string{}
+		ignoredColumns = []string{}
+		values         = []string{}
+	)
 
 	for _, column := range schema.Fields {
-		isIgnored := len(column.Tags.GetByKey(StructTagName, "ignored")) != 0
-		defaultValue := column.Tags.GetByKey(StructTagName, "default")
-		hasDefault := len(defaultValue) != 0
+		var (
+			isIgnored    bool
+			hasDefault   bool
+			defaultValue string
+		)
+
+		if tag, err := column.Tags.Get(StructTagName); err == nil {
+			isIgnored = len(tag.Get(StructTagIgnored)) != 0
+			defaultValue = tag.Get("default")
+			hasDefault = len(defaultValue) != 0
+		}
 
 		if isIgnored || hasDefault {
 			ignoredColumns = append(ignoredColumns, column.Name)
@@ -104,6 +114,7 @@ func Save(driver Driver, out interface{}) error {
 
 		if !isIgnored {
 			columns = append(columns, column.Name)
+
 			if hasDefault {
 				values = append(values, defaultValue)
 			} else {

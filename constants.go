@@ -12,6 +12,13 @@ var SupportedTags = []string{
 	SQLXStructTagName,
 }
 
+// Struct tag key names.
+const (
+	StructTagPrimaryKey = "primary_key"
+	StructTagIgnored    = "ignored"
+	StructTagDefault    = "default"
+)
+
 // RelationType is a field relation type.
 type RelationType int
 
