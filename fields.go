@@ -260,7 +260,9 @@ func newRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 		return relation, err
 	}
 
-	relation.FKReference, err = newForeignKeyReferenceField(related.(Model), "ID")
+	relatedModel := reflectModel(related)
+
+	relation.FKReference, err = newForeignKeyReferenceField(relatedModel, "ID")
 	if err != nil {
 		return relation, err
 	}
