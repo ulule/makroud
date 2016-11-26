@@ -14,14 +14,12 @@ type Schema struct {
 func GetSchema(model Model) (*Schema, error) {
 	var err error
 
-	v := reflect.ValueOf(model)
-
 	schema := &Schema{
 		Fields:    map[string]Field{},
 		Relations: map[string]Relation{},
 	}
 
-	v = reflectValue(v)
+	v := reflectValue(reflect.ValueOf(model))
 
 	for i := 0; i < v.NumField(); i++ {
 		valueField := v.Field(i)
