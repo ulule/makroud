@@ -101,18 +101,3 @@ func isZeroValue(itf interface{}) bool {
 	v := reflect.Indirect(reflect.ValueOf(itf))
 	return v.Interface() == reflect.Zero(v.Type()).Interface()
 }
-
-// getStructFields returns struct fields of value.
-func getStructFields(v reflect.Value) []reflect.StructField {
-	if v.Kind() != reflect.Struct {
-		return nil
-	}
-
-	fields := []reflect.StructField{}
-
-	for i := 0; i < v.NumField(); i++ {
-		fields = append(fields, v.Type().Field(i))
-	}
-
-	return fields
-}
