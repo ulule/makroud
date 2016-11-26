@@ -42,10 +42,11 @@ func (t Tags) Get(name string) (Tag, error) {
 // GetByKey is a convenient shortcuts to get the value for a given tag key.
 func (t Tags) GetByKey(name string, key string) string {
 	if tag, err := t.Get(name); err == nil {
-		if v := tag.Get(key); len(name) != 0 {
+		if v := tag.Get(key); len(v) != 0 {
 			return v
 		}
 	}
+
 	return ""
 }
 
