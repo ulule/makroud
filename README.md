@@ -139,9 +139,9 @@ Example:
 ```go
 type User struct {
     // We set as true
-    ID int `sqlxx:"primary_key:true"
+    ID int `sqlxx:"primary_key:true"`
 
     // But it is the same as
-    ID int `sqlxx:"primary_key"
+    ID int `sqlxx:"primary_key"`
 }
 ```
