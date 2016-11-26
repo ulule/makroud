@@ -4,7 +4,7 @@
 
 ## Installation
 
-```
+```console
 $ go get -u github.com/ulule/sqlxx
 ```
 
@@ -14,7 +14,7 @@ $ go get -u github.com/ulule/sqlxx
 
 Returns `model` schema (your model must be conform to `Model` interface).
 
-```golang
+```go
 schema, err := sqlxx.GetSchema(model)
 if err != nil {
     log.Fatal(err)
@@ -34,8 +34,7 @@ relations := schema.Relations
 
 Executes a `WHERE` query with `params`, returning the first matching result into `out` interface.
 
-```golang 
-
+```go
 user := User{}
 
 if err := sqlxx.GetByParams(db, &user, map[string]interface{}{"username": "jdoe"}); err != nil {
@@ -47,8 +46,7 @@ if err := sqlxx.GetByParams(db, &user, map[string]interface{}{"username": "jdoe"
 
 Executes a `WHERE` query with `params`, returning all matching results into `out` interface.
 
-```golang 
-
+```go
 users := []User{}
 
 if err := sqlxx.FindByParams(db, &users, map[string]interface{}{"is_active": true}); err != nil {
@@ -62,8 +60,7 @@ if err := sqlxx.FindByParams(db, &users, map[string]interface{}{"is_active": tru
 
 Executes either an `INSERT` or an `UPDATE` on `out` instance values, depending on primary key existance.
 
-```golang 
-
+```go
 // INSERT
 
 // Here, no primary key yet
@@ -92,8 +89,7 @@ if err := sqlxx.Save(db, &user); err != nil {
 
 Executes a `DELETE` on `out` instance primary key. 
 
-```golang 
-
+```go 
 user := User{Username: "jdoe"}
 
 // Create a user
@@ -111,7 +107,7 @@ if err := sqlxx.Delete(db, &user); err != nil {
 
 Executes an `UPDATE` on `field` value from `out` instance.
 
-```golang 
+```go
 user := User{Username: "jdoe"}
 
 // Create user
