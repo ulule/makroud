@@ -72,8 +72,9 @@ func makeTags(structField reflect.StructField) Tags {
 		// Key / value
 		for _, v := range vals {
 			splits = strings.Split(v, ":")
+			length := len(splits)
 
-			if len(splits) == 0 {
+			if length == 0 {
 				continue
 			}
 
@@ -83,7 +84,15 @@ func makeTags(structField reflect.StructField) Tags {
 				continue
 			}
 
-			if len(splits) >= 2 {
+			// Typically, we have single property like "default", "ignored", etc.
+			// To be consistent, we add true/false string values.
+			if length == 1 {
+				tags[k][strings.TrimSpace(splits[0])] = "true"
+				continue
+			}
+
+			// Typical key / value
+			if length == 2 {
 				tags[k][strings.TrimSpace(splits[0])] = strings.TrimSpace(splits[1])
 			}
 		}
