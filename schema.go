@@ -4,9 +4,14 @@ import "reflect"
 
 // Schema is a model schema.
 type Schema struct {
+	TableName  string
 	PrimaryKey Field
 	Fields     map[string]Field
 	Relations  map[string]Relation
+}
+
+func getSchemaFromInterface(out interface{}) (*Schema, error) {
+	return GetSchema(reflectModel(out))
 }
 
 // GetSchema returns model's table columns, extracted by reflection.
@@ -15,6 +20,7 @@ func GetSchema(model Model) (*Schema, error) {
 	var err error
 
 	schema := &Schema{
+		TableName: model.TableName(),
 		Fields:    map[string]Field{},
 		Relations: map[string]Relation{},
 	}

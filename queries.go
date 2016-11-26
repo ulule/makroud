@@ -10,9 +10,7 @@ import (
 
 // SoftDelete soft deletes the model in the database
 func SoftDelete(driver Driver, out interface{}, field string) error {
-	model := reflectModel(out)
-
-	schema, err := GetSchema(model)
+	schema, err := getSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}
@@ -31,7 +29,7 @@ func SoftDelete(driver Driver, out interface{}, field string) error {
 	now := time.Now()
 
 	query := fmt.Sprintf("UPDATE %s SET %s = :%s WHERE %s",
-		model.TableName(),
+		schema.TableName,
 		column.Name,
 		column.Name,
 		strings.Join(wheres, ", "))
@@ -52,9 +50,7 @@ func SoftDelete(driver Driver, out interface{}, field string) error {
 
 // Delete deletes the model in the database
 func Delete(driver Driver, out interface{}) error {
-	model := reflectModel(out)
-
-	schema, err := GetSchema(model)
+	schema, err := getSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}
@@ -69,7 +65,7 @@ func Delete(driver Driver, out interface{}) error {
 	wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s",
-		model.TableName(),
+		schema.TableName,
 		strings.Join(wheres, ", "))
 
 	_, err = driver.NamedExec(query, out)
@@ -82,9 +78,8 @@ func Delete(driver Driver, out interface{}) error {
 
 // Save saves the model and populate it to the database
 func Save(driver Driver, out interface{}) error {
-	model := reflectModel(out)
+	schema, err := getSchemaFromInterface(out)
 
-	schema, err := GetSchema(model)
 	if err != nil {
 		return err
 	}
@@ -129,7 +124,7 @@ func Save(driver Driver, out interface{}) error {
 
 	if !primaryKey.HasValue() {
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
-			model.TableName(),
+			schema.TableName,
 			strings.Join(columns, ", "),
 			strings.Join(values, ", "))
 	} else {
@@ -142,7 +137,7 @@ func Save(driver Driver, out interface{}) error {
 		wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
 
 		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s",
-			model.TableName(),
+			schema.TableName,
 			strings.Join(updates, ", "),
 			strings.Join(wheres, ", "))
 	}
