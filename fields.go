@@ -105,11 +105,11 @@ func getFieldTags(structField reflect.StructField, names ...string) map[string]s
 }
 
 // ----------------------------------------------------------------------------
-// FieldMeta
+// Meta
 // ----------------------------------------------------------------------------
 
-// FieldMeta are low level field metadata.
-type FieldMeta struct {
+// Meta are low level field metadata.
+type Meta struct {
 	Name  string
 	Value reflect.Value
 	Field reflect.StructField
@@ -117,7 +117,7 @@ type FieldMeta struct {
 	Tags  Tags
 }
 
-func makeFieldMeta(structField reflect.StructField, value reflect.Value) FieldMeta {
+func makeMeta(structField reflect.StructField, value reflect.Value) Meta {
 	fieldName := structField.Name
 
 	var structFieldType reflect.Type
@@ -128,7 +128,7 @@ func makeFieldMeta(structField reflect.StructField, value reflect.Value) FieldMe
 		structFieldType = structField.Type
 	}
 
-	return FieldMeta{
+	return Meta{
 		Name:  fieldName,
 		Value: value,
 		Field: structField,
@@ -147,7 +147,7 @@ type Field struct {
 	Name      string
 	Value     interface{}
 	Tags      Tags
-	Meta      FieldMeta
+	Meta      Meta
 	IsPrimary bool
 }
 
@@ -162,7 +162,7 @@ func (f Field) PrefixedName() string {
 }
 
 // newField returns full column name from model, field and tag.
-func newField(model Model, meta FieldMeta) (Field, error) {
+func newField(model Model, meta Meta) (Field, error) {
 	tags := makeTags(meta.Field)
 
 	var name string
@@ -190,7 +190,7 @@ func newField(model Model, meta FieldMeta) (Field, error) {
 }
 
 // newForeignKeyField returns foreign key field.
-func newForeignKeyField(model Model, meta FieldMeta) (Field, error) {
+func newForeignKeyField(model Model, meta Meta) (Field, error) {
 	field, err := newField(model, meta)
 	if err != nil {
 		return Field{}, err
@@ -218,7 +218,7 @@ func newForeignKeyReferenceField(referencedModel Model, name string) (Field, err
 		return Field{}, fmt.Errorf("Field %s does not exist", name)
 	}
 
-	meta := FieldMeta{
+	meta := Meta{
 		Name:  name,
 		Field: f,
 	}
@@ -243,7 +243,7 @@ type Relation struct {
 }
 
 // newRelatedField creates a new related field.
-func newRelation(model Model, meta FieldMeta, typ RelationType) (Relation, error) {
+func newRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 	var err error
 
 	relation := Relation{

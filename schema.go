@@ -25,13 +25,13 @@ func GetSchema(model Model) (*Schema, error) {
 		valueField := v.Field(i)
 		structField := v.Type().Field(i)
 
-		fieldMeta := makeFieldMeta(structField, valueField)
+		meta := makeMeta(structField, valueField)
 
-		if (fieldMeta.Type.Kind() == reflect.Struct) || (fieldMeta.Type.Kind() == reflect.Slice) {
-			relationType := getRelationType(fieldMeta.Type)
+		if (meta.Type.Kind() == reflect.Struct) || (meta.Type.Kind() == reflect.Slice) {
+			relationType := getRelationType(meta.Type)
 
 			if _, ok := RelationTypes[relationType]; ok {
-				schema.Relations[fieldMeta.Name], err = newRelation(model, fieldMeta, relationType)
+				schema.Relations[meta.Name], err = newRelation(model, meta, relationType)
 				if err != nil {
 					return nil, err
 				}
@@ -40,17 +40,17 @@ func GetSchema(model Model) (*Schema, error) {
 			}
 		}
 
-		field, err := newField(model, fieldMeta)
+		field, err := newField(model, meta)
 		if err != nil {
 			return nil, err
 		}
 
-		if v := fieldMeta.Tags.GetByKey(StructTagName, "primary_key"); len(v) != 0 {
+		if v := meta.Tags.GetByKey(StructTagName, "primary_key"); len(v) != 0 {
 			schema.PrimaryKey = field
 			field.IsPrimary = true
 		}
 
-		schema.Fields[fieldMeta.Name] = field
+		schema.Fields[meta.Name] = field
 	}
 
 	return schema, nil
