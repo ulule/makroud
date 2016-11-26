@@ -197,7 +197,7 @@ func newForeignKeyField(model Model, meta FieldMeta) (Field, error) {
 
 // newForeignKeyReferenceField returns a foreign key reference field.
 func newForeignKeyReferenceField(referencedModel Model, name string) (Field, error) {
-	reflectType := getReflectedType(referencedModel)
+	reflectType := reflectType(referencedModel)
 
 	reflected := reflect.New(reflectType).Interface().(Model)
 

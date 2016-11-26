@@ -2,7 +2,8 @@ package sqlxx
 
 import "reflect"
 
-// reflectValue deferences the given value if it's a pointer or pointer to interface.
+// reflectValue returns the value that the interface v contains
+// or that the pointer v points to.
 func reflectValue(v reflect.Value) reflect.Value {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -15,6 +16,17 @@ func reflectValue(v reflect.Value) reflect.Value {
 	}
 
 	return v
+}
+
+// reflectType returns type of the given interface.
+func reflectType(itf interface{}) reflect.Type {
+	typ := reflect.ValueOf(itf).Type()
+
+	if typ.Kind() == reflect.Ptr {
+		typ = typ.Elem()
+	}
+
+	return typ
 }
 
 // getFieldType returns the field type for the given value.
