@@ -10,7 +10,7 @@ import (
 
 // SoftDelete soft deletes the model in the database
 func SoftDelete(driver Driver, out interface{}, field string) error {
-	model := interfaceToModel(out)
+	model := reflectModel(out)
 
 	schema, err := GetSchema(model)
 	if err != nil {
@@ -52,7 +52,7 @@ func SoftDelete(driver Driver, out interface{}, field string) error {
 
 // Delete deletes the model in the database
 func Delete(driver Driver, out interface{}) error {
-	model := interfaceToModel(out)
+	model := reflectModel(out)
 
 	schema, err := GetSchema(model)
 	if err != nil {
@@ -82,7 +82,7 @@ func Delete(driver Driver, out interface{}) error {
 
 // Save saves the model and populate it to the database
 func Save(driver Driver, out interface{}) error {
-	model := interfaceToModel(out)
+	model := reflectModel(out)
 
 	schema, err := GetSchema(model)
 	if err != nil {
@@ -194,7 +194,7 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 
 // where executes a where clause.
 func where(driver Driver, out interface{}, params map[string]interface{}, fetchOne bool) error {
-	model := interfaceToModel(out)
+	model := reflectModel(out)
 
 	query, args, err := whereQuery(model, params, fetchOne)
 	if err != nil {

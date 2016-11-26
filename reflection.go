@@ -29,6 +29,25 @@ func reflectType(itf interface{}) reflect.Type {
 	return typ
 }
 
+// reflectModel returns interface as a Model interface.
+func reflectModel(itf interface{}) Model {
+	v := reflect.Indirect(reflect.ValueOf(itf))
+
+	if v.IsValid() && v.Kind() != reflect.Slice {
+		return reflect.ValueOf(itf).Interface().(Model)
+	}
+
+	var typ reflect.Type
+
+	if reflect.Indirect(v).Kind() == reflect.Slice {
+		typ = v.Type().Elem()
+	} else {
+		typ = reflect.Indirect(v).Type()
+	}
+
+	return reflect.New(typ).Interface().(Model)
+}
+
 // getFieldType returns the field type for the given value.
 func getFieldRelationType(typ reflect.Type) RelationType {
 	if typ.Kind() == reflect.Slice {
@@ -96,23 +115,4 @@ func getStructFields(v reflect.Value) []reflect.StructField {
 	}
 
 	return fields
-}
-
-// interfaceToModel cast an interface to a Model.
-func interfaceToModel(itf interface{}) Model {
-	v := reflect.Indirect(reflect.ValueOf(itf))
-
-	if v.IsValid() && v.Kind() != reflect.Slice {
-		return reflect.ValueOf(itf).Interface().(Model)
-	}
-
-	var typ reflect.Type
-
-	if reflect.Indirect(v).Kind() == reflect.Slice {
-		typ = v.Type().Elem()
-	} else {
-		typ = reflect.Indirect(v).Type()
-	}
-
-	return reflect.New(typ).Interface().(Model)
 }
