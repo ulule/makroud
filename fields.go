@@ -92,6 +92,18 @@ func makeTags(structField reflect.StructField) Tags {
 	return tags
 }
 
+func getFieldTags(structField reflect.StructField, names ...string) map[string]string {
+	tags := map[string]string{}
+
+	for _, name := range names {
+		if _, ok := tags[name]; !ok {
+			tags[name] = structField.Tag.Get(name)
+		}
+	}
+
+	return tags
+}
+
 // ----------------------------------------------------------------------------
 // FieldMeta
 // ----------------------------------------------------------------------------
@@ -254,4 +266,21 @@ func newRelation(model Model, meta FieldMeta, typ RelationType) (Relation, error
 	}
 
 	return relation, nil
+}
+
+// getRelationType returns RelationType for the given reflect.Type.
+func getRelationType(typ reflect.Type) RelationType {
+	if typ.Kind() == reflect.Slice {
+		if _, isModel := reflect.New(typ.Elem()).Interface().(Model); isModel {
+			return RelationTypeManyToOne
+		}
+
+		return RelationTypeUnknown
+	}
+
+	if _, isModel := reflect.New(typ).Interface().(Model); isModel {
+		return RelationTypeOneToMany
+	}
+
+	return RelationTypeUnknown
 }

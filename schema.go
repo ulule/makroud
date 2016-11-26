@@ -28,7 +28,7 @@ func GetSchema(model Model) (*Schema, error) {
 		fieldMeta := makeFieldMeta(structField, valueField)
 
 		if (fieldMeta.Type.Kind() == reflect.Struct) || (fieldMeta.Type.Kind() == reflect.Slice) {
-			relationType := getFieldRelationType(fieldMeta.Type)
+			relationType := getRelationType(fieldMeta.Type)
 
 			if _, ok := RelationTypes[relationType]; ok {
 				schema.Relations[fieldMeta.Name], err = newRelation(model, fieldMeta, relationType)

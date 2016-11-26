@@ -48,54 +48,6 @@ func reflectModel(itf interface{}) Model {
 	return reflect.New(typ).Interface().(Model)
 }
 
-// getFieldType returns the field type for the given value.
-func getFieldRelationType(typ reflect.Type) RelationType {
-	if typ.Kind() == reflect.Slice {
-		if _, isModel := reflect.New(typ.Elem()).Interface().(Model); isModel {
-			return RelationTypeManyToOne
-		}
-		return RelationTypeUnknown
-	}
-
-	if _, isModel := reflect.New(typ).Interface().(Model); isModel {
-		return RelationTypeOneToMany
-	}
-
-	return RelationTypeUnknown
-}
-
-func getFieldTags(structField reflect.StructField, names ...string) map[string]string {
-	tags := map[string]string{}
-
-	for _, name := range names {
-		if _, ok := tags[name]; !ok {
-			tags[name] = structField.Tag.Get(name)
-		}
-	}
-
-	return tags
-}
-
-// getType returns type.
-func getReflectedType(itf interface{}) reflect.Type {
-	typ := reflect.ValueOf(itf).Type()
-
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
-	return typ
-}
-
-// getReflectedValue returns reflected value of the given itf.
-func getReflectedValue(itf interface{}) reflect.Value {
-	if reflect.TypeOf(itf).Kind() == reflect.Ptr {
-		return reflect.ValueOf(itf).Elem()
-	}
-
-	return reflect.ValueOf(itf)
-}
-
 // isZeroValue returns true if the given interface is a zero value.
 func isZeroValue(itf interface{}) bool {
 	v := reflect.Indirect(reflect.ValueOf(itf))
