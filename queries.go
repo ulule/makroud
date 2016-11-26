@@ -104,7 +104,7 @@ func Save(driver Driver, out interface{}) error {
 
 		if tag, err := column.Tags.Get(StructTagName); err == nil {
 			isIgnored = len(tag.Get(StructTagIgnored)) != 0
-			defaultValue = tag.Get("default")
+			defaultValue = tag.Get(StructTagDefault)
 			hasDefault = len(defaultValue) != 0
 		}
 
