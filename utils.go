@@ -40,6 +40,12 @@ func reflectModel(itf interface{}) Model {
 
 	// Slice of models
 	if value.Kind() == reflect.Slice {
+		// Slice of model pointers
+		if value.Type().Elem().Kind() == reflect.Ptr {
+			return reflect.New(value.Type().Elem().Elem()).Interface().(Model)
+		}
+
+		// Slice of model values
 		return reflect.New(value.Type().Elem()).Interface().(Model)
 	}
 

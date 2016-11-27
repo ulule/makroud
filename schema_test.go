@@ -35,6 +35,12 @@ func TestGetSchema(t *testing.T) {
 	is.Equal("foo.related_model_ptr_id", schema.Relations["RelatedModelPtr"].FK.PrefixedName())
 	is.Equal("related.custom_id", schema.Relations["RelatedModelPtr"].FKReference.PrefixedName())
 
+	manyToOneRelations := []string{"RelatedSlice", "RelatedSlicePtr", "RelatedPtrSlice"}
+
+	for _, k := range manyToOneRelations {
+		is.Equal(RelationTypeManyToOne, schema.Relations[k].Type, k)
+	}
+
 	schema, err = GetSchema(StructWithTags{})
 	is.NoError(err)
 
@@ -60,6 +66,10 @@ func TestGetSchema(t *testing.T) {
 	is.Equal("related.custom_id", schema.Relations["RelatedModel"].FKReference.PrefixedName())
 	is.Equal("foo.member_id", schema.Relations["RelatedModelPtr"].FK.PrefixedName())
 	is.Equal("related.custom_id", schema.Relations["RelatedModelPtr"].FKReference.PrefixedName())
+
+	for _, k := range manyToOneRelations {
+		is.Equal(RelationTypeManyToOne, schema.Relations[k].Type, k)
+	}
 }
 
 // ----------------------------------------------------------------------------

@@ -129,12 +129,10 @@ type Meta struct {
 func makeMeta(structField reflect.StructField, value reflect.Value) Meta {
 	fieldName := structField.Name
 
-	var structFieldType reflect.Type
+	structFieldType := structField.Type
 
 	if structField.Type.Kind() == reflect.Ptr {
 		structFieldType = structField.Type.Elem()
-	} else {
-		structFieldType = structField.Type
 	}
 
 	return Meta{
@@ -282,7 +280,13 @@ func newRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 // getRelationType returns RelationType for the given reflect.Type.
 func getRelationType(typ reflect.Type) RelationType {
 	if typ.Kind() == reflect.Slice {
-		if _, isModel := reflect.New(typ.Elem()).Interface().(Model); isModel {
+		typ = typ.Elem()
+
+		if typ.Kind() == reflect.Ptr {
+			typ = typ.Elem()
+		}
+
+		if _, isModel := reflect.New(typ).Interface().(Model); isModel {
 			return RelationTypeManyToOne
 		}
 
