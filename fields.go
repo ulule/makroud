@@ -193,6 +193,7 @@ func newField(model Model, meta Meta) (Field, error) {
 		Name:      name,
 		Tags:      tags,
 		Value:     value,
+		Meta:      meta,
 	}, nil
 }
 
