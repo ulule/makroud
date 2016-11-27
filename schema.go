@@ -10,10 +10,6 @@ type Schema struct {
 	Relations  map[string]Relation
 }
 
-func getSchemaFromInterface(out interface{}) (*Schema, error) {
-	return GetSchema(reflectModel(out))
-}
-
 // GetSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
 func GetSchema(model Model) (*Schema, error) {
@@ -28,8 +24,7 @@ func GetSchema(model Model) (*Schema, error) {
 	v := reflectValue(reflect.ValueOf(model))
 
 	for i := 0; i < v.NumField(); i++ {
-		valueField := v.Field(i)
-		structField := v.Type().Field(i)
+		valueField, structField := v.Field(i), v.Type().Field(i)
 
 		meta := makeMeta(structField, valueField)
 
@@ -60,4 +55,9 @@ func GetSchema(model Model) (*Schema, error) {
 	}
 
 	return schema, nil
+}
+
+// getSchemaFromInterface returns Schema by reflecting model for the given interface.
+func getSchemaFromInterface(out interface{}) (*Schema, error) {
+	return GetSchema(reflectModel(out))
 }
