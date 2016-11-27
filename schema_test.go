@@ -6,69 +6,91 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type fieldResultTest struct {
+	field    string
+	table    string
+	name     string
+	prefixed string
+}
+
+type relationResultTest struct {
+	fieldName    string
+	name         string
+	prefixedName string
+	tableName    string
+	relationType RelationType
+	isReference  bool
+}
+
 func TestGetSchema(t *testing.T) {
 	is := assert.New(t)
 
 	schema, err := GetSchema(StructWithoutTags{})
 	is.NoError(err)
 
-	var results = []struct {
-		field    string
-		table    string
-		name     string
-		prefixed string
-	}{
+	testFields(t, schema, []fieldResultTest{
 		{"ID", "foo", "id", "foo.id"},
 		{"FirstName", "foo", "first_name", "foo.first_name"},
 		{"LastName", "foo", "last_name", "foo.last_name"},
 		{"ThisIsAVeryLongFieldName123", "foo", "this_is_a_very_long_field_name123", "foo.this_is_a_very_long_field_name123"},
-	}
+	})
 
-	for _, r := range results {
-		is.Equal(r.table, schema.Fields[r.field].TableName)
-		is.Equal(r.name, schema.Fields[r.field].Name)
-		is.Equal(r.prefixed, schema.Fields[r.field].PrefixedName())
-	}
-
-	is.Equal("foo.related_model_id", schema.Relations["RelatedModel"].FK.PrefixedName())
-	is.Equal("related.custom_id", schema.Relations["RelatedModel"].FKReference.PrefixedName())
-	is.Equal("foo.related_model_ptr_id", schema.Relations["RelatedModelPtr"].FK.PrefixedName())
-	is.Equal("related.custom_id", schema.Relations["RelatedModelPtr"].FKReference.PrefixedName())
-
-	manyToOneRelations := []string{"RelatedSlice", "RelatedSlicePtr", "RelatedPtrSlice"}
-
-	for _, k := range manyToOneRelations {
-		is.Equal(RelationTypeManyToOne, schema.Relations[k].Type, k)
-	}
+	testRelations(t, schema, []relationResultTest{
+		{"RelatedModel", "related_model_id", "foo.related_model_id", "foo", RelationTypeOneToMany, false},
+		{"RelatedModelPtr", "related_model_ptr_id", "foo.related_model_ptr_id", "foo", RelationTypeOneToMany, false},
+		{"RelatedModel", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true},
+		{"RelatedModelPtr", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true},
+		{"RelatedSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
+		{"RelatedSlicePtr", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
+		{"RelatedPtrSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
+	})
 
 	schema, err = GetSchema(StructWithTags{})
 	is.NoError(err)
 
-	results = []struct {
-		field    string
-		table    string
-		name     string
-		prefixed string
-	}{
+	testFields(t, schema, []fieldResultTest{
 		{"ID", "foo", "public_id", "foo.public_id"},
 		{"FirstName", "foo", "firstname", "foo.firstname"},
 		{"LastName", "foo", "last_name", "foo.last_name"},
 		{"ThisIsAVeryLongFieldName123", "foo", "short_field", "foo.short_field"},
-	}
+	})
+
+	testRelations(t, schema, []relationResultTest{
+		{"RelatedModel", "member_id", "foo.member_id", "foo", RelationTypeOneToMany, false},
+		{"RelatedModelPtr", "member_id", "foo.member_id", "foo", RelationTypeOneToMany, false},
+		{"RelatedModel", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true},
+		{"RelatedModelPtr", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true},
+		{"RelatedSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
+		{"RelatedSlicePtr", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
+		{"RelatedPtrSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
+	})
+}
+
+func testFields(t *testing.T, schema *Schema, results []fieldResultTest) {
+	is := assert.New(t)
 
 	for _, r := range results {
 		is.Equal(r.table, schema.Fields[r.field].TableName)
 		is.Equal(r.name, schema.Fields[r.field].Name)
 		is.Equal(r.prefixed, schema.Fields[r.field].PrefixedName())
 	}
+}
 
-	is.Equal("foo.member_id", schema.Relations["RelatedModel"].FK.PrefixedName())
-	is.Equal("related.custom_id", schema.Relations["RelatedModel"].FKReference.PrefixedName())
-	is.Equal("foo.member_id", schema.Relations["RelatedModelPtr"].FK.PrefixedName())
-	is.Equal("related.custom_id", schema.Relations["RelatedModelPtr"].FKReference.PrefixedName())
+func testRelations(t *testing.T, schema *Schema, results []relationResultTest) {
+	is := assert.New(t)
 
-	for _, k := range manyToOneRelations {
-		is.Equal(RelationTypeManyToOne, schema.Relations[k].Type, k)
+	for _, r := range results {
+		relation := schema.Relations[r.fieldName]
+
+		field := relation.FK
+		if r.isReference {
+			field = relation.FKReference
+		}
+
+		is.Equal(r.name, field.Name)
+		is.Equal(r.prefixedName, field.PrefixedName())
+		is.Equal(r.tableName, field.TableName)
+		is.Equal(r.relationType, relation.Type)
 	}
 }
 
