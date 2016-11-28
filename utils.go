@@ -74,9 +74,7 @@ func isZeroValue(itf interface{}) bool {
 		return true
 	}
 
-	v = reflect.Indirect(v)
-
-	return v.Interface() == reflect.Zero(v.Type()).Interface()
+	return reflect.Indirect(v).Interface() == reflect.Zero(reflect.Indirect(v).Type()).Interface()
 }
 
 // getIndirectType returns indirect type for the given type.
