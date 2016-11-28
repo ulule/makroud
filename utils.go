@@ -78,3 +78,27 @@ func isZeroValue(itf interface{}) bool {
 
 	return v.Interface() == reflect.Zero(v.Type()).Interface()
 }
+
+// getIndirectType returns indirect type for the given type.
+func getIndirectType(typ reflect.Type) reflect.Type {
+	if typ.Kind() == reflect.Ptr {
+		return getIndirectType(typ.Elem())
+	}
+
+	return typ
+}
+
+// getModelType returns model type.
+func getModelType(typ reflect.Type) Model {
+	if typ.Kind() == reflect.Slice {
+		typ = getIndirectType(typ.Elem())
+	} else {
+		typ = getIndirectType(typ)
+	}
+
+	if model, isModel := reflect.New(typ).Elem().Interface().(Model); isModel {
+		return model
+	}
+
+	return nil
+}
