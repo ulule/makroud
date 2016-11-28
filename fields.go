@@ -125,20 +125,21 @@ type Meta struct {
 	Tags  Tags
 }
 
-func makeMeta(structField reflect.StructField, value reflect.Value) Meta {
-	fieldName := structField.Name
+func makeMeta(field reflect.StructField) Meta {
+	var (
+		fieldName = field.Name
+		fieldType = field.Type
+	)
 
-	structFieldType := structField.Type
-
-	if structField.Type.Kind() == reflect.Ptr {
-		structFieldType = structField.Type.Elem()
+	if field.Type.Kind() == reflect.Ptr {
+		fieldType = field.Type.Elem()
 	}
 
 	return Meta{
 		Name:  fieldName,
-		Field: structField,
-		Type:  structFieldType,
-		Tags:  makeTags(structField),
+		Field: field,
+		Type:  fieldType,
+		Tags:  makeTags(field),
 	}
 }
 

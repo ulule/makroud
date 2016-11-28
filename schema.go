@@ -36,9 +36,8 @@ func GetSchema(model Model) (*Schema, error) {
 	v := reflectValue(reflect.ValueOf(model))
 
 	for i := 0; i < v.NumField(); i++ {
-		valueField, structField := v.Field(i), v.Type().Field(i)
-
-		meta := makeMeta(structField, valueField)
+		structField := v.Type().Field(i)
+		meta := makeMeta(structField)
 
 		if (meta.Type.Kind() == reflect.Struct) || (meta.Type.Kind() == reflect.Slice) {
 			relationType := getRelationType(meta.Type)
