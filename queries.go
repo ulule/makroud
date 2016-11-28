@@ -189,20 +189,7 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 		return "", nil, err
 	}
 
-	columns := []string{}
-	for _, f := range schema.Fields {
-		columns = append(columns, f.ColumnPath())
-	}
-
-	wheres := []string{}
-	for k := range params {
-		wheres = append(wheres, fmt.Sprintf("%s.%s=:%s", model.TableName(), k, k))
-	}
-
-	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s",
-		strings.Join(columns, ", "),
-		model.TableName(),
-		strings.Join(wheres, ","))
+	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s", schema.ColumnPaths(), model.TableName(), schema.WhereColumnPaths(params))
 
 	if fetchOne {
 		q = fmt.Sprintf("%s LIMIT 1", q)

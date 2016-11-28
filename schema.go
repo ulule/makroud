@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -37,22 +38,55 @@ func (s *Schema) SetPrimaryKey(f Field) {
 	s.Fields[f.Name] = f
 }
 
-// Columns returns schema columns.
+// Columns returns schema columns without table prefix.
 func (s Schema) Columns() Columns {
+	return s.columns(false)
+}
+
+// ColumnPaths returns schema column with table prefix.
+func (s Schema) ColumnPaths() Columns {
+	return s.columns(true)
+}
+
+// columns generates column slice.
+func (s Schema) columns(withTable bool) Columns {
 	columns := Columns{}
+
 	for _, f := range s.Fields {
-		columns = append(columns, f.ColumnName)
+		if withTable {
+			columns = append(columns, f.ColumnPath())
+		} else {
+			columns = append(columns, f.ColumnName)
+		}
 	}
+
 	return columns
 }
 
-// ColumnPaths returns schema column paths.
-func (s Schema) ColumnPaths() Columns {
-	columns := Columns{}
-	for _, f := range s.Fields {
-		columns = append(columns, f.ColumnPath())
+// WhereColumns returns where clause with the given params without table prefix.
+func (s Schema) WhereColumns(params map[string]interface{}) Columns {
+	return s.whereColumns(params, true)
+}
+
+// WhereColumnPaths returns where clause with the given params with table prefix.
+func (s Schema) WhereColumnPaths(params map[string]interface{}) Columns {
+	return s.whereColumns(params, true)
+}
+
+// whereColumns generates where clause for the given params.
+func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Columns {
+	wheres := Columns{}
+
+	for k := range params {
+		column := k
+		if withTable {
+			column = fmt.Sprintf("%s.%s", s.TableName, k)
+		}
+
+		wheres = append(wheres, fmt.Sprintf("%s=:%s", column, k))
 	}
-	return columns
+
+	return wheres
 }
 
 // GetSchema returns model's table columns, extracted by reflection.
