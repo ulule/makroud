@@ -84,7 +84,7 @@ func testRelations(t *testing.T, schema *Schema, results []relationResultTest) {
 
 		field := relation.FK
 		if r.isReference {
-			field = relation.FKReference
+			field = relation.Reference
 		}
 
 		is.Equal(r.columnName, field.ColumnName)

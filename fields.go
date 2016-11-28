@@ -239,9 +239,10 @@ func newForeignKeyReferenceField(referencedModel Model, name string) (Field, err
 
 // Relation represents an related field between two models.
 type Relation struct {
-	Type        RelationType
-	FK          Field
-	FKReference Field
+	Model     Model
+	Type      RelationType
+	FK        Field
+	Reference Field
 }
 
 // newRelatedField creates a new related field.
@@ -264,7 +265,7 @@ func newRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 
 	relatedModel := reflectModel(related)
 
-	relation.FKReference, err = newForeignKeyReferenceField(relatedModel, "ID")
+	relation.Reference, err = newForeignKeyReferenceField(relatedModel, "ID")
 	if err != nil {
 		return relation, err
 	}
