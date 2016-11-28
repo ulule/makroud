@@ -67,6 +67,14 @@ func reflectModel(itf interface{}) Model {
 
 // isZeroValue returns true if the given interface is a zero value.
 func isZeroValue(itf interface{}) bool {
-	v := reflect.Indirect(reflect.ValueOf(itf))
+	v := reflect.ValueOf(itf)
+
+	// Avoid call of reflect.Value.Interface on zero Value
+	if !v.IsValid() {
+		return true
+	}
+
+	v = reflect.Indirect(v)
+
 	return v.Interface() == reflect.Zero(v.Type()).Interface()
 }

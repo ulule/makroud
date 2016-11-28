@@ -10,16 +10,28 @@ type Schema struct {
 	Relations  map[string]Relation
 }
 
+// NewSchema returns a new Schema instance.
+func NewSchema(model Model) *Schema {
+	return &Schema{
+		TableName: model.TableName(),
+		Fields:    map[string]Field{},
+		Relations: map[string]Relation{},
+	}
+}
+
+// SetPrimaryKey sets the given Field as schema primary key.
+func (s *Schema) SetPrimaryKey(f Field) {
+	f.IsPrimary = true
+	s.PrimaryKey = f
+	s.Fields[f.Name] = f
+}
+
 // GetSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
 func GetSchema(model Model) (*Schema, error) {
 	var err error
 
-	schema := &Schema{
-		TableName: model.TableName(),
-		Fields:    map[string]Field{},
-		Relations: map[string]Relation{},
-	}
+	schema := NewSchema(model)
 
 	v := reflectValue(reflect.ValueOf(model))
 
@@ -47,8 +59,8 @@ func GetSchema(model Model) (*Schema, error) {
 		}
 
 		if v := meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey); len(v) != 0 {
-			schema.PrimaryKey = field
-			field.IsPrimary = true
+			schema.SetPrimaryKey(field)
+			continue
 		}
 
 		schema.Fields[meta.Name] = field

@@ -7,16 +7,16 @@ import (
 )
 
 type fieldResultTest struct {
-	field    string
-	table    string
-	name     string
-	prefixed string
+	field      string
+	tableName  string
+	columnName string
+	columnPath string
 }
 
 type relationResultTest struct {
 	fieldName    string
-	name         string
-	prefixedName string
+	columnName   string
+	columnPath   string
 	tableName    string
 	relationType RelationType
 	isReference  bool
@@ -70,9 +70,9 @@ func testFields(t *testing.T, schema *Schema, results []fieldResultTest) {
 	is := assert.New(t)
 
 	for _, r := range results {
-		is.Equal(r.table, schema.Fields[r.field].TableName)
-		is.Equal(r.name, schema.Fields[r.field].Name)
-		is.Equal(r.prefixed, schema.Fields[r.field].PrefixedName())
+		is.Equal(r.tableName, schema.Fields[r.field].TableName)
+		is.Equal(r.columnName, schema.Fields[r.field].ColumnName)
+		is.Equal(r.columnPath, schema.Fields[r.field].ColumnPath())
 	}
 }
 
@@ -87,8 +87,8 @@ func testRelations(t *testing.T, schema *Schema, results []relationResultTest) {
 			field = relation.FKReference
 		}
 
-		is.Equal(r.name, field.Name)
-		is.Equal(r.prefixedName, field.PrefixedName())
+		is.Equal(r.columnName, field.ColumnName)
+		is.Equal(r.columnPath, field.ColumnPath())
 		is.Equal(r.tableName, field.TableName)
 		is.Equal(r.relationType, relation.Type)
 	}

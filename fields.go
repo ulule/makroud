@@ -120,7 +120,6 @@ func getFieldTags(structField reflect.StructField, names ...string) map[string]s
 // Meta are low level field metadata.
 type Meta struct {
 	Name  string
-	Value reflect.Value
 	Field reflect.StructField
 	Type  reflect.Type
 	Tags  Tags
@@ -137,7 +136,6 @@ func makeMeta(structField reflect.StructField, value reflect.Value) Meta {
 
 	return Meta{
 		Name:  fieldName,
-		Value: value,
 		Field: structField,
 		Type:  structFieldType,
 		Tags:  makeTags(structField),
@@ -150,50 +148,48 @@ func makeMeta(structField reflect.StructField, value reflect.Value) Meta {
 
 // Field is a field.
 type Field struct {
+	// Struct field name.
+	Name string
+
+	// Struct field metadata (reflect data).
+	Meta Meta
+
+	// Struct field tags.
+	Tags Tags
+
+	// TableName is the database table name.
 	TableName string
-	Name      string
-	Value     interface{}
-	Tags      Tags
-	Meta      Meta
+
+	// ColumnName is the database column name.
+	ColumnName string
+
+	// Is a primary key?
 	IsPrimary bool
 }
 
-// HasValue returns true if value is a zero value.
-func (f Field) HasValue() bool {
-	return !isZeroValue(f.Value)
-}
-
-// PrefixedName returns the column name prefixed with the table name
-func (f Field) PrefixedName() string {
-	return fmt.Sprintf("%s.%s", f.TableName, f.Name)
+// ColumnPath returns the column name prefixed with the table name.
+func (f Field) ColumnPath() string {
+	return fmt.Sprintf("%s.%s", f.TableName, f.ColumnName)
 }
 
 // newField returns full column name from model, field and tag.
 func newField(model Model, meta Meta) (Field, error) {
 	tags := makeTags(meta.Field)
 
-	var name string
+	var columnName string
 
 	if dbName := tags.GetByKey(SQLXStructTagName, "field"); len(dbName) != 0 {
-		name = dbName
+		columnName = dbName
 	} else {
-		name = snaker.CamelToSnake(meta.Name)
-	}
-
-	v := reflectValue(meta.Value)
-
-	var value interface{}
-
-	if v.IsValid() {
-		value = v.Interface()
+		columnName = snaker.CamelToSnake(meta.Name)
 	}
 
 	return Field{
-		TableName: model.TableName(),
-		Name:      name,
-		Tags:      tags,
-		Value:     value,
-		Meta:      meta,
+		Name:       meta.Name,
+		Meta:       meta,
+		Tags:       tags,
+		TableName:  model.TableName(),
+		ColumnName: columnName,
 	}, nil
 }
 
@@ -205,11 +201,11 @@ func newForeignKeyField(model Model, meta Meta) (Field, error) {
 	}
 
 	// Defaults to "fieldname_id"
-	field.Name = fmt.Sprintf("%s_id", field.Name)
+	field.ColumnName = fmt.Sprintf("%s_id", field.ColumnName)
 
 	// Get the SQLX one if any.
 	if customName := field.Tags.GetByKey(SQLXStructTagName, "field"); len(customName) != 0 {
-		field.Name = customName
+		field.ColumnName = customName
 	}
 
 	return field, nil
@@ -226,10 +222,7 @@ func newForeignKeyReferenceField(referencedModel Model, name string) (Field, err
 		return Field{}, fmt.Errorf("Field %s does not exist", name)
 	}
 
-	meta := Meta{
-		Name:  name,
-		Field: f,
-	}
+	meta := Meta{Name: name, Field: f}
 
 	field, err := newField(reflected, meta)
 	if err != nil {

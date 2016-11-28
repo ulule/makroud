@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/oleiade/reflections"
 )
 
 // SoftDelete soft deletes the model in the database
@@ -15,14 +16,15 @@ func SoftDelete(driver Driver, out interface{}, field string) error {
 		return err
 	}
 
-	primaryKey := schema.PrimaryKey
+	pkField := schema.PrimaryKey
+	pkValue, err := reflections.GetField(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
-	if !primaryKey.HasValue() {
+	if isZeroValue(pkValue) {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
 
-	wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
+	wheres := []string{fmt.Sprintf("%s = :%s", pkField.ColumnName, pkField.ColumnName)}
 
 	column := schema.Fields[field]
 
@@ -30,13 +32,13 @@ func SoftDelete(driver Driver, out interface{}, field string) error {
 
 	query := fmt.Sprintf("UPDATE %s SET %s = :%s WHERE %s",
 		schema.TableName,
-		column.Name,
-		column.Name,
+		column.ColumnName,
+		column.ColumnName,
 		strings.Join(wheres, ", "))
 
 	m := map[string]interface{}{
-		column.Name:     now,
-		primaryKey.Name: primaryKey.Value,
+		column.ColumnName:  now,
+		pkField.ColumnName: pkValue,
 	}
 
 	_, err = driver.NamedExec(query, m)
@@ -55,14 +57,15 @@ func Delete(driver Driver, out interface{}) error {
 		return err
 	}
 
-	primaryKey := schema.PrimaryKey
+	pkField := schema.PrimaryKey
+	pkValue, _ := reflections.GetField(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
-	if !primaryKey.HasValue() {
+	if isZeroValue(pkValue) {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
 
-	wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
+	wheres := []string{fmt.Sprintf("%s = :%s", pkField.ColumnName, pkField.ColumnName)}
 
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s",
 		schema.TableName,
@@ -103,25 +106,26 @@ func Save(driver Driver, out interface{}) error {
 		}
 
 		if isIgnored || hasDefault {
-			ignoredColumns = append(ignoredColumns, column.Name)
+			ignoredColumns = append(ignoredColumns, column.ColumnName)
 		}
 
 		if !isIgnored {
-			columns = append(columns, column.Name)
+			columns = append(columns, column.ColumnName)
 
 			if hasDefault {
 				values = append(values, defaultValue)
 			} else {
-				values = append(values, fmt.Sprintf(":%s", column.Name))
+				values = append(values, fmt.Sprintf(":%s", column.ColumnName))
 			}
 		}
 	}
 
 	var query string
 
-	primaryKey := schema.PrimaryKey
+	pkField := schema.PrimaryKey
+	pkValue, _ := reflections.GetField(out, pkField.Name)
 
-	if !primaryKey.HasValue() {
+	if isZeroValue(pkValue) {
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
 			schema.TableName,
 			strings.Join(columns, ", "),
@@ -133,7 +137,7 @@ func Save(driver Driver, out interface{}) error {
 			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
 		}
 
-		wheres := []string{fmt.Sprintf("%s = :%s", primaryKey.Name, primaryKey.Name)}
+		wheres := []string{fmt.Sprintf("%s = :%s", pkField.ColumnName, pkField.ColumnName)}
 
 		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s",
 			schema.TableName,
@@ -187,7 +191,7 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 
 	columns := []string{}
 	for _, f := range schema.Fields {
-		columns = append(columns, f.PrefixedName())
+		columns = append(columns, f.ColumnPath())
 	}
 
 	wheres := []string{}
