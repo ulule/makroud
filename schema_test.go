@@ -85,6 +85,7 @@ func testRelations(t *testing.T, schema *Schema, results []relationResultTest) {
 		field := relation.FK
 		if r.isReference {
 			field = relation.Reference
+			is.IsType(RelatedModel{}, relation.Model)
 		}
 
 		is.Equal(r.columnName, field.ColumnName)

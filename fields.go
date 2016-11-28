@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/oleiade/reflections"
 	"github.com/serenize/snaker"
 )
 
@@ -249,23 +248,16 @@ type Relation struct {
 func newRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 	var err error
 
-	relation := Relation{
-		Type: typ,
-	}
-
-	related, err := reflections.GetField(model, meta.Name)
-	if err != nil {
-		return relation, err
-	}
+	relation := Relation{Type: typ}
 
 	relation.FK, err = newForeignKeyField(model, meta)
 	if err != nil {
 		return relation, err
 	}
 
-	relatedModel := reflectModel(related)
+	relation.Model = getModelType(meta.Type)
 
-	relation.Reference, err = newForeignKeyReferenceField(relatedModel, "ID")
+	relation.Reference, err = newForeignKeyReferenceField(relation.Model, "ID")
 	if err != nil {
 		return relation, err
 	}
