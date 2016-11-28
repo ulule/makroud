@@ -16,10 +16,10 @@ func (c Columns) String() string {
 
 // Schema is a model schema.
 type Schema struct {
-	TableName  string
-	PrimaryKey Field
-	Fields     map[string]Field
-	Relations  map[string]Relation
+	TableName    string
+	PrimaryField Field
+	Fields       map[string]Field
+	Relations    map[string]Relation
 }
 
 // NewSchema returns a new Schema instance.
@@ -31,10 +31,10 @@ func NewSchema(model Model) *Schema {
 	}
 }
 
-// SetPrimaryKey sets the given Field as schema primary key.
-func (s *Schema) SetPrimaryKey(f Field) {
+// SetPrimaryField sets the given Field as schema primary key.
+func (s *Schema) SetPrimaryField(f Field) {
 	f.IsPrimary = true
-	s.PrimaryKey = f
+	s.PrimaryField = f
 	s.Fields[f.Name] = f
 }
 
@@ -121,7 +121,7 @@ func GetSchema(model Model) (*Schema, error) {
 		}
 
 		if v := meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey); len(v) != 0 {
-			schema.SetPrimaryKey(field)
+			schema.SetPrimaryField(field)
 			continue
 		}
 

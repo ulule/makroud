@@ -16,7 +16,7 @@ func SoftDelete(driver Driver, out interface{}, field string) error {
 		return err
 	}
 
-	pkField := schema.PrimaryKey
+	pkField := schema.PrimaryField
 	pkValue, err := reflections.GetField(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
@@ -57,7 +57,7 @@ func Delete(driver Driver, out interface{}) error {
 		return err
 	}
 
-	pkField := schema.PrimaryKey
+	pkField := schema.PrimaryField
 	pkValue, _ := reflections.GetField(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
@@ -122,7 +122,7 @@ func Save(driver Driver, out interface{}) error {
 
 	var query string
 
-	pkField := schema.PrimaryKey
+	pkField := schema.PrimaryField
 	pkValue, _ := reflections.GetField(out, pkField.Name)
 
 	if isZeroValue(pkValue) {
