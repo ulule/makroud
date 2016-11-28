@@ -10,7 +10,7 @@ import (
 )
 
 // SoftDelete soft deletes the model in the database
-func SoftDelete(driver Driver, out interface{}, field string) error {
+func SoftDelete(driver Driver, out interface{}, fieldName string) error {
 	schema, err := getSchemaFromInterface(out)
 	if err != nil {
 		return err
@@ -26,18 +26,18 @@ func SoftDelete(driver Driver, out interface{}, field string) error {
 
 	wheres := []string{fmt.Sprintf("%s = :%s", pkField.ColumnName, pkField.ColumnName)}
 
-	column := schema.Fields[field]
+	field := schema.Fields[fieldName]
 
 	now := time.Now()
 
 	query := fmt.Sprintf("UPDATE %s SET %s = :%s WHERE %s",
 		schema.TableName,
-		column.ColumnName,
-		column.ColumnName,
+		field.ColumnName,
+		field.ColumnName,
 		strings.Join(wheres, ", "))
 
 	m := map[string]interface{}{
-		column.ColumnName:  now,
+		field.ColumnName:   now,
 		pkField.ColumnName: pkValue,
 	}
 
