@@ -79,7 +79,6 @@ func Delete(driver Driver, out interface{}) error {
 // Save saves the model and populate it to the database
 func Save(driver Driver, out interface{}) error {
 	schema, err := getSchemaFromInterface(out)
-
 	if err != nil {
 		return err
 	}
@@ -156,6 +155,16 @@ func Save(driver Driver, out interface{}) error {
 		return err
 	}
 
+	return nil
+}
+
+// Preload preloads related fields.
+func Preload(driver Driver, out interface{}, relationFields ...string) error {
+	return nil
+}
+
+// PreloadFuncs preloads with the given preloader functions.
+func PreloadFuncs(driver Driver, out interface{}, preloaders ...Preloader) error {
 	return nil
 }
 

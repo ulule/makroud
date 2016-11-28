@@ -27,3 +27,6 @@ type Driver interface {
 type Model interface {
 	TableName() string
 }
+
+// Preloader is a custom preloader.
+type Preloader func(d Driver) (Driver, error)
