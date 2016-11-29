@@ -45,6 +45,8 @@ func TestGetSchema(t *testing.T) {
 		{"RelatedPtrSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
 	})
 
+	cache.Flush()
+
 	schema, err = GetSchema(StructWithTags{})
 	is.NoError(err)
 

@@ -22,6 +22,13 @@ func (c *Cache) SetSchema(schema Schema) {
 	c.mu.Unlock()
 }
 
+// Flush flushs the cache
+func (c *Cache) Flush() {
+	c.mu.Lock()
+	c.schemas = map[string]Schema{}
+	c.mu.Unlock()
+}
+
 // GetSchema returns the given schema from cache.
 // If the given schema does not exists, returns false as bool.
 func (c *Cache) GetSchema(model Model) (Schema, bool) {

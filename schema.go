@@ -15,8 +15,8 @@ type Schema struct {
 	Relations    map[string]Relation
 }
 
-// MakeSchema returns a new Schema instance.
-func MakeSchema(model Model) Schema {
+// NewSchema returns a new Schema instance.
+func NewSchema(model Model) Schema {
 	return Schema{
 		ModelName: reflectType(model).Name(),
 		TableName: model.TableName(),
@@ -94,9 +94,12 @@ func GetSchema(model Model) (Schema, error) {
 	var err error
 
 	schema, found := cache.GetSchema(model)
-	if !found {
-		schema = MakeSchema(model)
+
+	if found {
+		return schema, nil
 	}
+
+	schema = NewSchema(model)
 
 	v := reflectValue(reflect.ValueOf(model))
 
