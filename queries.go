@@ -24,17 +24,16 @@ func SoftDelete(driver Driver, out interface{}, fieldName string) error {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
 
-	wheres := []string{fmt.Sprintf("%s = :%s", pkField.ColumnName, pkField.ColumnName)}
-
 	field := schema.Fields[fieldName]
 
 	now := time.Now()
 
-	query := fmt.Sprintf("UPDATE %s SET %s = :%s WHERE %s",
+	query := fmt.Sprintf("UPDATE %s SET %s = :%s WHERE %s = :%s",
 		schema.TableName,
 		field.ColumnName,
 		field.ColumnName,
-		strings.Join(wheres, ", "))
+		pkField.ColumnName,
+		pkField.ColumnName)
 
 	m := map[string]interface{}{
 		field.ColumnName:   now,
@@ -65,11 +64,10 @@ func Delete(driver Driver, out interface{}) error {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
 
-	wheres := []string{fmt.Sprintf("%s = :%s", pkField.ColumnName, pkField.ColumnName)}
-
-	query := fmt.Sprintf("DELETE FROM %s WHERE %s",
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s = :%s",
 		schema.TableName,
-		strings.Join(wheres, ", "))
+		pkField.ColumnName,
+		pkField.ColumnName)
 
 	_, err = driver.NamedExec(query, out)
 	if err != nil {
@@ -137,12 +135,11 @@ func Save(driver Driver, out interface{}) error {
 			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
 		}
 
-		wheres := []string{fmt.Sprintf("%s = :%s", pkField.ColumnName, pkField.ColumnName)}
-
-		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s",
+		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s = :%s",
 			schema.TableName,
 			strings.Join(updates, ", "),
-			strings.Join(wheres, ", "))
+			pkField.ColumnName,
+			pkField.ColumnName)
 	}
 
 	if len(ignoredColumns) > 0 {
@@ -163,12 +160,31 @@ func Save(driver Driver, out interface{}) error {
 }
 
 // Preload preloads related fields.
-func Preload(driver Driver, out interface{}, relationFields ...string) error {
-	return nil
-}
+func Preload(driver Driver, out interface{}, fields ...string) error {
+	schema, err := getSchemaFromInterface(out)
+	if err != nil {
+		return err
+	}
 
-// PreloadFuncs preloads with the given preloader functions.
-func PreloadFuncs(driver Driver, out interface{}, preloaders ...Preloader) error {
+	pk, err := reflections.GetField(out, schema.PrimaryField.Name)
+	if err != nil {
+		return err
+	}
+
+	wheres := []Columns{}
+
+	paths := schema.RelationPaths()
+
+	for _, field := range fields {
+		relation, ok := paths[field]
+		if !ok {
+			return fmt.Errorf("%s is not a valid relation", field)
+		}
+
+		params := map[string]interface{}{relation.Reference.ColumnName: pk}
+		wheres = append(wheres, relation.Schema.WhereColumnPaths(params))
+	}
+
 	return nil
 }
 
@@ -189,13 +205,18 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 		return "", nil, err
 	}
 
-	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s", schema.ColumnPaths(), model.TableName(), schema.WhereColumnPaths(params))
+	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s",
+		schema.ColumnPaths(),
+		model.TableName(),
+		strings.Join(schema.WhereColumnPaths(params), " AND "))
 
 	if fetchOne {
 		q = fmt.Sprintf("%s LIMIT 1", q)
 	}
 
-	return sqlx.Named(q, params)
+	query, args, err := sqlx.Named(q, params)
+
+	return sqlx.In(query, args...)
 }
 
 // where executes a where clause.

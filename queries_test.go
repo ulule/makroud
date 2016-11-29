@@ -15,7 +15,7 @@ func TestGetByParams(t *testing.T) {
 	defer shutdown()
 
 	user := User{}
-	require.NoError(t, GetByParams(db, &user, map[string]interface{}{"username": "jdoe"}))
+	require.NoError(t, GetByParams(db, &user, map[string]interface{}{"username": "jdoe", "is_active": true}))
 
 	is.Equal(1, user.ID)
 	is.Equal("jdoe", user.Username)
@@ -135,4 +135,20 @@ func TestSoftDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	is.Equal(0, count)
+}
+
+func TestPreload(t *testing.T) {
+	is := assert.New(t)
+
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	article := &Article{}
+	// Test with invalid relations
+	is.NotNil(Preload(db, article, "Foo"))
+
+	// Test with valid relation
+	is.Nil(Preload(db, article, "Author"))
+	is.Nil(Preload(db, article, "Author.Avatars"))
+
 }
