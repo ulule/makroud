@@ -41,6 +41,13 @@ func TestFindByParams(t *testing.T) {
 	is.True(user.IsActive)
 	is.NotZero(user.CreatedAt)
 	is.NotZero(user.UpdatedAt)
+
+	// SELEC IN
+	users = []User{}
+	require.NoError(t, FindByParams(db, &users, map[string]interface{}{"is_active": true, "id": []int{1, 2, 3}}))
+	is.Equal(1, users[0].ID)
+	is.Equal("jdoe", user.Username)
+
 }
 
 func TestSave(t *testing.T) {

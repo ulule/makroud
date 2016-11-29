@@ -71,13 +71,18 @@ func (s Schema) WhereColumnPaths(params map[string]interface{}) Columns {
 func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Columns {
 	wheres := Columns{}
 
-	for k := range params {
+	for k, v := range params {
 		column := k
+
 		if withTable {
 			column = fmt.Sprintf("%s.%s", s.TableName, k)
 		}
 
-		wheres = append(wheres, fmt.Sprintf("%s=:%s", column, k))
+		if reflect.Indirect(reflect.ValueOf(v)).Kind() == reflect.Slice {
+			wheres = append(wheres, fmt.Sprintf("%s IN (:%s)", column, k))
+		} else {
+			wheres = append(wheres, fmt.Sprintf("%s = :%s", column, k))
+		}
 	}
 
 	return wheres
