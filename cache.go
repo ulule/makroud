@@ -33,14 +33,12 @@ func (c *Cache) Flush() {
 // If the given schema does not exists, returns false as bool.
 func (c *Cache) GetSchema(model Model) (Schema, bool) {
 	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	schema, ok := c.schemas[model.TableName()]
 	if !ok {
-		c.mu.RUnlock()
 		return Schema{}, false
 	}
-
-	c.mu.RUnlock()
 
 	return schema, true
 }
