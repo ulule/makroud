@@ -215,6 +215,9 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 	}
 
 	query, args, err := sqlx.Named(q, params)
+	if err != nil {
+		return "", nil, err
+	}
 
 	return sqlx.In(query, args...)
 }
