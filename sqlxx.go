@@ -6,6 +6,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// Shared cache instance.
+var cache *Cache
+
+func init() {
+	if cache == nil {
+		cache = NewCache()
+	}
+}
+
 // Driver can either be a *sqlx.DB or a *sqlx.Tx.
 type Driver interface {
 	sqlx.Execer

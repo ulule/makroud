@@ -263,7 +263,7 @@ func newRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 		return relation, err
 	}
 
-	relation.Schema = *schema
+	relation.Schema = schema
 
 	relation.Reference, err = newForeignKeyReferenceField(relation.Model, "ID")
 	if err != nil {

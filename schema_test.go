@@ -66,7 +66,7 @@ func TestGetSchema(t *testing.T) {
 	})
 }
 
-func testFields(t *testing.T, schema *Schema, results []fieldResultTest) {
+func testFields(t *testing.T, schema Schema, results []fieldResultTest) {
 	is := assert.New(t)
 
 	for _, r := range results {
@@ -76,7 +76,7 @@ func testFields(t *testing.T, schema *Schema, results []fieldResultTest) {
 	}
 }
 
-func testRelations(t *testing.T, schema *Schema, results []relationResultTest) {
+func testRelations(t *testing.T, schema Schema, results []relationResultTest) {
 	is := assert.New(t)
 
 	for _, r := range results {

@@ -6,14 +6,6 @@ import (
 	"strings"
 )
 
-// Columns is a list of table columns.
-type Columns []string
-
-// Returns string representation of slice.
-func (c Columns) String() string {
-	return strings.Join(c, ", ")
-}
-
 // Schema is a model schema.
 type Schema struct {
 	TableName    string
@@ -22,9 +14,9 @@ type Schema struct {
 	Relations    map[string]Relation
 }
 
-// NewSchema returns a new Schema instance.
-func NewSchema(model Model) *Schema {
-	return &Schema{
+// MakeSchema returns a new Schema instance.
+func MakeSchema(model Model) Schema {
+	return Schema{
 		TableName: model.TableName(),
 		Fields:    map[string]Field{},
 		Relations: map[string]Relation{},
@@ -91,10 +83,13 @@ func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Colu
 
 // GetSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
-func GetSchema(model Model) (*Schema, error) {
+func GetSchema(model Model) (Schema, error) {
 	var err error
 
-	schema := NewSchema(model)
+	schema, found := cache.GetSchema(model)
+	if !found {
+		schema = MakeSchema(model)
+	}
 
 	v := reflectValue(reflect.ValueOf(model))
 
@@ -108,7 +103,7 @@ func GetSchema(model Model) (*Schema, error) {
 			if _, ok := RelationTypes[relationType]; ok {
 				schema.Relations[meta.Name], err = newRelation(model, meta, relationType)
 				if err != nil {
-					return nil, err
+					return Schema{}, err
 				}
 
 				continue
@@ -117,7 +112,7 @@ func GetSchema(model Model) (*Schema, error) {
 
 		field, err := newField(model, meta)
 		if err != nil {
-			return nil, err
+			return Schema{}, err
 		}
 
 		if v := meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey); len(v) != 0 {
@@ -128,10 +123,24 @@ func GetSchema(model Model) (*Schema, error) {
 		schema.Fields[meta.Name] = field
 	}
 
+	cache.SetSchema(schema)
+
 	return schema, nil
 }
 
 // getSchemaFromInterface returns Schema by reflecting model for the given interface.
-func getSchemaFromInterface(out interface{}) (*Schema, error) {
+func getSchemaFromInterface(out interface{}) (Schema, error) {
 	return GetSchema(reflectModel(out))
+}
+
+// ----------------------------------------------------------------------------
+// Columns
+// ----------------------------------------------------------------------------
+
+// Columns is a list of table columns.
+type Columns []string
+
+// Returns string representation of slice.
+func (c Columns) String() string {
+	return strings.Join(c, ", ")
 }
