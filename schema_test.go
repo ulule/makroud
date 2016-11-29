@@ -64,6 +64,38 @@ func TestGetSchema(t *testing.T) {
 		{"RelatedSlicePtr", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
 		{"RelatedPtrSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
 	})
+
+	schema, err = GetSchema(Article{})
+	is.NoError(err)
+	schema.RelationPaths()
+}
+
+func TestSchemaRelationPaths(t *testing.T) {
+	is := assert.New(t)
+
+	schema, err := GetSchema(Article{})
+	is.NoError(err)
+
+	relations := schema.RelationPaths()
+
+	results := []struct {
+		path      string
+		modelName string
+		tableName string
+		name      string
+	}{
+		{"Author", "User", "users", "Author"},
+		{"Author.Avatars", "Avatar", "avatars", "Avatars"},
+	}
+
+	for _, r := range results {
+		relation, ok := relations[r.path]
+		is.True(ok)
+		is.Equal(r.modelName, relation.Schema.ModelName)
+		is.Equal(r.tableName, relation.Schema.TableName)
+		is.Equal(r.name, relation.Name)
+
+	}
 }
 
 func testFields(t *testing.T, schema Schema, results []fieldResultTest) {
@@ -88,6 +120,7 @@ func testRelations(t *testing.T, schema Schema, results []relationResultTest) {
 			is.IsType(RelatedModel{}, relation.Model)
 		}
 
+		is.Equal(r.fieldName, relation.Name)
 		is.Equal(r.columnName, field.ColumnName)
 		is.Equal(r.columnPath, field.ColumnPath())
 		is.Equal(r.tableName, field.TableName)

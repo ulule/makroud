@@ -8,6 +8,7 @@ import (
 
 // Schema is a model schema.
 type Schema struct {
+	ModelName    string
 	TableName    string
 	PrimaryField Field
 	Fields       map[string]Field
@@ -17,6 +18,7 @@ type Schema struct {
 // MakeSchema returns a new Schema instance.
 func MakeSchema(model Model) Schema {
 	return Schema{
+		ModelName: reflectType(model).Name(),
 		TableName: model.TableName(),
 		Fields:    map[string]Field{},
 		Relations: map[string]Relation{},
@@ -81,6 +83,11 @@ func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Colu
 	return wheres
 }
 
+// RelationPaths returns relations struct paths: Article.Author.Avatars
+func (s Schema) RelationPaths() map[string]Relation {
+	return getSchemaRelations(s)
+}
+
 // GetSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
 func GetSchema(model Model) (Schema, error) {
@@ -131,6 +138,22 @@ func GetSchema(model Model) (Schema, error) {
 // getSchemaFromInterface returns Schema by reflecting model for the given interface.
 func getSchemaFromInterface(out interface{}) (Schema, error) {
 	return GetSchema(reflectModel(out))
+}
+
+func getSchemaRelations(schema Schema) map[string]Relation {
+	paths := map[string]Relation{}
+
+	for _, relation := range schema.Relations {
+		paths[relation.Name] = relation
+
+		rels := getSchemaRelations(relation.Schema)
+
+		for _, rel := range rels {
+			paths[fmt.Sprintf("%s.%s", relation.Name, rel.Name)] = rel
+		}
+	}
+
+	return paths
 }
 
 // ----------------------------------------------------------------------------

@@ -150,19 +150,14 @@ func makeMeta(field reflect.StructField) Meta {
 type Field struct {
 	// Struct field name.
 	Name string
-
 	// Struct field metadata (reflect data).
 	Meta Meta
-
 	// Struct field tags.
 	Tags Tags
-
 	// TableName is the database table name.
 	TableName string
-
 	// ColumnName is the database column name.
 	ColumnName string
-
 	// Is a primary key?
 	IsPrimary bool
 }
@@ -238,10 +233,17 @@ func newForeignKeyReferenceField(referencedModel Model, name string) (Field, err
 
 // Relation represents an related field between two models.
 type Relation struct {
-	Model     Model
-	Schema    Schema
-	Type      RelationType
-	FK        Field
+	// The relation field name (if field is Author and model is User, field name is Author)
+	Name string
+	// The related model
+	Model Model
+	// The related schema
+	Schema Schema
+	// The relation type
+	Type RelationType
+	// The foreign key field
+	FK Field
+	// The foreign key reference field
 	Reference Field
 }
 
@@ -249,7 +251,10 @@ type Relation struct {
 func newRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 	var err error
 
-	relation := Relation{Type: typ}
+	relation := Relation{
+		Name: meta.Name,
+		Type: typ,
+	}
 
 	relation.FK, err = newForeignKeyField(model, meta)
 	if err != nil {
