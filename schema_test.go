@@ -20,6 +20,7 @@ type relationResultTest struct {
 	tableName    string
 	relationType RelationType
 	isReference  bool
+	isMany       bool
 }
 
 func TestGetSchema(t *testing.T) {
@@ -29,20 +30,20 @@ func TestGetSchema(t *testing.T) {
 	is.NoError(err)
 
 	testFields(t, schema, []fieldResultTest{
-		{"ID", "foo", "id", "foo.id"},
-		{"FirstName", "foo", "first_name", "foo.first_name"},
-		{"LastName", "foo", "last_name", "foo.last_name"},
-		{"ThisIsAVeryLongFieldName123", "foo", "this_is_a_very_long_field_name123", "foo.this_is_a_very_long_field_name123"},
+		{"ID", "untagged", "id", "untagged.id"},
+		{"FirstName", "untagged", "first_name", "untagged.first_name"},
+		{"LastName", "untagged", "last_name", "untagged.last_name"},
+		{"ThisIsAVeryLongFieldName123", "untagged", "this_is_a_very_long_field_name123", "untagged.this_is_a_very_long_field_name123"},
 	})
 
 	testRelations(t, schema, []relationResultTest{
-		{"RelatedModel", "related_model_id", "foo.related_model_id", "foo", RelationTypeOneToMany, false},
-		{"RelatedModelPtr", "related_model_ptr_id", "foo.related_model_ptr_id", "foo", RelationTypeOneToMany, false},
-		{"RelatedModel", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true},
-		{"RelatedModelPtr", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true},
-		{"RelatedSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
-		{"RelatedSlicePtr", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
-		{"RelatedPtrSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
+		{"RelatedModel", "related_model_id", "untagged.related_model_id", "untagged", RelationTypeOneToMany, false, false},
+		{"RelatedModelPtr", "related_model_ptr_id", "untagged.related_model_ptr_id", "untagged", RelationTypeOneToMany, false, false},
+		{"RelatedModel", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true, false},
+		{"RelatedModelPtr", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true, false},
+		{"ManyModel", "id", "many.id", "many", RelationTypeManyToOne, true, true},
+		{"ManyModelPtr", "id", "many.id", "many", RelationTypeManyToOne, true, true},
+		{"ManyModelPtrs", "id", "many.id", "many", RelationTypeManyToOne, true, true},
 	})
 
 	cache.Flush()
@@ -51,25 +52,21 @@ func TestGetSchema(t *testing.T) {
 	is.NoError(err)
 
 	testFields(t, schema, []fieldResultTest{
-		{"ID", "foo", "public_id", "foo.public_id"},
-		{"FirstName", "foo", "firstname", "foo.firstname"},
-		{"LastName", "foo", "last_name", "foo.last_name"},
-		{"ThisIsAVeryLongFieldName123", "foo", "short_field", "foo.short_field"},
+		{"ID", "tagged", "public_id", "tagged.public_id"},
+		{"FirstName", "tagged", "firstname", "tagged.firstname"},
+		{"LastName", "tagged", "last_name", "tagged.last_name"},
+		{"ThisIsAVeryLongFieldName123", "tagged", "short_field", "tagged.short_field"},
 	})
 
 	testRelations(t, schema, []relationResultTest{
-		{"RelatedModel", "member_id", "foo.member_id", "foo", RelationTypeOneToMany, false},
-		{"RelatedModelPtr", "member_id", "foo.member_id", "foo", RelationTypeOneToMany, false},
-		{"RelatedModel", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true},
-		{"RelatedModelPtr", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true},
-		{"RelatedSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
-		{"RelatedSlicePtr", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
-		{"RelatedPtrSlice", "custom_id", "related.custom_id", "related", RelationTypeManyToOne, true},
+		{"RelatedModel", "member_id", "tagged.member_id", "tagged", RelationTypeOneToMany, false, false},
+		{"RelatedModelPtr", "member_id", "tagged.member_id", "tagged", RelationTypeOneToMany, false, false},
+		{"RelatedModel", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true, false},
+		{"RelatedModelPtr", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true, false},
+		{"ManyModel", "id", "many.id", "many", RelationTypeManyToOne, true, true},
+		{"ManyModelPtr", "id", "many.id", "many", RelationTypeManyToOne, true, true},
+		{"ManyModelPtrs", "id", "many.id", "many", RelationTypeManyToOne, true, true},
 	})
-
-	schema, err = GetSchema(Article{})
-	is.NoError(err)
-	schema.RelationPaths()
 }
 
 func TestSchemaRelationPaths(t *testing.T) {
@@ -119,7 +116,12 @@ func testRelations(t *testing.T, schema Schema, results []relationResultTest) {
 		field := relation.FK
 		if r.isReference {
 			field = relation.Reference
-			is.IsType(RelatedModel{}, relation.Model)
+
+			if !r.isMany {
+				is.IsType(RelatedModel{}, relation.Model)
+			} else {
+				is.IsType(ManyModel{}, relation.Model)
+			}
 		}
 
 		is.Equal(r.fieldName, relation.Name)
@@ -133,6 +135,15 @@ func testRelations(t *testing.T, schema Schema, results []relationResultTest) {
 // ----------------------------------------------------------------------------
 // Test data
 // ----------------------------------------------------------------------------
+
+type ManyModel struct {
+	ID   int `sqlxx:"primary_key:true"`
+	Name string
+}
+
+func (ManyModel) TableName() string {
+	return "many"
+}
 
 type RelatedModel struct {
 	ID   int `db:"custom_id" sqlxx:"primary_key:true"`
@@ -148,15 +159,17 @@ type StructWithoutTags struct {
 	FirstName                   string
 	LastName                    string
 	ThisIsAVeryLongFieldName123 string
-	RelatedModel                RelatedModel
-	RelatedModelPtr             *RelatedModel
-	RelatedSlice                []RelatedModel
-	RelatedSlicePtr             *[]RelatedModel
-	RelatedPtrSlice             []*RelatedModel
+
+	RelatedModel    RelatedModel
+	RelatedModelPtr *RelatedModel
+
+	ManyModel     []ManyModel
+	ManyModelPtr  *[]ManyModel
+	ManyModelPtrs []*ManyModel
 }
 
 func (StructWithoutTags) TableName() string {
-	return "foo"
+	return "untagged"
 }
 
 type StructWithTags struct {
@@ -166,11 +179,12 @@ type StructWithTags struct {
 	ThisIsAVeryLongFieldName123 string        `db:"short_field"`
 	RelatedModel                RelatedModel  `db:"member_id"`
 	RelatedModelPtr             *RelatedModel `db:"member_id"`
-	RelatedSlice                []RelatedModel
-	RelatedSlicePtr             *[]RelatedModel
-	RelatedPtrSlice             []*RelatedModel
+
+	ManyModel     []ManyModel
+	ManyModelPtr  *[]ManyModel
+	ManyModelPtrs []*ManyModel
 }
 
 func (StructWithTags) TableName() string {
-	return "foo"
+	return "tagged"
 }
