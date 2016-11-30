@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+// ----------------------------------------------------------------------------
+// Schema
+// ----------------------------------------------------------------------------
+
 // Schema is a model schema.
 type Schema struct {
 	ModelName    string
@@ -92,6 +96,10 @@ func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Cond
 func (s Schema) RelationPaths() map[string]Relation {
 	return GetSchemaRelations(s)
 }
+
+// ----------------------------------------------------------------------------
+// Schema API
+// ----------------------------------------------------------------------------
 
 // GetSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
