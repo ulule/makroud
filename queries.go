@@ -171,7 +171,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		return err
 	}
 
-	wheres := []Columns{}
+	wheres := []Conditions{}
 
 	paths := schema.RelationPaths()
 
@@ -208,7 +208,7 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s",
 		schema.ColumnPaths(),
 		model.TableName(),
-		strings.Join(schema.WhereColumnPaths(params), " AND "))
+		schema.WhereColumnPaths(params))
 
 	if fetchOne {
 		q = fmt.Sprintf("%s LIMIT 1", q)

@@ -58,18 +58,18 @@ func (s Schema) columns(withTable bool) Columns {
 }
 
 // WhereColumns returns where clause with the given params without table prefix.
-func (s Schema) WhereColumns(params map[string]interface{}) Columns {
+func (s Schema) WhereColumns(params map[string]interface{}) Conditions {
 	return s.whereColumns(params, true)
 }
 
 // WhereColumnPaths returns where clause with the given params with table prefix.
-func (s Schema) WhereColumnPaths(params map[string]interface{}) Columns {
+func (s Schema) WhereColumnPaths(params map[string]interface{}) Conditions {
 	return s.whereColumns(params, true)
 }
 
 // whereColumns generates where clause for the given params.
-func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Columns {
-	wheres := Columns{}
+func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Conditions {
+	wheres := Conditions{}
 
 	for k, v := range params {
 		column := k
@@ -165,7 +165,7 @@ func getSchemaRelations(schema Schema) map[string]Relation {
 }
 
 // ----------------------------------------------------------------------------
-// Columns
+// Columns and Conditions
 // ----------------------------------------------------------------------------
 
 // Columns is a list of table columns.
@@ -174,4 +174,17 @@ type Columns []string
 // Returns string representation of slice.
 func (c Columns) String() string {
 	return strings.Join(c, ", ")
+}
+
+// Conditions is a list of query conditions
+type Conditions []string
+
+// String returns conditions as AND query.
+func (c Conditions) String() string {
+	return strings.Join(c, " AND ")
+}
+
+// OR returns conditions as OR query.
+func (c Conditions) OR() string {
+	return strings.Join(c, " OR ")
 }
