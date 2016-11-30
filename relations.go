@@ -32,6 +32,10 @@ func (r Relation) IsOne() bool {
 	return ok
 }
 
+func (r Relation) String() string {
+	return fmt.Sprintf("name:%s fk:%s ref:%s", r.Name, r.FK.ColumnPath(), r.Reference.ColumnPath())
+}
+
 // makeRelation creates a new relation.
 func makeRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 	var err error
