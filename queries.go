@@ -11,7 +11,7 @@ import (
 
 // SoftDelete soft deletes the model in the database
 func SoftDelete(driver Driver, out interface{}, fieldName string) error {
-	schema, err := getSchemaFromInterface(out)
+	schema, err := GetSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func SoftDelete(driver Driver, out interface{}, fieldName string) error {
 
 // Delete deletes the model in the database
 func Delete(driver Driver, out interface{}) error {
-	schema, err := getSchemaFromInterface(out)
+	schema, err := GetSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func Delete(driver Driver, out interface{}) error {
 
 // Save saves the model and populate it to the database
 func Save(driver Driver, out interface{}) error {
-	schema, err := getSchemaFromInterface(out)
+	schema, err := GetSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func Save(driver Driver, out interface{}) error {
 
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, fields ...string) error {
-	schema, err := getSchemaFromInterface(out)
+	schema, err := GetSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}

@@ -90,7 +90,7 @@ func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Cond
 
 // RelationPaths returns relations struct paths: Article.Author.Avatars
 func (s Schema) RelationPaths() map[string]Relation {
-	return getSchemaRelations(s)
+	return GetSchemaRelations(s)
 }
 
 // GetSchema returns model's table columns, extracted by reflection.
@@ -143,18 +143,19 @@ func GetSchema(model Model) (Schema, error) {
 	return schema, nil
 }
 
-// getSchemaFromInterface returns Schema by reflecting model for the given interface.
-func getSchemaFromInterface(out interface{}) (Schema, error) {
+// GetSchemaFromInterface returns Schema by reflecting model for the given interface.
+func GetSchemaFromInterface(out interface{}) (Schema, error) {
 	return GetSchema(reflectModel(out))
 }
 
-func getSchemaRelations(schema Schema) map[string]Relation {
+// GetSchemaRelations returns flattened map of schema relations.
+func GetSchemaRelations(schema Schema) map[string]Relation {
 	paths := map[string]Relation{}
 
 	for _, relation := range schema.Relations {
 		paths[relation.Name] = relation
 
-		rels := getSchemaRelations(relation.Schema)
+		rels := GetSchemaRelations(relation.Schema)
 
 		for _, rel := range rels {
 			paths[fmt.Sprintf("%s.%s", relation.Name, rel.Name)] = rel
@@ -165,7 +166,7 @@ func getSchemaRelations(schema Schema) map[string]Relation {
 }
 
 // ----------------------------------------------------------------------------
-// Columns and Conditions
+// Columns
 // ----------------------------------------------------------------------------
 
 // Columns is a list of table columns.
@@ -175,6 +176,10 @@ type Columns []string
 func (c Columns) String() string {
 	return strings.Join(c, ", ")
 }
+
+// ----------------------------------------------------------------------------
+// Conditions
+// ----------------------------------------------------------------------------
 
 // Conditions is a list of query conditions
 type Conditions []string
