@@ -124,7 +124,7 @@ func GetSchema(model Model) (Schema, error) {
 			relationType := getRelationType(meta.Type)
 
 			if _, ok := RelationTypes[relationType]; ok {
-				schema.Relations[meta.Name], err = makeRelation(model, meta, relationType)
+				schema.Relations[meta.Name], err = makeRelation(schema, model, meta, relationType)
 				if err != nil {
 					return Schema{}, err
 				}

@@ -8,19 +8,17 @@ import (
 
 type fieldResultTest struct {
 	field      string
-	tableName  string
 	columnName string
 	columnPath string
 }
 
 type relationResultTest struct {
-	fieldName    string
-	columnName   string
-	columnPath   string
-	tableName    string
-	relationType RelationType
-	isReference  bool
-	isMany       bool
+	fieldName     string
+	fkColumnName  string
+	fkColumnPath  string
+	refColumnName string
+	refColumnPath string
+	relationType  RelationType
 }
 
 func TestGetSchema(t *testing.T) {
@@ -30,20 +28,55 @@ func TestGetSchema(t *testing.T) {
 	is.NoError(err)
 
 	testFields(t, schema, []fieldResultTest{
-		{"ID", "untagged", "id", "untagged.id"},
-		{"FirstName", "untagged", "first_name", "untagged.first_name"},
-		{"LastName", "untagged", "last_name", "untagged.last_name"},
-		{"ThisIsAVeryLongFieldName123", "untagged", "this_is_a_very_long_field_name123", "untagged.this_is_a_very_long_field_name123"},
+		{
+			"ID",
+			"id", "untagged.id",
+		},
+		{
+			"FirstName",
+			"first_name", "untagged.first_name",
+		},
+		{
+			"LastName",
+			"last_name", "untagged.last_name",
+		},
+		{
+			"ThisIsAVeryLongFieldName123",
+			"this_is_a_very_long_field_name123", "untagged.this_is_a_very_long_field_name123",
+		},
 	})
 
 	testRelations(t, schema, []relationResultTest{
-		{"RelatedModel", "related_model_id", "untagged.related_model_id", "untagged", RelationTypeOneToMany, false, false},
-		{"RelatedModelPtr", "related_model_ptr_id", "untagged.related_model_ptr_id", "untagged", RelationTypeOneToMany, false, false},
-		{"RelatedModel", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true, false},
-		{"RelatedModelPtr", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true, false},
-		{"ManyModel", "id", "many.id", "many", RelationTypeManyToOne, true, true},
-		{"ManyModelPtr", "id", "many.id", "many", RelationTypeManyToOne, true, true},
-		{"ManyModelPtrs", "id", "many.id", "many", RelationTypeManyToOne, true, true},
+		{
+			"RelatedModel",
+			"related_model_id", "untagged.related_model_id",
+			"custom_id", "related.custom_id",
+			RelationTypeOneToMany,
+		},
+		{
+			"RelatedModelPtr",
+			"related_model_ptr_id", "untagged.related_model_ptr_id",
+			"custom_id", "related.custom_id",
+			RelationTypeOneToMany,
+		},
+		{
+			"ManyModel",
+			"struct_without_tags_id", "many.struct_without_tags_id",
+			"id", "untagged.id",
+			RelationTypeManyToOne,
+		},
+		{
+			"ManyModelPtr",
+			"struct_without_tags_id", "many.struct_without_tags_id",
+			"id", "untagged.id",
+			RelationTypeManyToOne,
+		},
+		{
+			"ManyModelPtrs",
+			"struct_without_tags_id", "many.struct_without_tags_id",
+			"id", "untagged.id",
+			RelationTypeManyToOne,
+		},
 	})
 
 	cache.Flush()
@@ -52,20 +85,55 @@ func TestGetSchema(t *testing.T) {
 	is.NoError(err)
 
 	testFields(t, schema, []fieldResultTest{
-		{"ID", "tagged", "public_id", "tagged.public_id"},
-		{"FirstName", "tagged", "firstname", "tagged.firstname"},
-		{"LastName", "tagged", "last_name", "tagged.last_name"},
-		{"ThisIsAVeryLongFieldName123", "tagged", "short_field", "tagged.short_field"},
+		{
+			"ID",
+			"public_id", "tagged.public_id",
+		},
+		{
+			"FirstName",
+			"firstname", "tagged.firstname",
+		},
+		{
+			"LastName",
+			"last_name", "tagged.last_name",
+		},
+		{
+			"ThisIsAVeryLongFieldName123",
+			"short_field", "tagged.short_field",
+		},
 	})
 
 	testRelations(t, schema, []relationResultTest{
-		{"RelatedModel", "member_id", "tagged.member_id", "tagged", RelationTypeOneToMany, false, false},
-		{"RelatedModelPtr", "member_id", "tagged.member_id", "tagged", RelationTypeOneToMany, false, false},
-		{"RelatedModel", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true, false},
-		{"RelatedModelPtr", "custom_id", "related.custom_id", "related", RelationTypeOneToMany, true, false},
-		{"ManyModel", "id", "many.id", "many", RelationTypeManyToOne, true, true},
-		{"ManyModelPtr", "id", "many.id", "many", RelationTypeManyToOne, true, true},
-		{"ManyModelPtrs", "id", "many.id", "many", RelationTypeManyToOne, true, true},
+		{
+			"RelatedModel",
+			"member_id", "tagged.member_id",
+			"custom_id", "related.custom_id",
+			RelationTypeOneToMany,
+		},
+		{
+			"RelatedModelPtr",
+			"member_id", "tagged.member_id",
+			"custom_id", "related.custom_id",
+			RelationTypeOneToMany,
+		},
+		{
+			"ManyModel",
+			"struct_with_tags_id", "many.struct_with_tags_id",
+			"id", "tagged.id",
+			RelationTypeManyToOne,
+		},
+		{
+			"ManyModelPtr",
+			"struct_with_tags_id", "many.struct_with_tags_id",
+			"id", "tagged.id",
+			RelationTypeManyToOne,
+		},
+		{
+			"ManyModelPtrs",
+			"struct_with_tags_id", "many.struct_with_tags_id",
+			"id", "tagged.id",
+			RelationTypeManyToOne,
+		},
 	})
 }
 
@@ -101,7 +169,6 @@ func testFields(t *testing.T, schema Schema, results []fieldResultTest) {
 	is := assert.New(t)
 
 	for _, r := range results {
-		is.Equal(r.tableName, schema.Fields[r.field].TableName)
 		is.Equal(r.columnName, schema.Fields[r.field].ColumnName)
 		is.Equal(r.columnPath, schema.Fields[r.field].ColumnPath())
 	}
@@ -113,21 +180,14 @@ func testRelations(t *testing.T, schema Schema, results []relationResultTest) {
 	for _, r := range results {
 		relation := schema.Relations[r.fieldName]
 
-		field := relation.FK
-		if r.isReference {
-			field = relation.Reference
-
-			if !r.isMany {
-				is.IsType(RelatedModel{}, relation.Model)
-			} else {
-				is.IsType(ManyModel{}, relation.Model)
-			}
-		}
+		fk := relation.FK
+		ref := relation.Reference
 
 		is.Equal(r.fieldName, relation.Name)
-		is.Equal(r.columnName, field.ColumnName)
-		is.Equal(r.columnPath, field.ColumnPath())
-		is.Equal(r.tableName, field.TableName)
+		is.Equal(r.fkColumnName, fk.ColumnName)
+		is.Equal(r.fkColumnPath, fk.ColumnPath())
+		is.Equal(r.refColumnName, ref.ColumnName)
+		is.Equal(r.refColumnPath, ref.ColumnPath())
 		is.Equal(r.relationType, relation.Type)
 	}
 }

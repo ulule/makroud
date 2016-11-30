@@ -3,6 +3,8 @@ package sqlxx
 import (
 	"fmt"
 	"reflect"
+
+	"github.com/serenize/snaker"
 )
 
 // ----------------------------------------------------------------------------
@@ -37,52 +39,79 @@ func (r Relation) String() string {
 }
 
 // makeRelation creates a new relation.
-func makeRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
-	var err error
+func makeRelation(schema Schema, model Model, meta Meta, typ RelationType) (Relation, error) {
+	var (
+		err       error
+		modelType = reflectType(model)
+		refModel  = getModelType(meta.Type)
+		refType   = reflectType(refModel)
+	)
 
-	relation := Relation{
-		Name:  meta.Name,
-		Type:  typ,
-		Model: getModelType(meta.Type),
+	refStructField, ok := refType.FieldByName("ID")
+	if !ok {
+		return Relation{}, fmt.Errorf("Field %s does not exist", meta.Name)
 	}
 
-	relation.Schema, err = GetSchema(relation.Model)
+	refMeta := makeMeta(refStructField)
+
+	refSchema, err := GetSchema(refModel)
 	if err != nil {
-		return relation, err
+		return Relation{}, err
+	}
+
+	relation := Relation{
+		Name:   meta.Name,
+		Type:   typ,
+		Model:  refModel,
+		Schema: refSchema,
 	}
 
 	reversed := !relation.IsOne()
 
-	fk, err := makeField(model, meta)
-	if err != nil {
-		return relation, err
-	}
+	var fk Field
 
-	// Defaults to "fieldname_id"
-	fk.ColumnName = fmt.Sprintf("%s_id", fk.ColumnName)
 	if reversed {
-		fk.ColumnName = relation.Schema.PrimaryField.ColumnName
-	}
+		fk, err = makeField(refModel, refMeta)
+		if err != nil {
+			return relation, err
+		}
 
-	// Get the SQLX one if any.
-	if customName := fk.Tags.GetByKey(SQLXStructTagName, "field"); len(customName) != 0 {
-		fk.ColumnName = customName
+		// Defaults to "<model>_id"
+		fk.ColumnName = fmt.Sprintf("%s_%s", snaker.CamelToSnake(reflect.TypeOf(model).Name()), relation.Schema.PrimaryField.ColumnName)
+
+	} else {
+		fk, err = makeField(model, meta)
+		if err != nil {
+			return relation, err
+		}
+
+		// Defaults to "fieldname_id"
+		fk.ColumnName = fmt.Sprintf("%s_id", fk.ColumnName)
+		if reversed {
+			fk.ColumnName = relation.Schema.PrimaryField.ColumnName
+		}
+
+		// Get the SQLX one if any.
+		if customName := fk.Tags.GetByKey(SQLXStructTagName, "field"); len(customName) != 0 {
+			fk.ColumnName = customName
+		}
 	}
 
 	relation.FK = fk
 
-	refType := reflectType(relation.Model)
+	var ref Field
 
-	refStructField, ok := refType.FieldByName("ID")
-	if !ok {
-		return relation, fmt.Errorf("Field %s does not exist", meta.Name)
-	}
+	if reversed {
+		ref, err = makeField(reflect.New(modelType).Interface().(Model), refMeta)
+		if err != nil {
+			return relation, err
+		}
 
-	meta = makeMeta(refStructField)
-
-	ref, err := makeField(reflect.New(refType).Interface().(Model), meta)
-	if err != nil {
-		return relation, err
+	} else {
+		ref, err = makeField(reflect.New(refType).Interface().(Model), refMeta)
+		if err != nil {
+			return relation, err
+		}
 	}
 
 	relation.Reference = ref
