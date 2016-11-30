@@ -171,18 +171,9 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		return err
 	}
 
-	wheres := []Conditions{}
-
-	paths := schema.RelationPaths()
-
-	for _, field := range fields {
-		relation, ok := paths[field]
-		if !ok {
-			return fmt.Errorf("%s is not a valid relation", field)
-		}
-
-		params := map[string]interface{}{relation.Reference.ColumnName: pk}
-		wheres = append(wheres, relation.Schema.WhereColumnPaths(params))
+	_, err = GetRelationQueries(schema, []interface{}{pk}, fields...)
+	if err != nil {
+		return err
 	}
 
 	return nil

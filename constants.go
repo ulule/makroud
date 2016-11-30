@@ -38,3 +38,15 @@ var RelationTypes = map[RelationType]bool{
 	RelationTypeManyToOne:  true,
 	RelationTypeManyToMany: true,
 }
+
+// RelationsOne are One relations.
+var RelationsOne = map[RelationType]bool{
+	RelationTypeOneToOne:  true,
+	RelationTypeOneToMany: true,
+}
+
+// RelationsMany are Many relations.
+var RelationsMany = map[RelationType]bool{
+	RelationTypeManyToOne:  true,
+	RelationTypeManyToMany: true,
+}
