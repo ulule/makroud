@@ -37,23 +37,22 @@ func makeRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 	var err error
 
 	relation := Relation{
-		Name: meta.Name,
-		Type: typ,
+		Name:  meta.Name,
+		Type:  typ,
+		Model: getModelType(meta.Type),
 	}
 
-	relation.FK, err = makeForeignKeyField(model, meta)
+	relation.Schema, err = GetSchema(relation.Model)
 	if err != nil {
 		return relation, err
 	}
 
-	relation.Model = getModelType(meta.Type)
+	reversed := !relation.IsOne()
 
-	schema, err := GetSchema(relation.Model)
+	relation.FK, err = makeForeignKeyField(model, meta, relation.Schema, reversed)
 	if err != nil {
 		return relation, err
 	}
-
-	relation.Schema = schema
 
 	relation.Reference, err = makeReferenceField(relation.Model, "ID")
 	if err != nil {
@@ -95,7 +94,7 @@ func GetRelationQueries(schema Schema, primaryKeys []interface{}, fields ...stri
 
 		// If we have a many relation, let's reverse
 		if !relation.IsOne() {
-			columnName = relation.FK.ColumnName
+			columnName = relation.Reference.ColumnName
 		}
 
 		if pkCount == 1 {

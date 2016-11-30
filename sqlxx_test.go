@@ -66,8 +66,7 @@ type User struct {
 	CreatedAt time.Time  `db:"created_at" sqlxx:"auto_now_add:true"`
 	UpdatedAt time.Time  `db:"updated_at" sqlxx:"default:now()"`
 	DeletedAt *time.Time `db:"deleted_at"`
-
-	Avatars []Avatar
+	Avatars   []Avatar
 }
 
 func (User) TableName() string {
@@ -93,8 +92,7 @@ type Article struct {
 	IsPublished bool      `db:"is_published"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
-
-	Author User `sqlxx:"related:author_id"`
+	Author      User
 }
 
 func (Article) TableName() string {

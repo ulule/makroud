@@ -50,7 +50,7 @@ func makeField(model Model, meta Meta) (Field, error) {
 }
 
 // makeForeignKeyField returns foreign key field.
-func makeForeignKeyField(model Model, meta Meta) (Field, error) {
+func makeForeignKeyField(model Model, meta Meta, schema Schema, reversed bool) (Field, error) {
 	field, err := makeField(model, meta)
 	if err != nil {
 		return Field{}, err
@@ -58,6 +58,9 @@ func makeForeignKeyField(model Model, meta Meta) (Field, error) {
 
 	// Defaults to "fieldname_id"
 	field.ColumnName = fmt.Sprintf("%s_id", field.ColumnName)
+	if reversed {
+		field.ColumnName = schema.PrimaryField.ColumnName
+	}
 
 	// Get the SQLX one if any.
 	if customName := field.Tags.GetByKey(SQLXStructTagName, "field"); len(customName) != 0 {
