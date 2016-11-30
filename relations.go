@@ -53,15 +53,39 @@ func makeRelation(model Model, meta Meta, typ RelationType) (Relation, error) {
 
 	reversed := !relation.IsOne()
 
-	relation.FK, err = makeForeignKeyField(model, meta, relation.Schema, reversed)
+	fk, err := makeField(model, meta)
 	if err != nil {
 		return relation, err
 	}
 
-	relation.Reference, err = makeReferenceField(relation.Model, "ID")
+	// Defaults to "fieldname_id"
+	fk.ColumnName = fmt.Sprintf("%s_id", fk.ColumnName)
+	if reversed {
+		fk.ColumnName = relation.Schema.PrimaryField.ColumnName
+	}
+
+	// Get the SQLX one if any.
+	if customName := fk.Tags.GetByKey(SQLXStructTagName, "field"); len(customName) != 0 {
+		fk.ColumnName = customName
+	}
+
+	relation.FK = fk
+
+	refType := reflectType(relation.Model)
+
+	refStructField, ok := refType.FieldByName("ID")
+	if !ok {
+		return relation, fmt.Errorf("Field %s does not exist", meta.Name)
+	}
+
+	meta = makeMeta(refStructField)
+
+	ref, err := makeField(reflect.New(refType).Interface().(Model), meta)
 	if err != nil {
 		return relation, err
 	}
+
+	relation.Reference = ref
 
 	return relation, nil
 }

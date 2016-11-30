@@ -2,7 +2,6 @@ package sqlxx
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/serenize/snaker"
 )
@@ -47,46 +46,4 @@ func makeField(model Model, meta Meta) (Field, error) {
 		TableName:  model.TableName(),
 		ColumnName: columnName,
 	}, nil
-}
-
-// makeForeignKeyField returns foreign key field.
-func makeForeignKeyField(model Model, meta Meta, schema Schema, reversed bool) (Field, error) {
-	field, err := makeField(model, meta)
-	if err != nil {
-		return Field{}, err
-	}
-
-	// Defaults to "fieldname_id"
-	field.ColumnName = fmt.Sprintf("%s_id", field.ColumnName)
-	if reversed {
-		field.ColumnName = schema.PrimaryField.ColumnName
-	}
-
-	// Get the SQLX one if any.
-	if customName := field.Tags.GetByKey(SQLXStructTagName, "field"); len(customName) != 0 {
-		field.ColumnName = customName
-	}
-
-	return field, nil
-}
-
-// makeReferenceField returns a foreign key reference field.
-func makeReferenceField(referencedModel Model, name string) (Field, error) {
-	reflectType := reflectType(referencedModel)
-
-	reflected := reflect.New(reflectType).Interface().(Model)
-
-	f, ok := reflectType.FieldByName(name)
-	if !ok {
-		return Field{}, fmt.Errorf("Field %s does not exist", name)
-	}
-
-	meta := Meta{Name: name, Field: f}
-
-	field, err := makeField(reflected, meta)
-	if err != nil {
-		return Field{}, err
-	}
-
-	return field, nil
 }
