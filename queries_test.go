@@ -175,4 +175,8 @@ func TestPreload(t *testing.T) {
 		is.Equal(user.ID, user.Avatars[i].UserID)
 		is.Equal(fmt.Sprintf("/avatars/jdoe-%d.png", i), user.Avatars[i].Path)
 	}
+
+	// Test second level
+	is.Nil(Preload(db, article, "Author.Avatars"))
+	is.Equal(fixtures.User.ID, article.AuthorID)
 }

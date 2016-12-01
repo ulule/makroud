@@ -20,6 +20,8 @@ type Relation struct {
 	Name string
 	// The related model
 	Model Model
+	// The parent model
+	ParentModel Model
 	// The related schema
 	Schema Schema
 	// The relation type
@@ -63,10 +65,11 @@ func makeRelation(schema Schema, model Model, meta Meta, typ RelationType) (Rela
 	}
 
 	relation := Relation{
-		Name:   meta.Name,
-		Type:   typ,
-		Model:  refModel,
-		Schema: refSchema,
+		Name:        meta.Name,
+		Type:        typ,
+		Model:       refModel,
+		ParentModel: model,
+		Schema:      refSchema,
 	}
 
 	reversed := !relation.IsOne()
@@ -187,20 +190,17 @@ func getRelationQueries(schema Schema, primaryKeys []interface{}, fields ...stri
 
 // preloadRelations preloads relations of out from queries.
 func preloadRelations(driver Driver, out interface{}, queries RelationQueries) error {
-	if len(queries) == 0 {
-		return nil
-	}
-
-	var err error
-
-	// Root
-	currentLevel := 1
+	var (
+		err          error
+		currentLevel = 1
+	)
 
 	for _, rq := range queries {
 		if rq.level == currentLevel {
 			if err = setRelation(driver, out, rq); err != nil {
 				return err
 			}
+		} else {
 		}
 		currentLevel = rq.level
 	}
