@@ -35,7 +35,7 @@ func (r Relation) IsOne() bool {
 }
 
 func (r Relation) String() string {
-	return fmt.Sprintf("name:%s fk:%s ref:%s", r.Name, r.FK.ColumnPath(), r.Reference.ColumnPath())
+	return fmt.Sprintf("field:%s fk:%s ref:%s", r.Name, r.FK.ColumnPath(), r.Reference.ColumnPath())
 }
 
 // makeRelation creates a new relation.
@@ -43,7 +43,7 @@ func makeRelation(schema Schema, model Model, meta Meta, typ RelationType) (Rela
 	var (
 		err       error
 		modelType = reflectType(model)
-		refModel  = getModelType(meta.Type)
+		refModel  = makeModel(meta.Type)
 		refType   = reflectType(refModel)
 	)
 
@@ -113,10 +113,11 @@ func makeRelation(schema Schema, model Model, meta Meta, typ RelationType) (Rela
 
 // RelationQuery is a relation query
 type RelationQuery struct {
-	path   string
-	query  string
-	args   []interface{}
-	params map[string]interface{}
+	path     string
+	query    string
+	args     []interface{}
+	params   map[string]interface{}
+	fetchOne bool
 }
 
 // getRelationQueries returns conditions for the given relations.
@@ -156,14 +157,34 @@ func getRelationQueries(schema Schema, primaryKeys []interface{}, fields ...stri
 		}
 
 		queries = append(queries, RelationQuery{
-			path:   field,
-			query:  query,
-			args:   args,
-			params: params,
+			path:     field,
+			query:    query,
+			args:     args,
+			params:   params,
+			fetchOne: relation.IsOne(),
 		})
 	}
 
 	return queries, nil
+}
+
+// preloadRelations preloads relations of out from queries.
+func preloadRelations(driver Driver, out interface{}, queries []RelationQuery) error {
+	var err error
+
+	for _, rq := range queries {
+		if rq.fetchOne {
+			if err = driver.Get(out, driver.Rebind(rq.query), rq.args...); err != nil {
+				return err
+			}
+		} else {
+			if err = driver.Select(out, driver.Rebind(rq.query), rq.args...); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // getRelationType returns RelationType for the given reflect.Type.

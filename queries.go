@@ -161,6 +161,8 @@ func Save(driver Driver, out interface{}) error {
 
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, fields ...string) error {
+	var err error
+
 	schema, err := GetSchemaFromInterface(out)
 	if err != nil {
 		return err
@@ -179,6 +181,10 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 	if err != nil {
 		return err
 	}
+
+	// if err = preloadRelations(driver, out, queries); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

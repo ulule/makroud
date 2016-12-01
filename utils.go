@@ -2,6 +2,10 @@ package sqlxx
 
 import "reflect"
 
+// ----------------------------------------------------------------------------
+// Reflecters
+// ----------------------------------------------------------------------------
+
 // reflectValue returns the value that the interface v contains
 // or that the pointer v points to.
 func reflectValue(v reflect.Value) reflect.Value {
@@ -65,6 +69,19 @@ func reflectModel(itf interface{}) Model {
 	return reflect.New(value.Type()).Interface().(Model)
 }
 
+// reflectIndirectType returns indirect type for the given type.
+func reflectIndirectType(typ reflect.Type) reflect.Type {
+	if typ.Kind() == reflect.Ptr {
+		return reflectIndirectType(typ.Elem())
+	}
+
+	return typ
+}
+
+// ----------------------------------------------------------------------------
+// Checkers
+// ----------------------------------------------------------------------------
+
 // isZeroValue returns true if the given interface is a zero value.
 func isZeroValue(itf interface{}) bool {
 	v := reflect.ValueOf(itf)
@@ -77,21 +94,16 @@ func isZeroValue(itf interface{}) bool {
 	return reflect.Indirect(v).Interface() == reflect.Zero(reflect.Indirect(v).Type()).Interface()
 }
 
-// getIndirectType returns indirect type for the given type.
-func getIndirectType(typ reflect.Type) reflect.Type {
-	if typ.Kind() == reflect.Ptr {
-		return getIndirectType(typ.Elem())
-	}
+// ----------------------------------------------------------------------------
+// Builders
+// ----------------------------------------------------------------------------
 
-	return typ
-}
-
-// getModelType returns model type.
-func getModelType(typ reflect.Type) Model {
+// makeModel returns model type.
+func makeModel(typ reflect.Type) Model {
 	if typ.Kind() == reflect.Slice {
-		typ = getIndirectType(typ.Elem())
+		typ = reflectIndirectType(typ.Elem())
 	} else {
-		typ = getIndirectType(typ)
+		typ = reflectIndirectType(typ)
 	}
 
 	if model, isModel := reflect.New(typ).Elem().Interface().(Model); isModel {
@@ -99,4 +111,14 @@ func getModelType(typ reflect.Type) Model {
 	}
 
 	return nil
+}
+
+// makeSlice takes a type and returns create a slice from.
+func makeSlice(itf interface{}) interface{} {
+	sliceType := reflect.SliceOf(reflectType(reflectModel(itf)))
+
+	slice := reflect.New(sliceType)
+	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
+
+	return slice.Elem().Interface()
 }

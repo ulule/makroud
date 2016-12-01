@@ -147,15 +147,18 @@ func TestSoftDelete(t *testing.T) {
 func TestPreload(t *testing.T) {
 	is := assert.New(t)
 
-	db, _, shutdown := dbConnection(t)
+	db, fixtures, shutdown := dbConnection(t)
 	defer shutdown()
 
-	article := &Article{}
-
-	// Test with invalid relations
-	is.NotNil(Preload(db, article, "Foo"))
-
 	// Cannot perform query on zero values
+	article := &Article{}
 	is.NotNil(Preload(db, article, "Author"))
 	is.NotNil(Preload(db, article, "Author.Avatars"))
+
+	// Test with invalid relations
+	article = &fixtures.Articles[0]
+	is.NotNil(Preload(db, article, "Foo"))
+
+	// Test valid relation
+	is.Nil(Preload(db, article, "Author"))
 }
