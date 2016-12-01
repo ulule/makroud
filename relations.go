@@ -244,7 +244,7 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 			return err
 		}
 	} else {
-		slice := makeSlice(rq.relation.Model)
+		slice := reflect.New(reflect.TypeOf(makeSlice(rq.relation.Model))).Interface()
 
 		// Populate instance with data
 		if err = fetchRelation(driver, slice, rq); err != nil {
@@ -252,7 +252,7 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 		}
 
 		// Convert interface to the right type otherwise it will fail
-		if err = reflections.SetField(out, rq.relation.Name, reflectType(slice)); err != nil {
+		if err = reflections.SetField(out, rq.relation.Name, reflect.ValueOf(slice).Elem().Interface()); err != nil {
 			return err
 		}
 	}

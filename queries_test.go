@@ -155,13 +155,24 @@ func TestPreload(t *testing.T) {
 	is.NotNil(Preload(db, article, "Author"))
 	is.NotNil(Preload(db, article, "Author.Avatars"))
 
-	// Test with invalid relations
 	article = &fixtures.Articles[0]
+	user := &fixtures.User
+
+	// Test with invalid relations
 	is.NotNil(Preload(db, article, "Foo"))
 
-	// Test valid relation
+	// Test first level with struct
 	is.Nil(Preload(db, article, "Author"))
 	is.Equal(fixtures.User.ID, article.AuthorID)
 	is.Equal(fixtures.User.ID, article.Author.ID)
 	is.Equal(fixtures.User.Username, article.Author.Username)
+
+	// Test first level with slice
+	is.Nil(Preload(db, user, "Avatars"))
+	is.Len(user.Avatars, 5)
+	for i := 0; i < 5; i++ {
+		is.Equal(i+1, user.Avatars[i].ID)
+		is.Equal(user.ID, user.Avatars[i].UserID)
+		is.Equal(fmt.Sprintf("/avatars/jdoe-%d.png", i), user.Avatars[i].Path)
+	}
 }
