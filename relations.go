@@ -133,21 +133,6 @@ func (rq RelationQueries) Len() int           { return len(rq) }
 func (rq RelationQueries) Less(i, j int) bool { return rq[i].level < rq[j].level }
 func (rq RelationQueries) Swap(i, j int)      { rq[i], rq[j] = rq[j], rq[i] }
 
-// ByLevel returns queries grouped by level
-func (rq RelationQueries) ByLevel() map[int][]RelationQuery {
-	m := map[int][]RelationQuery{}
-
-	for _, q := range rq {
-		if _, ok := m[q.level]; !ok {
-			m[q.level] = []RelationQuery{}
-		}
-
-		m[q.level] = append(m[q.level], q)
-	}
-
-	return m
-}
-
 // getRelationQueries returns relation queries ASC sorted by their level
 func getRelationQueries(schema Schema, primaryKeys []interface{}, fields ...string) (RelationQueries, error) {
 	var (
@@ -208,20 +193,16 @@ func preloadRelations(driver Driver, out interface{}, queries RelationQueries) e
 
 	var err error
 
-	levels := queries.ByLevel()
+	// Root
+	currentLevel := 1
 
-	// Start at root
-	lastLevel := 1
-
-	for level, rqs := range levels {
-		for _, rq := range rqs {
-			if level == lastLevel {
-				if err = setRelation(driver, out, rq); err != nil {
-					return err
-				}
+	for _, rq := range queries {
+		if rq.level == currentLevel {
+			if err = setRelation(driver, out, rq); err != nil {
+				return err
 			}
-			lastLevel = level
 		}
+		currentLevel = rq.level
 	}
 
 	return nil

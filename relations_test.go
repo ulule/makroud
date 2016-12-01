@@ -31,19 +31,4 @@ func TestRelationQueries(t *testing.T) {
 	is.Equal(rq[4].level, 4)
 	is.Equal(rq[5].level, 20)
 	is.Equal(rq[6].level, 30)
-
-	// Test level group
-
-	levels := rq.ByLevel()
-
-	expected := map[int]int{
-		1:  3,
-		4:  2,
-		20: 1,
-		30: 1,
-	}
-
-	for k, v := range levels {
-		is.Len(v, expected[k])
-	}
 }
