@@ -122,3 +122,12 @@ func makeSlice(itf interface{}) interface{} {
 
 	return slice.Elem().Interface()
 }
+
+// modelToInterface returns an interface from a model.
+func modelToInterface(model Model, isMany bool) interface{} {
+	if isMany {
+		return reflect.New(reflect.TypeOf(makeSlice(model))).Interface()
+	}
+
+	return reflect.New(reflect.TypeOf(model)).Interface()
+}

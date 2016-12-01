@@ -201,6 +201,10 @@ func preloadRelations(driver Driver, out interface{}, queries RelationQueries) e
 				return err
 			}
 		} else {
+			// Here get the parent model
+			// Build the struct / slice
+			// Performs setRelation on.
+			// Set created struct / slice to out
 		}
 		currentLevel = rq.level
 	}
@@ -208,32 +212,25 @@ func preloadRelations(driver Driver, out interface{}, queries RelationQueries) e
 	return nil
 }
 
+// setRelation performs query and populates the given out with values.
 func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
-	var err error
+	var (
+		err      error
+		isMany   = !rq.relation.IsOne()
+		instance = modelToInterface(rq.relation.Model, isMany)
+	)
 
-	if rq.relation.IsOne() {
-		// Interface is required by sqlxx (passing a model will fail)
-		instance := reflect.New(reflect.TypeOf(rq.relation.Model)).Interface()
+	// Populate instance with data
+	if err = fetchRelation(driver, instance, rq); err != nil {
+		return err
+	}
 
-		// Populate instance with data
-		if err = fetchRelation(driver, instance, rq); err != nil {
-			return err
-		}
-
-		// Convert interface to the right type otherwise it will fail
-		if err = reflections.SetField(out, rq.relation.Name, reflectModel(instance)); err != nil {
+	if isMany {
+		if err = reflections.SetField(out, rq.relation.Name, reflect.ValueOf(instance).Elem().Interface()); err != nil {
 			return err
 		}
 	} else {
-		slice := reflect.New(reflect.TypeOf(makeSlice(rq.relation.Model))).Interface()
-
-		// Populate instance with data
-		if err = fetchRelation(driver, slice, rq); err != nil {
-			return err
-		}
-
-		// Convert interface to the right type otherwise it will fail
-		if err = reflections.SetField(out, rq.relation.Name, reflect.ValueOf(slice).Elem().Interface()); err != nil {
+		if err = reflections.SetField(out, rq.relation.Name, reflectModel(instance)); err != nil {
 			return err
 		}
 	}
