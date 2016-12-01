@@ -2,6 +2,7 @@ package sqlxx
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -168,16 +169,12 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		return err
 	}
 
-	pk, err := reflections.GetField(out, schema.PrimaryField.Name)
+	pks, err := getPrimaryKeys(out, schema.PrimaryField.Name)
 	if err != nil {
 		return err
 	}
 
-	if isZeroValue(pk) {
-		return fmt.Errorf("Cannot perform query on zero value (%s=%v)", schema.PrimaryField.Name, pk)
-	}
-
-	queries, err := getRelationQueries(schema, []interface{}{pk}, fields...)
+	queries, err := getRelationQueries(schema, pks, fields...)
 	if err != nil {
 		return err
 	}
@@ -237,4 +234,44 @@ func where(driver Driver, out interface{}, params map[string]interface{}, fetchO
 	}
 
 	return driver.Select(out, driver.Rebind(query), args...)
+}
+
+// getPrimaryKeys returns primary keys for the given interface.
+func getPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
+	var (
+		errf = "Cannot perform query on zero value (%s=%v)"
+		pks  = []interface{}{}
+	)
+
+	if isSlice(out) {
+		value := reflect.ValueOf(out).Elem()
+
+		for i := 0; i < value.Len(); i++ {
+			pk, err := reflections.GetField(value.Index(i).Interface(), name)
+			if err != nil {
+				return nil, err
+			}
+
+			if isZeroValue(pk) {
+				return nil, fmt.Errorf(errf, name, pk)
+			}
+
+			pks = append(pks, pk)
+		}
+
+		return pks, nil
+	}
+
+	pk, err := reflections.GetField(out, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if isZeroValue(pk) {
+		return nil, fmt.Errorf(errf, name, pk)
+	}
+
+	pks = append(pks, pk)
+
+	return pks, nil
 }

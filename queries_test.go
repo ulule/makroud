@@ -144,6 +144,21 @@ func TestSoftDelete(t *testing.T) {
 	is.Equal(0, count)
 }
 
+func TestGetPrimaryKeys(t *testing.T) {
+	is := assert.New(t)
+
+	_, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	pks, err := getPrimaryKeys(&fixtures.Articles, "ID")
+	is.Nil(err)
+	is.Equal([]interface{}{1, 2, 3, 4, 5}, pks)
+
+	pks, err = getPrimaryKeys(&fixtures.Articles[0], "ID")
+	is.Nil(err)
+	is.Equal([]interface{}{1}, pks)
+}
+
 func TestPreload(t *testing.T) {
 	is := assert.New(t)
 

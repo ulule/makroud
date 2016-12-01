@@ -94,6 +94,11 @@ func isZeroValue(itf interface{}) bool {
 	return reflect.Indirect(v).Interface() == reflect.Zero(reflect.Indirect(v).Type()).Interface()
 }
 
+// isSlice returns true if the given interface is a slice.
+func isSlice(itf interface{}) bool {
+	return reflectType(itf).Kind() == reflect.Slice
+}
+
 // ----------------------------------------------------------------------------
 // Builders
 // ----------------------------------------------------------------------------
