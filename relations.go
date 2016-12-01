@@ -113,12 +113,14 @@ func makeRelation(schema Schema, model Model, meta Meta, typ RelationType) (Rela
 
 // RelationQuery is a relation query
 type RelationQuery struct {
-	query string
-	args  []interface{}
+	path   string
+	query  string
+	args   []interface{}
+	params map[string]interface{}
 }
 
-// GetRelationQueries returns conditions for the given relations.
-func GetRelationQueries(schema Schema, primaryKeys []interface{}, fields ...string) ([]RelationQuery, error) {
+// getRelationQueries returns conditions for the given relations.
+func getRelationQueries(schema Schema, primaryKeys []interface{}, fields ...string) ([]RelationQuery, error) {
 	var (
 		pkCount = len(primaryKeys)
 		paths   = schema.RelationPaths()
@@ -139,7 +141,7 @@ func GetRelationQueries(schema Schema, primaryKeys []interface{}, fields ...stri
 
 		// If we have a many relation, let's reverse
 		if !relation.IsOne() {
-			columnName = relation.Reference.ColumnName
+			columnName = relation.FK.ColumnName
 		}
 
 		if pkCount == 1 {
@@ -153,7 +155,12 @@ func GetRelationQueries(schema Schema, primaryKeys []interface{}, fields ...stri
 			return nil, err
 		}
 
-		queries = append(queries, RelationQuery{query: query, args: args})
+		queries = append(queries, RelationQuery{
+			path:   field,
+			query:  query,
+			args:   args,
+			params: params,
+		})
 	}
 
 	return queries, nil

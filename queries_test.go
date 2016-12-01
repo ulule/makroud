@@ -151,11 +151,11 @@ func TestPreload(t *testing.T) {
 	defer shutdown()
 
 	article := &Article{}
+
 	// Test with invalid relations
 	is.NotNil(Preload(db, article, "Foo"))
 
-	// Test with valid relation
-	is.Nil(Preload(db, article, "Author"))
-	is.Nil(Preload(db, article, "Author.Avatars"))
-
+	// Cannot perform query on zero values
+	is.NotNil(Preload(db, article, "Author"))
+	is.NotNil(Preload(db, article, "Author.Avatars"))
 }

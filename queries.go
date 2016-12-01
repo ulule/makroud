@@ -171,7 +171,11 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		return err
 	}
 
-	_, err = GetRelationQueries(schema, []interface{}{pk}, fields...)
+	if isZeroValue(pk) {
+		return fmt.Errorf("Cannot perform query on zero value (%s=%v)", schema.PrimaryField.Name, pk)
+	}
+
+	_, err = getRelationQueries(schema, []interface{}{pk}, fields...)
 	if err != nil {
 		return err
 	}
