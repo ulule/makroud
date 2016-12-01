@@ -161,4 +161,7 @@ func TestPreload(t *testing.T) {
 
 	// Test valid relation
 	is.Nil(Preload(db, article, "Author"))
+	is.Equal(fixtures.User.ID, article.AuthorID)
+	is.Equal(fixtures.User.ID, article.Author.ID)
+	is.Equal(fixtures.User.Username, article.Author.Username)
 }

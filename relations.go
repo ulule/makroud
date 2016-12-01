@@ -3,7 +3,10 @@ package sqlxx
 import (
 	"fmt"
 	"reflect"
+	"sort"
+	"strings"
 
+	"github.com/oleiade/reflections"
 	"github.com/serenize/snaker"
 )
 
@@ -113,21 +116,46 @@ func makeRelation(schema Schema, model Model, meta Meta, typ RelationType) (Rela
 
 // RelationQuery is a relation query
 type RelationQuery struct {
+	relation Relation
 	path     string
 	query    string
 	args     []interface{}
 	params   map[string]interface{}
 	fetchOne bool
+	level    int
 }
 
-// getRelationQueries returns conditions for the given relations.
-func getRelationQueries(schema Schema, primaryKeys []interface{}, fields ...string) ([]RelationQuery, error) {
+// RelationQueries are a slice of relation query ready to be ordered by level
+type RelationQueries []RelationQuery
+
+// Sort interface
+func (rq RelationQueries) Len() int           { return len(rq) }
+func (rq RelationQueries) Less(i, j int) bool { return rq[i].level < rq[j].level }
+func (rq RelationQueries) Swap(i, j int)      { rq[i], rq[j] = rq[j], rq[i] }
+
+// ByLevel returns queries grouped by level
+func (rq RelationQueries) ByLevel() map[int][]RelationQuery {
+	m := map[int][]RelationQuery{}
+
+	for _, q := range rq {
+		if _, ok := m[q.level]; !ok {
+			m[q.level] = []RelationQuery{}
+		}
+
+		m[q.level] = append(m[q.level], q)
+	}
+
+	return m
+}
+
+// getRelationQueries returns relation queries ASC sorted by their level
+func getRelationQueries(schema Schema, primaryKeys []interface{}, fields ...string) (RelationQueries, error) {
 	var (
 		pkCount = len(primaryKeys)
 		paths   = schema.RelationPaths()
 	)
 
-	queries := []RelationQuery{}
+	queries := RelationQueries{}
 
 	for _, field := range fields {
 		relation, ok := paths[field]
@@ -157,30 +185,92 @@ func getRelationQueries(schema Schema, primaryKeys []interface{}, fields ...stri
 		}
 
 		queries = append(queries, RelationQuery{
+			relation: relation,
 			path:     field,
 			query:    query,
 			args:     args,
 			params:   params,
 			fetchOne: relation.IsOne(),
+			level:    len(strings.Split(field, ".")),
 		})
 	}
+
+	sort.Sort(queries)
 
 	return queries, nil
 }
 
 // preloadRelations preloads relations of out from queries.
-func preloadRelations(driver Driver, out interface{}, queries []RelationQuery) error {
+func preloadRelations(driver Driver, out interface{}, queries RelationQueries) error {
+	if len(queries) == 0 {
+		return nil
+	}
+
 	var err error
 
-	for _, rq := range queries {
-		if rq.fetchOne {
-			if err = driver.Get(out, driver.Rebind(rq.query), rq.args...); err != nil {
-				return err
+	levels := queries.ByLevel()
+
+	// Start at root
+	lastLevel := 1
+
+	for level, rqs := range levels {
+		for _, rq := range rqs {
+			if level == lastLevel {
+				if err = setRelation(driver, out, rq); err != nil {
+					return err
+				}
 			}
-		} else {
-			if err = driver.Select(out, driver.Rebind(rq.query), rq.args...); err != nil {
-				return err
-			}
+			lastLevel = level
+		}
+	}
+
+	return nil
+}
+
+func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
+	var err error
+
+	if rq.relation.IsOne() {
+		// Interface is required by sqlxx (passing a model will fail)
+		instance := reflect.New(reflect.TypeOf(rq.relation.Model)).Interface()
+
+		// Populate instance with data
+		if err = fetchRelation(driver, instance, rq); err != nil {
+			return err
+		}
+
+		// Convert interface to the right type otherwise it will fail
+		if err = reflections.SetField(out, rq.relation.Name, reflectModel(instance)); err != nil {
+			return err
+		}
+	} else {
+		slice := makeSlice(rq.relation.Model)
+
+		// Populate instance with data
+		if err = fetchRelation(driver, slice, rq); err != nil {
+			return err
+		}
+
+		// Convert interface to the right type otherwise it will fail
+		if err = reflections.SetField(out, rq.relation.Name, reflectType(slice)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// fetchRelation fetches the given relation.
+func fetchRelation(driver Driver, out interface{}, rq RelationQuery) error {
+	var err error
+
+	if rq.fetchOne {
+		if err = driver.Get(out, driver.Rebind(rq.query), rq.args...); err != nil {
+			return err
+		}
+	} else {
+		if err = driver.Select(out, driver.Rebind(rq.query), rq.args...); err != nil {
+			return err
 		}
 	}
 
