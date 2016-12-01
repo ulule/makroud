@@ -24,7 +24,7 @@ type relationResultTest struct {
 func TestGetSchema(t *testing.T) {
 	is := assert.New(t)
 
-	schema, err := GetSchema(StructWithoutTags{})
+	schema, err := GetSchema(Untagged{})
 	is.NoError(err)
 
 	testFields(t, schema, []fieldResultTest{
@@ -61,19 +61,19 @@ func TestGetSchema(t *testing.T) {
 		},
 		{
 			"ManyModel",
-			"struct_without_tags_id", "many.struct_without_tags_id",
+			"untagged_id", "many.untagged_id",
 			"id", "untagged.id",
 			RelationTypeManyToOne,
 		},
 		{
 			"ManyModelPtr",
-			"struct_without_tags_id", "many.struct_without_tags_id",
+			"untagged_id", "many.untagged_id",
 			"id", "untagged.id",
 			RelationTypeManyToOne,
 		},
 		{
 			"ManyModelPtrs",
-			"struct_without_tags_id", "many.struct_without_tags_id",
+			"untagged_id", "many.untagged_id",
 			"id", "untagged.id",
 			RelationTypeManyToOne,
 		},
@@ -81,7 +81,7 @@ func TestGetSchema(t *testing.T) {
 
 	cache.Flush()
 
-	schema, err = GetSchema(StructWithTags{})
+	schema, err = GetSchema(Tagged{})
 	is.NoError(err)
 
 	testFields(t, schema, []fieldResultTest{
@@ -118,19 +118,19 @@ func TestGetSchema(t *testing.T) {
 		},
 		{
 			"ManyModel",
-			"struct_with_tags_id", "many.struct_with_tags_id",
+			"tagged_id", "many.tagged_id",
 			"id", "tagged.id",
 			RelationTypeManyToOne,
 		},
 		{
 			"ManyModelPtr",
-			"struct_with_tags_id", "many.struct_with_tags_id",
+			"tagged_id", "many.tagged_id",
 			"id", "tagged.id",
 			RelationTypeManyToOne,
 		},
 		{
 			"ManyModelPtrs",
-			"struct_with_tags_id", "many.struct_with_tags_id",
+			"tagged_id", "many.tagged_id",
 			"id", "tagged.id",
 			RelationTypeManyToOne,
 		},
@@ -214,7 +214,7 @@ func (RelatedModel) TableName() string {
 	return "related"
 }
 
-type StructWithoutTags struct {
+type Untagged struct {
 	ID                          int
 	FirstName                   string
 	LastName                    string
@@ -228,11 +228,11 @@ type StructWithoutTags struct {
 	ManyModelPtrs []*ManyModel
 }
 
-func (StructWithoutTags) TableName() string {
+func (Untagged) TableName() string {
 	return "untagged"
 }
 
-type StructWithTags struct {
+type Tagged struct {
 	ID                          int    `db:"public_id"`
 	FirstName                   string `db:"firstname"`
 	LastName                    string
@@ -245,6 +245,6 @@ type StructWithTags struct {
 	ManyModelPtrs []*ManyModel
 }
 
-func (StructWithTags) TableName() string {
+func (Tagged) TableName() string {
 	return "tagged"
 }
