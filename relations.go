@@ -49,7 +49,7 @@ func makeRelation(schema Schema, model Model, meta reflekt.FieldMeta, typ Relati
 	var (
 		err       error
 		modelType = reflekt.ReflectType(model)
-		refModel  = makeModel(meta.Type)
+		refModel  = TypeToModel(meta.Type)
 		refType   = reflekt.ReflectType(refModel)
 	)
 

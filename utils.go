@@ -42,8 +42,8 @@ func InterfaceToModel(itf interface{}) Model {
 	return reflect.New(value.Type()).Interface().(Model)
 }
 
-// makeModel returns model type.
-func makeModel(typ reflect.Type) Model {
+// TypeToModel returns model type.
+func TypeToModel(typ reflect.Type) Model {
 	if typ.Kind() == reflect.Slice {
 		typ = reflekt.ReflectIndirectType(typ.Elem())
 	} else {
