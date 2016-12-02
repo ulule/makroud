@@ -1,3 +1,3 @@
 test:
 	@(echo "-> Running unit tests...")
-	@(go test -v .)
+	@(go test -v . ./reflekt)
