@@ -10,6 +10,22 @@ import (
 	"github.com/ulule/sqlxx/reflekt"
 )
 
+// GetPrimaryKeys returns primary keys for the given interface.
+func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
+	pks, err := reflekt.GetFieldValues(out, name)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pk := range pks {
+		if reflekt.IsZeroValue(pk) {
+			return nil, fmt.Errorf("Cannot perform query on zero value (%s=%v)", name, pk)
+		}
+	}
+
+	return pks, nil
+}
+
 // SoftDelete soft deletes the model in the database
 func SoftDelete(driver Driver, out interface{}, fieldName string) error {
 	schema, err := GetSchemaFromInterface(out)
@@ -234,20 +250,4 @@ func where(driver Driver, out interface{}, params map[string]interface{}, fetchO
 	}
 
 	return driver.Select(out, driver.Rebind(query), args...)
-}
-
-// GetPrimaryKeys returns primary keys for the given interface.
-func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
-	pks, err := reflekt.GetFieldValues(out, name)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, pk := range pks {
-		if reflekt.IsZeroValue(pk) {
-			return nil, fmt.Errorf("Cannot perform query on zero value (%s=%v)", name, pk)
-		}
-	}
-
-	return pks, nil
 }

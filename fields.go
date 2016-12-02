@@ -30,11 +30,9 @@ func (f Field) ColumnPath() string {
 
 // makeField returns full column name from model, field and tag.
 func makeField(model Model, meta reflekt.FieldMeta) (Field, error) {
-	tags := reflekt.GetFieldTags(meta.Field, SupportedTags, TagsMapping)
-
 	var columnName string
 
-	if dbName := tags.GetByKey(SQLXStructTagName, "field"); len(dbName) != 0 {
+	if dbName := meta.Tags.GetByKey(SQLXStructTagName, "field"); len(dbName) != 0 {
 		columnName = dbName
 	} else {
 		columnName = snaker.CamelToSnake(meta.Name)
@@ -43,7 +41,7 @@ func makeField(model Model, meta reflekt.FieldMeta) (Field, error) {
 	return Field{
 		Name:       meta.Name,
 		Meta:       meta,
-		Tags:       tags,
+		Tags:       meta.Tags,
 		TableName:  model.TableName(),
 		ColumnName: columnName,
 	}, nil
