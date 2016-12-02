@@ -12,6 +12,11 @@ var SupportedTags = []string{
 	SQLXStructTagName,
 }
 
+// TagsMapping is the reflekt.Tags mapping to handle struct tag without key:value format
+var TagsMapping = map[string]string{
+	"db": "field",
+}
+
 // Struct tag key names.
 const (
 	StructTagPrimaryKey = "primary_key"

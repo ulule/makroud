@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/serenize/snaker"
+	"github.com/ulule/sqlxx/reflekt"
 )
 
 // Field is a field.
@@ -13,7 +14,7 @@ type Field struct {
 	// Struct field metadata (reflect data).
 	Meta Meta
 	// Struct field tags.
-	Tags Tags
+	Tags reflekt.Tags
 	// TableName is the database table name.
 	TableName string
 	// ColumnName is the database column name.
@@ -29,7 +30,7 @@ func (f Field) ColumnPath() string {
 
 // makeField returns full column name from model, field and tag.
 func makeField(model Model, meta Meta) (Field, error) {
-	tags := makeTags(meta.Field)
+	tags := reflekt.GetFieldTags(meta.Field, SupportedTags, TagsMapping)
 
 	var columnName string
 
