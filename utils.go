@@ -56,12 +56,3 @@ func makeModel(typ reflect.Type) Model {
 
 	return nil
 }
-
-// modelToInterface returns an interface from a model.
-func modelToInterface(model Model, isMany bool) interface{} {
-	if isMany {
-		return reflect.New(reflect.TypeOf(reflekt.MakeSlice(model))).Interface()
-	}
-
-	return reflect.New(reflect.TypeOf(model)).Interface()
-}
