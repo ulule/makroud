@@ -1,21 +1,17 @@
-package sqlxx
+package reflekt
 
-import (
-	"reflect"
-
-	"github.com/ulule/sqlxx/reflekt"
-)
+import "reflect"
 
 // Meta are low level field metadata.
-type Meta struct {
+type FieldMeta struct {
 	Name  string
 	Field reflect.StructField
 	Type  reflect.Type
-	Tags  reflekt.Tags
+	Tags  Tags
 }
 
 // GetFieldMeta returns field reflect data.
-func GetFieldMeta(field reflect.StructField) Meta {
+func GetFieldMeta(field reflect.StructField, tags []string, tagsMapping map[string]string) FieldMeta {
 	var (
 		fieldName = field.Name
 		fieldType = field.Type
@@ -25,10 +21,10 @@ func GetFieldMeta(field reflect.StructField) Meta {
 		fieldType = field.Type.Elem()
 	}
 
-	return Meta{
+	return FieldMeta{
 		Name:  fieldName,
 		Field: field,
 		Type:  fieldType,
-		Tags:  reflekt.GetFieldTags(field, SupportedTags, TagsMapping),
+		Tags:  GetFieldTags(field, tags, tagsMapping),
 	}
 }

@@ -120,7 +120,8 @@ func GetSchema(model Model) (Schema, error) {
 
 	for i := 0; i < v.NumField(); i++ {
 		structField := v.Type().Field(i)
-		meta := GetFieldMeta(structField)
+
+		meta := reflekt.GetFieldMeta(structField, SupportedTags, TagsMapping)
 
 		if (meta.Type.Kind() == reflect.Struct) || (meta.Type.Kind() == reflect.Slice) {
 			relationType := getRelationType(meta.Type)

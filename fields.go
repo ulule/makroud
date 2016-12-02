@@ -12,7 +12,7 @@ type Field struct {
 	// Struct field name.
 	Name string
 	// Struct field metadata (reflect data).
-	Meta Meta
+	Meta reflekt.FieldMeta
 	// Struct field tags.
 	Tags reflekt.Tags
 	// TableName is the database table name.
@@ -29,7 +29,7 @@ func (f Field) ColumnPath() string {
 }
 
 // makeField returns full column name from model, field and tag.
-func makeField(model Model, meta Meta) (Field, error) {
+func makeField(model Model, meta reflekt.FieldMeta) (Field, error) {
 	tags := reflekt.GetFieldTags(meta.Field, SupportedTags, TagsMapping)
 
 	var columnName string
