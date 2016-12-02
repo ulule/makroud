@@ -1,9 +1,8 @@
 package reflekt
 
 import (
+	"fmt"
 	"reflect"
-
-	"github.com/oleiade/reflections"
 )
 
 // ReflectValue returns the value that the interface v contains
@@ -79,7 +78,9 @@ func GetFieldValues(out interface{}, name string) ([]interface{}, error) {
 		value := reflect.ValueOf(out).Elem()
 
 		for i := 0; i < value.Len(); i++ {
-			v, err := reflections.GetField(value.Index(i).Interface(), name)
+			item := value.Index(i).Interface()
+
+			v, err := GetFieldValue(item, name)
 			if err != nil {
 				return nil, err
 			}
@@ -90,7 +91,7 @@ func GetFieldValues(out interface{}, name string) ([]interface{}, error) {
 		return values, nil
 	}
 
-	v, err := reflections.GetField(out, name)
+	v, err := GetFieldValue(out, name)
 	if err != nil {
 		return nil, err
 	}
@@ -113,4 +114,43 @@ func CloneType(itf interface{}, args ...reflect.Kind) interface{} {
 	}
 
 	return reflect.New(reflect.TypeOf(itf)).Interface()
+}
+
+// GetFieldValue returns the value
+func GetFieldValue(itf interface{}, name string) (interface{}, error) {
+	value := ReflectValue(itf)
+
+	field := value.FieldByName(name)
+
+	if !field.IsValid() {
+		return nil, fmt.Errorf("No such field %s in %+v", name, itf)
+	}
+
+	return field.Interface(), nil
+}
+
+// SetFieldValue sets the provided value
+func SetFieldValue(itf interface{}, name string, value interface{}) error {
+	var (
+		v     = reflect.ValueOf(itf).Elem()
+		field = v.FieldByName(name)
+	)
+
+	if !field.IsValid() {
+		return fmt.Errorf("no such field %s in %v", name, itf)
+	}
+
+	if !field.CanSet() {
+		return fmt.Errorf("cannot set %s field value %+v", name, v.Interface())
+	}
+
+	fieldValue := reflect.ValueOf(value)
+
+	if field.Type() != fieldValue.Type() {
+		return fmt.Errorf("provided value type %v didn't match field type %v", field.Type(), fieldValue.Type())
+	}
+
+	field.Set(fieldValue)
+
+	return nil
 }
