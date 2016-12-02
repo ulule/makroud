@@ -8,7 +8,7 @@ import (
 
 // reflectModel returns interface as a Model interface.
 func reflectModel(itf interface{}) Model {
-	value := reflekt.ReflectValue(reflect.ValueOf(itf))
+	value := reflekt.ReflectValue(itf)
 
 	// Instance
 	if value.IsValid() && value.Kind() == reflect.Struct {

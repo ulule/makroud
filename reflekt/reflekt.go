@@ -4,7 +4,9 @@ import "reflect"
 
 // ReflectValue returns the value that the interface v contains
 // or that the pointer v points to.
-func ReflectValue(v reflect.Value) reflect.Value {
+func ReflectValue(itf interface{}) reflect.Value {
+	v := reflect.ValueOf(itf)
+
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}

@@ -116,7 +116,7 @@ func GetSchema(model Model) (Schema, error) {
 
 	schema = NewSchema(model)
 
-	v := reflekt.ReflectValue(reflect.ValueOf(model))
+	v := reflekt.ReflectValue(model)
 
 	for i := 0; i < v.NumField(); i++ {
 		structField := v.Type().Field(i)
