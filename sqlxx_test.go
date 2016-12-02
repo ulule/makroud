@@ -23,8 +23,12 @@ var dbDefaultParams = map[string]string{
 
 var dropTables = `
 	DROP TABLE IF EXISTS users CASCADE;
+	DROP TABLE IF EXISTS profiles CASCADE;
 	DROP TABLE IF EXISTS avatars CASCADE;
+	DROP TABLE IF EXISTS categories CASCADE;
 	DROP TABLE IF EXISTS articles CASCADE;
+	DROP TABLE IF EXISTS articles_categories CASCADE;
+
 `
 
 var dbSchema = `CREATE TABLE users (
@@ -34,6 +38,13 @@ var dbSchema = `CREATE TABLE users (
     created_at 		timestamp with time zone default current_timestamp,
     updated_at 		timestamp with time zone default current_timestamp,
     deleted_at 		timestamp with time zone
+);
+
+CREATE TABLE profiles (
+	id 				serial primary key not null,
+	user_id 		integer references users(id),
+	first_name 		varchar(255) not null,
+	last_name 		varchar(255) not null
 );
 
 CREATE TABLE avatars (
@@ -51,12 +62,27 @@ CREATE TABLE articles (
 	is_published 	boolean default true,
     created_at 		timestamp with time zone default current_timestamp,
     updated_at 		timestamp with time zone default current_timestamp
+);
+
+CREATE TABLE categories (
+	id 				serial primary key not null,
+	name 			varchar(255) not null,
+	user_id 		integer references users(id)
+);
+
+CREATE TABLE articles_categories (
+	id 				serial primary key not null,
+	article_id 		integer references articles(id),
+	category_id 	integer references categories(id)
 );`
 
 type TestData struct {
-	User     User
-	Avatars  []Avatar
-	Articles []Article
+	User               User
+	Profiles           []Profile
+	Avatars            []Avatar
+	Articles           []Article
+	Categories         []Category
+	ArticlesCategories []ArticleCategory
 }
 
 type User struct {
@@ -67,11 +93,19 @@ type User struct {
 	UpdatedAt time.Time  `db:"updated_at" sqlxx:"default:now()"`
 	DeletedAt *time.Time `db:"deleted_at"`
 	Avatars   []Avatar
+	Profile   Profile
 }
 
-func (User) TableName() string {
-	return "users"
+func (User) TableName() string { return "users" }
+
+type Profile struct {
+	ID        int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
+	UserID    int    `db:"user_id"`
+	FirstName string `db:"first_name"`
+	LastName  string `db:"last_name"`
 }
+
+func (Profile) TableName() string { return "profiles" }
 
 type Avatar struct {
 	ID        int       `db:"id" sqlxx:"primary_key:true"`
@@ -81,9 +115,16 @@ type Avatar struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func (Avatar) TableName() string {
-	return "avatars"
+func (Avatar) TableName() string { return "avatars" }
+
+type Category struct {
+	ID     int    `db:"id" sqlxx:"primary_key:true"`
+	Name   string `db:"name"`
+	UserID int    `db:"user_id"`
+	User   User
 }
+
+func (Category) TableName() string { return "categories" }
 
 type Article struct {
 	ID          int       `db:"id" sqlxx:"primary_key:true"`
@@ -93,11 +134,18 @@ type Article struct {
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 	Author      User
+	Categories  []Category
 }
 
-func (Article) TableName() string {
-	return "articles"
+func (Article) TableName() string { return "articles" }
+
+type ArticleCategory struct {
+	ID         int `db:"id" sqlxx:"primary_key:true"`
+	ArticleID  int `db:"article_id"`
+	CategoryID int `db:"category_id"`
 }
+
+func (ArticleCategory) TableName() string { return "articles_categories" }
 
 func dbParam(param string) string {
 	param = strings.ToUpper(param)
@@ -112,28 +160,58 @@ func dbParam(param string) string {
 func loadData(t *testing.T, driver Driver) *TestData {
 	driver.MustExec("INSERT INTO users (username) VALUES ($1)", "jdoe")
 
+	// Users
+
 	user := User{}
 	require.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", "jdoe"))
 
+	// Avatars
+
 	for i := 0; i < 5; i++ {
 		driver.MustExec("INSERT INTO avatars (path, user_id) VALUES ($1, $2)", fmt.Sprintf("/avatars/%s-%d.png", user.Username, i), user.ID)
-
 	}
-
 	avatars := []Avatar{}
-	require.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars WHERE user_id=$1", user.ID))
+	require.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
+
+	// Profiles
+
+	driver.MustExec("INSERT INTO profiles (user_id, first_name, last_name) VALUES ($1, $2, $3)", user.ID, "John", "Doe")
+	profiles := []Profile{}
+	require.NoError(t, driver.Select(&profiles, "SELECT * FROM profiles"))
+
+	// Categories
+
+	for i := 0; i < 5; i++ {
+		driver.MustExec("INSERT INTO categories (name, user_id) VALUES ($1, $2)", fmt.Sprintf("Category #%d", i), user.ID)
+	}
+	categories := []Category{}
+	require.NoError(t, driver.Select(&categories, "SELECT * FROM categories"))
+
+	// Articles
 
 	for i := 0; i < 5; i++ {
 		driver.MustExec("INSERT INTO articles (title, author_id) VALUES ($1, $2)", fmt.Sprintf("Title #%d", i), user.ID)
 	}
-
 	articles := []Article{}
-	require.NoError(t, driver.Select(&articles, "SELECT * FROM articles WHERE author_id=$1", user.ID))
+	require.NoError(t, driver.Select(&articles, "SELECT * FROM articles"))
+
+	// Articles <-> Categories
+
+	for _, article := range articles {
+		for _, category := range categories {
+			driver.MustExec("INSERT INTO articles_categories (article_id, category_id) VALUES ($1, $2)", article.ID, category.ID)
+		}
+	}
+	articlesCategories := []ArticleCategory{}
+	require.NoError(t, driver.Select(&articlesCategories, "SELECT * FROM articles_categories"))
 
 	return &TestData{
-		User:     user,
-		Avatars:  avatars,
-		Articles: articles,
+		User:               user,
+		Profiles:           profiles,
+		Avatars:            avatars,
+		Categories:         categories,
+		Articles:           articles,
+		ArticlesCategories: articlesCategories,
 	}
 }
 
