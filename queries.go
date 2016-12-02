@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/oleiade/reflections"
 	"github.com/ulule/sqlxx/reflekt"
 )
 
@@ -15,11 +14,12 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	pks, err := reflekt.GetFieldValues(out, name)
 	if err != nil {
 		return nil, err
+
 	}
 
-	for _, pk := range pks {
-		if reflekt.IsZeroValue(pk) {
-			return nil, fmt.Errorf("Cannot perform query on zero value (%s=%v)", name, pk)
+	for i := range pks {
+		if reflekt.IsZeroValue(pks[i]) {
+			return nil, fmt.Errorf("Cannot perform query on zero value (%s=%v)", name, pks[i])
 		}
 	}
 
@@ -34,7 +34,7 @@ func SoftDelete(driver Driver, out interface{}, fieldName string) error {
 	}
 
 	pkField := schema.PrimaryField
-	pkValue, err := reflections.GetField(out, pkField.Name)
+	pkValue, err := reflekt.GetFieldValue(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
 	if reflekt.IsZeroValue(pkValue) {
@@ -74,7 +74,7 @@ func Delete(driver Driver, out interface{}) error {
 	}
 
 	pkField := schema.PrimaryField
-	pkValue, _ := reflections.GetField(out, pkField.Name)
+	pkValue, _ := reflekt.GetFieldValue(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
 	if reflekt.IsZeroValue(pkValue) {
@@ -138,7 +138,7 @@ func Save(driver Driver, out interface{}) error {
 	var query string
 
 	pkField := schema.PrimaryField
-	pkValue, _ := reflections.GetField(out, pkField.Name)
+	pkValue, _ := reflekt.GetFieldValue(out, pkField.Name)
 
 	if reflekt.IsZeroValue(pkValue) {
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
@@ -185,12 +185,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		return err
 	}
 
-	pks, err := GetPrimaryKeys(out, schema.PrimaryField.Name)
-	if err != nil {
-		return err
-	}
-
-	queries, err := getRelationQueries(schema, pks, fields...)
+	queries, err := getRelationQueries(out, schema, fields...)
 	if err != nil {
 		return err
 	}

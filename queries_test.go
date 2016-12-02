@@ -194,4 +194,13 @@ func TestPreload(t *testing.T) {
 	// Test second level
 	is.Nil(Preload(db, article, "Author.Avatars"))
 	is.Equal(fixtures.User.ID, article.AuthorID)
+
+	// Slices
+	articles := fixtures.Articles
+	is.Nil(Preload(db, &articles, "Author"))
+	for _, article := range articles {
+		is.Equal(user.ID, article.Author.ID)
+		is.Equal(user.ID, article.AuthorID)
+		is.Equal(user.Username, article.Author.Username)
+	}
 }

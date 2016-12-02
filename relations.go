@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/oleiade/reflections"
 	"github.com/serenize/snaker"
 	"github.com/ulule/sqlxx/reflekt"
 )
@@ -31,6 +30,14 @@ type Relation struct {
 	FK Field
 	// The foreign key reference field
 	Reference Field
+}
+
+// RelatedFKField returns related FK field
+func (r Relation) RelatedFKField() string {
+	if !r.IsOne() {
+		return fmt.Sprintf("%sID", reflekt.ReflectType(r.ParentModel).Name())
+	}
+	return fmt.Sprintf("%sID", r.Name)
 }
 
 // IsOne returns true if the relation is a "one" relation.
@@ -88,6 +95,7 @@ func makeRelation(schema Schema, model Model, meta reflekt.FieldMeta, typ Relati
 		if err != nil {
 			return relation, err
 		}
+
 	} else {
 		relation.FK, err = makeField(model, meta)
 		if err != nil {
@@ -138,11 +146,8 @@ func (rq RelationQueries) Less(i, j int) bool { return rq[i].level < rq[j].level
 func (rq RelationQueries) Swap(i, j int)      { rq[i], rq[j] = rq[j], rq[i] }
 
 // getRelationQueries returns relation queries ASC sorted by their level
-func getRelationQueries(schema Schema, primaryKeys []interface{}, fields ...string) (RelationQueries, error) {
-	var (
-		pkCount = len(primaryKeys)
-		paths   = schema.RelationPaths()
-	)
+func getRelationQueries(out interface{}, schema Schema, fields ...string) (RelationQueries, error) {
+	paths := schema.RelationPaths()
 
 	queries := RelationQueries{}
 
@@ -153,19 +158,48 @@ func getRelationQueries(schema Schema, primaryKeys []interface{}, fields ...stri
 		}
 
 		var (
-			params     = map[string]interface{}{}
-			columnName = relation.Reference.ColumnName
+			err         error
+			params      = map[string]interface{}{}
+			fkFieldName = relation.RelatedFKField()
+			columnName  = relation.Reference.ColumnName
+			pks         = []interface{}{}
 		)
 
 		// If we have a many relation, let's reverse
 		if !relation.IsOne() {
 			columnName = relation.FK.ColumnName
+			fkFieldName = relation.Schema.PrimaryField.Name
 		}
 
-		if pkCount == 1 {
-			params[columnName] = primaryKeys[0]
+		// Out is a slice, we must iterate over items and retrieve pk for each one.
+		// Out is a struct, just retrieve pk
+		if !reflekt.IsSlice(out) {
+			pks, err = GetPrimaryKeys(out, fkFieldName)
+			if err != nil {
+				return nil, err
+			}
 		} else {
-			params[columnName] = primaryKeys
+
+			value := reflect.ValueOf(out).Elem()
+
+			for i := 0; i < value.Len(); i++ {
+				values, err := GetPrimaryKeys(value.Index(i).Interface(), fkFieldName)
+				if err != nil {
+					return nil, err
+				}
+				pks = append(pks, values...)
+			}
+		}
+
+		// Zero
+		if len(pks) == 0 {
+			return nil, err
+		}
+
+		if len(pks) > 1 {
+			params[columnName] = pks
+		} else {
+			params[columnName] = pks[0]
 		}
 
 		query, args, err := whereQuery(relation.Model, params, relation.IsOne())
@@ -234,12 +268,33 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 	}
 
 	if isMany {
-		if err = reflections.SetField(out, rq.relation.Name, reflect.ValueOf(instance).Elem().Interface()); err != nil {
+		if err = reflekt.SetFieldValue(out, rq.relation.Name, reflect.ValueOf(instance).Elem().Interface()); err != nil {
 			return err
 		}
 	} else {
-		if err = reflections.SetField(out, rq.relation.Name, InterfaceToModel(instance)); err != nil {
-			return err
+		// This is when we pass a slice to Preload()
+		// isMany is relation level, here we are at argument level
+		if reflekt.IsSlice(out) {
+			value := reflect.ValueOf(out).Elem()
+
+			for i := 0; i < value.Len(); i++ {
+				item := value.Index(i)
+
+				if !item.CanSet() {
+					continue
+				}
+
+				val := reflect.Indirect(reflect.ValueOf(instance))
+
+				if val.IsValid() {
+					field := item.FieldByName(rq.relation.Name)
+					field.Set(val)
+				}
+			}
+		} else {
+			if err = reflekt.SetFieldValue(out, rq.relation.Name, InterfaceToModel(instance)); err != nil {
+				return err
+			}
 		}
 	}
 
