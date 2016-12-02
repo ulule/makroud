@@ -1,6 +1,10 @@
 package reflekt
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/oleiade/reflections"
+)
 
 // ReflectValue returns the value that the interface v contains
 // or that the pointer v points to.
@@ -65,4 +69,33 @@ func MakeSlice(itf interface{}) interface{} {
 	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
 
 	return slice.Elem().Interface()
+}
+
+// GetFieldValues returns values for the given field for struct or slice.
+func GetFieldValues(out interface{}, name string) ([]interface{}, error) {
+	var pks []interface{}
+
+	if IsSlice(out) {
+		value := reflect.ValueOf(out).Elem()
+
+		for i := 0; i < value.Len(); i++ {
+			pk, err := reflections.GetField(value.Index(i).Interface(), name)
+			if err != nil {
+				return nil, err
+			}
+
+			pks = append(pks, pk)
+		}
+
+		return pks, nil
+	}
+
+	pk, err := reflections.GetField(out, name)
+	if err != nil {
+		return nil, err
+	}
+
+	pks = append(pks, pk)
+
+	return pks, nil
 }

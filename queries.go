@@ -2,7 +2,6 @@ package sqlxx
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -239,40 +238,16 @@ func where(driver Driver, out interface{}, params map[string]interface{}, fetchO
 
 // getPrimaryKeys returns primary keys for the given interface.
 func getPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
-	var (
-		errf = "Cannot perform query on zero value (%s=%v)"
-		pks  = []interface{}{}
-	)
-
-	if reflekt.IsSlice(out) {
-		value := reflect.ValueOf(out).Elem()
-
-		for i := 0; i < value.Len(); i++ {
-			pk, err := reflections.GetField(value.Index(i).Interface(), name)
-			if err != nil {
-				return nil, err
-			}
-
-			if reflekt.IsZeroValue(pk) {
-				return nil, fmt.Errorf(errf, name, pk)
-			}
-
-			pks = append(pks, pk)
-		}
-
-		return pks, nil
-	}
-
-	pk, err := reflections.GetField(out, name)
+	pks, err := reflekt.GetFieldValues(out, name)
 	if err != nil {
 		return nil, err
 	}
 
-	if reflekt.IsZeroValue(pk) {
-		return nil, fmt.Errorf(errf, name, pk)
+	for _, pk := range pks {
+		if reflekt.IsZeroValue(pk) {
+			return nil, fmt.Errorf("Cannot perform query on zero value (%s=%v)", name, pk)
+		}
 	}
-
-	pks = append(pks, pk)
 
 	return pks, nil
 }
