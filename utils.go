@@ -56,3 +56,8 @@ func TypeToModel(typ reflect.Type) Model {
 
 	return nil
 }
+
+// InterfaceToSchema returns Schema by reflecting model for the given interface.
+func InterfaceToSchema(out interface{}) (Schema, error) {
+	return GetSchema(InterfaceToModel(out))
+}

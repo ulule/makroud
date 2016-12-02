@@ -154,11 +154,6 @@ func GetSchema(model Model) (Schema, error) {
 	return schema, nil
 }
 
-// GetSchemaFromInterface returns Schema by reflecting model for the given interface.
-func GetSchemaFromInterface(out interface{}) (Schema, error) {
-	return GetSchema(InterfaceToModel(out))
-}
-
 // GetSchemaRelations returns flattened map of schema relations.
 func GetSchemaRelations(schema Schema) map[string]Relation {
 	paths := map[string]Relation{}

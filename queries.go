@@ -28,7 +28,7 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 
 // SoftDelete soft deletes the model in the database
 func SoftDelete(driver Driver, out interface{}, fieldName string) error {
-	schema, err := GetSchemaFromInterface(out)
+	schema, err := InterfaceToSchema(out)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func SoftDelete(driver Driver, out interface{}, fieldName string) error {
 
 // Delete deletes the model in the database
 func Delete(driver Driver, out interface{}) error {
-	schema, err := GetSchemaFromInterface(out)
+	schema, err := InterfaceToSchema(out)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func Delete(driver Driver, out interface{}) error {
 
 // Save saves the model and populate it to the database
 func Save(driver Driver, out interface{}) error {
-	schema, err := GetSchemaFromInterface(out)
+	schema, err := InterfaceToSchema(out)
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func Save(driver Driver, out interface{}) error {
 func Preload(driver Driver, out interface{}, fields ...string) error {
 	var err error
 
-	schema, err := GetSchemaFromInterface(out)
+	schema, err := InterfaceToSchema(out)
 	if err != nil {
 		return err
 	}
