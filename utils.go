@@ -6,8 +6,8 @@ import (
 	"github.com/ulule/sqlxx/reflekt"
 )
 
-// reflectModel returns interface as a Model interface.
-func reflectModel(itf interface{}) Model {
+// InterfaceToModel returns interface as a Model interface.
+func InterfaceToModel(itf interface{}) Model {
 	value := reflekt.ReflectValue(itf)
 
 	// Instance

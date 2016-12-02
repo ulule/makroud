@@ -238,7 +238,7 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 			return err
 		}
 	} else {
-		if err = reflections.SetField(out, rq.relation.Name, reflectModel(instance)); err != nil {
+		if err = reflections.SetField(out, rq.relation.Name, InterfaceToModel(instance)); err != nil {
 			return err
 		}
 	}
