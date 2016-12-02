@@ -217,9 +217,16 @@ func preloadRelations(driver Driver, out interface{}, queries RelationQueries) e
 func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 	var (
 		err      error
-		isMany   = !rq.relation.IsOne()
-		instance = modelToInterface(rq.relation.Model, isMany)
+		instance interface{}
 	)
+
+	isMany := !rq.relation.IsOne()
+
+	if isMany {
+		instance = reflekt.CloneType(rq.relation.Model, reflect.Slice)
+	} else {
+		instance = reflekt.CloneType(rq.relation.Model)
+	}
 
 	// Populate instance with data
 	if err = fetchRelation(driver, instance, rq); err != nil {

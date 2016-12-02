@@ -99,3 +99,18 @@ func GetFieldValues(out interface{}, name string) ([]interface{}, error) {
 
 	return values, nil
 }
+
+// CloneType returns a new interface from a given interface.
+func CloneType(itf interface{}, args ...reflect.Kind) interface{} {
+	var kind reflect.Kind
+
+	if len(args) > 0 {
+		kind = args[0]
+	}
+
+	if kind == reflect.Slice {
+		return reflect.New(reflect.TypeOf(MakeSlice(itf))).Interface()
+	}
+
+	return reflect.New(reflect.TypeOf(itf)).Interface()
+}
