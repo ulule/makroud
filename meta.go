@@ -14,8 +14,8 @@ type Meta struct {
 	Tags  reflekt.Tags
 }
 
-// makeMeta returns field reflect data.
-func makeMeta(field reflect.StructField) Meta {
+// GetFieldMeta returns field reflect data.
+func GetFieldMeta(field reflect.StructField) Meta {
 	var (
 		fieldName = field.Name
 		fieldType = field.Type

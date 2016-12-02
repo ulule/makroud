@@ -58,7 +58,7 @@ func makeRelation(schema Schema, model Model, meta Meta, typ RelationType) (Rela
 		return Relation{}, fmt.Errorf("Field %s does not exist", meta.Name)
 	}
 
-	refMeta := makeMeta(refStructField)
+	refMeta := GetFieldMeta(refStructField)
 
 	refSchema, err := GetSchema(refModel)
 	if err != nil {
