@@ -1,6 +1,7 @@
 package reflekt
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 )
@@ -11,10 +12,25 @@ type TagProperty struct {
 	Value string
 }
 
+// String returns instance string
+func (t TagProperty) String() string {
+	return fmt.Sprintf("%s:%v", t.Key, t.Value)
+}
+
 // Tag is struct tag
 type Tag struct {
 	Name       string
 	Properties []TagProperty
+}
+
+// String returns instance string
+func (t Tag) String() string {
+	props := []string{}
+	for _, p := range t.Properties {
+		props = append(props, fmt.Sprintf("%s", p))
+	}
+
+	return fmt.Sprintf("%s -- %s", t.Name, strings.Join(props, ", "))
 }
 
 // Get returns value for the given property name.
@@ -24,11 +40,21 @@ func (t Tag) Get(key string) string {
 			return p.Value
 		}
 	}
+
 	return ""
 }
 
 // Tags a group of tag (usually for a struct field)
 type Tags []Tag
+
+func (t Tags) String() string {
+	tags := []string{}
+	for _, tag := range tags {
+		tags = append(tags, fmt.Sprintf("%s", tag))
+	}
+
+	return strings.Join(tags, "\n")
+}
 
 // Get returns tag by name.
 func (t Tags) Get(name string) *Tag {
