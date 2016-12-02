@@ -73,29 +73,29 @@ func MakeSlice(itf interface{}) interface{} {
 
 // GetFieldValues returns values for the given field for struct or slice.
 func GetFieldValues(out interface{}, name string) ([]interface{}, error) {
-	var pks []interface{}
+	var values []interface{}
 
 	if IsSlice(out) {
 		value := reflect.ValueOf(out).Elem()
 
 		for i := 0; i < value.Len(); i++ {
-			pk, err := reflections.GetField(value.Index(i).Interface(), name)
+			v, err := reflections.GetField(value.Index(i).Interface(), name)
 			if err != nil {
 				return nil, err
 			}
 
-			pks = append(pks, pk)
+			values = append(values, v)
 		}
 
-		return pks, nil
+		return values, nil
 	}
 
-	pk, err := reflections.GetField(out, name)
+	v, err := reflections.GetField(out, name)
 	if err != nil {
 		return nil, err
 	}
 
-	pks = append(pks, pk)
+	values = append(values, v)
 
-	return pks, nil
+	return values, nil
 }
