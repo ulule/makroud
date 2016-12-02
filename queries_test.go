@@ -150,11 +150,11 @@ func TestGetPrimaryKeys(t *testing.T) {
 	_, fixtures, shutdown := dbConnection(t)
 	defer shutdown()
 
-	pks, err := getPrimaryKeys(&fixtures.Articles, "ID")
+	pks, err := GetPrimaryKeys(&fixtures.Articles, "ID")
 	is.Nil(err)
 	is.Equal([]interface{}{1, 2, 3, 4, 5}, pks)
 
-	pks, err = getPrimaryKeys(&fixtures.Articles[0], "ID")
+	pks, err = GetPrimaryKeys(&fixtures.Articles[0], "ID")
 	is.Nil(err)
 	is.Equal([]interface{}{1}, pks)
 }

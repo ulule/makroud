@@ -169,7 +169,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		return err
 	}
 
-	pks, err := getPrimaryKeys(out, schema.PrimaryField.Name)
+	pks, err := GetPrimaryKeys(out, schema.PrimaryField.Name)
 	if err != nil {
 		return err
 	}
@@ -236,8 +236,8 @@ func where(driver Driver, out interface{}, params map[string]interface{}, fetchO
 	return driver.Select(out, driver.Rebind(query), args...)
 }
 
-// getPrimaryKeys returns primary keys for the given interface.
-func getPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
+// GetPrimaryKeys returns primary keys for the given interface.
+func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	pks, err := reflekt.GetFieldValues(out, name)
 	if err != nil {
 		return nil, err
