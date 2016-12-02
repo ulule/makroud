@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/ulule/sqlxx/reflekt"
 )
 
 // ----------------------------------------------------------------------------
@@ -22,7 +24,7 @@ type Schema struct {
 // NewSchema returns a new Schema instance.
 func NewSchema(model Model) Schema {
 	return Schema{
-		ModelName: reflectType(model).Name(),
+		ModelName: reflekt.ReflectType(model).Name(),
 		TableName: model.TableName(),
 		Fields:    map[string]Field{},
 		Relations: map[string]Relation{},
@@ -114,7 +116,7 @@ func GetSchema(model Model) (Schema, error) {
 
 	schema = NewSchema(model)
 
-	v := reflectValue(reflect.ValueOf(model))
+	v := reflekt.ReflectValue(reflect.ValueOf(model))
 
 	for i := 0; i < v.NumField(); i++ {
 		structField := v.Type().Field(i)

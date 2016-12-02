@@ -23,24 +23,3 @@ func TestMakeModel(t *testing.T) {
 		is.IsType(r.expected, actual)
 	}
 }
-
-func TestMakeSlice(t *testing.T) {
-	is := assert.New(t)
-
-	articles := []Article{}
-	articlesPtrs := []*Article{}
-
-	results := []struct {
-		value    interface{}
-		expected interface{}
-	}{
-		{articles, []Article{}},
-		{&articles, []Article{}},
-		{articlesPtrs, []Article{}},
-	}
-
-	for _, r := range results {
-		actual := makeSlice(r.value)
-		is.IsType(r.expected, actual)
-	}
-}

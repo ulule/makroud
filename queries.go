@@ -8,6 +8,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/oleiade/reflections"
+	"github.com/ulule/sqlxx/reflekt"
 )
 
 // SoftDelete soft deletes the model in the database
@@ -21,7 +22,7 @@ func SoftDelete(driver Driver, out interface{}, fieldName string) error {
 	pkValue, err := reflections.GetField(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
-	if isZeroValue(pkValue) {
+	if reflekt.IsZeroValue(pkValue) {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
 
@@ -61,7 +62,7 @@ func Delete(driver Driver, out interface{}) error {
 	pkValue, _ := reflections.GetField(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
-	if isZeroValue(pkValue) {
+	if reflekt.IsZeroValue(pkValue) {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
 
@@ -124,7 +125,7 @@ func Save(driver Driver, out interface{}) error {
 	pkField := schema.PrimaryField
 	pkValue, _ := reflections.GetField(out, pkField.Name)
 
-	if isZeroValue(pkValue) {
+	if reflekt.IsZeroValue(pkValue) {
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
 			schema.TableName,
 			strings.Join(columns, ", "),
@@ -243,7 +244,7 @@ func getPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 		pks  = []interface{}{}
 	)
 
-	if isSlice(out) {
+	if reflekt.IsSlice(out) {
 		value := reflect.ValueOf(out).Elem()
 
 		for i := 0; i < value.Len(); i++ {
@@ -252,7 +253,7 @@ func getPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 				return nil, err
 			}
 
-			if isZeroValue(pk) {
+			if reflekt.IsZeroValue(pk) {
 				return nil, fmt.Errorf(errf, name, pk)
 			}
 
@@ -267,7 +268,7 @@ func getPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 		return nil, err
 	}
 
-	if isZeroValue(pk) {
+	if reflekt.IsZeroValue(pk) {
 		return nil, fmt.Errorf(errf, name, pk)
 	}
 

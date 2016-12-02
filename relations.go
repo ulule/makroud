@@ -8,6 +8,7 @@ import (
 
 	"github.com/oleiade/reflections"
 	"github.com/serenize/snaker"
+	"github.com/ulule/sqlxx/reflekt"
 )
 
 // ----------------------------------------------------------------------------
@@ -47,9 +48,9 @@ func (r Relation) String() string {
 func makeRelation(schema Schema, model Model, meta Meta, typ RelationType) (Relation, error) {
 	var (
 		err       error
-		modelType = reflectType(model)
+		modelType = reflekt.ReflectType(model)
 		refModel  = makeModel(meta.Type)
-		refType   = reflectType(refModel)
+		refType   = reflekt.ReflectType(refModel)
 	)
 
 	refStructField, ok := refType.FieldByName("ID")
