@@ -187,9 +187,6 @@ func TestPreload(t *testing.T) {
 
 	// Single instance / first level / ManyTo relation
 
-	is.Nil(Preload(db, article, "Author.Avatars"))
-	is.Equal(fixtures.User.ID, article.AuthorID)
-
 	is.Nil(Preload(db, user, "Avatars"))
 	is.Len(user.Avatars, 5)
 	for i := 0; i < 5; i++ {
