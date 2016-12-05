@@ -335,7 +335,7 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 			continue
 		}
 
-		itemPK, err := reflekt.GetFieldValue(item.Interface().(Model), "ID")
+		itemPK, err := reflekt.GetFieldValue(item.Interface().(Model), rq.relation.Reference.Name)
 		if err != nil {
 			return err
 		}
