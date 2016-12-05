@@ -48,7 +48,12 @@ func (r Relation) IsOne() bool {
 }
 
 func (r Relation) String() string {
-	return fmt.Sprintf("field:%s fk:%s ref:%s", r.Name, r.FK.ColumnPath(), r.Reference.ColumnPath())
+	return fmt.Sprintf("model:%s parent:%s field:%s fk:%s ref:%s",
+		reflect.TypeOf(r.Model).Name(),
+		reflect.TypeOf(r.ParentModel).Name(),
+		r.Name,
+		r.FK.ColumnPath(),
+		r.Reference.ColumnPath())
 }
 
 // makeRelation creates a new relation.
@@ -157,6 +162,12 @@ func getRelationQueries(out interface{}, schema Schema, fields ...string) (Relat
 			return nil, fmt.Errorf("%s is not a valid relation", field)
 		}
 
+		// escape for upper levels
+		level := len(strings.Split(field, "."))
+		if level > 1 {
+			return queries, fmt.Errorf("unsupported preload level for: %s", field)
+		}
+
 		var (
 			err         error
 			params      = map[string]interface{}{}
@@ -214,7 +225,7 @@ func getRelationQueries(out interface{}, schema Schema, fields ...string) (Relat
 			args:     args,
 			params:   params,
 			fetchOne: relation.IsOne(),
-			level:    len(strings.Split(field, ".")),
+			level:    level,
 		})
 	}
 

@@ -170,7 +170,6 @@ func TestPreload(t *testing.T) {
 
 	article := &Article{}
 	is.NotNil(Preload(db, article, "Author"))
-	is.NotNil(Preload(db, article, "Author.Avatars"))
 
 	// Invalid relations must fail
 
@@ -184,6 +183,10 @@ func TestPreload(t *testing.T) {
 	is.Equal(fixtures.User.ID, article.AuthorID)
 	is.Equal(fixtures.User.ID, article.Author.ID)
 	is.Equal(fixtures.User.Username, article.Author.Username)
+
+	// Single instance / second level / OneTo relation
+
+	is.NotNil(Preload(db, article, "Author.APIKey"))
 
 	// Single instance / first level / ManyTo relation
 
