@@ -3,8 +3,6 @@ package sqlxx
 import (
 	"fmt"
 	"reflect"
-	"sort"
-	"strings"
 
 	"github.com/serenize/snaker"
 	"github.com/ulule/sqlxx/reflekt"
@@ -134,40 +132,20 @@ func makeRelation(schema Schema, model Model, meta reflekt.FieldMeta, typ Relati
 // RelationQuery is a relation query
 type RelationQuery struct {
 	relation Relation
-	path     string
 	query    string
 	args     []interface{}
 	params   map[string]interface{}
 	fetchOne bool
-	level    int
 }
 
 // RelationQueries are a slice of relation query ready to be ordered by level
 type RelationQueries []RelationQuery
 
-// Sort interface
-func (rq RelationQueries) Len() int           { return len(rq) }
-func (rq RelationQueries) Less(i, j int) bool { return rq[i].level < rq[j].level }
-func (rq RelationQueries) Swap(i, j int)      { rq[i], rq[j] = rq[j], rq[i] }
-
 // getRelationQueries returns relation queries ASC sorted by their level
-func getRelationQueries(out interface{}, schema Schema, fields ...string) (RelationQueries, error) {
-	paths := schema.RelationPaths()
-
+func getRelationQueries(out interface{}, relations []Relation) (RelationQueries, error) {
 	queries := RelationQueries{}
 
-	for _, field := range fields {
-		relation, ok := paths[field]
-		if !ok {
-			return nil, fmt.Errorf("%s is not a valid relation", field)
-		}
-
-		// escape for upper levels
-		level := len(strings.Split(field, "."))
-		if level > 1 {
-			return queries, fmt.Errorf("unsupported preload level for: %s", field)
-		}
-
+	for _, relation := range relations {
 		var (
 			err         error
 			params      = map[string]interface{}{}
@@ -220,39 +198,29 @@ func getRelationQueries(out interface{}, schema Schema, fields ...string) (Relat
 
 		queries = append(queries, RelationQuery{
 			relation: relation,
-			path:     field,
 			query:    query,
 			args:     args,
 			params:   params,
 			fetchOne: relation.IsOne(),
-			level:    level,
 		})
 	}
-
-	sort.Sort(queries)
 
 	return queries, nil
 }
 
 // preloadRelations preloads relations of out from queries.
-func preloadRelations(driver Driver, out interface{}, queries RelationQueries) error {
-	var (
-		err          error
-		currentLevel = 1
-	)
+func preloadRelations(driver Driver, out interface{}, relations []Relation) error {
+	var err error
+
+	queries, err := getRelationQueries(out, relations)
+	if err != nil {
+		return err
+	}
 
 	for _, rq := range queries {
-		if rq.level == currentLevel {
-			if err = setRelation(driver, out, rq); err != nil {
-				return err
-			}
-		} else {
-			// Here get the parent model
-			// Build the struct / slice
-			// Performs setRelation on.
-			// Set created struct / slice to out
+		if err = setRelation(driver, out, rq); err != nil {
+			return err
 		}
-		currentLevel = rq.level
 	}
 
 	return nil

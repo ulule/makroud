@@ -178,19 +178,34 @@ func Save(driver Driver, out interface{}) error {
 
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, fields ...string) error {
-	var err error
+	var (
+		err error
+	)
 
 	schema, err := InterfaceToSchema(out)
 	if err != nil {
 		return err
 	}
 
-	queries, err := getRelationQueries(out, schema, fields...)
-	if err != nil {
-		return err
+	var (
+		relations     []Relation
+		relationPaths = schema.RelationPaths()
+	)
+
+	for _, field := range fields {
+		relation, ok := relationPaths[field]
+		if !ok {
+			return fmt.Errorf("%s is not a valid relation", field)
+		}
+
+		// Only retrive model level relations
+		splits := strings.Split(field, ".")
+		if len(splits) == 1 {
+			relations = append(relations, relation)
+		}
 	}
 
-	if err = preloadRelations(driver, out, queries); err != nil {
+	if err = preloadRelations(driver, out, relations); err != nil {
 		return err
 	}
 

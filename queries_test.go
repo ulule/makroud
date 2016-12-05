@@ -186,7 +186,7 @@ func TestPreload(t *testing.T) {
 
 	// Single instance / second level / OneTo relation
 
-	is.NotNil(Preload(db, article, "Author.APIKey"))
+	is.Nil(Preload(db, article, "Author.APIKey"))
 
 	// Single instance / first level / ManyTo relation
 
