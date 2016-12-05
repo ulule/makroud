@@ -254,7 +254,16 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 		instance interface{}
 	)
 
-	isMany := !rq.relation.IsOne()
+	var (
+		// Example: []User{}
+		isSlice = reflekt.IsSlice(out)
+		// Example: User.Avatars
+		isMany = !rq.relation.IsOne()
+	)
+
+	//
+	// If it's a many, let's clone the type as out for sqlx Get() / Select()
+	//
 
 	if isMany {
 		instance = reflekt.CloneType(rq.relation.Model, reflect.Slice)
@@ -262,40 +271,109 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 		instance = reflekt.CloneType(rq.relation.Model)
 	}
 
-	// Populate instance with data
+	//
+	// Fetch all related relations
+	//
+
 	if err = fetchRelation(driver, instance, rq); err != nil {
 		return err
 	}
 
-	if isMany {
-		if err = reflekt.SetFieldValue(out, rq.relation.Name, reflect.ValueOf(instance).Elem().Interface()); err != nil {
+	//
+	// Instance
+	//
+
+	if !isSlice {
+		// User.Avatar
+		if !isMany {
+			return reflekt.SetFieldValue(out, rq.relation.Name, InterfaceToModel(instance))
+		}
+
+		// User.Avatars
+		return reflekt.SetFieldValue(out, rq.relation.Name, reflect.ValueOf(instance).Elem().Interface())
+	}
+
+	//
+	// Slice
+	//
+
+	// Users.Avatar
+	if !isMany {
+		value := reflect.ValueOf(out).Elem()
+
+		for i := 0; i < value.Len(); i++ {
+			item := value.Index(i)
+			if !item.CanSet() {
+				continue
+			}
+
+			val := reflect.Indirect(reflect.ValueOf(instance))
+			if val.IsValid() {
+				field := item.FieldByName(rq.relation.Name)
+				field.Set(val)
+			}
+		}
+
+		return nil
+	}
+
+	//
+	// Users.Avatars
+	//
+
+	// Users
+	items := reflect.ValueOf(out).Elem()
+
+	// Avatars
+	relatedItems := reflect.ValueOf(instance).Elem()
+
+	// Iterate over slice items (Users)
+	for i := 0; i < items.Len(); i++ {
+		item := items.Index(i)
+
+		if !item.CanSet() {
+			continue
+		}
+
+		itemPK, err := reflekt.GetFieldValue(item.Interface().(Model), "ID")
+		if err != nil {
 			return err
 		}
-	} else {
-		// This is when we pass a slice to Preload()
-		// isMany is relation level, here we are at argument level
-		if reflekt.IsSlice(out) {
-			value := reflect.ValueOf(out).Elem()
 
-			for i := 0; i < value.Len(); i++ {
-				item := value.Index(i)
+		// Build the related items's item
+		itemRelatedItems := []reflect.Value{}
 
-				if !item.CanSet() {
-					continue
-				}
+		// Iterate over related items (Avatars)
+		for ii := 0; ii < relatedItems.Len(); ii++ {
+			var (
+				relatedItem         = relatedItems.Index(ii)
+				relatedItemInstance = relatedItem.Interface().(Model)
+			)
 
-				val := reflect.Indirect(reflect.ValueOf(instance))
-
-				if val.IsValid() {
-					field := item.FieldByName(rq.relation.Name)
-					field.Set(val)
-				}
-			}
-		} else {
-			if err = reflekt.SetFieldValue(out, rq.relation.Name, InterfaceToModel(instance)); err != nil {
+			relatedFK, err := reflekt.GetFieldValue(relatedItemInstance, rq.relation.RelatedFKField())
+			if err != nil {
 				return err
 			}
+
+			// Compare User's avatar
+			if itemPK == relatedFK {
+				itemRelatedItems = append(itemRelatedItems, relatedItem)
+			}
 		}
+
+		//
+		// Build the related model instance slice and set it to related item.
+		//
+
+		newSlice := reflekt.MakeSlice(rq.relation.Model)
+		newSliceValue := reflect.ValueOf(newSlice)
+
+		for _, related := range itemRelatedItems {
+			newSliceValue = reflect.Append(newSliceValue, related)
+		}
+
+		field := item.FieldByName(rq.relation.Name)
+		field.Set(newSliceValue)
 	}
 
 	return nil

@@ -215,6 +215,22 @@ func loadData(t *testing.T, driver Driver) *TestData {
 	}
 }
 
+func createUser(t *testing.T, driver Driver, username string) User {
+	user := User{}
+
+	driver.MustExec("INSERT INTO users (username) VALUES ($1)", username)
+	require.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", username))
+
+	for i := 1; i < 6; i++ {
+		driver.MustExec("INSERT INTO avatars (path, user_id) VALUES ($1, $2)", fmt.Sprintf("/avatars/%s-%d.png", username, i), user.ID)
+	}
+
+	avatars := []Avatar{}
+	require.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
+
+	return user
+}
+
 func dbConnection(t *testing.T) (*sqlx.DB, *TestData, func()) {
 	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable;timezone=UTC",
 		dbParam("user"),

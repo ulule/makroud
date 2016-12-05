@@ -2,6 +2,7 @@ package sqlxx
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -165,24 +166,30 @@ func TestPreload(t *testing.T) {
 	db, fixtures, shutdown := dbConnection(t)
 	defer shutdown()
 
-	// Cannot perform query on zero values
+	// Queries on zero values must fail
+
 	article := &Article{}
 	is.NotNil(Preload(db, article, "Author"))
 	is.NotNil(Preload(db, article, "Author.Avatars"))
 
+	// Invalid relations must fail
+
 	article = &fixtures.Articles[0]
 	user := &fixtures.User
-
-	// Test with invalid relations
 	is.NotNil(Preload(db, article, "Foo"))
 
-	// Test first level with struct
+	// Single instance / first level / OneTo relation
+
 	is.Nil(Preload(db, article, "Author"))
 	is.Equal(fixtures.User.ID, article.AuthorID)
 	is.Equal(fixtures.User.ID, article.Author.ID)
 	is.Equal(fixtures.User.Username, article.Author.Username)
 
-	// Test first level with slice
+	// Single instance / first level / ManyTo relation
+
+	is.Nil(Preload(db, article, "Author.Avatars"))
+	is.Equal(fixtures.User.ID, article.AuthorID)
+
 	is.Nil(Preload(db, user, "Avatars"))
 	is.Len(user.Avatars, 5)
 	for i := 0; i < 5; i++ {
@@ -191,16 +198,36 @@ func TestPreload(t *testing.T) {
 		is.Equal(fmt.Sprintf("/avatars/jdoe-%d.png", i), user.Avatars[i].Path)
 	}
 
-	// Test second level
-	is.Nil(Preload(db, article, "Author.Avatars"))
-	is.Equal(fixtures.User.ID, article.AuthorID)
+	// Slice of instances / first level / OneTo relation
 
-	// Slices
 	articles := fixtures.Articles
 	is.Nil(Preload(db, &articles, "Author"))
 	for _, article := range articles {
 		is.Equal(user.ID, article.Author.ID)
 		is.Equal(user.ID, article.AuthorID)
 		is.Equal(user.Username, article.Author.Username)
+	}
+
+	// Slice of instances / first level / ManyTo relation
+
+	users := []User{}
+	for i := 1; i < 6; i++ {
+		users = append(users, createUser(t, db, fmt.Sprintf("user%d", i)))
+	}
+
+	for _, user := range users {
+		is.Zero(user.Avatars)
+	}
+
+	is.Nil(Preload(db, &users, "Avatars"))
+
+	for _, user := range users {
+		is.NotZero(user.Avatars)
+		for _, avatar := range user.Avatars {
+			is.NotZero(avatar.ID)
+			is.Equal(user.ID, avatar.UserID)
+			is.Equal(user.ID, avatar.UserID)
+			is.True(strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
+		}
 	}
 }
