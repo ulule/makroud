@@ -25,6 +25,7 @@ var dropTables = `
 	DROP TABLE IF EXISTS users CASCADE;
 	DROP TABLE IF EXISTS api_keys CASCADE;
 	DROP TABLE IF EXISTS profiles CASCADE;
+	DROP TABLE IF EXISTS comments CASCADE;
 	DROP TABLE IF EXISTS avatars CASCADE;
 	DROP TABLE IF EXISTS categories CASCADE;
 	DROP TABLE IF EXISTS articles CASCADE;
@@ -70,6 +71,15 @@ CREATE TABLE articles (
     updated_at 		timestamp with time zone default current_timestamp
 );
 
+CREATE TABLE comments (
+	id 				serial primary key not null,
+	user_id			integer references users(id),
+	article_id		integer references articles(id),
+	content			text,
+    created_at 		timestamp with time zone default current_timestamp,
+    updated_at 		timestamp with time zone default current_timestamp
+);
+
 CREATE TABLE categories (
 	id 				serial primary key not null,
 	name 			varchar(255) not null,
@@ -111,11 +121,25 @@ type User struct {
 	APIKeyID int `db:"api_key_id"`
 	APIKey   APIKey
 
-	Avatars []Avatar
-	Profile Profile
+	Avatars  []Avatar
+	Comments []Comment
+	Profile  Profile
 }
 
 func (User) TableName() string { return "users" }
+
+type Comment struct {
+	ID        int `db:"id" sqlxx:"primary_key:true; ignored:true"`
+	UserID    int `db:"user_id"`
+	User      User
+	ArticleID int `db:"article_id"`
+	Article   Article
+	Content   string    `db:"content"`
+	CreatedAt time.Time `db:"created_at" sqlxx:"auto_now_add:true"`
+	UpdatedAt time.Time `db:"updated_at" sqlxx:"default:now()"`
+}
+
+func (Comment) TableName() string { return "comments" }
 
 type Profile struct {
 	ID        int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
