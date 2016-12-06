@@ -23,13 +23,7 @@ func ReflectValue(itf interface{}) reflect.Value {
 
 // ReflectType returns type of the given interface.
 func ReflectType(itf interface{}) reflect.Type {
-	typ := reflect.ValueOf(itf).Type()
-
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-
-	return typ
+	return ReflectIndirectType(reflect.ValueOf(itf).Type())
 }
 
 // ReflectIndirectType returns indirect type for the given type.
