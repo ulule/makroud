@@ -123,7 +123,10 @@ func Copy(itf interface{}) interface{} {
 
 // GetFieldValue returns the value
 func GetFieldValue(itf interface{}, name string) (interface{}, error) {
-	value := ReflectValue(itf)
+	value, ok := itf.(reflect.Value)
+	if !ok {
+		value = ReflectValue(itf)
+	}
 
 	field := value.FieldByName(name)
 
@@ -136,7 +139,10 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 
 // SetFieldValue sets the provided value
 func SetFieldValue(itf interface{}, name string, value interface{}) error {
-	v := ReflectValue(itf)
+	v, ok := itf.(reflect.Value)
+	if !ok {
+		v = ReflectValue(itf)
+	}
 
 	field := v.FieldByName(name)
 

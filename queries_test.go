@@ -203,11 +203,13 @@ func TestPreload(t *testing.T) {
 	// Slice of instances / first level / OneTo relation
 
 	articles := fixtures.Articles
-	is.Nil(Preload(db, &articles, "Author"))
+
+	is.Nil(Preload(db, &articles, "Author", "Author.APIKey"))
 	for _, article := range articles {
 		is.Equal(user.ID, article.Author.ID)
 		is.Equal(user.ID, article.AuthorID)
-		is.Equal(user.Username, article.Author.Username)
+		is.NotZero(article.Author.APIKeyID)
+		is.Equal("this-is-my-scret-api-key", article.Author.APIKey.Key)
 	}
 
 	// Slice of instances / first level / ManyTo relation

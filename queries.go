@@ -2,6 +2,7 @@ package sqlxx
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -204,13 +205,11 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 			return fmt.Errorf("%s is not a valid relation", field)
 		}
 
-		// First level
 		splits := strings.Split(field, ".")
 		if len(splits) == 1 {
 			relations = append(relations, relation)
 		}
 
-		// Next level
 		if len(splits) == 2 {
 			childRelations = append(childRelations, ChildRelation{
 				field:         splits[0],
@@ -224,6 +223,34 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 	}
 
 	for _, child := range childRelations {
+		if reflekt.IsSlice(out) {
+			slice := reflect.ValueOf(out).Elem()
+
+			for i := 0; i < slice.Len(); i++ {
+				var (
+					itemValue = slice.Index(i)
+					item      = itemValue.Interface()
+				)
+
+				instance, err := reflekt.GetFieldValue(item, child.field)
+				if err != nil {
+					return err
+				}
+
+				instanceCopy := reflekt.Copy(instance)
+
+				if err = Preload(driver, instanceCopy, child.relationField); err != nil {
+					return err
+				}
+
+				if err = reflekt.SetFieldValue(itemValue, child.field, instanceCopy); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}
+
 		instance, err := reflekt.GetFieldValue(out, child.field)
 		if err != nil {
 			return err
