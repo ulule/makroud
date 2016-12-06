@@ -27,6 +27,9 @@ func TestGetSchema(t *testing.T) {
 	schema, err := GetSchema(Untagged{})
 	is.NoError(err)
 
+	// Check unexported
+	is.NotContains(schema.FieldNames(), "unexportedField")
+
 	testFields(t, schema, []fieldResultTest{
 		{
 			"ID",
@@ -83,6 +86,9 @@ func TestGetSchema(t *testing.T) {
 
 	schema, err = GetSchema(Tagged{})
 	is.NoError(err)
+
+	// Check unexported
+	is.NotContains(schema.FieldNames(), "unexportedField")
 
 	testFields(t, schema, []fieldResultTest{
 		{
@@ -220,6 +226,9 @@ type Untagged struct {
 	LastName                    string
 	ThisIsAVeryLongFieldName123 string
 
+	// Skip it
+	unexportedField string
+
 	RelatedModel    RelatedModel
 	RelatedModelPtr *RelatedModel
 
@@ -239,6 +248,9 @@ type Tagged struct {
 	ThisIsAVeryLongFieldName123 string        `db:"short_field"`
 	RelatedModel                RelatedModel  `db:"member_id"`
 	RelatedModelPtr             *RelatedModel `db:"member_id"`
+
+	// Skip it
+	unexportedField string
 
 	ManyModel     []ManyModel
 	ManyModelPtr  *[]ManyModel

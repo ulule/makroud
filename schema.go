@@ -38,6 +38,15 @@ func (s *Schema) SetPrimaryField(f Field) {
 	s.Fields[f.Name] = f
 }
 
+// FieldNames return all field names.
+func (s Schema) FieldNames() []string {
+	var names []string
+	for _, f := range s.Fields {
+		names = append(names, f.Name)
+	}
+	return names
+}
+
 // Columns returns schema columns without table prefix.
 func (s Schema) Columns() Columns {
 	return s.columns(false)
@@ -120,6 +129,11 @@ func GetSchema(model Model) (Schema, error) {
 
 	for i := 0; i < v.NumField(); i++ {
 		structField := v.Type().Field(i)
+
+		// Skip unexported fields
+		if len(structField.PkgPath) != 0 {
+			continue
+		}
 
 		meta := reflekt.GetFieldMeta(structField, SupportedTags, TagsMapping)
 
