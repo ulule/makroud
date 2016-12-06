@@ -15,9 +15,7 @@ func ReflectValue(itf interface{}) reflect.Value {
 	}
 
 	if v.Kind() == reflect.Interface && !v.IsNil() {
-		if v.Elem().Kind() == reflect.Ptr && !v.Elem().IsNil() && v.Elem().Elem().Kind() == reflect.Ptr {
-			v = v.Elem()
-		}
+		v = v.Elem()
 	}
 
 	return v
@@ -132,7 +130,7 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 // SetFieldValue sets the provided value
 func SetFieldValue(itf interface{}, name string, value interface{}) error {
 	var (
-		v     = reflect.ValueOf(itf).Elem()
+		v     = ReflectValue(itf)
 		field = v.FieldByName(name)
 	)
 
