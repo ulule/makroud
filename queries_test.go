@@ -168,29 +168,31 @@ func TestPreload(t *testing.T) {
 
 	// Queries on zero values must fail
 
-	article := &Article{}
-	is.NotNil(Preload(db, article, "Author"))
+	article := Article{}
+	is.NotNil(Preload(db, &article, "Author"))
 
 	// Invalid relations must fail
 
-	article = &fixtures.Articles[0]
-	user := &fixtures.User
-	is.NotNil(Preload(db, article, "Foo"))
+	article = fixtures.Articles[0]
+	user := fixtures.User
+	is.NotNil(Preload(db, &article, "Foo"))
 
 	// Single instance / first level / OneTo relation
 
-	is.Nil(Preload(db, article, "Author"))
+	is.Nil(Preload(db, &article, "Author"))
 	is.Equal(fixtures.User.ID, article.AuthorID)
 	is.Equal(fixtures.User.ID, article.Author.ID)
 	is.Equal(fixtures.User.Username, article.Author.Username)
 
 	// Single instance / second level / OneTo relation
 
-	is.Nil(Preload(db, article, "Author.APIKey"))
+	is.Nil(Preload(db, &article, "Author.APIKey"))
+	is.NotZero(article.Author.APIKey.ID)
+	is.Equal("this-is-my-scret-api-key", article.Author.APIKey.Key)
 
 	// Single instance / first level / ManyTo relation
 
-	is.Nil(Preload(db, user, "Avatars"))
+	is.Nil(Preload(db, &user, "Avatars"))
 	is.Len(user.Avatars, 5)
 	for i := 0; i < 5; i++ {
 		is.Equal(i+1, user.Avatars[i].ID)

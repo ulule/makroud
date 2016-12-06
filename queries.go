@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+
 	"github.com/ulule/sqlxx/reflekt"
 )
 
@@ -14,7 +15,6 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	pks, err := reflekt.GetFieldValues(out, name)
 	if err != nil {
 		return nil, err
-
 	}
 
 	for i := range pks {
@@ -187,9 +187,15 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		return err
 	}
 
+	type ChildRelation struct {
+		field         string
+		relationField string
+	}
+
 	var (
-		relations     []Relation
-		relationPaths = schema.RelationPaths()
+		relations      []Relation
+		childRelations []ChildRelation
+		relationPaths  = schema.RelationPaths()
 	)
 
 	for _, field := range fields {
@@ -198,15 +204,40 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 			return fmt.Errorf("%s is not a valid relation", field)
 		}
 
-		// Only retrive model level relations
+		// First level
 		splits := strings.Split(field, ".")
 		if len(splits) == 1 {
 			relations = append(relations, relation)
+		}
+
+		// Next level
+		if len(splits) == 2 {
+			childRelations = append(childRelations, ChildRelation{
+				field:         splits[0],
+				relationField: strings.Join(splits[1:], "."),
+			})
 		}
 	}
 
 	if err = preloadRelations(driver, out, relations); err != nil {
 		return err
+	}
+
+	for _, child := range childRelations {
+		instance, err := reflekt.GetFieldValue(out, child.field)
+		if err != nil {
+			return err
+		}
+
+		cp := reflekt.Copy(instance)
+
+		if err = Preload(driver, cp, child.relationField); err != nil {
+			return err
+		}
+
+		if err = reflekt.SetFieldValue(out, child.field, cp); err != nil {
+			return err
+		}
 	}
 
 	return nil

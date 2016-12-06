@@ -114,6 +114,13 @@ func CloneType(itf interface{}, args ...reflect.Kind) interface{} {
 	return reflect.New(reflect.TypeOf(itf)).Interface()
 }
 
+// Copy makes a copy of the given interface.
+func Copy(itf interface{}) interface{} {
+	cp := reflect.New(ReflectType(itf))
+	cp.Elem().Set(reflect.ValueOf(itf))
+	return cp.Interface()
+}
+
 // GetFieldValue returns the value
 func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 	value := ReflectValue(itf)
@@ -129,20 +136,19 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 
 // SetFieldValue sets the provided value
 func SetFieldValue(itf interface{}, name string, value interface{}) error {
-	var (
-		v     = ReflectValue(itf)
-		field = v.FieldByName(name)
-	)
+	v := ReflectValue(itf)
+
+	field := v.FieldByName(name)
 
 	if !field.IsValid() {
-		return fmt.Errorf("no such field %s in %v", name, itf)
+		return fmt.Errorf("no such field %s in %+v", name, v.Interface())
 	}
 
 	if !field.CanSet() {
-		return fmt.Errorf("cannot set %s field value %+v", name, v.Interface())
+		return fmt.Errorf("cannot set %s field on %v%+v", name, v.Type().Name(), v.Interface())
 	}
 
-	fieldValue := reflect.ValueOf(value)
+	fieldValue := reflect.Indirect(reflect.ValueOf(value))
 
 	if field.Type() != fieldValue.Type() {
 		return fmt.Errorf("provided value type %v didn't match field type %v", field.Type(), fieldValue.Type())
