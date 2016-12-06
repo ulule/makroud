@@ -121,9 +121,9 @@ type User struct {
 	APIKeyID int `db:"api_key_id"`
 	APIKey   APIKey
 
-	Avatars  []Avatar
-	Comments []Comment
-	Profile  Profile
+	Avatars []Avatar
+	// Comments []Comment
+	Profile Profile
 }
 
 func (User) TableName() string { return "users" }

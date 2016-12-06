@@ -21,6 +21,14 @@ type relationResultTest struct {
 	relationType  RelationType
 }
 
+func TestGetSchemaInfiniteLoop(t *testing.T) {
+	is := assert.New(t)
+
+	schema, err := GetSchema(User{})
+	is.NoError(err)
+	is.NotNil(schema)
+}
+
 func TestGetSchema(t *testing.T) {
 	is := assert.New(t)
 
