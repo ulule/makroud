@@ -2,6 +2,7 @@ package sqlxx
 
 import (
 	"database/sql"
+	"reflect"
 
 	"github.com/lib/pq"
 )
@@ -63,10 +64,10 @@ var RelationsMany = map[RelationType]bool{
 }
 
 // NullFieldTypes are field considered as NULL.
-var NullFieldTypes = []interface{}{
-	sql.NullBool{},
-	sql.NullFloat64{},
-	sql.NullInt64{},
-	sql.NullString{},
-	pq.NullTime{},
+var NullFieldTypes = map[reflect.Type]bool{
+	reflect.TypeOf(sql.NullBool{}):    true,
+	reflect.TypeOf(sql.NullFloat64{}): true,
+	reflect.TypeOf(sql.NullInt64{}):   true,
+	reflect.TypeOf(sql.NullString{}):  true,
+	reflect.TypeOf(pq.NullTime{}):     true,
 }

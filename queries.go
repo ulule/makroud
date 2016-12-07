@@ -19,14 +19,9 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 		value     = reflekt.ReflectValue(InterfaceToModel(out))
 		field     = value.FieldByName(name)
 		fieldType = field.Type()
-		isNull    = false
 	)
 
-	for _, nullFieldType := range NullFieldTypes {
-		if reflect.TypeOf(nullFieldType) == fieldType {
-			isNull = true
-		}
-	}
+	_, isNull := NullFieldTypes[fieldType]
 
 	pks, err := reflekt.GetFieldValues(out, name)
 	if err != nil {
