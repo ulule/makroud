@@ -116,7 +116,6 @@ if err := sqlxx.Save(db, &user); err != nil {
 }
 
 // Soft delete it by setting deleted_at column  
-user.DeletedAt = time.Now()
 if err := sqlxx.SoftDelete(db, &user, "DeletedAt"); err != nil {
     fmt.Println(user)
 }
