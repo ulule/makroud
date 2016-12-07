@@ -38,6 +38,9 @@ func TestGetSchema(t *testing.T) {
 	// Check unexported
 	is.NotContains(schema.FieldNames(), "unexportedField")
 
+	// Check db excluded
+	is.NotContains(schema.FieldNames(), "DBExcludedField")
+
 	testFields(t, schema, []fieldResultTest{
 		{
 			"ID",
@@ -97,6 +100,9 @@ func TestGetSchema(t *testing.T) {
 
 	// Check unexported
 	is.NotContains(schema.FieldNames(), "unexportedField")
+
+	// Check db excluded
+	is.NotContains(schema.FieldNames(), "DBExcludedField")
 
 	testFields(t, schema, []fieldResultTest{
 		{
@@ -237,6 +243,9 @@ type Untagged struct {
 	// Skip it
 	unexportedField string
 
+	// Skip db:"-"
+	DBExcludedField int `db:"-"`
+
 	RelatedModel    RelatedModel
 	RelatedModelPtr *RelatedModel
 
@@ -259,6 +268,9 @@ type Tagged struct {
 
 	// Skip it
 	unexportedField string
+
+	// Skip db:"-"
+	DBExcludedField int `db:"-"`
 
 	ManyModel     []ManyModel
 	ManyModelPtr  *[]ManyModel

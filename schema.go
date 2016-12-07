@@ -137,6 +137,11 @@ func GetSchema(model Model) (Schema, error) {
 
 		meta := reflekt.GetFieldMeta(structField, SupportedTags, TagsMapping)
 
+		// Skip db:"-"
+		if f := meta.Tags.GetByKey(SQLXStructTagName, "field"); f == "-" {
+			continue
+		}
+
 		if (meta.Type.Kind() == reflect.Struct) || (meta.Type.Kind() == reflect.Slice) {
 			relationType := getRelationType(meta.Type)
 
