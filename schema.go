@@ -128,17 +128,12 @@ func GetSchema(model Model) (Schema, error) {
 	v := reflekt.ReflectValue(model)
 
 	for i := 0; i < v.NumField(); i++ {
-		structField := v.Type().Field(i)
+		var (
+			structField = v.Type().Field(i)
+			meta        = reflekt.GetFieldMeta(structField, SupportedTags, TagsMapping)
+		)
 
-		// Skip unexported fields
-		if len(structField.PkgPath) != 0 {
-			continue
-		}
-
-		meta := reflekt.GetFieldMeta(structField, SupportedTags, TagsMapping)
-
-		// Skip db:"-"
-		if f := meta.Tags.GetByKey(SQLXStructTagName, "field"); f == "-" {
+		if isExcludedField(meta) {
 			continue
 		}
 
@@ -188,6 +183,21 @@ func GetSchemaRelations(schema Schema) map[string]Relation {
 	}
 
 	return paths
+}
+
+// isExcludedField returns true if field must be excluded from schema.
+func isExcludedField(meta reflekt.FieldMeta) bool {
+	// Skip unexported fields
+	if len(meta.Field.PkgPath) != 0 {
+		return true
+	}
+
+	// Skip db:"-"
+	if f := meta.Tags.GetByKey(SQLXStructTagName, "field"); f == "-" {
+		return true
+	}
+
+	return false
 }
 
 // ----------------------------------------------------------------------------
