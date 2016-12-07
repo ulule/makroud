@@ -161,9 +161,9 @@ type Avatar struct {
 func (Avatar) TableName() string { return "avatars" }
 
 type Category struct {
-	ID     int    `db:"id" sqlxx:"primary_key:true"`
-	Name   string `db:"name"`
-	UserID int    `db:"user_id"`
+	ID     int           `db:"id" sqlxx:"primary_key:true"`
+	Name   string        `db:"name"`
+	UserID sql.NullInt64 `db:"user_id"`
 	User   User
 }
 
@@ -277,6 +277,19 @@ func createUser(t *testing.T, driver Driver, username string) User {
 	require.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
 
 	return user
+}
+
+func createCategory(t *testing.T, driver Driver, name string, userID *int) Category {
+	driver.MustExec("INSERT INTO categories (name) VALUES ($1)", name)
+
+	if userID != nil {
+		driver.MustExec("UPDATE categories SET user_id=$1 WHERE name=$2", *userID, name)
+	}
+
+	category := Category{}
+	require.NoError(t, driver.Get(&category, "SELECT * FROM categories WHERE name=$1", name))
+
+	return category
 }
 
 func dbConnection(t *testing.T) (*sqlx.DB, *TestData, func()) {

@@ -235,3 +235,18 @@ func TestPreload(t *testing.T) {
 		}
 	}
 }
+
+func TestPreload_NullPrimaryKey(t *testing.T) {
+	is := assert.New(t)
+
+	db, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	category := createCategory(t, db, "cat1", nil)
+	is.Nil(Preload(db, &category, "User"))
+
+	category = createCategory(t, db, "cat1", &fixtures.User.ID)
+	is.Nil(Preload(db, &category, "User"))
+	is.NotZero(category.UserID)
+	is.NotZero(category.User.ID)
+}

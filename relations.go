@@ -168,7 +168,6 @@ func getRelationQueries(out interface{}, relations []Relation) (RelationQueries,
 				return nil, err
 			}
 		} else {
-
 			value := reflect.ValueOf(out).Elem()
 
 			for i := 0; i < value.Len(); i++ {

@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"reflect"
 	"strings"
@@ -13,18 +14,44 @@ import (
 
 // GetPrimaryKeys returns primary keys for the given interface.
 func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
+	// Check if primary key is null
+	var (
+		value     = reflekt.ReflectValue(InterfaceToModel(out))
+		field     = value.FieldByName(name)
+		fieldType = field.Type()
+		isNull    = false
+	)
+
+	for _, nullFieldType := range NullFieldTypes {
+		if reflect.TypeOf(nullFieldType) == fieldType {
+			isNull = true
+		}
+	}
+
 	pks, err := reflekt.GetFieldValues(out, name)
 	if err != nil {
 		return nil, err
 	}
 
+	// Handle null fields
+	var values []interface{}
+
 	for i := range pks {
-		if reflekt.IsZeroValue(pks[i]) {
-			return nil, fmt.Errorf("Cannot perform query on zero value (%s=%v)", name, pks[i])
+		if !isNull {
+			if reflekt.IsZeroValue(pks[i]) {
+				return nil, fmt.Errorf("Cannot perform query on zero value (%s=%v)", name, pks[i])
+			}
+			values = append(values, pks[i])
+		} else {
+			valuer := reflekt.Copy(pks[i]).(driver.Valuer)
+
+			if v, err := valuer.Value(); err == nil && v != nil {
+				values = append(values, v)
+			}
 		}
 	}
 
-	return pks, nil
+	return values, nil
 }
 
 // SoftDelete soft deletes the model in the database

@@ -1,5 +1,11 @@
 package sqlxx
 
+import (
+	"database/sql"
+
+	"github.com/lib/pq"
+)
+
 // Struct tags
 const (
 	StructTagName     = "sqlxx"
@@ -54,4 +60,13 @@ var RelationsOne = map[RelationType]bool{
 var RelationsMany = map[RelationType]bool{
 	RelationTypeManyToOne:  true,
 	RelationTypeManyToMany: true,
+}
+
+// NullFieldTypes are field considered as NULL.
+var NullFieldTypes = []interface{}{
+	sql.NullBool{},
+	sql.NullFloat64{},
+	sql.NullInt64{},
+	sql.NullString{},
+	pq.NullTime{},
 }
