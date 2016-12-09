@@ -201,11 +201,7 @@ func isExcludedField(meta reflekt.FieldMeta) bool {
 
 // isPrimaryKeyField returns true if field is a primary key field.
 func isPrimaryKeyField(meta reflekt.FieldMeta) bool {
-	if meta.Name == "ID" || len(meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0 {
-		return true
-	}
-
-	return false
+	return (meta.Name == "ID" || len(meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0)
 }
 
 // ----------------------------------------------------------------------------
