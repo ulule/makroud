@@ -71,3 +71,5 @@ var NullFieldTypes = map[reflect.Type]bool{
 	reflect.TypeOf(sql.NullString{}):  true,
 	reflect.TypeOf(pq.NullTime{}):     true,
 }
+
+const IDFieldName = "ID"
