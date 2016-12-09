@@ -155,9 +155,8 @@ func GetSchema(model Model) (Schema, error) {
 			return Schema{}, err
 		}
 
-		if v := meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey); len(v) != 0 {
+		if isPrimaryKeyField(meta) {
 			schema.SetPrimaryField(field)
-			continue
 		}
 
 		schema.Fields[meta.Name] = field
@@ -194,6 +193,15 @@ func isExcludedField(meta reflekt.FieldMeta) bool {
 
 	// Skip db:"-"
 	if f := meta.Tags.GetByKey(SQLXStructTagName, "field"); f == "-" {
+		return true
+	}
+
+	return false
+}
+
+// isPrimaryKeyField returns true if field is a primary key field.
+func isPrimaryKeyField(meta reflekt.FieldMeta) bool {
+	if meta.Name == "ID" || len(meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0 {
 		return true
 	}
 

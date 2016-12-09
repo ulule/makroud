@@ -185,6 +185,24 @@ func TestSchemaRelationPaths(t *testing.T) {
 	}
 }
 
+func TestGetSchema_PrimaryKeyField(t *testing.T) {
+	is := assert.New(t)
+
+	// Implicit
+
+	schema, err := GetSchema(ImplicitPrimaryKey{})
+	is.NoError(err)
+	is.Equal(schema.PrimaryField.Name, "ID")
+	is.Equal(schema.PrimaryField.ColumnName, "id")
+
+	// Explicit
+
+	schema, err = GetSchema(ExplicitPrimaryKey{})
+	is.NoError(err)
+	is.Equal(schema.PrimaryField.Name, "TadaID")
+	is.Equal(schema.PrimaryField.ColumnName, "tada_id")
+}
+
 func testFields(t *testing.T, schema Schema, results []fieldResultTest) {
 	is := assert.New(t)
 
@@ -221,18 +239,14 @@ type ManyModel struct {
 	Name string
 }
 
-func (ManyModel) TableName() string {
-	return "many"
-}
+func (ManyModel) TableName() string { return "many" }
 
 type RelatedModel struct {
 	ID   int `db:"custom_id" sqlxx:"primary_key:true"`
 	Name string
 }
 
-func (RelatedModel) TableName() string {
-	return "related"
-}
+func (RelatedModel) TableName() string { return "related" }
 
 type Untagged struct {
 	ID                          int
@@ -254,9 +268,7 @@ type Untagged struct {
 	ManyModelPtrs []*ManyModel
 }
 
-func (Untagged) TableName() string {
-	return "untagged"
-}
+func (Untagged) TableName() string { return "untagged" }
 
 type Tagged struct {
 	ID                          int    `db:"public_id"`
@@ -277,6 +289,16 @@ type Tagged struct {
 	ManyModelPtrs []*ManyModel
 }
 
-func (Tagged) TableName() string {
-	return "tagged"
+func (Tagged) TableName() string { return "tagged" }
+
+type ImplicitPrimaryKey struct {
+	ID int
 }
+
+func (ImplicitPrimaryKey) TableName() string { return "implicitprimarykey" }
+
+type ExplicitPrimaryKey struct {
+	TadaID int `sqlxx:"primary_key"`
+}
+
+func (ExplicitPrimaryKey) TableName() string { return "explicitprimarykey" }
