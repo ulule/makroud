@@ -275,7 +275,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 					return err
 				}
 
-				// Retrieve Article.User previoulsy fetched
+				// Retrieve Article.User previously fetched
 				itemChild, err := reflekt.GetFieldValue(item, itemChildFieldName)
 				if err != nil {
 					return err
