@@ -72,4 +72,5 @@ var NullFieldTypes = map[reflect.Type]bool{
 	reflect.TypeOf(pq.NullTime{}):     true,
 }
 
-const IDFieldName = "ID"
+// PrimaryKeyFieldName is the implicit primary key field name.
+const PrimaryKeyFieldName = "ID"
