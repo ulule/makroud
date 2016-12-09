@@ -55,10 +55,8 @@ func IsSlice(itf interface{}) bool {
 // MakeSlice takes a type and returns create a slice from.
 func MakeSlice(itf interface{}) interface{} {
 	sliceType := reflect.SliceOf(ReflectType(itf))
-
 	slice := reflect.New(sliceType)
 	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
-
 	return slice.Elem().Interface()
 }
 

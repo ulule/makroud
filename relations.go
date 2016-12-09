@@ -16,14 +16,19 @@ import (
 type Relation struct {
 	// The relation field name (if field is Author and model is User, field name is Author)
 	Name string
-	// The related model
-	Model Model
-	// The parent model
-	ParentModel Model
-	// The related schema
-	Schema Schema
 	// The relation type
 	Type RelationType
+
+	// The related model
+	Model Model
+	// The related schema
+	Schema Schema
+
+	// The parent model
+	ParentModel Model
+	// The parent schema
+	ParentSchema Schema
+
 	// The foreign key field
 	FK Field
 	// The foreign key reference field
@@ -76,11 +81,12 @@ func makeRelation(schema Schema, model Model, meta reflekt.FieldMeta, typ Relati
 	}
 
 	relation := Relation{
-		Name:        meta.Name,
-		Type:        typ,
-		Model:       refModel,
-		ParentModel: model,
-		Schema:      refSchema,
+		Name:         meta.Name,
+		Type:         typ,
+		ParentModel:  model,
+		ParentSchema: schema,
+		Model:        refModel,
+		Schema:       refSchema,
 	}
 
 	reversed := !relation.IsOne()
