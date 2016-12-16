@@ -187,7 +187,7 @@ func getRelationQueries(out interface{}, relations []Relation) (RelationQueries,
 
 		// Zero
 		if len(pks) == 0 {
-			return nil, err
+			continue
 		}
 
 		if len(pks) > 1 {
