@@ -66,6 +66,7 @@ CREATE TABLE articles (
 	id 				serial primary key not null,
 	title 			varchar(255) not null,
 	author_id 		integer references users(id),
+	reviewer_id 	integer references users(id),
 	is_published 	boolean default true,
     created_at 		timestamp with time zone default current_timestamp,
     updated_at 		timestamp with time zone default current_timestamp
@@ -173,10 +174,12 @@ type Article struct {
 	ID          int       `db:"id" sqlxx:"primary_key:true"`
 	Title       string    `db:"title"`
 	AuthorID    int       `db:"author_id"`
+	ReviewerID  int       `db:"reviewer_id"`
 	IsPublished bool      `db:"is_published"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 	Author      User
+	Reviewer    *User
 	// Categories  []Category
 }
 
@@ -233,7 +236,7 @@ func loadData(t *testing.T, driver Driver) *TestData {
 
 	// Articles
 	for i := 0; i < 5; i++ {
-		driver.MustExec("INSERT INTO articles (title, author_id) VALUES ($1, $2)", fmt.Sprintf("Title #%d", i), user.ID)
+		driver.MustExec("INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3)", fmt.Sprintf("Title #%d", i), user.ID, user.ID)
 	}
 	articles := []Article{}
 	require.NoError(t, driver.Select(&articles, "SELECT * FROM articles"))

@@ -160,59 +160,125 @@ func TestGetPrimaryKeys(t *testing.T) {
 	is.Equal([]interface{}{1}, pks)
 }
 
-func TestPreload(t *testing.T) {
+// ----------------------------------------------------------------------------
+// Preloads
+// ----------------------------------------------------------------------------
+
+func TestPreload_IDZeroValue(t *testing.T) {
+	is := assert.New(t)
+
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	article := Article{}
+	is.NotNil(Preload(db, &article, "Author"))
+}
+
+func TestPreload_UnknownRelation(t *testing.T) {
 	is := assert.New(t)
 
 	db, fixtures, shutdown := dbConnection(t)
 	defer shutdown()
 
-	// Queries on zero values must fail
-
-	article := Article{}
-	is.NotNil(Preload(db, &article, "Author"))
-
-	// Invalid relations must fail
-
-	article = fixtures.Articles[0]
-	user := fixtures.User
+	article := fixtures.Articles[0]
 	is.NotNil(Preload(db, &article, "Foo"))
+}
 
-	// Single instance / first level / OneTo relation
+func TestPreload_NullPrimaryKey(t *testing.T) {
+	is := assert.New(t)
 
+	db, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	category := createCategory(t, db, "cat1", nil)
+	is.Nil(Preload(db, &category, "User"))
+
+	category = createCategory(t, db, "cat1", &fixtures.User.ID)
+	is.Nil(Preload(db, &category, "User"))
+	is.NotZero(category.UserID)
+	is.NotZero(category.User.ID)
+}
+
+func TestPreload_RelationPointer(t *testing.T) {
+	is := assert.New(t)
+
+	db, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	article := fixtures.Articles[0]
+	is.Nil(Preload(db, &article, "Reviewer"))
+	is.Equal(fixtures.User.ID, article.Reviewer.ID)
+	is.Equal(fixtures.User.Username, article.Reviewer.Username)
+}
+
+// ----------------------------------------------------------------------------
+// Preloads: OneToMany
+// ----------------------------------------------------------------------------
+
+func TestPreload_OneToMany_Level1(t *testing.T) {
+	is := assert.New(t)
+
+	db, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	// Instance
+
+	article := fixtures.Articles[0]
 	is.Nil(Preload(db, &article, "Author"))
 	is.Equal(fixtures.User.ID, article.AuthorID)
-	is.Equal(fixtures.User.ID, article.Author.ID)
 	is.Equal(fixtures.User.Username, article.Author.Username)
+}
 
-	// Single instance / second level / OneTo relation
+func TestPreload_OneToMany_Level2(t *testing.T) {
+	is := assert.New(t)
 
-	is.Nil(Preload(db, &article, "Author.APIKey"))
+	db, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	// Instance
+
+	article := fixtures.Articles[0]
+
+	is.Nil(Preload(db, &article, "Author", "Author.APIKey"))
+
 	is.NotZero(article.Author.APIKey.ID)
 	is.Equal("this-is-my-scret-api-key", article.Author.APIKey.Key)
 
-	// Single instance / first level / ManyTo relation
+	// Slice
 
+	articles := fixtures.Articles
+	user := fixtures.User
+	is.Nil(Preload(db, &articles, "Author", "Author.APIKey"))
+	for _, article := range articles {
+		is.Equal(user.ID, article.Author.ID)
+		is.NotZero(article.Author.APIKeyID)
+		is.Equal("this-is-my-scret-api-key", article.Author.APIKey.Key)
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Preloads: ManyToOne
+// ----------------------------------------------------------------------------
+
+func TestPreload_ManyToOne_Level1(t *testing.T) {
+	is := assert.New(t)
+
+	db, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	// Instance
+
+	user := fixtures.User
 	is.Nil(Preload(db, &user, "Avatars"))
 	is.Len(user.Avatars, 5)
+
 	for i := 0; i < 5; i++ {
 		is.Equal(i+1, user.Avatars[i].ID)
 		is.Equal(user.ID, user.Avatars[i].UserID)
 		is.Equal(fmt.Sprintf("/avatars/jdoe-%d.png", i), user.Avatars[i].Path)
 	}
 
-	// Slice of instances / first level / OneTo relation
-
-	articles := fixtures.Articles
-
-	is.Nil(Preload(db, &articles, "Author", "Author.APIKey"))
-	for _, article := range articles {
-		is.Equal(user.ID, article.Author.ID)
-		is.Equal(user.ID, article.AuthorID)
-		is.NotZero(article.Author.APIKeyID)
-		is.Equal("this-is-my-scret-api-key", article.Author.APIKey.Key)
-	}
-
-	// Slice of instances / first level / ManyTo relation
+	// Slice
 
 	users := []User{}
 	for i := 1; i < 6; i++ {
@@ -234,19 +300,4 @@ func TestPreload(t *testing.T) {
 			is.True(strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
 		}
 	}
-}
-
-func TestPreload_NullPrimaryKey(t *testing.T) {
-	is := assert.New(t)
-
-	db, fixtures, shutdown := dbConnection(t)
-	defer shutdown()
-
-	category := createCategory(t, db, "cat1", nil)
-	is.Nil(Preload(db, &category, "User"))
-
-	category = createCategory(t, db, "cat1", &fixtures.User.ID)
-	is.Nil(Preload(db, &category, "User"))
-	is.NotZero(category.UserID)
-	is.NotZero(category.User.ID)
 }

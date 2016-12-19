@@ -146,13 +146,17 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 		return fmt.Errorf("cannot set %s field on %v%+v", name, v.Type().Name(), v.Interface())
 	}
 
-	fieldValue := reflect.Indirect(reflect.ValueOf(value))
+	fv := ReflectValue(value)
 
-	if field.Type() != fieldValue.Type() {
-		return fmt.Errorf("provided value type %v didn't match field type %v", field.Type(), fieldValue.Type())
+	if field.Type().Kind() == reflect.Ptr {
+		fv = reflect.ValueOf(Copy(fv.Interface()))
 	}
 
-	field.Set(fieldValue)
+	if field.Type() != fv.Type() {
+		return fmt.Errorf("provided value type %v didn't match field type %v", fv.Type(), field.Type())
+	}
+
+	field.Set(fv)
 
 	return nil
 }

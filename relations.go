@@ -268,12 +268,6 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 	//
 
 	if !isSlice {
-		// User.Avatar
-		if !isMany {
-			return reflekt.SetFieldValue(out, rq.relation.Name, InterfaceToModel(instance))
-		}
-
-		// User.Avatars
 		return reflekt.SetFieldValue(out, rq.relation.Name, reflect.ValueOf(instance).Elem().Interface())
 	}
 

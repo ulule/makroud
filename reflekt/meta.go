@@ -2,7 +2,7 @@ package reflekt
 
 import "reflect"
 
-// Meta are low level field metadata.
+// FieldMeta are low level field metadata.
 type FieldMeta struct {
 	Name  string
 	Field reflect.StructField
