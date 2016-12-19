@@ -199,18 +199,6 @@ func TestPreload_NullPrimaryKey(t *testing.T) {
 	is.NotZero(category.User.ID)
 }
 
-func TestPreload_RelationPointer(t *testing.T) {
-	is := assert.New(t)
-
-	db, fixtures, shutdown := dbConnection(t)
-	defer shutdown()
-
-	article := fixtures.Articles[0]
-	is.Nil(Preload(db, &article, "Reviewer"))
-	is.Equal(fixtures.User.ID, article.Reviewer.ID)
-	is.Equal(fixtures.User.Username, article.Reviewer.Username)
-}
-
 // ----------------------------------------------------------------------------
 // Preloads: OneToMany
 // ----------------------------------------------------------------------------
@@ -218,41 +206,85 @@ func TestPreload_RelationPointer(t *testing.T) {
 func TestPreload_OneToMany_Level1(t *testing.T) {
 	is := assert.New(t)
 
-	db, fixtures, shutdown := dbConnection(t)
+	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
-	// Instance
+	user := createUser(t, db, "batman")
+	article := createArticle(t, db, &user)
 
-	article := fixtures.Articles[0]
+	//
+	// Instance
+	//
+
+	// Value
 	is.Nil(Preload(db, &article, "Author"))
-	is.Equal(fixtures.User.ID, article.AuthorID)
-	is.Equal(fixtures.User.Username, article.Author.Username)
+	is.Equal(user.ID, article.AuthorID)
+	is.Equal(user.Username, article.Author.Username)
+
+	// Pointer
+	is.Nil(Preload(db, &article, "Reviewer"))
+	is.Equal(user.ID, article.ReviewerID)
+	is.Equal(user.Username, article.Reviewer.Username)
+
+	//
+	// Slice
+	//
+
+	var articles []Article
+	for i := 0; i < 5; i++ {
+		articles = append(articles, createArticle(t, db, &user))
+	}
+
+	// Value
+	is.Nil(Preload(db, &articles, "Author"))
+	for _, a := range articles {
+		is.Equal(user.ID, a.AuthorID)
+		is.Equal(user.Username, a.Author.Username)
+	}
+
+	// Pointer
+	is.Nil(Preload(db, &articles, "Reviewer"))
+	for _, a := range articles {
+		is.Equal(user.ID, a.ReviewerID)
+		is.Equal(user.Username, a.Reviewer.Username)
+	}
 }
 
 func TestPreload_OneToMany_Level2(t *testing.T) {
 	is := assert.New(t)
 
-	db, fixtures, shutdown := dbConnection(t)
+	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
+	user := createUser(t, db, "spiderman")
+
+	//
 	// Instance
+	//
 
-	article := fixtures.Articles[0]
-
+	article := createArticle(t, db, &user)
 	is.Nil(Preload(db, &article, "Author", "Author.APIKey"))
-
+	is.Equal(user.ID, article.AuthorID)
+	is.Equal(user.Username, article.Author.Username)
 	is.NotZero(article.Author.APIKey.ID)
-	is.Equal("this-is-my-scret-api-key", article.Author.APIKey.Key)
+	is.Equal("spiderman-apikey", article.Author.APIKey.Key)
 
+	//
 	// Slice
+	//
 
-	articles := fixtures.Articles
-	user := fixtures.User
+	var articles []Article
+	for i := 0; i < 5; i++ {
+		articles = append(articles, createArticle(t, db, &user))
+	}
+
 	is.Nil(Preload(db, &articles, "Author", "Author.APIKey"))
-	for _, article := range articles {
-		is.Equal(user.ID, article.Author.ID)
-		is.NotZero(article.Author.APIKeyID)
-		is.Equal("this-is-my-scret-api-key", article.Author.APIKey.Key)
+	for _, a := range articles {
+		is.Equal(user.ID, a.Author.ID)
+		is.Equal(user.ID, article.AuthorID)
+		is.Equal(user.Username, article.Author.Username)
+		is.NotZero(a.Author.APIKeyID)
+		is.Equal("spiderman-apikey", a.Author.APIKey.Key)
 	}
 }
 
@@ -263,22 +295,26 @@ func TestPreload_OneToMany_Level2(t *testing.T) {
 func TestPreload_ManyToOne_Level1(t *testing.T) {
 	is := assert.New(t)
 
-	db, fixtures, shutdown := dbConnection(t)
+	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
+	//
 	// Instance
+	//
 
-	user := fixtures.User
+	user := createUser(t, db, "wonderwoman")
 	is.Nil(Preload(db, &user, "Avatars"))
 	is.Len(user.Avatars, 5)
 
-	for i := 0; i < 5; i++ {
-		is.Equal(i+1, user.Avatars[i].ID)
-		is.Equal(user.ID, user.Avatars[i].UserID)
-		is.Equal(fmt.Sprintf("/avatars/jdoe-%d.png", i), user.Avatars[i].Path)
+	for i, a := range user.Avatars {
+		is.NotZero(a.ID)
+		is.Equal(user.ID, a.UserID)
+		is.Equal(fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
 	}
 
+	//
 	// Slice
+	//
 
 	users := []User{}
 	for i := 1; i < 6; i++ {

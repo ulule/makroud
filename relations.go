@@ -280,15 +280,8 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 		value := reflect.ValueOf(out).Elem()
 
 		for i := 0; i < value.Len(); i++ {
-			item := value.Index(i)
-			if !item.CanSet() {
-				continue
-			}
-
-			val := reflect.Indirect(reflect.ValueOf(instance))
-			if val.IsValid() {
-				field := item.FieldByName(rq.relation.Name)
-				field.Set(val)
+			if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance); err != nil {
+				return err
 			}
 		}
 

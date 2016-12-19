@@ -10,6 +10,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -259,6 +260,19 @@ func loadData(t *testing.T, driver Driver) *TestData {
 		Articles:           articles,
 		ArticlesCategories: articlesCategories,
 	}
+}
+
+func createArticle(t *testing.T, driver Driver, user *User) Article {
+	is := assert.New(t)
+
+	var id int
+	err := driver.QueryRowx("INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3) RETURNING id", "Title", user.ID, user.ID).Scan(&id)
+	is.Nil(err)
+
+	article := Article{}
+	require.NoError(t, driver.Get(&article, "SELECT * FROM articles WHERE id = $1", id))
+
+	return article
 }
 
 func createUser(t *testing.T, driver Driver, username string) User {
