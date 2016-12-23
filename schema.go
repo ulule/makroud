@@ -74,7 +74,7 @@ func (s Schema) columns(withTable bool) Columns {
 
 // WhereColumns returns where clause with the given params without table prefix.
 func (s Schema) WhereColumns(params map[string]interface{}) Conditions {
-	return s.whereColumns(params, true)
+	return s.whereColumns(params, false)
 }
 
 // WhereColumnPaths returns where clause with the given params with table prefix.
