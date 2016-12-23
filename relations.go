@@ -168,7 +168,10 @@ func getRelationQueries(out interface{}, relations []Relation) (RelationQueries,
 
 		// Out is a slice, we must iterate over items and retrieve pk for each one.
 		// Out is a struct, just retrieve pk
-		if !reflekt.IsSlice(out) {
+
+		isSlice := reflekt.IsSlice(out)
+
+		if !isSlice {
 			pks, err = GetPrimaryKeys(out, fkFieldName)
 			if err != nil {
 				return nil, err
@@ -196,7 +199,7 @@ func getRelationQueries(out interface{}, relations []Relation) (RelationQueries,
 			params[columnName] = pks[0]
 		}
 
-		query, args, err := whereQuery(relation.Model, params, relation.IsOne())
+		query, args, err := whereQuery(relation.Model, params, relation.IsOne() && !isSlice)
 		if err != nil {
 			return nil, err
 		}
@@ -249,7 +252,7 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 	// If it's a many, let's clone the type as out for sqlx Get() / Select()
 	//
 
-	if isMany {
+	if isMany || isSlice {
 		instance = reflekt.CloneType(rq.relation.Model, reflect.Slice)
 	} else {
 		instance = reflekt.CloneType(rq.relation.Model)
@@ -279,9 +282,41 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 	if !isMany {
 		value := reflect.ValueOf(out).Elem()
 
-		for i := 0; i < value.Len(); i++ {
-			if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance); err != nil {
-				return err
+		if !isSlice {
+			for i := 0; i < value.Len(); i++ {
+				if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance); err != nil {
+					return err
+				}
+			}
+		} else {
+			instancesMap := map[interface{}]reflect.Value{}
+
+			items := reflect.ValueOf(instance).Elem()
+
+			for i := 0; i < items.Len(); i++ {
+				value, err := reflekt.GetFieldValue(items.Index(i), rq.relation.Reference.Name)
+
+				if err != nil {
+					return nil
+				}
+
+				instancesMap[value] = items.Index(i)
+			}
+
+			for i := 0; i < value.Len(); i++ {
+				val, err := reflekt.GetFieldValue(value.Index(i), rq.relation.RelatedFKField())
+
+				if err != nil {
+					return nil
+				}
+
+				instance, ok := instancesMap[val]
+
+				if ok {
+					if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance.Interface()); err != nil {
+						return err
+					}
+				}
 			}
 		}
 
@@ -354,7 +389,7 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 func fetchRelation(driver Driver, out interface{}, rq RelationQuery) error {
 	var err error
 
-	if rq.fetchOne {
+	if rq.fetchOne && !reflekt.IsSlice(out) {
 		if err = driver.Get(out, driver.Rebind(rq.query), rq.args...); err != nil {
 			return err
 		}

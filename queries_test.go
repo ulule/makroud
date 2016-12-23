@@ -182,6 +182,7 @@ func TestPreload_UnknownRelation(t *testing.T) {
 
 	article := fixtures.Articles[0]
 	is.NotNil(Preload(db, &article, "Foo"))
+	is.Zero(article.Author)
 }
 
 func TestPreload_NullPrimaryKey(t *testing.T) {
@@ -192,6 +193,7 @@ func TestPreload_NullPrimaryKey(t *testing.T) {
 
 	category := createCategory(t, db, "cat1", nil)
 	is.Nil(Preload(db, &category, "User"))
+	is.Zero(category.User)
 
 	category = createCategory(t, db, "cat1", &fixtures.User.ID)
 	is.Nil(Preload(db, &category, "User"))
@@ -209,8 +211,8 @@ func TestPreload_OneToMany_Level1(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
-	user := createUser(t, db, "batman")
-	article := createArticle(t, db, &user)
+	batman := createUser(t, db, "batman")
+	article := createArticle(t, db, &batman)
 
 	//
 	// Instance
@@ -218,13 +220,15 @@ func TestPreload_OneToMany_Level1(t *testing.T) {
 
 	// Value
 	is.Nil(Preload(db, &article, "Author"))
-	is.Equal(user.ID, article.AuthorID)
-	is.Equal(user.Username, article.Author.Username)
+	is.NotZero(article.Author)
+	is.Equal(batman.ID, article.AuthorID)
+	is.Equal(batman.Username, article.Author.Username)
 
 	// Pointer
 	is.Nil(Preload(db, &article, "Reviewer"))
-	is.Equal(user.ID, article.ReviewerID)
-	is.Equal(user.Username, article.Reviewer.Username)
+	is.NotZero(article.Reviewer)
+	is.Equal(batman.ID, article.ReviewerID)
+	is.Equal(batman.Username, article.Reviewer.Username)
 
 	//
 	// Slice
@@ -232,22 +236,54 @@ func TestPreload_OneToMany_Level1(t *testing.T) {
 
 	var articles []Article
 	for i := 0; i < 5; i++ {
-		articles = append(articles, createArticle(t, db, &user))
+		articles = append(articles, createArticle(t, db, &batman))
 	}
 
 	// Value
 	is.Nil(Preload(db, &articles, "Author"))
 	for _, a := range articles {
-		is.Equal(user.ID, a.AuthorID)
-		is.Equal(user.Username, a.Author.Username)
+		is.Equal(batman.ID, a.AuthorID)
+		is.Equal(batman.Username, a.Author.Username)
 	}
 
 	// Pointer
 	is.Nil(Preload(db, &articles, "Reviewer"))
 	for _, a := range articles {
-		is.Equal(user.ID, a.ReviewerID)
-		is.Equal(user.Username, a.Reviewer.Username)
+		is.Equal(batman.ID, a.ReviewerID)
+		is.Equal(batman.Username, a.Reviewer.Username)
 	}
+}
+
+func TestPreload_OneToMany_Level1_Different(t *testing.T) {
+	is := assert.New(t)
+
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	batman := createUser(t, db, "batman")
+	robin := createUser(t, db, "robin")
+	catwoman := createUser(t, db, "catwoman")
+	article1 := createArticle(t, db, &batman)
+	article2 := createArticle(t, db, &robin)
+	article3 := createArticle(t, db, &catwoman)
+
+	articles := []Article{
+		article1,
+		article2,
+		article3,
+	}
+
+	is.Nil(Preload(db, &articles, "Author"))
+	is.Equal(articles[0].AuthorID, batman.ID)
+	is.NotZero(articles[0].Author)
+	is.Equal(articles[1].AuthorID, robin.ID)
+	is.NotZero(articles[1].Author)
+	is.Equal(articles[2].AuthorID, catwoman.ID)
+	is.NotZero(articles[2].Author)
+
+	is.Equal(articles[0].Author, batman)
+	is.Equal(articles[1].Author, robin)
+	is.Equal(articles[2].Author, catwoman)
 }
 
 func TestPreload_OneToMany_Level2(t *testing.T) {
