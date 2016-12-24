@@ -310,28 +310,41 @@ func TestPreload_OneToMany_Level2(t *testing.T) {
 
 	article := createArticle(t, db, &user)
 	is.Nil(Preload(db, &article, "Author", "Author.APIKey"))
+	is.NotZero(article.Author)
+	is.NotZero(article.Author.APIKey)
 	is.Equal(user.ID, article.AuthorID)
 	is.Equal(user.Username, article.Author.Username)
 	is.NotZero(article.Author.APIKey.ID)
 	is.Equal("spiderman-apikey", article.Author.APIKey.Key)
+}
 
-	//
-	// Slice
-	//
+func TestPreload_OneToMany_Level2_Multiple(t *testing.T) {
+	is := assert.New(t)
 
-	var articles []Article
-	for i := 0; i < 5; i++ {
-		articles = append(articles, createArticle(t, db, &user))
-	}
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	user := createUser(t, db, "spiderman")
+	article := createArticle(t, db, &user)
+
+	deadpool := createUser(t, db, "deadpool")
+	article2 := createArticle(t, db, &deadpool)
+
+	articles := []Article{article, article2}
 
 	is.Nil(Preload(db, &articles, "Author", "Author.APIKey"))
-	for _, a := range articles {
-		is.Equal(user.ID, a.Author.ID)
-		is.Equal(user.ID, article.AuthorID)
-		is.Equal(user.Username, article.Author.Username)
-		is.NotZero(a.Author.APIKeyID)
-		is.Equal("spiderman-apikey", a.Author.APIKey.Key)
-	}
+
+	is.Equal(user.ID, articles[0].Author.ID)
+	is.Equal(user.ID, articles[0].AuthorID)
+	is.Equal(user.Username, articles[0].Author.Username)
+	is.NotZero(articles[0].Author.APIKeyID)
+	is.Equal("spiderman-apikey", articles[0].Author.APIKey.Key)
+
+	is.Equal(deadpool.ID, articles[1].Author.ID)
+	is.Equal(deadpool.ID, articles[1].AuthorID)
+	is.Equal(deadpool.Username, articles[1].Author.Username)
+	is.NotZero(articles[1].Author.APIKeyID)
+	is.Equal("deadpool-apikey", articles[1].Author.APIKey.Key)
 }
 
 // ----------------------------------------------------------------------------
