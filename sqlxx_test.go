@@ -31,11 +31,18 @@ var dropTables = `
 	DROP TABLE IF EXISTS categories CASCADE;
 	DROP TABLE IF EXISTS articles CASCADE;
 	DROP TABLE IF EXISTS articles_categories CASCADE;
+	DROP TABLE IF EXISTS partners CASCADE;
 `
 
 var dbSchema = `CREATE TABLE api_keys (
 	id 	serial primary key not null,
+	partner_id integer,
 	key varchar(255) not null
+);
+
+CREATE TABLE partners (
+	id 	serial primary key not null,
+	name varchar(255) not null
 );
 
 CREATE TABLE users (
@@ -104,9 +111,18 @@ type TestData struct {
 	ArticlesCategories []ArticleCategory
 }
 
+type Partner struct {
+	ID   int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
+	Name string `db:"name"`
+}
+
+func (Partner) TableName() string { return "partners" }
+
 type APIKey struct {
-	ID  int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
-	Key string `db:"key"`
+	ID        int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
+	Key       string `db:"key"`
+	Partner   Partner
+	PartnerID int `db:"partner_id"`
 }
 
 func (APIKey) TableName() string { return "api_keys" }
@@ -205,8 +221,14 @@ func dbParam(param string) string {
 }
 
 func loadData(t *testing.T, driver Driver) *TestData {
+	// Partners
+	driver.MustExec("INSERT INTO partners (name) VALUES ($1)", "Ulule")
+	partners := []Partner{}
+	require.NoError(t, driver.Select(&partners, "SELECT * FROM partners"))
+	partner := partners[0]
+
 	// API Keys
-	driver.MustExec("INSERT INTO api_keys (key) VALUES ($1)", "this-is-my-scret-api-key")
+	driver.MustExec("INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)", "this-is-my-scret-api-key", partner.ID)
 	apiKeys := []APIKey{}
 	require.NoError(t, driver.Select(&apiKeys, "SELECT * FROM api_keys"))
 	apiKey := apiKeys[0]
@@ -278,9 +300,15 @@ func createArticle(t *testing.T, driver Driver, user *User) Article {
 func createUser(t *testing.T, driver Driver, username string) User {
 	key := fmt.Sprintf("%s-apikey", username)
 
-	driver.MustExec("INSERT INTO api_keys (key) VALUES ($1)", key)
+	name := fmt.Sprintf("%s-partner", username)
+
+	driver.MustExec("INSERT INTO partners (name) VALUES ($1)", name)
+	partner := Partner{}
+	require.NoError(t, driver.Get(&partner, "SELECT * FROM partners WHERE name = $1", name))
+
+	driver.MustExec("INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)", key, partner.ID)
 	apiKey := APIKey{}
-	require.NoError(t, driver.Get(&apiKey, "SELECT * FROM api_keys WHERE key=$1", key))
+	require.NoError(t, driver.Get(&apiKey, "SELECT * FROM api_keys WHERE key = $1", key))
 
 	driver.MustExec("INSERT INTO users (username, api_key_id) VALUES ($1, $2)", username, apiKey.ID)
 	user := User{}
