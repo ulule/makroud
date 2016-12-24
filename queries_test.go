@@ -273,17 +273,27 @@ func TestPreload_OneToMany_Level1_Different(t *testing.T) {
 		article3,
 	}
 
-	is.Nil(Preload(db, &articles, "Author"))
+	is.Nil(Preload(db, &articles, "Author", "Reviewer"))
 	is.Equal(articles[0].AuthorID, batman.ID)
 	is.NotZero(articles[0].Author)
+	is.Equal(articles[0].ReviewerID, batman.ID)
+	is.NotZero(articles[0].Reviewer)
 	is.Equal(articles[1].AuthorID, robin.ID)
 	is.NotZero(articles[1].Author)
+	is.Equal(articles[1].ReviewerID, robin.ID)
+	is.NotZero(articles[1].Reviewer)
 	is.Equal(articles[2].AuthorID, catwoman.ID)
 	is.NotZero(articles[2].Author)
+	is.Equal(articles[2].ReviewerID, catwoman.ID)
+	is.NotZero(articles[2].Reviewer)
 
 	is.Equal(articles[0].Author, batman)
 	is.Equal(articles[1].Author, robin)
 	is.Equal(articles[2].Author, catwoman)
+
+	is.Equal(articles[0].Reviewer, &batman)
+	is.Equal(articles[1].Reviewer, &robin)
+	is.Equal(articles[2].Reviewer, &catwoman)
 }
 
 func TestPreload_OneToMany_Level2(t *testing.T) {
