@@ -332,7 +332,7 @@ func createUser(t *testing.T, driver Driver, username string) User {
 	partner := Partner{}
 	require.NoError(t, driver.Get(&partner, "SELECT * FROM partners WHERE name = $1", name))
 
-	driver.MustExec("INSERT INTO media (path) VALUES ($1)", "media/avatar.png")
+	driver.MustExec("INSERT INTO media (path) VALUES ($1)", fmt.Sprintf("media/media-%s.png", username))
 	media := Media{}
 	require.NoError(t, driver.Get(&media, "SELECT * FROM media ORDER BY id DESC LIMIT 1"))
 
