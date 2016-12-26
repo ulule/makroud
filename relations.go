@@ -278,7 +278,7 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 	// Slice
 	//
 
-	// Users.Avatar
+	// !Users.Avatar
 	if !isMany {
 		value := reflect.ValueOf(out).Elem()
 

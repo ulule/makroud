@@ -109,6 +109,7 @@ type TestData struct {
 	Articles           []Article
 	Categories         []Category
 	ArticlesCategories []ArticleCategory
+	Partners           []Partner
 }
 
 type Partner struct {
@@ -281,6 +282,7 @@ func loadData(t *testing.T, driver Driver) *TestData {
 		Categories:         categories,
 		Articles:           articles,
 		ArticlesCategories: articlesCategories,
+		Partners:           partners,
 	}
 }
 
