@@ -51,7 +51,7 @@ CREATE TABLE users (
 	username 	    varchar(30) not null,
 	is_active 		boolean default true,
 	api_key_id		integer,
-	media_id		integer,
+	avatar_id		integer,
     created_at 		timestamp with time zone default current_timestamp,
     updated_at 		timestamp with time zone default current_timestamp,
     deleted_at 		timestamp with time zone
@@ -157,8 +157,8 @@ type User struct {
 
 	APIKeyID int `db:"api_key_id"`
 	APIKey   APIKey
-	MediaID  sql.NullInt64 `db:"media_id"`
-	Media    *Media
+	AvatarID sql.NullInt64 `db:"avatar_id"`
+	Avatar   *Media
 
 	Avatars []Avatar
 	// Comments []Comment
@@ -259,7 +259,7 @@ func loadData(t *testing.T, driver Driver) *TestData {
 	require.NoError(t, driver.Get(&media, "SELECT * FROM media LIMIT 1"))
 
 	// Users
-	driver.MustExec("INSERT INTO users (username, api_key_id, media_id) VALUES ($1, $2, $3)", "jdoe", apiKey.ID, media.ID)
+	driver.MustExec("INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)", "jdoe", apiKey.ID, media.ID)
 	user := User{}
 	require.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", "jdoe"))
 
@@ -340,7 +340,7 @@ func createUser(t *testing.T, driver Driver, username string) User {
 	apiKey := APIKey{}
 	require.NoError(t, driver.Get(&apiKey, "SELECT * FROM api_keys WHERE key = $1", key))
 
-	driver.MustExec("INSERT INTO users (username, api_key_id, media_id) VALUES ($1, $2, $3)", username, apiKey.ID, media.ID)
+	driver.MustExec("INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)", username, apiKey.ID, media.ID)
 	user := User{}
 	require.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", username))
 
