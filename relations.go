@@ -319,7 +319,7 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 				instance, ok := instancesMap[val]
 
 				if ok {
-					if err := reflekt.SetFieldValue(value.Index(i).Interface(), rq.relation.Name, instance.Interface()); err != nil {
+					if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance.Interface()); err != nil {
 						return err
 					}
 				}

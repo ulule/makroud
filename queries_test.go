@@ -270,10 +270,18 @@ func TestPreload_OneToMany_Level1_Different_Pointer_Null(t *testing.T) {
 		catwoman,
 	}
 
+	// user_id => media_id
+	media := map[int]int{}
+
+	for _, user := range users {
+		media[user.ID] = int(user.MediaID.Int64)
+	}
+
 	is.Nil(Preload(db, &users, "Media"))
 
 	for i, _ := range users {
 		is.NotNil(users[i].Media)
+		is.Equal(users[i].Media.ID, media[users[i].ID])
 	}
 }
 
