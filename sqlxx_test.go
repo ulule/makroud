@@ -32,6 +32,7 @@ var dropTables = `
 	DROP TABLE IF EXISTS articles CASCADE;
 	DROP TABLE IF EXISTS articles_categories CASCADE;
 	DROP TABLE IF EXISTS partners CASCADE;
+	DROP TABLE IF EXISTS media CASCADE;
 `
 
 var dbSchema = `CREATE TABLE api_keys (
@@ -50,6 +51,7 @@ CREATE TABLE users (
 	username 	    varchar(30) not null,
 	is_active 		boolean default true,
 	api_key_id		integer,
+	media_id		integer,
     created_at 		timestamp with time zone default current_timestamp,
     updated_at 		timestamp with time zone default current_timestamp,
     deleted_at 		timestamp with time zone
@@ -60,6 +62,13 @@ CREATE TABLE profiles (
 	user_id 		integer references users(id),
 	first_name 		varchar(255) not null,
 	last_name 		varchar(255) not null
+);
+
+CREATE TABLE media (
+	id 				serial primary key not null,
+	path 			varchar(255) not null,
+    created_at 		timestamp with time zone default current_timestamp,
+    updated_at 		timestamp with time zone default current_timestamp
 );
 
 CREATE TABLE avatars (
@@ -128,6 +137,15 @@ type APIKey struct {
 
 func (APIKey) TableName() string { return "api_keys" }
 
+type Media struct {
+	ID        int       `db:"id" sqlxx:"primary_key:true"`
+	Path      string    `db:"path"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
+func (Media) TableName() string { return "media" }
+
 type User struct {
 	ID       int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
 	Username string `db:"username"`
@@ -139,6 +157,8 @@ type User struct {
 
 	APIKeyID int `db:"api_key_id"`
 	APIKey   APIKey
+	MediaID  sql.NullInt64 `db:"media_id"`
+	Media    *Media
 
 	Avatars []Avatar
 	// Comments []Comment
@@ -234,8 +254,12 @@ func loadData(t *testing.T, driver Driver) *TestData {
 	require.NoError(t, driver.Select(&apiKeys, "SELECT * FROM api_keys"))
 	apiKey := apiKeys[0]
 
+	driver.MustExec("INSERT INTO media (path) VALUES ($1)", "media/avatar.png")
+	media := Media{}
+	require.NoError(t, driver.Get(&media, "SELECT * FROM media LIMIT 1"))
+
 	// Users
-	driver.MustExec("INSERT INTO users (username, api_key_id) VALUES ($1, $2)", "jdoe", apiKey.ID)
+	driver.MustExec("INSERT INTO users (username, api_key_id, media_id) VALUES ($1, $2, $3)", "jdoe", apiKey.ID, media.ID)
 	user := User{}
 	require.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", "jdoe"))
 
