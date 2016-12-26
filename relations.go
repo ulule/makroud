@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"database/sql"
 	"fmt"
 	"reflect"
 
@@ -310,10 +311,15 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 					return nil
 				}
 
+				switch val.(type) {
+				case sql.NullInt64:
+					val = int(val.(sql.NullInt64).Int64)
+				}
+
 				instance, ok := instancesMap[val]
 
 				if ok {
-					if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance.Interface()); err != nil {
+					if err := reflekt.SetFieldValue(value.Index(i).Interface(), rq.relation.Name, instance.Interface()); err != nil {
 						return err
 					}
 				}

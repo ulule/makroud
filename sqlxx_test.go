@@ -332,11 +332,15 @@ func createUser(t *testing.T, driver Driver, username string) User {
 	partner := Partner{}
 	require.NoError(t, driver.Get(&partner, "SELECT * FROM partners WHERE name = $1", name))
 
+	driver.MustExec("INSERT INTO media (path) VALUES ($1)", "media/avatar.png")
+	media := Media{}
+	require.NoError(t, driver.Get(&media, "SELECT * FROM media ORDER BY id DESC LIMIT 1"))
+
 	driver.MustExec("INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)", key, partner.ID)
 	apiKey := APIKey{}
 	require.NoError(t, driver.Get(&apiKey, "SELECT * FROM api_keys WHERE key = $1", key))
 
-	driver.MustExec("INSERT INTO users (username, api_key_id) VALUES ($1, $2)", username, apiKey.ID)
+	driver.MustExec("INSERT INTO users (username, api_key_id, media_id) VALUES ($1, $2, $3)", username, apiKey.ID, media.ID)
 	user := User{}
 	require.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", username))
 

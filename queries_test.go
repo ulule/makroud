@@ -254,6 +254,29 @@ func TestPreload_OneToMany_Level1(t *testing.T) {
 	}
 }
 
+func TestPreload_OneToMany_Level1_Different_Pointer_Null(t *testing.T) {
+	is := assert.New(t)
+
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	batman := createUser(t, db, "batman")
+	robin := createUser(t, db, "robin")
+	catwoman := createUser(t, db, "catwoman")
+
+	users := []User{
+		batman,
+		robin,
+		catwoman,
+	}
+
+	is.Nil(Preload(db, &users, "Media"))
+
+	for i, _ := range users {
+		is.NotNil(users[i].Media)
+	}
+}
+
 func TestPreload_OneToMany_Level1_Different(t *testing.T) {
 	is := assert.New(t)
 
