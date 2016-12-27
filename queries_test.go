@@ -202,10 +202,10 @@ func TestPreload_NullPrimaryKey(t *testing.T) {
 }
 
 // ----------------------------------------------------------------------------
-// Preloads: OneToMany
+// Preloads: OneToOne
 // ----------------------------------------------------------------------------
 
-func TestPreload_OneToMany_Level1(t *testing.T) {
+func TestPreload_OneToOne_Level1(t *testing.T) {
 	is := assert.New(t)
 
 	db, _, shutdown := dbConnection(t)
@@ -379,18 +379,14 @@ func TestPreload_OneToMany_Level2_Multiple(t *testing.T) {
 }
 
 // ----------------------------------------------------------------------------
-// Preloads: ManyToOne
+// Preloads: ToMany
 // ----------------------------------------------------------------------------
 
-func TestPreload_ManyToOne_Level1(t *testing.T) {
+func TestPreload_OneToMany_Level1(t *testing.T) {
 	is := assert.New(t)
 
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
-
-	//
-	// Instance
-	//
 
 	user := createUser(t, db, "wonderwoman")
 	is.Nil(Preload(db, &user, "Avatars"))
@@ -401,7 +397,13 @@ func TestPreload_ManyToOne_Level1(t *testing.T) {
 		is.Equal(user.ID, a.UserID)
 		is.Equal(fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
 	}
+}
 
+func TestPreload_ManyToMany_Level1(t *testing.T) {
+	is := assert.New(t)
+
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
 	//
 	// Slice
 	//
