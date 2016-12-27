@@ -254,7 +254,7 @@ func TestPreload_OneToOne_Level1(t *testing.T) {
 	}
 }
 
-func TestPreload_OneToMany_Level1_Different_Pointer_Null(t *testing.T) {
+func TestPreload_ManyToOne_Level1_Different_Pointer_Null(t *testing.T) {
 	is := assert.New(t)
 
 	db, _, shutdown := dbConnection(t)
@@ -285,7 +285,7 @@ func TestPreload_OneToMany_Level1_Different_Pointer_Null(t *testing.T) {
 	}
 }
 
-func TestPreload_OneToMany_Level1_Different(t *testing.T) {
+func TestPreload_ManyToOne_Level1_Different(t *testing.T) {
 	is := assert.New(t)
 
 	db, _, shutdown := dbConnection(t)
@@ -327,7 +327,7 @@ func TestPreload_OneToMany_Level1_Different(t *testing.T) {
 	is.Equal(articles[2].Reviewer, &catwoman)
 }
 
-func TestPreload_OneToMany_Level2(t *testing.T) {
+func TestPreload_OneToOne_Level2(t *testing.T) {
 	is := assert.New(t)
 
 	db, _, shutdown := dbConnection(t)
@@ -349,7 +349,7 @@ func TestPreload_OneToMany_Level2(t *testing.T) {
 	is.Equal("spiderman-apikey", article.Author.APIKey.Key)
 }
 
-func TestPreload_OneToMany_Level2_Multiple(t *testing.T) {
+func TestPreload_ManyToOne_Level2_Multiple(t *testing.T) {
 	is := assert.New(t)
 
 	db, _, shutdown := dbConnection(t)
@@ -369,6 +369,7 @@ func TestPreload_OneToMany_Level2_Multiple(t *testing.T) {
 	is.Equal(user.ID, articles[0].AuthorID)
 	is.Equal(user.Username, articles[0].Author.Username)
 	is.NotZero(articles[0].Author.APIKeyID)
+
 	is.Equal("spiderman-apikey", articles[0].Author.APIKey.Key)
 
 	is.Equal(deadpool.ID, articles[1].Author.ID)
@@ -382,7 +383,7 @@ func TestPreload_OneToMany_Level2_Multiple(t *testing.T) {
 // Preloads: ToMany
 // ----------------------------------------------------------------------------
 
-func TestPreload_OneToMany_Level1(t *testing.T) {
+func TestPreload_OneToMany_Level1_Simple(t *testing.T) {
 	is := assert.New(t)
 
 	db, _, shutdown := dbConnection(t)
