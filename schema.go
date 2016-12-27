@@ -21,8 +21,8 @@ type Schema struct {
 	Relations    map[string]Relation
 }
 
-// NewSchema returns a new Schema instance.
-func NewSchema(model Model) Schema {
+// newSchema returns a new Schema instance.
+func newSchema(model Model) Schema {
 	return Schema{
 		ModelName: reflekt.ReflectType(model).Name(),
 		TableName: model.TableName(),
@@ -112,18 +112,12 @@ func (s Schema) RelationPaths() map[string]Relation {
 // Schema API
 // ----------------------------------------------------------------------------
 
-// GetSchema returns model's table columns, extracted by reflection.
+// SchemaOf returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
-func GetSchema(model Model) (Schema, error) {
+func SchemaOf(model Model) (Schema, error) {
 	var err error
 
-	schema, found := cache.GetSchema(model)
-
-	if found {
-		return schema, nil
-	}
-
-	schema = NewSchema(model)
+	schema := newSchema(model)
 
 	v := reflekt.ReflectValue(model)
 
@@ -161,8 +155,6 @@ func GetSchema(model Model) (Schema, error) {
 
 		schema.Fields[meta.Name] = field
 	}
-
-	cache.SetSchema(schema)
 
 	return schema, nil
 }
