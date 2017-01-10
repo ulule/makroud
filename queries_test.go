@@ -229,10 +229,15 @@ func TestPreload_OneToOne_Level1(t *testing.T) {
 	is.NotZero(article.Reviewer)
 	is.Equal(batman.ID, article.ReviewerID)
 	is.Equal(batman.Username, article.Reviewer.Username)
+}
 
-	//
-	// Slice
-	//
+func TestPreload_ManyToOne_Level1_Same(t *testing.T) {
+	is := assert.New(t)
+
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	batman := createUser(t, db, "batman")
 
 	var articles []Article
 	for i := 0; i < 5; i++ {

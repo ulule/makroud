@@ -183,6 +183,8 @@ func Save(driver Driver, out interface{}) error {
 		return err
 	}
 
+	defer stmt.Close()
+
 	err = stmt.Get(out, out)
 	if err != nil {
 		return err

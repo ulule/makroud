@@ -284,6 +284,7 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 	if !isMany {
 		value := reflect.ValueOf(out).Elem()
 
+		// user.Avatar
 		if !isSlice {
 			for i := 0; i < value.Len(); i++ {
 				if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance); err != nil {
