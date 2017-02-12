@@ -152,13 +152,13 @@ The test suite is running on postgresql so make sure it's correctly installed on
 You will have to create an initial database attached to the user used by this test suite:
 
 
-```bash
+```console
 CREATE USER postgres WITH PASSWORD '';
 CREATE DATABASE sqlxx_test WITH OWNER postgres;
 ```
 
 You can now run the test suite:
 
-```bash
+```console
 make test
 ```
