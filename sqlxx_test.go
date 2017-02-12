@@ -16,7 +16,7 @@ import (
 
 var dbDefaultParams = map[string]string{
 	"USER":     "postgres",
-	"PASSWORS": "",
+	"PASSWORD": "",
 	"HOST":     "localhost",
 	"PORT":     "5432",
 	"NAME":     "sqlxx_test",

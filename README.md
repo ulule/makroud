@@ -121,7 +121,7 @@ if err := sqlxx.SoftDelete(db, &user, "DeletedAt"); err != nil {
 }
 ```
 
-## Struct Tags
+## Struct tags
 
 `sqlxx` tags must be separated by a semicolon (example: `tag1; tag2; tag3;`).
 
@@ -143,4 +143,22 @@ type User struct {
     // But it is the same as
     ID int `sqlxx:"primary_key"`
 }
+```
+
+## Development
+
+The test suite is running on postgresql so make sure it's correctly installed on your computer.
+
+You will have to create an initial database attached to the user used by this test suite:
+
+
+```bash
+CREATE USER postgres WITH PASSWORD '';
+CREATE DATABASE sqlxx_test WITH OWNER postgres;
+```
+
+You can now run the test suite:
+
+```bash
+make test
 ```
