@@ -2,6 +2,10 @@ package sqlxx
 
 import "strings"
 
+// ----------------------------------------------------------------------------
+// Columns
+// ----------------------------------------------------------------------------
+
 // Columns is a list of table columns.
 type Columns []string
 
@@ -9,6 +13,10 @@ type Columns []string
 func (c Columns) String() string {
 	return strings.Join(c, ", ")
 }
+
+// ----------------------------------------------------------------------------
+// Where clauses
+// ----------------------------------------------------------------------------
 
 // Conditions is a list of query conditions
 type Conditions []string
