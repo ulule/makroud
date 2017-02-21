@@ -3,14 +3,9 @@ package sqlxx
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/ulule/sqlxx/reflekt"
 )
-
-// ----------------------------------------------------------------------------
-// Schema
-// ----------------------------------------------------------------------------
 
 // Schema is a model schema.
 type Schema struct {
@@ -110,10 +105,6 @@ func (s Schema) RelationPaths() map[string]Relation {
 	return GetSchemaRelations(s)
 }
 
-// ----------------------------------------------------------------------------
-// Schema API
-// ----------------------------------------------------------------------------
-
 // GetSchemaFromInterface returns Schema by reflecting model for the given interface.
 func GetSchemaFromInterface(out interface{}) (Schema, error) {
 	return GetSchema(GetModelFromInterface(out))
@@ -172,6 +163,7 @@ func GetSchemaRelations(schema Schema) map[string]Relation {
 
 	for _, relation := range schema.Relations {
 		paths[relation.Name] = relation
+
 		rels := GetSchemaRelations(relation.Schema)
 		for _, rel := range rels {
 			paths[fmt.Sprintf("%s.%s", relation.Name, rel.Name)] = rel
@@ -179,33 +171,4 @@ func GetSchemaRelations(schema Schema) map[string]Relation {
 	}
 
 	return paths
-}
-
-// ----------------------------------------------------------------------------
-// Columns
-// ----------------------------------------------------------------------------
-
-// Columns is a list of table columns.
-type Columns []string
-
-// Returns string representation of slice.
-func (c Columns) String() string {
-	return strings.Join(c, ", ")
-}
-
-// ----------------------------------------------------------------------------
-// Conditions
-// ----------------------------------------------------------------------------
-
-// Conditions is a list of query conditions
-type Conditions []string
-
-// String returns conditions as AND query.
-func (c Conditions) String() string {
-	return strings.Join(c, " AND ")
-}
-
-// OR returns conditions as OR query.
-func (c Conditions) OR() string {
-	return strings.Join(c, " OR ")
 }
