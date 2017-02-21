@@ -47,13 +47,11 @@ func (c *Cache) GetSchema(model Model) (Schema, bool) {
 // If the given schema does not exists, returns false as bool.
 func GetSchema(model Model) (Schema, error) {
 	schema, found := cache.GetSchema(model)
-
 	if found {
 		return schema, nil
 	}
 
 	schema, err := SchemaOf(model)
-
 	if err != nil {
 		return Schema{}, err
 	}
