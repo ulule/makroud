@@ -6,6 +6,11 @@ import (
 	"github.com/ulule/sqlxx/reflekt"
 )
 
+// Model represents a database table.
+type Model interface {
+	TableName() string
+}
+
 // GetModelFromInterface returns interface as a Model interface.
 func GetModelFromInterface(itf interface{}) Model {
 	value := reflekt.GetIndirectValue(itf)

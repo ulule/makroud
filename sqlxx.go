@@ -32,10 +32,5 @@ type Driver interface {
 	Select(dest interface{}, query string, args ...interface{}) error
 }
 
-// Model represents a database table.
-type Model interface {
-	TableName() string
-}
-
 // Preloader is a custom preloader.
 type Preloader func(d Driver) (Driver, error)
