@@ -14,6 +14,7 @@ import (
 
 // Schema is a model schema.
 type Schema struct {
+	Model        Model
 	ModelName    string
 	TableName    string
 	PrimaryField Field
@@ -24,6 +25,7 @@ type Schema struct {
 // newSchema returns a new Schema instance.
 func newSchema(model Model) Schema {
 	return Schema{
+		Model:     model,
 		ModelName: reflekt.GetIndirectType(model).Name(),
 		TableName: model.TableName(),
 		Fields:    map[string]Field{},
