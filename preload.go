@@ -21,39 +21,12 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		return err
 	}
 
-	type ChildRelation struct {
-		field         string
-		relationField string
-		relation      Relation
+	mapping, err := NewRelationMapping(schema, fields)
+	if err != nil {
+		return err
 	}
 
-	var (
-		relations      []Relation
-		childRelations []ChildRelation
-		relationPaths  = schema.RelationPaths()
-	)
-
-	for _, field := range fields {
-		relation, ok := relationPaths[field]
-		if !ok {
-			return fmt.Errorf("%s is not a valid relation", field)
-		}
-
-		splits := strings.Split(field, ".")
-		if len(splits) == 1 {
-			relations = append(relations, relation)
-		}
-
-		if len(splits) == 2 {
-			childRelations = append(childRelations, ChildRelation{
-				field:         splits[0],
-				relationField: strings.Join(splits[1:], "."),
-				relation:      relation,
-			})
-		}
-	}
-
-	if err = preloadRelations(driver, out, relations); err != nil {
+	if err = preloadRelations(driver, out, mapping.Root); err != nil {
 		return err
 	}
 
@@ -69,7 +42,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		itemChildRelationFieldName string
 	}
 
-	for _, child := range childRelations {
+	for _, child := range mapping.Children {
 		// Articles
 		if reflekt.IsSlice(out) {
 			var (
@@ -387,4 +360,49 @@ func fetchRelation(driver Driver, out interface{}, rq RelationQuery) error {
 	}
 
 	return nil
+}
+
+// ChildRelation are model's child relations.
+type ChildRelation struct {
+	field         string
+	relationField string
+	relation      Relation
+}
+
+// RelationMapping is the relations mapping.
+type RelationMapping struct {
+	Root     []Relation
+	Children []ChildRelation
+}
+
+// NewRelationMapping returns a RelationsMapping instance.
+func NewRelationMapping(schema Schema, paths []string) (*RelationMapping, error) {
+	m := &RelationMapping{
+		Root:     []Relation{},
+		Children: []ChildRelation{},
+	}
+
+	relationPaths := schema.RelationPaths()
+
+	for _, path := range paths {
+		relation, ok := relationPaths[path]
+		if !ok {
+			return nil, fmt.Errorf("%s is not a valid relation", path)
+		}
+
+		splits := strings.Split(path, ".")
+		if len(splits) == 1 {
+			m.Root = append(m.Root, relation)
+		}
+
+		if len(splits) == 2 {
+			m.Children = append(m.Children, ChildRelation{
+				field:         splits[0],
+				relationField: strings.Join(splits[1:], "."),
+				relation:      relation,
+			})
+		}
+	}
+
+	return m, nil
 }
