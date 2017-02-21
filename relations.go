@@ -61,7 +61,7 @@ func (r Relation) String() string {
 }
 
 // makeRelation creates a new relation.
-func makeRelation(schema Schema, model Model, meta reflekt.FieldMeta, typ RelationType) (Relation, error) {
+func makeRelation(schema Schema, model Model, meta FieldMeta, typ RelationType) (Relation, error) {
 	var (
 		err       error
 		modelType = reflekt.GetIndirectType(model)
@@ -74,7 +74,7 @@ func makeRelation(schema Schema, model Model, meta reflekt.FieldMeta, typ Relati
 		return Relation{}, fmt.Errorf("Field %s does not exist", meta.Name)
 	}
 
-	refMeta := reflekt.GetFieldMeta(refStructField, SupportedTags, TagsMapping)
+	refMeta := GetFieldMeta(refStructField, SupportedTags, TagsMapping)
 
 	refSchema, err := GetSchema(refModel)
 	if err != nil {

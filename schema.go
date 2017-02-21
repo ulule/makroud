@@ -126,7 +126,7 @@ func SchemaOf(model Model) (Schema, error) {
 	for i := 0; i < v.NumField(); i++ {
 		var (
 			structField = v.Type().Field(i)
-			meta        = reflekt.GetFieldMeta(structField, SupportedTags, TagsMapping)
+			meta        = GetFieldMeta(structField, SupportedTags, TagsMapping)
 		)
 
 		if isExcludedField(meta) {
@@ -179,7 +179,7 @@ func GetSchemaRelations(schema Schema) map[string]Relation {
 }
 
 // isExcludedField returns true if field must be excluded from schema.
-func isExcludedField(meta reflekt.FieldMeta) bool {
+func isExcludedField(meta FieldMeta) bool {
 	// Skip unexported fields
 	if len(meta.Field.PkgPath) != 0 {
 		return true
@@ -194,7 +194,7 @@ func isExcludedField(meta reflekt.FieldMeta) bool {
 }
 
 // isPrimaryKeyField returns true if field is a primary key field.
-func isPrimaryKeyField(meta reflekt.FieldMeta) bool {
+func isPrimaryKeyField(meta FieldMeta) bool {
 	return (meta.Name == PrimaryKeyFieldName || len(meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0)
 }
 
