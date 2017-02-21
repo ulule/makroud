@@ -1,4 +1,4 @@
-package sqlxx
+package sqlxx_test
 
 import (
 	"database/sql"
@@ -12,6 +12,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/ulule/sqlxx"
 )
 
 var dbDefaultParams = map[string]string{
@@ -241,7 +242,7 @@ func dbParam(param string) string {
 	return dbDefaultParams[param]
 }
 
-func loadData(t *testing.T, driver Driver) *TestData {
+func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 	// Partners
 	driver.MustExec("INSERT INTO partners (name) VALUES ($1)", "Ulule")
 	partners := []Partner{}
@@ -310,7 +311,7 @@ func loadData(t *testing.T, driver Driver) *TestData {
 	}
 }
 
-func createArticle(t *testing.T, driver Driver, user *User) Article {
+func createArticle(t *testing.T, driver sqlxx.Driver, user *User) Article {
 	is := assert.New(t)
 
 	var id int
@@ -323,7 +324,7 @@ func createArticle(t *testing.T, driver Driver, user *User) Article {
 	return article
 }
 
-func createUser(t *testing.T, driver Driver, username string) User {
+func createUser(t *testing.T, driver sqlxx.Driver, username string) User {
 	key := fmt.Sprintf("%s-apikey", username)
 
 	name := fmt.Sprintf("%s-partner", username)
@@ -354,7 +355,7 @@ func createUser(t *testing.T, driver Driver, username string) User {
 	return user
 }
 
-func createCategory(t *testing.T, driver Driver, name string, userID *int) Category {
+func createCategory(t *testing.T, driver sqlxx.Driver, name string, userID *int) Category {
 	driver.MustExec("INSERT INTO categories (name) VALUES ($1)", name)
 
 	if userID != nil {

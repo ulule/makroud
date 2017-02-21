@@ -1,22 +1,21 @@
-package sqlxx
+package sqlxx_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+
+	"github.com/ulule/sqlxx"
 )
 
 func TestDelete(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
 	user := User{Username: "thoas"}
-	require.NoError(t, Save(db, &user))
-	require.NoError(t, Delete(db, &user))
+	assert.Nil(t, sqlxx.Save(db, &user))
+	assert.Nil(t, sqlxx.Delete(db, &user))
 
 	m := map[string]interface{}{"username": "thoas"}
 
@@ -27,25 +26,21 @@ func TestDelete(t *testing.T) {
 	`
 
 	stmt, err := db.PrepareNamed(fmt.Sprintf(query, user.TableName()))
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	var count int
-
 	err = stmt.Get(&count, m)
-	require.NoError(t, err)
-
-	is.Equal(0, count)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, count)
 }
 
 func TestSoftDelete(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
 	user := User{Username: "thoas"}
-	require.NoError(t, Save(db, &user))
-	require.NoError(t, SoftDelete(db, &user, "DeletedAt"))
+	assert.Nil(t, sqlxx.Save(db, &user))
+	assert.Nil(t, sqlxx.SoftDelete(db, &user, "DeletedAt"))
 
 	m := map[string]interface{}{"username": "thoas"}
 
@@ -57,12 +52,10 @@ func TestSoftDelete(t *testing.T) {
 	`
 
 	stmt, err := db.PrepareNamed(fmt.Sprintf(query, user.TableName()))
-	require.NoError(t, err)
+	assert.Nil(t, err)
 
 	var count int
-
 	err = stmt.Get(&count, m)
-	require.NoError(t, err)
-
-	is.Equal(0, count)
+	assert.Nil(t, err)
+	assert.Equal(t, 0, count)
 }

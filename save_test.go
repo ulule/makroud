@@ -1,28 +1,27 @@
-package sqlxx
+package sqlxx_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+
+	"github.com/ulule/sqlxx"
 )
 
 func TestSave(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
 	user := User{Username: "thoas"}
-	require.NoError(t, Save(db, &user))
+	assert.Nil(t, sqlxx.Save(db, &user))
 
-	is.NotZero(user.ID)
-	is.Equal(true, user.IsActive)
-	is.NotZero(user.UpdatedAt)
+	assert.NotZero(t, user.ID)
+	assert.Equal(t, true, user.IsActive)
+	assert.NotZero(t, user.UpdatedAt)
 
 	user.Username = "gilles"
-	require.NoError(t, Save(db, &user))
+	assert.Nil(t, sqlxx.Save(db, &user))
 
 	m := map[string]interface{}{"username": "gilles"}
 
@@ -33,12 +32,10 @@ func TestSave(t *testing.T) {
 	`
 
 	stmt, err := db.PrepareNamed(fmt.Sprintf(query, user.TableName()))
-	require.NoError(t, err)
+	assert.Nil(t, err)
 
 	var count int
-
 	err = stmt.Get(&count, m)
-	require.NoError(t, err)
-
-	is.Equal(1, count)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, count)
 }

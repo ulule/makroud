@@ -1,4 +1,4 @@
-package sqlxx
+package sqlxx_test
 
 import (
 	"fmt"
@@ -6,43 +6,39 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ulule/sqlxx"
 )
 
 func TestPreload_IDZeroValue(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
 	article := Article{}
-	is.NotNil(Preload(db, &article, "Author"))
+	assert.NotNil(t, sqlxx.Preload(db, &article, "Author"))
 }
 
 func TestPreload_UnknownRelation(t *testing.T) {
-	is := assert.New(t)
-
 	db, fixtures, shutdown := dbConnection(t)
 	defer shutdown()
 
 	article := fixtures.Articles[0]
-	is.NotNil(Preload(db, &article, "Foo"))
-	is.Zero(article.Author)
+	assert.NotNil(t, sqlxx.Preload(db, &article, "Foo"))
+	assert.Zero(t, article.Author)
 }
 
 func TestPreload_NullPrimaryKey(t *testing.T) {
-	is := assert.New(t)
-
 	db, fixtures, shutdown := dbConnection(t)
 	defer shutdown()
 
 	category := createCategory(t, db, "cat1", nil)
-	is.Nil(Preload(db, &category, "User"))
-	is.Zero(category.User)
+	assert.Nil(t, sqlxx.Preload(db, &category, "User"))
+	assert.Zero(t, category.User)
 
 	category = createCategory(t, db, "cat1", &fixtures.User.ID)
-	is.Nil(Preload(db, &category, "User"))
-	is.NotZero(category.UserID)
-	is.NotZero(category.User.ID)
+	assert.Nil(t, sqlxx.Preload(db, &category, "User"))
+	assert.NotZero(t, category.UserID)
+	assert.NotZero(t, category.User.ID)
 }
 
 // ----------------------------------------------------------------------------
@@ -50,8 +46,6 @@ func TestPreload_NullPrimaryKey(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 func TestPreload_OneToOne_Level1(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -63,21 +57,19 @@ func TestPreload_OneToOne_Level1(t *testing.T) {
 	//
 
 	// Value
-	is.Nil(Preload(db, &article, "Author"))
-	is.NotZero(article.Author)
-	is.Equal(batman.ID, article.AuthorID)
-	is.Equal(batman.Username, article.Author.Username)
+	assert.Nil(t, sqlxx.Preload(db, &article, "Author"))
+	assert.NotZero(t, article.Author)
+	assert.Equal(t, batman.ID, article.AuthorID)
+	assert.Equal(t, batman.Username, article.Author.Username)
 
 	// Pointer
-	is.Nil(Preload(db, &article, "Reviewer"))
-	is.NotZero(article.Reviewer)
-	is.Equal(batman.ID, article.ReviewerID)
-	is.Equal(batman.Username, article.Reviewer.Username)
+	assert.Nil(t, sqlxx.Preload(db, &article, "Reviewer"))
+	assert.NotZero(t, article.Reviewer)
+	assert.Equal(t, batman.ID, article.ReviewerID)
+	assert.Equal(t, batman.Username, article.Reviewer.Username)
 }
 
 func TestPreload_ManyToOne_Level1_Same(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -89,23 +81,21 @@ func TestPreload_ManyToOne_Level1_Same(t *testing.T) {
 	}
 
 	// Value
-	is.Nil(Preload(db, &articles, "Author"))
+	assert.Nil(t, sqlxx.Preload(db, &articles, "Author"))
 	for _, a := range articles {
-		is.Equal(batman.ID, a.AuthorID)
-		is.Equal(batman.Username, a.Author.Username)
+		assert.Equal(t, batman.ID, a.AuthorID)
+		assert.Equal(t, batman.Username, a.Author.Username)
 	}
 
 	// Pointer
-	is.Nil(Preload(db, &articles, "Reviewer"))
+	assert.Nil(t, sqlxx.Preload(db, &articles, "Reviewer"))
 	for _, a := range articles {
-		is.Equal(batman.ID, a.ReviewerID)
-		is.Equal(batman.Username, a.Reviewer.Username)
+		assert.Equal(t, batman.ID, a.ReviewerID)
+		assert.Equal(t, batman.Username, a.Reviewer.Username)
 	}
 }
 
 func TestPreload_ManyToOne_Level1_Different_Pointer_Null(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -126,17 +116,15 @@ func TestPreload_ManyToOne_Level1_Different_Pointer_Null(t *testing.T) {
 		avatars[user.ID] = int(user.AvatarID.Int64)
 	}
 
-	is.Nil(Preload(db, &users, "Avatar"))
+	assert.Nil(t, sqlxx.Preload(db, &users, "Avatar"))
 
 	for i, _ := range users {
-		is.NotNil(users[i].Avatar)
-		is.Equal(users[i].Avatar.ID, avatars[users[i].ID])
+		assert.NotNil(t, users[i].Avatar)
+		assert.Equal(t, users[i].Avatar.ID, avatars[users[i].ID])
 	}
 }
 
 func TestPreload_ManyToOne_Level1_Different(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -153,32 +141,30 @@ func TestPreload_ManyToOne_Level1_Different(t *testing.T) {
 		article3,
 	}
 
-	is.Nil(Preload(db, &articles, "Author", "Reviewer"))
-	is.Equal(articles[0].AuthorID, batman.ID)
-	is.NotZero(articles[0].Author)
-	is.Equal(articles[0].ReviewerID, batman.ID)
-	is.NotZero(articles[0].Reviewer)
-	is.Equal(articles[1].AuthorID, robin.ID)
-	is.NotZero(articles[1].Author)
-	is.Equal(articles[1].ReviewerID, robin.ID)
-	is.NotZero(articles[1].Reviewer)
-	is.Equal(articles[2].AuthorID, catwoman.ID)
-	is.NotZero(articles[2].Author)
-	is.Equal(articles[2].ReviewerID, catwoman.ID)
-	is.NotZero(articles[2].Reviewer)
+	assert.Nil(t, sqlxx.Preload(db, &articles, "Author", "Reviewer"))
+	assert.Equal(t, articles[0].AuthorID, batman.ID)
+	assert.NotZero(t, articles[0].Author)
+	assert.Equal(t, articles[0].ReviewerID, batman.ID)
+	assert.NotZero(t, articles[0].Reviewer)
+	assert.Equal(t, articles[1].AuthorID, robin.ID)
+	assert.NotZero(t, articles[1].Author)
+	assert.Equal(t, articles[1].ReviewerID, robin.ID)
+	assert.NotZero(t, articles[1].Reviewer)
+	assert.Equal(t, articles[2].AuthorID, catwoman.ID)
+	assert.NotZero(t, articles[2].Author)
+	assert.Equal(t, articles[2].ReviewerID, catwoman.ID)
+	assert.NotZero(t, articles[2].Reviewer)
 
-	is.Equal(articles[0].Author, batman)
-	is.Equal(articles[1].Author, robin)
-	is.Equal(articles[2].Author, catwoman)
+	assert.Equal(t, articles[0].Author, batman)
+	assert.Equal(t, articles[1].Author, robin)
+	assert.Equal(t, articles[2].Author, catwoman)
 
-	is.Equal(articles[0].Reviewer, &batman)
-	is.Equal(articles[1].Reviewer, &robin)
-	is.Equal(articles[2].Reviewer, &catwoman)
+	assert.Equal(t, articles[0].Reviewer, &batman)
+	assert.Equal(t, articles[1].Reviewer, &robin)
+	assert.Equal(t, articles[2].Reviewer, &catwoman)
 }
 
 func TestPreload_OneToOne_Level2(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -189,18 +175,16 @@ func TestPreload_OneToOne_Level2(t *testing.T) {
 	//
 
 	article := createArticle(t, db, &user)
-	is.Nil(Preload(db, &article, "Author", "Author.APIKey"))
-	is.NotZero(article.Author)
-	is.NotZero(article.Author.APIKey)
-	is.Equal(user.ID, article.AuthorID)
-	is.Equal(user.Username, article.Author.Username)
-	is.NotZero(article.Author.APIKey.ID)
-	is.Equal("spiderman-apikey", article.Author.APIKey.Key)
+	assert.Nil(t, sqlxx.Preload(db, &article, "Author", "Author.APIKey"))
+	assert.NotZero(t, article.Author)
+	assert.NotZero(t, article.Author.APIKey)
+	assert.Equal(t, user.ID, article.AuthorID)
+	assert.Equal(t, user.Username, article.Author.Username)
+	assert.NotZero(t, article.Author.APIKey.ID)
+	assert.Equal(t, "spiderman-apikey", article.Author.APIKey.Key)
 }
 
 func TestPreload_ManyToOne_Level2_Multiple(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -212,20 +196,20 @@ func TestPreload_ManyToOne_Level2_Multiple(t *testing.T) {
 
 	articles := []Article{article, article2}
 
-	is.Nil(Preload(db, &articles, "Author", "Author.APIKey"))
+	assert.Nil(t, sqlxx.Preload(db, &articles, "Author", "Author.APIKey"))
 
-	is.Equal(user.ID, articles[0].Author.ID)
-	is.Equal(user.ID, articles[0].AuthorID)
-	is.Equal(user.Username, articles[0].Author.Username)
-	is.NotZero(articles[0].Author.APIKeyID)
+	assert.Equal(t, user.ID, articles[0].Author.ID)
+	assert.Equal(t, user.ID, articles[0].AuthorID)
+	assert.Equal(t, user.Username, articles[0].Author.Username)
+	assert.NotZero(t, articles[0].Author.APIKeyID)
 
-	is.Equal("spiderman-apikey", articles[0].Author.APIKey.Key)
+	assert.Equal(t, "spiderman-apikey", articles[0].Author.APIKey.Key)
 
-	is.Equal(deadpool.ID, articles[1].Author.ID)
-	is.Equal(deadpool.ID, articles[1].AuthorID)
-	is.Equal(deadpool.Username, articles[1].Author.Username)
-	is.NotZero(articles[1].Author.APIKeyID)
-	is.Equal("deadpool-apikey", articles[1].Author.APIKey.Key)
+	assert.Equal(t, deadpool.ID, articles[1].Author.ID)
+	assert.Equal(t, deadpool.ID, articles[1].AuthorID)
+	assert.Equal(t, deadpool.Username, articles[1].Author.Username)
+	assert.NotZero(t, articles[1].Author.APIKeyID)
+	assert.Equal(t, "deadpool-apikey", articles[1].Author.APIKey.Key)
 }
 
 // ----------------------------------------------------------------------------
@@ -233,30 +217,23 @@ func TestPreload_ManyToOne_Level2_Multiple(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 func TestPreload_OneToMany_Level1_Simple(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
 	user := createUser(t, db, "wonderwoman")
-	is.Nil(Preload(db, &user, "Avatars"))
-	is.Len(user.Avatars, 5)
+	assert.Nil(t, sqlxx.Preload(db, &user, "Avatars"))
+	assert.Len(t, user.Avatars, 5)
 
 	for i, a := range user.Avatars {
-		is.NotZero(a.ID)
-		is.Equal(user.ID, a.UserID)
-		is.Equal(fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
+		assert.NotZero(t, a.ID)
+		assert.Equal(t, user.ID, a.UserID)
+		assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
 	}
 }
 
 func TestPreload_ManyToMany_Level1(t *testing.T) {
-	is := assert.New(t)
-
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
-	//
-	// Slice
-	//
 
 	users := []User{}
 	for i := 1; i < 6; i++ {
@@ -264,18 +241,18 @@ func TestPreload_ManyToMany_Level1(t *testing.T) {
 	}
 
 	for _, user := range users {
-		is.Zero(user.Avatars)
+		assert.Zero(t, user.Avatars)
 	}
 
-	is.Nil(Preload(db, &users, "Avatars"))
+	assert.Nil(t, sqlxx.Preload(db, &users, "Avatars"))
 
 	for _, user := range users {
-		is.NotZero(user.Avatars)
+		assert.NotZero(t, user.Avatars)
 		for _, avatar := range user.Avatars {
-			is.NotZero(avatar.ID)
-			is.Equal(user.ID, avatar.UserID)
-			is.Equal(user.ID, avatar.UserID)
-			is.True(strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
+			assert.NotZero(t, avatar.ID)
+			assert.Equal(t, user.ID, avatar.UserID)
+			assert.Equal(t, user.ID, avatar.UserID)
+			assert.True(t, strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
 		}
 	}
 }

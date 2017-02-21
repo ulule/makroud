@@ -1,15 +1,15 @@
-package sqlxx
+package sqlxx_test
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ulule/sqlxx"
 )
 
 func TestGetModelFromType(t *testing.T) {
-	is := assert.New(t)
-
 	results := []struct {
 		value    interface{}
 		expected interface{}
@@ -19,7 +19,7 @@ func TestGetModelFromType(t *testing.T) {
 	}
 
 	for _, r := range results {
-		actual := GetModelFromType(reflect.TypeOf(r.value))
-		is.IsType(r.expected, actual)
+		actual := sqlxx.GetModelFromType(reflect.TypeOf(r.value))
+		assert.IsType(t, r.expected, actual)
 	}
 }

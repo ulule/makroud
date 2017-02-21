@@ -1,9 +1,11 @@
-package sqlxx
+package sqlxx_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/ulule/sqlxx"
 )
 
 type fieldResultTest struct {
@@ -18,28 +20,24 @@ type relationResultTest struct {
 	fkColumnPath  string
 	refColumnName string
 	refColumnPath string
-	relationType  RelationType
+	relationType  sqlxx.RelationType
 }
 
 func TestGetSchemaInfiniteLoop(t *testing.T) {
-	is := assert.New(t)
-
-	schema, err := GetSchema(User{})
-	is.NoError(err)
-	is.NotNil(schema)
+	schema, err := sqlxx.GetSchema(User{})
+	assert.Nil(t, err)
+	assert.NotNil(t, schema)
 }
 
 func TestGetSchema(t *testing.T) {
-	is := assert.New(t)
-
-	schema, err := GetSchema(Untagged{})
-	is.NoError(err)
+	schema, err := sqlxx.GetSchema(Untagged{})
+	assert.Nil(t, err)
 
 	// Check unexported
-	is.NotContains(schema.FieldNames(), "unexportedField")
+	assert.NotContains(t, schema.FieldNames(), "unexportedField")
 
 	// Check db excluded
-	is.NotContains(schema.FieldNames(), "DBExcludedField")
+	assert.NotContains(t, schema.FieldNames(), "DBExcludedField")
 
 	testFields(t, schema, []fieldResultTest{
 		{
@@ -65,44 +63,44 @@ func TestGetSchema(t *testing.T) {
 			"RelatedModel",
 			"related_model_id", "untagged.related_model_id",
 			"custom_id", "related.custom_id",
-			RelationTypeOneToMany,
+			sqlxx.RelationTypeOneToMany,
 		},
 		{
 			"RelatedModelPtr",
 			"related_model_ptr_id", "untagged.related_model_ptr_id",
 			"custom_id", "related.custom_id",
-			RelationTypeOneToMany,
+			sqlxx.RelationTypeOneToMany,
 		},
 		{
 			"ManyModel",
 			"untagged_id", "many.untagged_id",
 			"id", "untagged.id",
-			RelationTypeManyToOne,
+			sqlxx.RelationTypeManyToOne,
 		},
 		{
 			"ManyModelPtr",
 			"untagged_id", "many.untagged_id",
 			"id", "untagged.id",
-			RelationTypeManyToOne,
+			sqlxx.RelationTypeManyToOne,
 		},
 		{
 			"ManyModelPtrs",
 			"untagged_id", "many.untagged_id",
 			"id", "untagged.id",
-			RelationTypeManyToOne,
+			sqlxx.RelationTypeManyToOne,
 		},
 	})
 
-	cache.Flush()
+	sqlxx.GetCache().Flush()
 
-	schema, err = GetSchema(Tagged{})
-	is.NoError(err)
+	schema, err = sqlxx.GetSchema(Tagged{})
+	assert.Nil(t, err)
 
 	// Check unexported
-	is.NotContains(schema.FieldNames(), "unexportedField")
+	assert.NotContains(t, schema.FieldNames(), "unexportedField")
 
 	// Check db excluded
-	is.NotContains(schema.FieldNames(), "DBExcludedField")
+	assert.NotContains(t, schema.FieldNames(), "DBExcludedField")
 
 	testFields(t, schema, []fieldResultTest{
 		{
@@ -128,40 +126,38 @@ func TestGetSchema(t *testing.T) {
 			"RelatedModel",
 			"member_id", "tagged.member_id",
 			"custom_id", "related.custom_id",
-			RelationTypeOneToMany,
+			sqlxx.RelationTypeOneToMany,
 		},
 		{
 			"RelatedModelPtr",
 			"member_id", "tagged.member_id",
 			"custom_id", "related.custom_id",
-			RelationTypeOneToMany,
+			sqlxx.RelationTypeOneToMany,
 		},
 		{
 			"ManyModel",
 			"tagged_id", "many.tagged_id",
 			"id", "tagged.id",
-			RelationTypeManyToOne,
+			sqlxx.RelationTypeManyToOne,
 		},
 		{
 			"ManyModelPtr",
 			"tagged_id", "many.tagged_id",
 			"id", "tagged.id",
-			RelationTypeManyToOne,
+			sqlxx.RelationTypeManyToOne,
 		},
 		{
 			"ManyModelPtrs",
 			"tagged_id", "many.tagged_id",
 			"id", "tagged.id",
-			RelationTypeManyToOne,
+			sqlxx.RelationTypeManyToOne,
 		},
 	})
 }
 
 func TestSchemaRelationPaths(t *testing.T) {
-	is := assert.New(t)
-
-	schema, err := GetSchema(Article{})
-	is.NoError(err)
+	schema, err := sqlxx.GetSchema(Article{})
+	assert.Nil(t, err)
 
 	relations := schema.RelationPaths()
 
@@ -177,56 +173,49 @@ func TestSchemaRelationPaths(t *testing.T) {
 
 	for _, r := range results {
 		relation, ok := relations[r.path]
-		is.True(ok)
-		is.Equal(r.modelName, relation.Schema.ModelName)
-		is.Equal(r.tableName, relation.Schema.TableName)
-		is.Equal(r.name, relation.Name)
+		assert.True(t, ok)
+		assert.Equal(t, r.modelName, relation.Schema.ModelName)
+		assert.Equal(t, r.tableName, relation.Schema.TableName)
+		assert.Equal(t, r.name, relation.Name)
 
 	}
 }
 
 func TestGetSchema_PrimaryKeyField(t *testing.T) {
-	is := assert.New(t)
-
 	// Implicit
-
-	schema, err := GetSchema(ImplicitPrimaryKey{})
-	is.NoError(err)
-	is.Equal(schema.PrimaryField.Name, "ID")
-	is.Equal(schema.PrimaryField.ColumnName, "id")
+	schema, err := sqlxx.GetSchema(ImplicitPrimaryKey{})
+	assert.Nil(t, err)
+	assert.Equal(t, schema.PrimaryField.Name, "ID")
+	assert.Equal(t, schema.PrimaryField.ColumnName, "id")
 
 	// Explicit
-
-	schema, err = GetSchema(ExplicitPrimaryKey{})
-	is.NoError(err)
-	is.Equal(schema.PrimaryField.Name, "TadaID")
-	is.Equal(schema.PrimaryField.ColumnName, "tada_id")
+	schema, err = sqlxx.GetSchema(ExplicitPrimaryKey{})
+	assert.Nil(t, err)
+	assert.Equal(t, schema.PrimaryField.Name, "TadaID")
+	assert.Equal(t, schema.PrimaryField.ColumnName, "tada_id")
 }
 
-func testFields(t *testing.T, schema Schema, results []fieldResultTest) {
-	is := assert.New(t)
-
+func testFields(t *testing.T, schema sqlxx.Schema, results []fieldResultTest) {
 	for _, r := range results {
-		is.Equal(r.columnName, schema.Fields[r.field].ColumnName)
-		is.Equal(r.columnPath, schema.Fields[r.field].ColumnPath())
+		assert.Equal(t, r.columnName, schema.Fields[r.field].ColumnName)
+		assert.Equal(t, r.columnPath, schema.Fields[r.field].ColumnPath())
 	}
 }
 
-func testRelations(t *testing.T, schema Schema, results []relationResultTest) {
-	is := assert.New(t)
-
+func testRelations(t *testing.T, schema sqlxx.Schema, results []relationResultTest) {
 	for _, r := range results {
-		relation := schema.Relations[r.fieldName]
+		var (
+			relation = schema.Relations[r.fieldName]
+			fk       = relation.FK
+			ref      = relation.Reference
+		)
 
-		fk := relation.FK
-		ref := relation.Reference
-
-		is.Equal(r.fieldName, relation.Name)
-		is.Equal(r.fkColumnName, fk.ColumnName)
-		is.Equal(r.fkColumnPath, fk.ColumnPath())
-		is.Equal(r.refColumnName, ref.ColumnName)
-		is.Equal(r.refColumnPath, ref.ColumnPath())
-		is.Equal(r.relationType, relation.Type)
+		assert.Equal(t, r.fieldName, relation.Name)
+		assert.Equal(t, r.fkColumnName, fk.ColumnName)
+		assert.Equal(t, r.fkColumnPath, fk.ColumnPath())
+		assert.Equal(t, r.refColumnName, ref.ColumnName)
+		assert.Equal(t, r.refColumnPath, ref.ColumnPath())
+		assert.Equal(t, r.relationType, relation.Type)
 	}
 }
 

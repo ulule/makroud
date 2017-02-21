@@ -6,13 +6,18 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Shared cache instance.
+// Cache is the shared cache instance.
 var cache *Cache
 
 func init() {
 	if cache == nil {
 		cache = NewCache()
 	}
+}
+
+// GetCache return cache instance.
+func GetCache() *Cache {
+	return cache
 }
 
 // Driver can either be a *sqlx.DB or a *sqlx.Tx.
