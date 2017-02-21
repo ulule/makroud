@@ -17,17 +17,6 @@ type Schema struct {
 	Relations    map[string]Relation
 }
 
-// newSchema returns a new Schema instance.
-func newSchema(model Model) Schema {
-	return Schema{
-		Model:     model,
-		ModelName: reflekt.GetIndirectType(model).Name(),
-		TableName: model.TableName(),
-		Fields:    map[string]Field{},
-		Relations: map[string]Relation{},
-	}
-}
-
 // SetPrimaryField sets the given Field as schema primary key.
 func (s *Schema) SetPrimaryField(f Field) {
 	f.IsPrimary = true
@@ -105,19 +94,65 @@ func (s Schema) RelationPaths() map[string]Relation {
 	return GetSchemaRelations(s)
 }
 
-// GetSchemaFromInterface returns Schema by reflecting model for the given interface.
-func GetSchemaFromInterface(out interface{}) (Schema, error) {
-	return GetSchema(GetModelFromInterface(out))
+// GetSchemaRelations returns flattened map of schema relations.
+func GetSchemaRelations(schema Schema) map[string]Relation {
+	paths := map[string]Relation{}
+
+	for _, relation := range schema.Relations {
+		paths[relation.Name] = relation
+
+		rels := GetSchemaRelations(relation.Schema)
+		for _, rel := range rels {
+			paths[fmt.Sprintf("%s.%s", relation.Name, rel.Name)] = rel
+		}
+	}
+
+	return paths
 }
 
-// SchemaOf returns model's table columns, extracted by reflection.
+// ----------------------------------------------------------------------------
+// Initializers
+// ----------------------------------------------------------------------------
+
+// GetSchema returns the given schema from global cache
+// If the given schema does not exists, returns false as bool.
+func GetSchema(itf interface{}) (Schema, error) {
+	var (
+		err    error
+		schema Schema
+		model  = GetModelFromInterface(itf)
+	)
+
+	schema, found := cache.GetSchema(model)
+	if found {
+		return schema, nil
+	}
+
+	schema, err = newSchema(model)
+	if err != nil {
+		return schema, err
+	}
+
+	cache.SetSchema(schema)
+
+	return schema, nil
+}
+
+// newSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
-func SchemaOf(model Model) (Schema, error) {
-	var err error
+func newSchema(model Model) (Schema, error) {
+	var (
+		err error
+		v   = reflekt.GetIndirectValue(model)
+	)
 
-	schema := newSchema(model)
-
-	v := reflekt.GetIndirectValue(model)
+	schema := Schema{
+		Model:     model,
+		ModelName: reflekt.GetIndirectType(model).Name(),
+		TableName: model.TableName(),
+		Fields:    map[string]Field{},
+		Relations: map[string]Relation{},
+	}
 
 	for i := 0; i < v.NumField(); i++ {
 		var (
@@ -155,20 +190,4 @@ func SchemaOf(model Model) (Schema, error) {
 	}
 
 	return schema, nil
-}
-
-// GetSchemaRelations returns flattened map of schema relations.
-func GetSchemaRelations(schema Schema) map[string]Relation {
-	paths := map[string]Relation{}
-
-	for _, relation := range schema.Relations {
-		paths[relation.Name] = relation
-
-		rels := GetSchemaRelations(relation.Schema)
-		for _, rel := range rels {
-			paths[fmt.Sprintf("%s.%s", relation.Name, rel.Name)] = rel
-		}
-	}
-
-	return paths
 }

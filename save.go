@@ -9,7 +9,7 @@ import (
 
 // Save saves the model and populate it to the database
 func Save(driver Driver, out interface{}) error {
-	schema, err := GetSchemaFromInterface(out)
+	schema, err := GetSchema(out)
 	if err != nil {
 		return err
 	}

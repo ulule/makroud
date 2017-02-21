@@ -17,7 +17,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		err error
 	)
 
-	schema, err := GetSchemaFromInterface(out)
+	schema, err := GetSchema(out)
 	if err != nil {
 		return err
 	}

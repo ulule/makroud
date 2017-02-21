@@ -9,7 +9,7 @@ import (
 
 // Delete deletes the model in the database
 func Delete(driver Driver, out interface{}) error {
-	schema, err := GetSchemaFromInterface(out)
+	schema, err := GetSchema(out)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func Delete(driver Driver, out interface{}) error {
 
 // SoftDelete soft deletes the model in the database
 func SoftDelete(driver Driver, out interface{}, fieldName string) error {
-	schema, err := GetSchemaFromInterface(out)
+	schema, err := GetSchema(out)
 	if err != nil {
 		return err
 	}
