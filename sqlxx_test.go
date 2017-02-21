@@ -10,8 +10,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	assert "github.com/stretchr/testify/require"
+
 	"github.com/ulule/sqlxx"
 )
 
@@ -246,49 +246,49 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 	// Partners
 	driver.MustExec("INSERT INTO partners (name) VALUES ($1)", "Ulule")
 	partners := []Partner{}
-	require.NoError(t, driver.Select(&partners, "SELECT * FROM partners"))
+	assert.NoError(t, driver.Select(&partners, "SELECT * FROM partners"))
 	partner := partners[0]
 
 	// API Keys
 	driver.MustExec("INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)", "this-is-my-scret-api-key", partner.ID)
 	apiKeys := []APIKey{}
-	require.NoError(t, driver.Select(&apiKeys, "SELECT * FROM api_keys"))
+	assert.NoError(t, driver.Select(&apiKeys, "SELECT * FROM api_keys"))
 	apiKey := apiKeys[0]
 
 	driver.MustExec("INSERT INTO media (path) VALUES ($1)", "media/avatar.png")
 	media := Media{}
-	require.NoError(t, driver.Get(&media, "SELECT * FROM media LIMIT 1"))
+	assert.NoError(t, driver.Get(&media, "SELECT * FROM media LIMIT 1"))
 
 	// Users
 	driver.MustExec("INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)", "jdoe", apiKey.ID, media.ID)
 	user := User{}
-	require.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", "jdoe"))
+	assert.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", "jdoe"))
 
 	// Avatars
 	for i := 0; i < 5; i++ {
 		driver.MustExec("INSERT INTO avatars (path, user_id) VALUES ($1, $2)", fmt.Sprintf("/avatars/%s-%d.png", user.Username, i), user.ID)
 	}
 	avatars := []Avatar{}
-	require.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
+	assert.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
 
 	// Profiles
 	driver.MustExec("INSERT INTO profiles (user_id, first_name, last_name) VALUES ($1, $2, $3)", user.ID, "John", "Doe")
 	profiles := []Profile{}
-	require.NoError(t, driver.Select(&profiles, "SELECT * FROM profiles"))
+	assert.NoError(t, driver.Select(&profiles, "SELECT * FROM profiles"))
 
 	// Categories
 	for i := 0; i < 5; i++ {
 		driver.MustExec("INSERT INTO categories (name, user_id) VALUES ($1, $2)", fmt.Sprintf("Category #%d", i), user.ID)
 	}
 	categories := []Category{}
-	require.NoError(t, driver.Select(&categories, "SELECT * FROM categories"))
+	assert.NoError(t, driver.Select(&categories, "SELECT * FROM categories"))
 
 	// Articles
 	for i := 0; i < 5; i++ {
 		driver.MustExec("INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3)", fmt.Sprintf("Title #%d", i), user.ID, user.ID)
 	}
 	articles := []Article{}
-	require.NoError(t, driver.Select(&articles, "SELECT * FROM articles"))
+	assert.NoError(t, driver.Select(&articles, "SELECT * FROM articles"))
 
 	// Articles <-> Categories
 	for _, article := range articles {
@@ -297,7 +297,7 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 		}
 	}
 	articlesCategories := []ArticleCategory{}
-	require.NoError(t, driver.Select(&articlesCategories, "SELECT * FROM articles_categories"))
+	assert.NoError(t, driver.Select(&articlesCategories, "SELECT * FROM articles_categories"))
 
 	return &TestData{
 		APIKeys:            apiKeys,
@@ -312,45 +312,42 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 }
 
 func createArticle(t *testing.T, driver sqlxx.Driver, user *User) Article {
-	is := assert.New(t)
-
 	var id int
 	err := driver.QueryRowx("INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3) RETURNING id", "Title", user.ID, user.ID).Scan(&id)
-	is.Nil(err)
+	assert.Nil(t, err)
 
 	article := Article{}
-	require.NoError(t, driver.Get(&article, "SELECT * FROM articles WHERE id = $1", id))
+	assert.NoError(t, driver.Get(&article, "SELECT * FROM articles WHERE id = $1", id))
 
 	return article
 }
 
 func createUser(t *testing.T, driver sqlxx.Driver, username string) User {
 	key := fmt.Sprintf("%s-apikey", username)
-
 	name := fmt.Sprintf("%s-partner", username)
 
 	driver.MustExec("INSERT INTO partners (name) VALUES ($1)", name)
 	partner := Partner{}
-	require.NoError(t, driver.Get(&partner, "SELECT * FROM partners WHERE name = $1", name))
+	assert.NoError(t, driver.Get(&partner, "SELECT * FROM partners WHERE name = $1", name))
 
 	driver.MustExec("INSERT INTO media (path) VALUES ($1)", fmt.Sprintf("media/media-%s.png", username))
 	media := Media{}
-	require.NoError(t, driver.Get(&media, "SELECT * FROM media ORDER BY id DESC LIMIT 1"))
+	assert.NoError(t, driver.Get(&media, "SELECT * FROM media ORDER BY id DESC LIMIT 1"))
 
 	driver.MustExec("INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)", key, partner.ID)
 	apiKey := APIKey{}
-	require.NoError(t, driver.Get(&apiKey, "SELECT * FROM api_keys WHERE key = $1", key))
+	assert.NoError(t, driver.Get(&apiKey, "SELECT * FROM api_keys WHERE key = $1", key))
 
 	driver.MustExec("INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)", username, apiKey.ID, media.ID)
 	user := User{}
-	require.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", username))
+	assert.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", username))
 
 	for i := 1; i < 6; i++ {
 		driver.MustExec("INSERT INTO avatars (path, user_id) VALUES ($1, $2)", fmt.Sprintf("/avatars/%s-%d.png", username, i), user.ID)
 	}
 
 	avatars := []Avatar{}
-	require.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
+	assert.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
 
 	return user
 }
@@ -363,7 +360,7 @@ func createCategory(t *testing.T, driver sqlxx.Driver, name string, userID *int)
 	}
 
 	category := Category{}
-	require.NoError(t, driver.Get(&category, "SELECT * FROM categories WHERE name=$1", name))
+	assert.NoError(t, driver.Get(&category, "SELECT * FROM categories WHERE name=$1", name))
 
 	return category
 }
@@ -376,7 +373,7 @@ func dbConnection(t *testing.T) (*sqlx.DB, *TestData, func()) {
 		dbParam("port"),
 		dbParam("name")))
 
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	dbx := sqlx.NewDb(db, "postgres")
 	dbx.MustExec(dropTables)
@@ -386,7 +383,6 @@ func dbConnection(t *testing.T) (*sqlx.DB, *TestData, func()) {
 		if value := os.Getenv("KEEP_DB"); len(value) == 0 {
 			dbx.MustExec(dropTables)
 		}
-
-		require.NoError(t, db.Close())
+		assert.NoError(t, db.Close())
 	}
 }
