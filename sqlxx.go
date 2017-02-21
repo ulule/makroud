@@ -16,7 +16,7 @@ var (
 )
 
 func init() {
-	if os.Getenv("SQLXX_CACHE_DISABLED") != "" {
+	if os.Getenv("SQLXX_DISABLE_CACHE") != "" {
 		cacheDisabled = true
 		return
 	}
