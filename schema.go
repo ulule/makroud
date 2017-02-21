@@ -114,6 +114,11 @@ func (s Schema) RelationPaths() map[string]Relation {
 // Schema API
 // ----------------------------------------------------------------------------
 
+// GetSchemaFromInterface returns Schema by reflecting model for the given interface.
+func GetSchemaFromInterface(out interface{}) (Schema, error) {
+	return GetSchema(GetModelFromInterface(out))
+}
+
 // SchemaOf returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
 func SchemaOf(model Model) (Schema, error) {
@@ -129,7 +134,7 @@ func SchemaOf(model Model) (Schema, error) {
 			meta        = GetFieldMeta(structField, SupportedTags, TagsMapping)
 		)
 
-		if isExcludedField(meta) {
+		if IsExcludedField(meta) {
 			continue
 		}
 
@@ -151,7 +156,7 @@ func SchemaOf(model Model) (Schema, error) {
 			return Schema{}, err
 		}
 
-		if isPrimaryKeyField(meta) {
+		if IsPrimaryKeyField(meta) {
 			schema.SetPrimaryField(field)
 		}
 
@@ -167,35 +172,13 @@ func GetSchemaRelations(schema Schema) map[string]Relation {
 
 	for _, relation := range schema.Relations {
 		paths[relation.Name] = relation
-
 		rels := GetSchemaRelations(relation.Schema)
-
 		for _, rel := range rels {
 			paths[fmt.Sprintf("%s.%s", relation.Name, rel.Name)] = rel
 		}
 	}
 
 	return paths
-}
-
-// isExcludedField returns true if field must be excluded from schema.
-func isExcludedField(meta FieldMeta) bool {
-	// Skip unexported fields
-	if len(meta.Field.PkgPath) != 0 {
-		return true
-	}
-
-	// Skip db:"-"
-	if f := meta.Tags.GetByKey(SQLXStructTagName, "field"); f == "-" {
-		return true
-	}
-
-	return false
-}
-
-// isPrimaryKeyField returns true if field is a primary key field.
-func isPrimaryKeyField(meta FieldMeta) bool {
-	return (meta.Name == PrimaryKeyFieldName || len(meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0)
 }
 
 // ----------------------------------------------------------------------------

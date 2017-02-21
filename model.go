@@ -42,8 +42,3 @@ func GetModelFromType(typ reflect.Type) Model {
 
 	return nil
 }
-
-// GetSchemaFromInterface returns Schema by reflecting model for the given interface.
-func GetSchemaFromInterface(out interface{}) (Schema, error) {
-	return GetSchema(GetModelFromInterface(out))
-}

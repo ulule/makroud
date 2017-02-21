@@ -52,6 +52,26 @@ func makeField(model Model, meta FieldMeta) (Field, error) {
 	}, nil
 }
 
+// IsExcludedField returns true if field must be excluded from schema.
+func IsExcludedField(meta FieldMeta) bool {
+	// Skip unexported fields
+	if len(meta.Field.PkgPath) != 0 {
+		return true
+	}
+
+	// Skip db:"-"
+	if f := meta.Tags.GetByKey(SQLXStructTagName, "field"); f == "-" {
+		return true
+	}
+
+	return false
+}
+
+// IsPrimaryKeyField returns true if field is a primary key field.
+func IsPrimaryKeyField(meta FieldMeta) bool {
+	return (meta.Name == PrimaryKeyFieldName || len(meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0)
+}
+
 // ----------------------------------------------------------------------------
 // Field meta
 // ----------------------------------------------------------------------------
