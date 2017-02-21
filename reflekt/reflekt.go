@@ -1,6 +1,7 @@
 package reflekt
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"reflect"
 )
@@ -9,7 +10,6 @@ import (
 // or that the pointer v points to.
 func ReflectValue(itf interface{}) reflect.Value {
 	v := reflect.ValueOf(itf)
-
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
@@ -159,4 +159,9 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 	field.Set(fv)
 
 	return nil
+}
+
+// IsNullableType returns true if the given type is a nullable one.
+func IsNullableType(t reflect.Type) bool {
+	return t.ConvertibleTo(reflect.TypeOf((*driver.Valuer)(nil)).Elem())
 }

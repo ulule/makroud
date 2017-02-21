@@ -14,8 +14,10 @@ import (
 
 // GetPrimaryKeys returns primary keys for the given interface.
 func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
-	value := reflekt.ReflectValue(InterfaceToModel(out))
-	_, isNull := NullFieldTypes[value.FieldByName(name).Type()]
+	var (
+		value  = reflekt.ReflectValue(InterfaceToModel(out))
+		isNull = reflekt.IsNullableType(value.FieldByName(name).Type())
+	)
 
 	pks, err := reflekt.GetFieldValues(out, name)
 	if err != nil {
@@ -23,7 +25,6 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	}
 
 	var values []interface{}
-
 	for i := range pks {
 		if !isNull {
 			if reflekt.IsZeroValue(pks[i]) {

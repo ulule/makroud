@@ -1,12 +1,5 @@
 package sqlxx
 
-import (
-	"database/sql"
-	"reflect"
-
-	"github.com/lib/pq"
-)
-
 // Struct tags
 const (
 	StructTagName     = "sqlxx"
@@ -61,15 +54,6 @@ var RelationsOne = map[RelationType]bool{
 var RelationsMany = map[RelationType]bool{
 	RelationTypeManyToOne:  true,
 	RelationTypeManyToMany: true,
-}
-
-// NullFieldTypes are field considered as NULL.
-var NullFieldTypes = map[reflect.Type]bool{
-	reflect.TypeOf(sql.NullBool{}):    true,
-	reflect.TypeOf(sql.NullFloat64{}): true,
-	reflect.TypeOf(sql.NullInt64{}):   true,
-	reflect.TypeOf(sql.NullString{}):  true,
-	reflect.TypeOf(pq.NullTime{}):     true,
 }
 
 // PrimaryKeyFieldName is the implicit primary key field name.
