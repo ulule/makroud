@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"database/sql"
 	"fmt"
 	"reflect"
 	"strings"
@@ -188,6 +189,199 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		}
 
 		if err = reflekt.SetFieldValue(out, child.field, cp); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// preloadRelations preloads relations of out from queries.
+func preloadRelations(driver Driver, out interface{}, relations []Relation) error {
+	var err error
+
+	queries, err := getRelationQueries(out, relations)
+	if err != nil {
+		return err
+	}
+
+	for _, rq := range queries {
+		if err = setRelation(driver, out, rq); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// setRelation performs query and populates the given out with values.
+func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
+	var (
+		err      error
+		instance interface{}
+	)
+
+	var (
+		// Example: []User{}
+		isSlice = reflekt.IsSlice(out)
+		// Example: User.Avatars
+		isMany = !rq.relation.IsOne()
+	)
+
+	//
+	// If it's a many, let's clone the type as out for sqlx Get() / Select()
+	//
+
+	if isMany || isSlice {
+		instance = reflekt.CloneType(rq.relation.Model, reflect.Slice)
+	} else {
+		instance = reflekt.CloneType(rq.relation.Model)
+	}
+
+	//
+	// Fetch all related relations
+	//
+
+	if err = fetchRelation(driver, instance, rq); err != nil {
+		return err
+	}
+
+	//
+	// Instance
+	//
+
+	// user.Avatars || user.Avatar
+	if !isSlice {
+		return reflekt.SetFieldValue(out, rq.relation.Name, reflect.ValueOf(instance).Elem().Interface())
+	}
+
+	//
+	// Slice
+	//
+
+	// users.Avatar
+	if !isMany {
+		value := reflect.ValueOf(out).Elem()
+
+		// user.Avatar
+		if !isSlice {
+			for i := 0; i < value.Len(); i++ {
+				if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance); err != nil {
+					return err
+				}
+			}
+		} else {
+			instancesMap := map[interface{}]reflect.Value{}
+
+			items := reflect.ValueOf(instance).Elem()
+
+			for i := 0; i < items.Len(); i++ {
+				value, err := reflekt.GetFieldValue(items.Index(i), rq.relation.Reference.Name)
+
+				if err != nil {
+					return nil
+				}
+
+				instancesMap[value] = items.Index(i)
+			}
+
+			for i := 0; i < value.Len(); i++ {
+				val, err := reflekt.GetFieldValue(value.Index(i), rq.relation.RelatedFKField())
+
+				if err != nil {
+					return nil
+				}
+
+				switch val.(type) {
+				case sql.NullInt64:
+					val = int(val.(sql.NullInt64).Int64)
+				}
+
+				instance, ok := instancesMap[val]
+
+				if ok {
+					if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance.Interface()); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		return nil
+	}
+
+	//
+	// Users.Avatars
+	//
+
+	// Users
+	items := reflect.ValueOf(out).Elem()
+
+	// Avatars
+	relatedItems := reflect.ValueOf(instance).Elem()
+
+	// Iterate over slice items (Users)
+	for i := 0; i < items.Len(); i++ {
+		item := items.Index(i)
+
+		if !item.CanSet() {
+			continue
+		}
+
+		itemPK, err := reflekt.GetFieldValue(item.Interface().(Model), rq.relation.Reference.Name)
+		if err != nil {
+			return err
+		}
+
+		// Build the related items's item
+		itemRelatedItems := []reflect.Value{}
+
+		// Iterate over related items (Avatars)
+		for ii := 0; ii < relatedItems.Len(); ii++ {
+			var (
+				relatedItem         = relatedItems.Index(ii)
+				relatedItemInstance = relatedItem.Interface().(Model)
+			)
+
+			relatedFK, err := reflekt.GetFieldValue(relatedItemInstance, rq.relation.RelatedFKField())
+			if err != nil {
+				return err
+			}
+
+			// Compare User's avatar
+			if itemPK == relatedFK {
+				itemRelatedItems = append(itemRelatedItems, relatedItem)
+			}
+		}
+
+		//
+		// Build the related model instance slice and set it to related item.
+		//
+
+		newSlice := reflekt.MakeSlice(rq.relation.Model)
+		newSliceValue := reflect.ValueOf(newSlice)
+
+		for _, related := range itemRelatedItems {
+			newSliceValue = reflect.Append(newSliceValue, related)
+		}
+
+		field := item.FieldByName(rq.relation.Name)
+		field.Set(newSliceValue)
+	}
+
+	return nil
+}
+
+// fetchRelation fetches the given relation.
+func fetchRelation(driver Driver, out interface{}, rq RelationQuery) error {
+	var err error
+
+	if rq.fetchOne && !reflekt.IsSlice(out) {
+		if err = driver.Get(out, driver.Rebind(rq.query), rq.args...); err != nil {
+			return err
+		}
+	} else {
+		if err = driver.Select(out, driver.Rebind(rq.query), rq.args...); err != nil {
 			return err
 		}
 	}
