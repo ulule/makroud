@@ -3,21 +3,27 @@ package sqlxx
 import (
 	"database/sql"
 
+	"os"
+
 	"github.com/jmoiron/sqlx"
 )
 
-// Cache is the shared cache instance.
-var cache *Cache
+var (
+	// Cache is the shared cache instance.
+	cache *Cache
+	// cacheDisabled is true if cache has been disabled
+	cacheDisabled bool
+)
 
 func init() {
+	if os.Getenv("SQLXX_CACHE_DISABLED") != "" {
+		cacheDisabled = true
+		return
+	}
+
 	if cache == nil {
 		cache = NewCache()
 	}
-}
-
-// GetCache return cache instance.
-func GetCache() *Cache {
-	return cache
 }
 
 // Driver can either be a *sqlx.DB or a *sqlx.Tx.

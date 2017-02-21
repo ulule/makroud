@@ -123,6 +123,10 @@ func GetSchema(itf interface{}) (Schema, error) {
 		model  = GetModelFromInterface(itf)
 	)
 
+	if cacheDisabled {
+		return newSchema(model)
+	}
+
 	schema, found := cache.GetSchema(model)
 	if found {
 		return schema, nil

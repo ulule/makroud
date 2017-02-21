@@ -91,8 +91,6 @@ func TestGetSchema(t *testing.T) {
 		},
 	})
 
-	sqlxx.GetCache().Flush()
-
 	schema, err = sqlxx.GetSchema(Tagged{})
 	assert.Nil(t, err)
 
