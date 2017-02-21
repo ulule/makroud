@@ -65,7 +65,7 @@ func makeRelation(schema Schema, model Model, meta reflekt.FieldMeta, typ Relati
 	var (
 		err       error
 		modelType = reflekt.GetIndirectType(model)
-		refModel  = TypeToModel(meta.Type)
+		refModel  = GetModelFromType(meta.Type)
 		refType   = reflekt.GetIndirectType(refModel)
 	)
 

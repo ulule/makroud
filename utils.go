@@ -6,8 +6,8 @@ import (
 	"github.com/ulule/sqlxx/reflekt"
 )
 
-// InterfaceToModel returns interface as a Model interface.
-func InterfaceToModel(itf interface{}) Model {
+// GetModelFromInterface returns interface as a Model interface.
+func GetModelFromInterface(itf interface{}) Model {
 	value := reflekt.GetIndirectValue(itf)
 
 	// Single instance
@@ -28,8 +28,8 @@ func InterfaceToModel(itf interface{}) Model {
 	return reflect.New(value.Type()).Interface().(Model)
 }
 
-// TypeToModel returns model type.
-func TypeToModel(typ reflect.Type) Model {
+// GetModelFromType returns model type.
+func GetModelFromType(typ reflect.Type) Model {
 	if typ.Kind() == reflect.Slice {
 		typ = reflekt.GetIndirectType(typ.Elem())
 	} else {
@@ -43,7 +43,7 @@ func TypeToModel(typ reflect.Type) Model {
 	return nil
 }
 
-// InterfaceToSchema returns Schema by reflecting model for the given interface.
-func InterfaceToSchema(out interface{}) (Schema, error) {
-	return GetSchema(InterfaceToModel(out))
+// GetSchemaFromInterface returns Schema by reflecting model for the given interface.
+func GetSchemaFromInterface(out interface{}) (Schema, error) {
+	return GetSchema(GetModelFromInterface(out))
 }

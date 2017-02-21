@@ -15,7 +15,7 @@ import (
 // GetPrimaryKeys returns primary keys for the given interface.
 func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	var (
-		value  = reflekt.GetIndirectValue(InterfaceToModel(out))
+		value  = reflekt.GetIndirectValue(GetModelFromInterface(out))
 		isNull = reflekt.IsNullableType(value.FieldByName(name).Type())
 	)
 
@@ -44,7 +44,7 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 
 // SoftDelete soft deletes the model in the database
 func SoftDelete(driver Driver, out interface{}, fieldName string) error {
-	schema, err := InterfaceToSchema(out)
+	schema, err := GetSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func SoftDelete(driver Driver, out interface{}, fieldName string) error {
 
 // Delete deletes the model in the database
 func Delete(driver Driver, out interface{}) error {
-	schema, err := InterfaceToSchema(out)
+	schema, err := GetSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func Delete(driver Driver, out interface{}) error {
 
 // Save saves the model and populate it to the database
 func Save(driver Driver, out interface{}) error {
-	schema, err := InterfaceToSchema(out)
+	schema, err := GetSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 		err error
 	)
 
-	schema, err := InterfaceToSchema(out)
+	schema, err := GetSchemaFromInterface(out)
 	if err != nil {
 		return err
 	}
@@ -416,7 +416,7 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 
 // where executes a where clause.
 func where(driver Driver, out interface{}, params map[string]interface{}, fetchOne bool) error {
-	model := InterfaceToModel(out)
+	model := GetModelFromInterface(out)
 
 	query, args, err := whereQuery(model, params, fetchOne)
 	if err != nil {
