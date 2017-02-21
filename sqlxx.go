@@ -36,6 +36,3 @@ type Driver interface {
 	Rebind(query string) string
 	Select(dest interface{}, query string, args ...interface{}) error
 }
-
-// Preloader is a custom preloader.
-type Preloader func(d Driver) (Driver, error)

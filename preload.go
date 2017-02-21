@@ -8,6 +8,9 @@ import (
 	"github.com/ulule/sqlxx/reflekt"
 )
 
+// Preloader is a custom preloader.
+type Preloader func(d Driver) (Driver, error)
+
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, fields ...string) error {
 	var (
