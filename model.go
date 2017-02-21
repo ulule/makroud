@@ -47,3 +47,8 @@ func GetModelFromType(typ reflect.Type) Model {
 
 	return nil
 }
+
+// GetModelName returns name of the given model.
+func GetModelName(model Model) string {
+	return reflect.Indirect(reflect.ValueOf(model)).Type().Name()
+}

@@ -13,9 +13,7 @@ type Preloader func(d Driver) (Driver, error)
 
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, fields ...string) error {
-	var (
-		err error
-	)
+	var err error
 
 	schema, err := GetSchema(out)
 	if err != nil {

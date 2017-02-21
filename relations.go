@@ -96,7 +96,7 @@ func NewRelation(schema Schema, model Model, meta FieldMeta, typ RelationType) (
 		}
 
 		// Defaults to "<model>_id"
-		relation.FK.ColumnName = fmt.Sprintf("%s_%s", snaker.CamelToSnake(reflect.TypeOf(model).Name()), relation.Schema.PrimaryField.ColumnName)
+		relation.FK.ColumnName = fmt.Sprintf("%s_%s", snaker.CamelToSnake(GetModelName(model)), relation.Schema.PrimaryField.ColumnName)
 
 		relation.Reference, err = NewField(reflect.New(modelType).Interface().(Model), refMeta)
 		if err != nil {
