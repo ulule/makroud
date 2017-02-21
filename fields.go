@@ -33,8 +33,8 @@ func (f Field) ColumnPath() string {
 	return fmt.Sprintf("%s.%s", f.TableName, f.ColumnName)
 }
 
-// makeField returns full column name from model, field and tag.
-func makeField(model Model, meta FieldMeta) (Field, error) {
+// NewField returns full column name from model, field and tag.
+func NewField(model Model, meta FieldMeta) (Field, error) {
 	var columnName string
 
 	if dbName := meta.Tags.GetByKey(SQLXStructTagName, "field"); len(dbName) != 0 {

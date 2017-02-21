@@ -142,7 +142,7 @@ func SchemaOf(model Model) (Schema, error) {
 			relationType := getRelationType(meta.Type)
 
 			if _, ok := RelationTypes[relationType]; ok {
-				schema.Relations[meta.Name], err = makeRelation(schema, model, meta, relationType)
+				schema.Relations[meta.Name], err = NewRelation(schema, model, meta, relationType)
 				if err != nil {
 					return Schema{}, err
 				}
@@ -151,7 +151,7 @@ func SchemaOf(model Model) (Schema, error) {
 			}
 		}
 
-		field, err := makeField(model, meta)
+		field, err := NewField(model, meta)
 		if err != nil {
 			return Schema{}, err
 		}

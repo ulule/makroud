@@ -19,17 +19,14 @@ type Relation struct {
 	Name string
 	// The relation type
 	Type RelationType
-
 	// The related model
 	Model Model
 	// The related schema
 	Schema Schema
-
 	// The parent model
 	ParentModel Model
 	// The parent schema
 	ParentSchema Schema
-
 	// The foreign key field
 	FK Field
 	// The foreign key reference field
@@ -60,8 +57,8 @@ func (r Relation) String() string {
 		r.Reference.ColumnPath())
 }
 
-// makeRelation creates a new relation.
-func makeRelation(schema Schema, model Model, meta FieldMeta, typ RelationType) (Relation, error) {
+// NewRelation creates a new relation.
+func NewRelation(schema Schema, model Model, meta FieldMeta, typ RelationType) (Relation, error) {
 	var (
 		err       error
 		modelType = reflekt.GetIndirectType(model)
@@ -93,7 +90,7 @@ func makeRelation(schema Schema, model Model, meta FieldMeta, typ RelationType) 
 	reversed := !relation.IsOne()
 
 	if reversed {
-		relation.FK, err = makeField(refModel, refMeta)
+		relation.FK, err = NewField(refModel, refMeta)
 		if err != nil {
 			return relation, err
 		}
@@ -101,13 +98,13 @@ func makeRelation(schema Schema, model Model, meta FieldMeta, typ RelationType) 
 		// Defaults to "<model>_id"
 		relation.FK.ColumnName = fmt.Sprintf("%s_%s", snaker.CamelToSnake(reflect.TypeOf(model).Name()), relation.Schema.PrimaryField.ColumnName)
 
-		relation.Reference, err = makeField(reflect.New(modelType).Interface().(Model), refMeta)
+		relation.Reference, err = NewField(reflect.New(modelType).Interface().(Model), refMeta)
 		if err != nil {
 			return relation, err
 		}
 
 	} else {
-		relation.FK, err = makeField(model, meta)
+		relation.FK, err = NewField(model, meta)
 		if err != nil {
 			return relation, err
 		}
@@ -123,7 +120,7 @@ func makeRelation(schema Schema, model Model, meta FieldMeta, typ RelationType) 
 			relation.FK.ColumnName = customName
 		}
 
-		relation.Reference, err = makeField(reflect.New(refType).Interface().(Model), refMeta)
+		relation.Reference, err = NewField(reflect.New(refType).Interface().(Model), refMeta)
 		if err != nil {
 			return relation, err
 		}
