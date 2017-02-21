@@ -24,7 +24,7 @@ type Schema struct {
 // newSchema returns a new Schema instance.
 func newSchema(model Model) Schema {
 	return Schema{
-		ModelName: reflekt.ReflectType(model).Name(),
+		ModelName: reflekt.GetIndirectType(model).Name(),
 		TableName: model.TableName(),
 		Fields:    map[string]Field{},
 		Relations: map[string]Relation{},
@@ -119,7 +119,7 @@ func SchemaOf(model Model) (Schema, error) {
 
 	schema := newSchema(model)
 
-	v := reflekt.ReflectValue(model)
+	v := reflekt.GetIndirectValue(model)
 
 	for i := 0; i < v.NumField(); i++ {
 		var (

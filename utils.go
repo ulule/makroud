@@ -8,18 +8,15 @@ import (
 
 // InterfaceToModel returns interface as a Model interface.
 func InterfaceToModel(itf interface{}) Model {
-	var (
-		value = reflekt.ReflectValue(itf)
-		kind  = value.Kind()
-	)
+	value := reflekt.GetIndirectValue(itf)
 
 	// Single instance
-	if value.IsValid() && kind == reflect.Struct {
+	if value.IsValid() && value.Kind() == reflect.Struct {
 		return value.Interface().(Model)
 	}
 
 	// Slice of instances
-	if kind == reflect.Slice {
+	if value.Kind() == reflect.Slice {
 		// Slice of pointers
 		if value.Type().Elem().Kind() == reflect.Ptr {
 			return reflect.New(value.Type().Elem().Elem()).Interface().(Model)
@@ -34,9 +31,9 @@ func InterfaceToModel(itf interface{}) Model {
 // TypeToModel returns model type.
 func TypeToModel(typ reflect.Type) Model {
 	if typ.Kind() == reflect.Slice {
-		typ = reflekt.ReflectIndirectType(typ.Elem())
+		typ = reflekt.GetIndirectType(typ.Elem())
 	} else {
-		typ = reflekt.ReflectIndirectType(typ)
+		typ = reflekt.GetIndirectType(typ)
 	}
 
 	if model, isModel := reflect.New(typ).Elem().Interface().(Model); isModel {

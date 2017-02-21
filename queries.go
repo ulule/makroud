@@ -15,7 +15,7 @@ import (
 // GetPrimaryKeys returns primary keys for the given interface.
 func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	var (
-		value  = reflekt.ReflectValue(InterfaceToModel(out))
+		value  = reflekt.GetIndirectValue(InterfaceToModel(out))
 		isNull = reflekt.IsNullableType(value.FieldByName(name).Type())
 	)
 
@@ -324,7 +324,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 			}
 
 			// Build a []APIKey slice
-			t := reflect.SliceOf(reflekt.ReflectType(child.relation.Model))
+			t := reflect.SliceOf(reflekt.GetIndirectType(reflect.TypeOf(child.relation.Model)))
 			s := reflect.New(t)
 			s.Elem().Set(reflect.MakeSlice(t, 0, 0))
 

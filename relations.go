@@ -39,7 +39,7 @@ type Relation struct {
 // RelatedFKField returns related FK field
 func (r Relation) RelatedFKField() string {
 	if !r.IsOne() {
-		return fmt.Sprintf("%sID", reflekt.ReflectType(r.ParentModel).Name())
+		return fmt.Sprintf("%sID", reflekt.GetIndirectType(reflect.TypeOf(r.ParentModel)).Name())
 	}
 	return fmt.Sprintf("%sID", r.Name)
 }
@@ -64,9 +64,9 @@ func (r Relation) String() string {
 func makeRelation(schema Schema, model Model, meta reflekt.FieldMeta, typ RelationType) (Relation, error) {
 	var (
 		err       error
-		modelType = reflekt.ReflectType(model)
+		modelType = reflekt.GetIndirectType(model)
 		refModel  = TypeToModel(meta.Type)
-		refType   = reflekt.ReflectType(refModel)
+		refType   = reflekt.GetIndirectType(refModel)
 	)
 
 	refStructField, ok := refType.FieldByName("ID")
