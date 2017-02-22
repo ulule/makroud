@@ -2,30 +2,42 @@ package sqlxx
 
 import (
 	"fmt"
+	"strings"
+
 	"reflect"
 
 	"github.com/serenize/snaker"
 	"github.com/ulule/sqlxx/reflekt"
 )
 
-// ----------------------------------------------------------------------------
-// Field
-// ----------------------------------------------------------------------------
-
 // Field is a field.
 type Field struct {
-	// Struct field name.
+	// The reflect.StructField instance
+	StructField reflect.StructField
+	// The field name
 	Name string
-	// Struct field metadata (reflect data).
-	Meta FieldMeta
-	// Struct field tags.
+	// The field struct tags
 	Tags reflekt.FieldTags
-	// TableName is the database table name.
+	// Does this field is a primary key?
+	IsPrimaryKey bool
+	// Does this field is excluded? (anonymous, private, non-sql...)
+	IsExcluded bool
+
+	// Model is the zero-valued field's model used to generate schema from.
+	Model Model
+	// Model name that contains this field
+	ModelName string
+	// Table name of the model that contains this field
 	TableName string
-	// ColumnName is the database column name.
+	// The database column name
 	ColumnName string
-	// Is a primary key?
-	IsPrimary bool
+
+	// Is this field a foreign key?
+	IsForeignKey bool
+	// Is this field an association? (preload)
+	IsAssociation bool
+	// The association struct instance
+	Association *Association
 }
 
 // ColumnPath returns the column name prefixed with the table name.
@@ -34,71 +46,75 @@ func (f Field) ColumnPath() string {
 }
 
 // NewField returns full column name from model, field and tag.
-func NewField(model Model, meta FieldMeta) (Field, error) {
-	var columnName string
+func NewField(structField reflect.StructField, model Model) (Field, error) {
+	var (
+		name         = structField.Name
+		tags         = reflekt.GetFieldTags(structField, SupportedTags, TagsMapping)
+		modelName    = GetModelName(model)
+		tableName    = model.TableName()
+		columnName   = snaker.CamelToSnake(name)
+		isPrimaryKey = name == PrimaryKeyFieldName || len(tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0
+		isExcluded   = IsExcludedField(structField, tags)
+	)
 
-	if dbName := meta.Tags.GetByKey(SQLXStructTagName, "field"); len(dbName) != 0 {
-		columnName = dbName
-	} else {
-		columnName = snaker.CamelToSnake(meta.Name)
+	if v := tags.GetByKey(SQLXStructTagName, StructTagSQLXField); v != "" {
+		columnName = v
 	}
 
-	return Field{
-		Name:       meta.Name,
-		Meta:       meta,
-		Tags:       meta.Tags,
-		TableName:  model.TableName(),
-		ColumnName: columnName,
-	}, nil
+	field := Field{
+		StructField:  structField,
+		Name:         name,
+		Tags:         tags,
+		IsPrimaryKey: isPrimaryKey,
+		IsExcluded:   isExcluded,
+		Model:        model,
+		ModelName:    modelName,
+		TableName:    tableName,
+		ColumnName:   columnName,
+	}
+
+	association, isAssociation, err := NewAssociation(structField)
+	if err != nil {
+		return field, err
+	}
+
+	if isAssociation {
+		field.IsAssociation = true
+		field.Association = association
+	}
+
+	if IsForeignKey(field) {
+		field.IsForeignKey = true
+	}
+
+	return field, nil
 }
 
-// IsExcludedField returns true if field must be excluded from schema.
-func IsExcludedField(meta FieldMeta) bool {
-	// Skip unexported fields
-	if len(meta.Field.PkgPath) != 0 {
+// IsForeignKey returns true if the given fields looks like a foreign key or
+// had been explicitly set as foreign key field.
+func IsForeignKey(f Field) bool {
+	if f.Tags.HasKey(StructTagName, StructTagForeignKey) {
 		return true
 	}
 
-	// Skip db:"-"
-	if f := meta.Tags.GetByKey(SQLXStructTagName, "field"); f == "-" {
+	// Typically MyFieldID/MyFieldPK
+	if len(f.Name) > len(PrimaryKeyFieldName) && strings.HasSuffix(f.Name, PrimaryKeyFieldName) {
 		return true
 	}
 
 	return false
 }
 
-// IsPrimaryKeyField returns true if field is a primary key field.
-func IsPrimaryKeyField(meta FieldMeta) bool {
-	return (meta.Name == PrimaryKeyFieldName || len(meta.Tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0)
-}
-
-// ----------------------------------------------------------------------------
-// Field meta
-// ----------------------------------------------------------------------------
-
-// FieldMeta are low level field metadata.
-type FieldMeta struct {
-	Name  string
-	Field reflect.StructField
-	Type  reflect.Type
-	Tags  reflekt.FieldTags
-}
-
-// GetFieldMeta returns field reflect data.
-func GetFieldMeta(field reflect.StructField, tags []string, tagsMapping map[string]string) FieldMeta {
-	var (
-		fieldName = field.Name
-		fieldType = field.Type
-	)
-
-	if field.Type.Kind() == reflect.Ptr {
-		fieldType = field.Type.Elem()
+// IsExcludedField returns true if field must be excluded from schema.
+func IsExcludedField(f reflect.StructField, tags reflekt.FieldTags) bool {
+	if f.PkgPath != "" {
+		return true
 	}
 
-	return FieldMeta{
-		Name:  fieldName,
-		Field: field,
-		Type:  fieldType,
-		Tags:  reflekt.GetFieldTags(field, tags, tagsMapping),
+	// Skip db:"-"
+	if tag := tags.GetByKey(SQLXStructTagName, StructTagSQLXField); tag == "-" {
+		return true
 	}
+
+	return false
 }
