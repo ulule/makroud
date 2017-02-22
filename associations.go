@@ -26,6 +26,7 @@ type Association struct {
 	TableName  string
 	FieldName  string
 	ColumnName string
+	ColumnPath string
 }
 
 // NewAssociation returns a new Association instance for the given struct field.
@@ -70,12 +71,15 @@ func NewAssociation(f reflect.StructField) (*Association, bool, error) {
 		return nil, true, err
 	}
 
+	columnName := fmt.Sprintf("%s_%s", snaker.CamelToSnake(modelName), schema.PrimaryKeyField.ColumnName)
+
 	return &Association{
 		Type:       associationType,
 		Model:      model,
 		ModelName:  modelName,
 		TableName:  model.TableName(),
 		FieldName:  schema.PrimaryKeyField.Name,
-		ColumnName: fmt.Sprintf("%s_%s", snaker.CamelToSnake(modelName), schema.PrimaryKeyField.ColumnName),
+		ColumnName: columnName,
+		ColumnPath: fmt.Sprintf("%s.%s", model.TableName(), columnName),
 	}, true, nil
 }
