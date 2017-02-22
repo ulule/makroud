@@ -22,6 +22,8 @@ const (
 	StructTagPrimaryKey = "primary_key"
 	StructTagIgnored    = "ignored"
 	StructTagDefault    = "default"
+	StructTagForeignKey = "fk"
+	StructTagSQLXField  = "field"
 )
 
 // RelationType is a field relation type.
