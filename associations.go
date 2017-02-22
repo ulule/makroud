@@ -20,10 +20,12 @@ const (
 
 // Association is a field association.
 type Association struct {
-	Type              AssociationType
-	RelatedModelName  string
-	RelatedFieldName  string
-	RelatedColumnName string
+	Type       AssociationType
+	Model      Model
+	ModelName  string
+	TableName  string
+	FieldName  string
+	ColumnName string
 }
 
 // NewAssociation returns a new Association instance for the given struct field.
@@ -59,19 +61,21 @@ func NewAssociation(f reflect.StructField) (*Association, bool, error) {
 	}
 
 	var (
-		relatedModel     = GetModelFromType(t)
-		relatedModelName = GetModelName(relatedModel)
+		model     = GetModelFromType(t)
+		modelName = GetModelName(model)
 	)
 
-	relatedSchema, err := GetSchema(relatedModel)
+	schema, err := GetSchema(model)
 	if err != nil {
 		return nil, true, err
 	}
 
 	return &Association{
-		Type:              associationType,
-		RelatedModelName:  relatedModelName,
-		RelatedFieldName:  relatedSchema.PrimaryKeyField.Name,
-		RelatedColumnName: fmt.Sprintf("%s_%s", snaker.CamelToSnake(relatedModelName), relatedSchema.PrimaryKeyField.ColumnName),
+		Type:       associationType,
+		Model:      model,
+		ModelName:  modelName,
+		TableName:  model.TableName(),
+		FieldName:  schema.PrimaryKeyField.Name,
+		ColumnName: fmt.Sprintf("%s_%s", snaker.CamelToSnake(modelName), schema.PrimaryKeyField.ColumnName),
 	}, true, nil
 }

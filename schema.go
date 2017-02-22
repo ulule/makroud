@@ -78,32 +78,37 @@ func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Cond
 
 // AssociationsByPath returns relations struct paths: Article.Author.Avatars
 func (s Schema) AssociationsByPath() (map[string]Field, error) {
-	return GetSchemaAssociations(s, true)
+	return GetSchemaAssociations(s)
 }
 
 // GetSchemaAssociations returns flattened map of schema associations.
-func GetSchemaAssociations(schema Schema, root bool) (map[string]Field, error) {
-	paths := map[string]Field{}
+func GetSchemaAssociations(schema Schema) (map[string]Field, error) {
+	var (
+		err   error
+		paths = map[string]Field{}
+	)
 
 	for _, f := range schema.Associations {
-		paths[f.Name] = f
-
-		if !root {
-			schema, err := GetSchema(f.Model)
-			if err != nil {
-				return nil, err
-			}
-
-			assocs, err := GetSchemaAssociations(schema, root)
-			if err != nil {
-				return nil, err
-			}
-
-			for _, assoc := range assocs {
-				paths[fmt.Sprintf("%s.%s", f.Name, assoc.Name)] = assoc
-			}
+		if _, ok := paths[f.Name]; !ok {
+			paths[f.Name] = f
 		}
 
+		schema, err = GetSchema(f.Association.Model)
+		if err != nil {
+			return nil, err
+		}
+
+		assocs, err := GetSchemaAssociations(schema)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, assoc := range assocs {
+			key := fmt.Sprintf("%s.%s", f.Name, assoc.Name)
+			if _, ok := paths[key]; !ok {
+				paths[key] = assoc
+			}
+		}
 	}
 
 	return paths, nil
