@@ -50,7 +50,7 @@ func Save(driver Driver, out interface{}) error {
 
 	var query string
 
-	pkField := schema.PrimaryField
+	pkField := schema.PrimaryKeyField
 	pkValue, _ := reflekt.GetFieldValue(out, pkField.Name)
 
 	if reflekt.IsZeroValue(pkValue) {
