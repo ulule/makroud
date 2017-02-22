@@ -9,19 +9,12 @@ import (
 
 // Schema is a model schema.
 type Schema struct {
-	Model        Model
-	ModelName    string
-	TableName    string
-	PrimaryField Field
-	Fields       map[string]Field
-	Relations    map[string]Relation
-}
-
-// SetPrimaryField sets the given Field as schema primary key.
-func (s *Schema) SetPrimaryField(f Field) {
-	f.IsPrimary = true
-	s.PrimaryField = f
-	s.Fields[f.Name] = f
+	Model           Model
+	ModelName       string
+	TableName       string
+	PrimaryKeyField Field
+	Fields          map[string]Field
+	Associations    map[string]Field
 }
 
 // FieldNames return all field names.
@@ -46,7 +39,6 @@ func (s Schema) ColumnPaths() Columns {
 // columns generates column slice.
 func (s Schema) columns(withTable bool) Columns {
 	columns := Columns{}
-
 	for _, f := range s.Fields {
 		if withTable {
 			columns = append(columns, f.ColumnPath())
@@ -54,7 +46,6 @@ func (s Schema) columns(withTable bool) Columns {
 			columns = append(columns, f.ColumnName)
 		}
 	}
-
 	return columns
 }
 
@@ -71,43 +62,51 @@ func (s Schema) WhereColumnPaths(params map[string]interface{}) Conditions {
 // whereColumns generates where clause for the given params.
 func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Conditions {
 	wheres := Conditions{}
-
 	for k, v := range params {
 		column := k
-
 		if withTable {
 			column = fmt.Sprintf("%s.%s", s.TableName, k)
 		}
-
 		if reflect.Indirect(reflect.ValueOf(v)).Kind() == reflect.Slice {
 			wheres = append(wheres, fmt.Sprintf("%s IN (:%s)", column, k))
 		} else {
 			wheres = append(wheres, fmt.Sprintf("%s = :%s", column, k))
 		}
 	}
-
 	return wheres
 }
 
-// RelationPaths returns relations struct paths: Article.Author.Avatars
-func (s Schema) RelationPaths() map[string]Relation {
-	return GetSchemaRelations(s)
+// AssociationsByPath returns relations struct paths: Article.Author.Avatars
+func (s Schema) AssociationsByPath() (map[string]Field, error) {
+	return GetSchemaAssociations(s, true)
 }
 
-// GetSchemaRelations returns flattened map of schema relations.
-func GetSchemaRelations(schema Schema) map[string]Relation {
-	paths := map[string]Relation{}
+// GetSchemaAssociations returns flattened map of schema associations.
+func GetSchemaAssociations(schema Schema, root bool) (map[string]Field, error) {
+	paths := map[string]Field{}
 
-	for _, relation := range schema.Relations {
-		paths[relation.Name] = relation
+	for _, f := range schema.Associations {
+		paths[f.Name] = f
 
-		rels := GetSchemaRelations(relation.Schema)
-		for _, rel := range rels {
-			paths[fmt.Sprintf("%s.%s", relation.Name, rel.Name)] = rel
+		if !root {
+			schema, err := GetSchema(f.Model)
+			if err != nil {
+				return nil, err
+			}
+
+			assocs, err := GetSchemaAssociations(schema, root)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, assoc := range assocs {
+				paths[fmt.Sprintf("%s.%s", f.Name, assoc.Name)] = assoc
+			}
 		}
+
 	}
 
-	return paths
+	return paths, nil
 }
 
 // ----------------------------------------------------------------------------
@@ -145,52 +144,37 @@ func GetSchema(itf interface{}) (Schema, error) {
 // newSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
 func newSchema(model Model) (Schema, error) {
-	var (
-		err error
-		v   = reflekt.GetIndirectValue(model)
-	)
+	v := reflekt.GetIndirectValue(model)
 
 	schema := Schema{
-		Model:     model,
-		ModelName: reflekt.GetIndirectType(model).Name(),
-		TableName: model.TableName(),
-		Fields:    map[string]Field{},
-		Relations: map[string]Relation{},
+		Model:        model,
+		ModelName:    reflekt.GetIndirectType(model).Name(),
+		TableName:    model.TableName(),
+		Fields:       map[string]Field{},
+		Associations: map[string]Field{},
 	}
 
 	for i := 0; i < v.NumField(); i++ {
-		var (
-			structField = v.Type().Field(i)
-			meta        = GetFieldMeta(structField, SupportedTags, TagsMapping)
-		)
+		structField := v.Type().Field(i)
 
-		if IsExcludedField(meta) {
-			continue
-		}
-
-		if (meta.Type.Kind() == reflect.Struct) || (meta.Type.Kind() == reflect.Slice) {
-			relationType := getRelationType(meta.Type)
-
-			if _, ok := RelationTypes[relationType]; ok {
-				schema.Relations[meta.Name], err = NewRelation(schema, model, meta, relationType)
-				if err != nil {
-					return Schema{}, err
-				}
-
-				continue
-			}
-		}
-
-		field, err := NewField(model, meta)
+		field, err := NewField(structField, model)
 		if err != nil {
 			return Schema{}, err
 		}
 
-		if IsPrimaryKeyField(meta) {
-			schema.SetPrimaryField(field)
+		if field.IsExcluded {
+			continue
 		}
 
-		schema.Fields[meta.Name] = field
+		if field.IsPrimaryKey {
+			schema.PrimaryKeyField = field
+		}
+
+		if field.IsAssociation {
+			schema.Associations[field.Name] = field
+		} else {
+			schema.Fields[field.Name] = field
+		}
 	}
 
 	return schema, nil
