@@ -31,6 +31,8 @@ type Field struct {
 	TableName string
 	// The database column name
 	ColumnName string
+	// The database columnn path
+	ColumnPath string
 
 	// Is this field a foreign key?
 	IsForeignKey bool
@@ -38,11 +40,6 @@ type Field struct {
 	IsAssociation bool
 	// The association struct instance
 	Association *Association
-}
-
-// ColumnPath returns the column name prefixed with the table name.
-func (f Field) ColumnPath() string {
-	return fmt.Sprintf("%s.%s", f.TableName, f.ColumnName)
 }
 
 // NewField returns full column name from model, field and tag.
@@ -71,6 +68,7 @@ func NewField(structField reflect.StructField, model Model) (Field, error) {
 		ModelName:    modelName,
 		TableName:    tableName,
 		ColumnName:   columnName,
+		ColumnPath:   fmt.Sprintf("%s.%s", tableName, columnName),
 	}
 
 	association, isAssociation, err := NewAssociation(structField)

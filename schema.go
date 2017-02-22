@@ -41,7 +41,7 @@ func (s Schema) columns(withTable bool) Columns {
 	columns := Columns{}
 	for _, f := range s.Fields {
 		if withTable {
-			columns = append(columns, f.ColumnPath())
+			columns = append(columns, f.ColumnPath)
 		} else {
 			columns = append(columns, f.ColumnName)
 		}
