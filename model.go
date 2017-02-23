@@ -2,9 +2,15 @@ package sqlxx
 
 import (
 	"reflect"
+	"sort"
+	"strings"
 
 	"github.com/ulule/sqlxx/reflekt"
 )
+
+// ----------------------------------------------------------------------------
+// Model
+// ----------------------------------------------------------------------------
 
 // Model represents a database table.
 type Model interface {
@@ -51,4 +57,34 @@ func GetModelFromType(typ reflect.Type) Model {
 // GetModelName returns name of the given model.
 func GetModelName(model Model) string {
 	return reflect.Indirect(reflect.ValueOf(model)).Type().Name()
+}
+
+// ----------------------------------------------------------------------------
+// Columns
+// ----------------------------------------------------------------------------
+
+// Columns is a list of table columns.
+type Columns []string
+
+// Returns string representation of slice.
+func (c Columns) String() string {
+	sort.Strings(c)
+	return strings.Join(c, ", ")
+}
+
+// ----------------------------------------------------------------------------
+// Where clauses
+// ----------------------------------------------------------------------------
+
+// Conditions is a list of query conditions
+type Conditions []string
+
+// String returns conditions as AND query.
+func (c Conditions) String() string {
+	return strings.Join(c, " AND ")
+}
+
+// OR returns conditions as OR query.
+func (c Conditions) OR() string {
+	return strings.Join(c, " OR ")
 }
