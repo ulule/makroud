@@ -26,7 +26,7 @@ func TestIsForeignKey(t *testing.T) {
 
 		field, err := sqlxx.NewField(st, tt.model)
 		assert.Nil(t, err)
-		assert.Equal(t, tt.result, sqlxx.IsForeignKey(field), fmt.Sprintf("index: %d", i))
+		assert.Equal(t, tt.result, field.IsForeignKey(), fmt.Sprintf("index: %d", i))
 	}
 }
 

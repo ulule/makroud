@@ -31,31 +31,63 @@ type Field struct {
 	TableName string
 	// The database column name
 	ColumnName string
-	// The database columnn path
-	ColumnPath string
 
-	// Is this field a foreign key?
-	IsForeignKey bool
 	// Is this field an association? (preload)
 	IsAssociation bool
 	// The association struct instance
 	Association *Association
 }
 
+// ColumnPath returns database full column path.
+func (f Field) ColumnPath() string {
+	return fmt.Sprintf("%s.%s", f.TableName, f.ColumnName)
+}
+
+// IsForeignKey returns true if the given fields looks like a foreign key or
+// had been explicitly set as foreign key field.
+func (f Field) IsForeignKey() bool {
+	if f.Tags.HasKey(StructTagName, StructTagForeignKey) {
+		return true
+	}
+
+	// Typically MyFieldID/MyFieldPK
+	if len(f.Name) > len(PrimaryKeyFieldName) && strings.HasSuffix(f.Name, PrimaryKeyFieldName) {
+		return true
+	}
+
+	return false
+}
+
+// ReverseAssociation reverses association (used for AssociationTypeMany).
+func (f *Field) ReverseAssociation() {
+	// User.Avatars -> user_id
+	var (
+		tableName      = f.TableName
+		assocTableName = f.Association.TableName
+	)
+
+	f.Association.TableName = tableName
+	f.TableName = assocTableName
+	f.ColumnName = fmt.Sprintf("%s_%s", snaker.CamelToSnake(f.ModelName), f.Association.PrimaryKeyField.ColumnName)
+}
+
 // NewField returns full column name from model, field and tag.
 func NewField(structField reflect.StructField, model Model) (Field, error) {
 	var (
-		name         = structField.Name
-		tags         = reflekt.GetFieldTags(structField, SupportedTags, TagsMapping)
-		modelName    = GetModelName(model)
-		tableName    = model.TableName()
-		columnName   = snaker.CamelToSnake(name)
-		isPrimaryKey = name == PrimaryKeyFieldName || len(tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0
-		isExcluded   = IsExcludedField(structField, tags)
+		err                 error
+		name                = structField.Name
+		tags                = reflekt.GetFieldTags(structField, SupportedTags, TagsMapping)
+		modelName           = GetModelName(model)
+		tableName           = model.TableName()
+		columnName          = snaker.CamelToSnake(name)
+		columnNameOverrided = false
+		isPrimaryKey        = name == PrimaryKeyFieldName || len(tags.GetByKey(StructTagName, StructTagPrimaryKey)) != 0
+		isExcluded          = IsExcludedField(structField, tags)
 	)
 
 	if v := tags.GetByKey(SQLXStructTagName, StructTagSQLXField); v != "" {
 		columnName = v
+		columnNameOverrided = true
 	}
 
 	field := Field{
@@ -68,39 +100,24 @@ func NewField(structField reflect.StructField, model Model) (Field, error) {
 		ModelName:    modelName,
 		TableName:    tableName,
 		ColumnName:   columnName,
-		ColumnPath:   fmt.Sprintf("%s.%s", tableName, columnName),
 	}
 
-	association, isAssociation, err := NewAssociation(structField)
+	field.Association, field.IsAssociation, err = NewAssociation(structField)
 	if err != nil {
 		return field, err
 	}
 
-	if isAssociation {
-		field.IsAssociation = true
-		field.Association = association
-	}
+	if field.IsAssociation {
+		if !columnNameOverrided {
+			field.ColumnName = fmt.Sprintf("%s_id", columnName)
+		}
 
-	if IsForeignKey(field) {
-		field.IsForeignKey = true
+		if field.Association.Type == AssociationTypeMany {
+			field.ReverseAssociation()
+		}
 	}
 
 	return field, nil
-}
-
-// IsForeignKey returns true if the given fields looks like a foreign key or
-// had been explicitly set as foreign key field.
-func IsForeignKey(f Field) bool {
-	if f.Tags.HasKey(StructTagName, StructTagForeignKey) {
-		return true
-	}
-
-	// Typically MyFieldID/MyFieldPK
-	if len(f.Name) > len(PrimaryKeyFieldName) && strings.HasSuffix(f.Name, PrimaryKeyFieldName) {
-		return true
-	}
-
-	return false
 }
 
 // IsExcludedField returns true if field must be excluded from schema.
