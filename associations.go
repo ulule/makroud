@@ -3,8 +3,6 @@ package sqlxx
 import (
 	"fmt"
 	"reflect"
-
-	"github.com/serenize/snaker"
 )
 
 // AssociationType is an association type.
@@ -20,13 +18,18 @@ const (
 
 // Association is a field association.
 type Association struct {
-	Type       AssociationType
-	Model      Model
-	ModelName  string
-	TableName  string
-	FieldName  string
-	ColumnName string
-	ColumnPath string
+	Type            AssociationType
+	Model           Model
+	ModelName       string
+	TableName       string
+	PrimaryKeyField Field
+	FieldName       string
+	ColumnName      string
+}
+
+// ColumnPath returns database full column path.
+func (a Association) ColumnPath() string {
+	return fmt.Sprintf("%s.%s", a.TableName, a.ColumnName)
 }
 
 // NewAssociation returns a new Association instance for the given struct field.
@@ -71,15 +74,13 @@ func NewAssociation(f reflect.StructField) (*Association, bool, error) {
 		return nil, true, err
 	}
 
-	columnName := fmt.Sprintf("%s_%s", snaker.CamelToSnake(modelName), schema.PrimaryKeyField.ColumnName)
-
 	return &Association{
-		Type:       associationType,
-		Model:      model,
-		ModelName:  modelName,
-		TableName:  model.TableName(),
-		FieldName:  schema.PrimaryKeyField.Name,
-		ColumnName: columnName,
-		ColumnPath: fmt.Sprintf("%s.%s", model.TableName(), columnName),
+		Type:            associationType,
+		Model:           model,
+		ModelName:       modelName,
+		TableName:       model.TableName(),
+		PrimaryKeyField: schema.PrimaryKeyField,
+		FieldName:       schema.PrimaryKeyField.Name,
+		ColumnName:      schema.PrimaryKeyField.ColumnName,
 	}, true, nil
 }
