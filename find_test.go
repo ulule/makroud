@@ -8,7 +8,7 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
-func TestGetPrimaryKeys(t *testing.T) {
+func TestFind_GetPrimaryKeys(t *testing.T) {
 	_, fixtures, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -21,7 +21,7 @@ func TestGetPrimaryKeys(t *testing.T) {
 	assert.Equal(t, []interface{}{1}, pks)
 }
 
-func TestGetByParams(t *testing.T) {
+func TestFind_GetByParams(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -35,7 +35,7 @@ func TestGetByParams(t *testing.T) {
 	assert.NotZero(t, user.UpdatedAt)
 }
 
-func TestFindByParams(t *testing.T) {
+func TestFind_FindByParams(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 

@@ -22,7 +22,7 @@ type associationResultTest struct {
 	associationType       sqlxx.AssociationType
 }
 
-func TestGetSchema(t *testing.T) {
+func TestSchema_GetSchema(t *testing.T) {
 	schema, err := sqlxx.GetSchema(Untagged{})
 	assert.Nil(t, err)
 
@@ -72,7 +72,7 @@ func TestGetSchema(t *testing.T) {
 	})
 }
 
-func TestGetSchema_InfiniteLoop(t *testing.T) {
+func TestSchema_GetSchema_InfiniteLoop(t *testing.T) {
 	schema, err := sqlxx.GetSchema(User{})
 	assert.Nil(t, err)
 	assert.NotNil(t, schema)

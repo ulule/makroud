@@ -9,7 +9,7 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
-func TestGetModelFromType(t *testing.T) {
+func TestModel_GetModelFromType(t *testing.T) {
 	results := []struct {
 		value    interface{}
 		expected interface{}

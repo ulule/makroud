@@ -9,7 +9,7 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
-func TestSave(t *testing.T) {
+func TestSave_Save(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 

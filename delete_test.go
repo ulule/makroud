@@ -9,7 +9,7 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
-func TestDelete(t *testing.T) {
+func TestDelete_Delete(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -34,7 +34,7 @@ func TestDelete(t *testing.T) {
 	assert.Equal(t, 0, count)
 }
 
-func TestSoftDelete(t *testing.T) {
+func TestDelete_SoftDelete(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 

@@ -8,7 +8,7 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
-func TestIsForeignKey(t *testing.T) {
+func TestFields_IsForeignKey(t *testing.T) {
 	testers := []struct {
 		model  sqlxx.Model
 		field  string
@@ -26,7 +26,7 @@ func TestIsForeignKey(t *testing.T) {
 	}
 }
 
-func TestIsExcludedField(t *testing.T) {
+func TestFields_IsExcludedField(t *testing.T) {
 	testers := []struct {
 		model  sqlxx.Model
 		field  string
