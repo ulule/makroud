@@ -1,6 +1,9 @@
 package sqlxx
 
-import "strings"
+import (
+	"sort"
+	"strings"
+)
 
 // ----------------------------------------------------------------------------
 // Columns
@@ -11,6 +14,7 @@ type Columns []string
 
 // Returns string representation of slice.
 func (c Columns) String() string {
+	sort.Strings(c)
 	return strings.Join(c, ", ")
 }
 
