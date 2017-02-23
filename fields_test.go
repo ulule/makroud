@@ -2,7 +2,6 @@ package sqlxx_test
 
 import (
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,12 +20,9 @@ func TestIsForeignKey(t *testing.T) {
 	}
 
 	for i, tt := range testers {
-		st, found := reflect.TypeOf(tt.model).FieldByName(tt.field)
-		assert.True(t, found, fmt.Sprintf("index: %d", i))
-
-		field, err := sqlxx.NewField(st, tt.model)
+		field, err := sqlxx.NewField(tt.model, tt.field)
 		assert.Nil(t, err)
-		assert.Equal(t, tt.result, field.IsForeignKey(), fmt.Sprintf("index: %d", i))
+		assert.Equal(t, tt.result, field.IsForeignKey, fmt.Sprintf("index: %d", i))
 	}
 }
 
@@ -42,12 +38,9 @@ func TestIsExcludedField(t *testing.T) {
 	}
 
 	for i, tt := range testers {
-		st, found := reflect.TypeOf(tt.model).FieldByName(tt.field)
-		assert.True(t, found, fmt.Sprintf("index: %d", i))
-
-		field, err := sqlxx.NewField(st, tt.model)
+		field, err := sqlxx.NewField(tt.model, tt.field)
 		assert.Nil(t, err)
-		assert.Equal(t, tt.result, sqlxx.IsExcludedField(st, field.Tags), fmt.Sprintf("index: %d", i))
+		assert.Equal(t, tt.result, field.IsExcluded, fmt.Sprintf("index: %d", i))
 	}
 }
 
