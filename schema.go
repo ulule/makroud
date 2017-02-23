@@ -169,6 +169,10 @@ func newSchema(model Model) (Schema, error) {
 			return Schema{}, err
 		}
 
+		if field.IsExcluded {
+			continue
+		}
+
 		if field.IsPrimaryKey {
 			schema.PrimaryKeyField = field
 		}

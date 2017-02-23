@@ -96,7 +96,7 @@ func NewField(model Model, name string) (Field, error) {
 	//
 
 	isExcluded := false
-	if tag := tags.GetByKey(SQLXStructTagName, StructTagSQLXField); tag == "-" {
+	if tag := tags.GetByKey(SQLXStructTagName, StructTagSQLXField); structField.PkgPath != "" || tag == "-" {
 		isExcluded = true
 	}
 
