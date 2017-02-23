@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/oleiade/reflections"
 	"github.com/ulule/sqlxx/reflekt"
 )
 
@@ -149,8 +150,6 @@ func GetSchema(itf interface{}) (Schema, error) {
 // newSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
 func newSchema(model Model) (Schema, error) {
-	v := reflekt.GetIndirectValue(model)
-
 	schema := Schema{
 		Model:        model,
 		ModelName:    reflekt.GetIndirectType(model).Name(),
@@ -159,16 +158,15 @@ func newSchema(model Model) (Schema, error) {
 		Associations: map[string]Field{},
 	}
 
-	for i := 0; i < v.NumField(); i++ {
-		structField := v.Type().Field(i)
+	fields, err := reflections.Fields(model)
+	if err != nil {
+		return Schema{}, err
+	}
 
-		field, err := NewField(structField, model)
+	for _, name := range fields {
+		field, err := NewField(model, name)
 		if err != nil {
 			return Schema{}, err
-		}
-
-		if field.IsExcluded {
-			continue
 		}
 
 		if field.IsPrimaryKey {
@@ -177,9 +175,10 @@ func newSchema(model Model) (Schema, error) {
 
 		if field.IsAssociation {
 			schema.Associations[field.Name] = field
-		} else {
-			schema.Fields[field.Name] = field
+			continue
 		}
+
+		schema.Fields[field.Name] = field
 	}
 
 	return schema, nil
