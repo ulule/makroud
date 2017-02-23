@@ -10,28 +10,24 @@ import (
 
 // GetPrimaryKeys returns primary keys for the given interface.
 func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
-	var (
-		value  = reflekt.GetIndirectValue(GetModelFromInterface(out))
-		isNull = reflekt.IsNullableType(value.FieldByName(name).Type())
-	)
+	var values []interface{}
 
 	pks, err := reflekt.GetFieldValues(out, name)
 	if err != nil {
 		return nil, err
 	}
 
-	var values []interface{}
 	for i := range pks {
-		if !isNull {
-			if reflekt.IsZeroValue(pks[i]) {
-				return nil, fmt.Errorf("Cannot perform query on zero value (%s=%v)", name, pks[i])
-			}
-			values = append(values, pks[i])
-		} else {
-			valuer := reflekt.Copy(pks[i]).(driver.Valuer)
+		pk := pks[i]
+
+		if valuer, ok := reflekt.Copy(pk).(driver.Valuer); ok {
 			if v, err := valuer.Value(); err == nil && v != nil {
-				values = append(values, v)
+				pk = v
 			}
+		}
+
+		if !reflekt.IsZeroValue(pk) {
+			values = append(values, pk)
 		}
 	}
 
