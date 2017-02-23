@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/ulule/sqlxx"
 )
 
@@ -14,19 +13,13 @@ type fieldResultTest struct {
 	columnPath string
 }
 
-type relationResultTest struct {
-	fieldName     string
-	fkColumnName  string
-	fkColumnPath  string
-	refColumnName string
-	refColumnPath string
-	relationType  sqlxx.RelationType
-}
-
-func TestGetSchemaInfiniteLoop(t *testing.T) {
-	schema, err := sqlxx.GetSchema(User{})
-	assert.Nil(t, err)
-	assert.NotNil(t, schema)
+type associationResultTest struct {
+	field                 string
+	columnName            string
+	columnPath            string
+	associationColumnName string
+	associationColumnPath string
+	associationType       sqlxx.AssociationType
 }
 
 func TestGetSchema(t *testing.T) {
@@ -40,55 +33,18 @@ func TestGetSchema(t *testing.T) {
 	assert.NotContains(t, schema.FieldNames(), "DBExcludedField")
 
 	testFields(t, schema, []fieldResultTest{
-		{
-			"ID",
-			"id", "untagged.id",
-		},
-		{
-			"FirstName",
-			"first_name", "untagged.first_name",
-		},
-		{
-			"LastName",
-			"last_name", "untagged.last_name",
-		},
-		{
-			"ThisIsAVeryLongFieldName123",
-			"this_is_a_very_long_field_name123", "untagged.this_is_a_very_long_field_name123",
-		},
+		{"ID", "id", "untagged.id"},
+		{"FirstName", "first_name", "untagged.first_name"},
+		{"LastName", "last_name", "untagged.last_name"},
+		{"ThisIsAVeryLongFieldName123", "this_is_a_very_long_field_name123", "untagged.this_is_a_very_long_field_name123"},
 	})
 
-	testRelations(t, schema, []relationResultTest{
-		{
-			"RelatedModel",
-			"related_model_id", "untagged.related_model_id",
-			"custom_id", "related.custom_id",
-			sqlxx.RelationTypeOneToMany,
-		},
-		{
-			"RelatedModelPtr",
-			"related_model_ptr_id", "untagged.related_model_ptr_id",
-			"custom_id", "related.custom_id",
-			sqlxx.RelationTypeOneToMany,
-		},
-		{
-			"ManyModel",
-			"untagged_id", "many.untagged_id",
-			"id", "untagged.id",
-			sqlxx.RelationTypeManyToOne,
-		},
-		{
-			"ManyModelPtr",
-			"untagged_id", "many.untagged_id",
-			"id", "untagged.id",
-			sqlxx.RelationTypeManyToOne,
-		},
-		{
-			"ManyModelPtrs",
-			"untagged_id", "many.untagged_id",
-			"id", "untagged.id",
-			sqlxx.RelationTypeManyToOne,
-		},
+	testRelations(t, schema, []associationResultTest{
+		{"RelatedModel", "related_model_id", "untagged.related_model_id", "custom_id", "related.custom_id", sqlxx.AssociationTypeOne},
+		{"RelatedModelPtr", "related_model_ptr_id", "untagged.related_model_ptr_id", "custom_id", "related.custom_id", sqlxx.AssociationTypeOne},
+		{"ManyModel", "untagged_id", "many.untagged_id", "id", "untagged.id", sqlxx.AssociationTypeMany},
+		{"ManyModelPtr", "untagged_id", "many.untagged_id", "id", "untagged.id", sqlxx.AssociationTypeMany},
+		{"ManyModelPtrs", "untagged_id", "many.untagged_id", "id", "untagged.id", sqlxx.AssociationTypeMany},
 	})
 
 	schema, err = sqlxx.GetSchema(Tagged{})
@@ -101,63 +57,33 @@ func TestGetSchema(t *testing.T) {
 	assert.NotContains(t, schema.FieldNames(), "DBExcludedField")
 
 	testFields(t, schema, []fieldResultTest{
-		{
-			"ID",
-			"public_id", "tagged.public_id",
-		},
-		{
-			"FirstName",
-			"firstname", "tagged.firstname",
-		},
-		{
-			"LastName",
-			"last_name", "tagged.last_name",
-		},
-		{
-			"ThisIsAVeryLongFieldName123",
-			"short_field", "tagged.short_field",
-		},
+		{"ID", "public_id", "tagged.public_id"},
+		{"FirstName", "firstname", "tagged.firstname"},
+		{"LastName", "last_name", "tagged.last_name"},
+		{"ThisIsAVeryLongFieldName123", "short_field", "tagged.short_field"},
 	})
 
-	testRelations(t, schema, []relationResultTest{
-		{
-			"RelatedModel",
-			"member_id", "tagged.member_id",
-			"custom_id", "related.custom_id",
-			sqlxx.RelationTypeOneToMany,
-		},
-		{
-			"RelatedModelPtr",
-			"member_id", "tagged.member_id",
-			"custom_id", "related.custom_id",
-			sqlxx.RelationTypeOneToMany,
-		},
-		{
-			"ManyModel",
-			"tagged_id", "many.tagged_id",
-			"id", "tagged.id",
-			sqlxx.RelationTypeManyToOne,
-		},
-		{
-			"ManyModelPtr",
-			"tagged_id", "many.tagged_id",
-			"id", "tagged.id",
-			sqlxx.RelationTypeManyToOne,
-		},
-		{
-			"ManyModelPtrs",
-			"tagged_id", "many.tagged_id",
-			"id", "tagged.id",
-			sqlxx.RelationTypeManyToOne,
-		},
+	testRelations(t, schema, []associationResultTest{
+		{"RelatedModel", "member_id", "tagged.member_id", "custom_id", "related.custom_id", sqlxx.AssociationTypeOne},
+		{"RelatedModelPtr", "member_id", "tagged.member_id", "custom_id", "related.custom_id", sqlxx.AssociationTypeOne},
+		{"ManyModel", "tagged_id", "many.tagged_id", "id", "tagged.id", sqlxx.AssociationTypeMany},
+		{"ManyModelPtr", "tagged_id", "many.tagged_id", "id", "tagged.id", sqlxx.AssociationTypeMany},
+		{"ManyModelPtrs", "tagged_id", "many.tagged_id", "id", "tagged.id", sqlxx.AssociationTypeMany},
 	})
 }
 
-func TestSchemaRelationPaths(t *testing.T) {
+func TestGetSchema_InfiniteLoop(t *testing.T) {
+	schema, err := sqlxx.GetSchema(User{})
+	assert.Nil(t, err)
+	assert.NotNil(t, schema)
+}
+
+func TestSchema_AssociationsByPath(t *testing.T) {
 	schema, err := sqlxx.GetSchema(Article{})
 	assert.Nil(t, err)
 
-	relations := schema.RelationPaths()
+	fields, err := schema.AssociationsByPath()
+	assert.Nil(t, err)
 
 	results := []struct {
 		path      string
@@ -165,32 +91,31 @@ func TestSchemaRelationPaths(t *testing.T) {
 		tableName string
 		name      string
 	}{
-		{"Author", "User", "users", "Author"},
-		{"Author.Avatars", "Avatar", "avatars", "Avatars"},
+		{"Author", "User", "users", "ID"},
+		{"Author.Avatars", "Avatar", "avatars", "ID"},
 	}
 
-	for _, r := range results {
-		relation, ok := relations[r.path]
-		assert.True(t, ok)
-		assert.Equal(t, r.modelName, relation.Schema.ModelName)
-		assert.Equal(t, r.tableName, relation.Schema.TableName)
-		assert.Equal(t, r.name, relation.Name)
-
+	for _, tt := range results {
+		f, ok := fields[tt.path]
+		assert.True(t, ok, tt.path)
+		assert.Equal(t, tt.modelName, f.Association.ModelName)
+		assert.Equal(t, tt.tableName, f.Association.TableName)
+		assert.Equal(t, tt.name, f.Association.FieldName)
 	}
 }
 
-func TestGetSchema_PrimaryKeyField(t *testing.T) {
+func TestSchema_PrimaryKeyField(t *testing.T) {
 	// Implicit
 	schema, err := sqlxx.GetSchema(ImplicitPrimaryKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, schema.PrimaryField.Name, "ID")
-	assert.Equal(t, schema.PrimaryField.ColumnName, "id")
+	assert.Equal(t, schema.PrimaryKeyField.Name, "ID")
+	assert.Equal(t, schema.PrimaryKeyField.ColumnName, "id")
 
 	// Explicit
 	schema, err = sqlxx.GetSchema(ExplicitPrimaryKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, schema.PrimaryField.Name, "TadaID")
-	assert.Equal(t, schema.PrimaryField.ColumnName, "tada_id")
+	assert.Equal(t, schema.PrimaryKeyField.Name, "TadaID")
+	assert.Equal(t, schema.PrimaryKeyField.ColumnName, "tada_id")
 }
 
 func testFields(t *testing.T, schema sqlxx.Schema, results []fieldResultTest) {
@@ -200,20 +125,19 @@ func testFields(t *testing.T, schema sqlxx.Schema, results []fieldResultTest) {
 	}
 }
 
-func testRelations(t *testing.T, schema sqlxx.Schema, results []relationResultTest) {
+func testRelations(t *testing.T, schema sqlxx.Schema, results []associationResultTest) {
 	for _, r := range results {
 		var (
-			relation = schema.Relations[r.fieldName]
-			fk       = relation.FK
-			ref      = relation.Reference
+			f     = schema.Associations[r.field]
+			assoc = f.Association
 		)
 
-		assert.Equal(t, r.fieldName, relation.Name)
-		assert.Equal(t, r.fkColumnName, fk.ColumnName)
-		assert.Equal(t, r.fkColumnPath, fk.ColumnPath())
-		assert.Equal(t, r.refColumnName, ref.ColumnName)
-		assert.Equal(t, r.refColumnPath, ref.ColumnPath())
-		assert.Equal(t, r.relationType, relation.Type)
+		assert.Equal(t, r.field, f.Name)
+		assert.Equal(t, r.columnName, f.ColumnName)
+		assert.Equal(t, r.columnPath, f.ColumnPath())
+		assert.Equal(t, r.associationColumnName, assoc.ColumnName)
+		assert.Equal(t, r.associationColumnPath, assoc.ColumnPath())
+		assert.Equal(t, r.associationType, assoc.Type)
 	}
 }
 
