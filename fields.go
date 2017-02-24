@@ -19,14 +19,15 @@ type Field struct {
 	// The field struct tags
 	Tags reflekt.FieldTags
 
-	// The field name
-	Name string
 	// Model is the zero-valued field's model used to generate schema from.
 	Model Model
 	// Model name that contains this field
 	ModelName string
 	// Table name of the model that contains this field
 	TableName string
+
+	// The field name
+	Name string
 	// The database column name
 	ColumnName string
 
@@ -183,6 +184,7 @@ func NewField(model Model, name string) (Field, error) {
 		field.Association.TableName = tableName
 		field.TableName = assocTableName
 		field.ColumnName = fmt.Sprintf("%s_%s", snaker.CamelToSnake(field.ModelName), field.Association.PrimaryKeyField.ColumnName)
+		field.Association.FKFieldName = fmt.Sprintf("%s%s", field.ModelName, PrimaryKeyFieldName)
 	}
 
 	return field, nil
