@@ -48,13 +48,13 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 		)
 
 		if !isSlice {
-			pks, err = GetPrimaryKeys(out, field.ForeignKey.Reference.FieldName)
+			// For Category.User, should be: Category.UserID
+			pks, err = GetPrimaryKeys(out, field.ForeignKey.FieldName)
 			if err != nil {
 				return nil, err
 			}
 		} else {
 			value := reflect.ValueOf(out).Elem()
-
 			for i := 0; i < value.Len(); i++ {
 				values, err := GetPrimaryKeys(value.Index(i).Interface(), field.ForeignKey.FieldName)
 				if err != nil {
@@ -70,12 +70,13 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 		}
 
 		if len(pks) > 1 {
-			params[field.ForeignKey.ColumnName] = pks
+			// For Category.User, should be: users.id
+			params[field.ForeignKey.Reference.ColumnName] = pks
 		} else {
-			params[field.ForeignKey.ColumnName] = pks[0]
+			params[field.ForeignKey.Reference.ColumnName] = pks[0]
 		}
 
-		query, args, err := whereQuery(field.ForeignKey.Model, params, field.IsAssociationTypeOne() && !isSlice)
+		query, args, err := whereQuery(field.ForeignKey.Reference.Model, params, field.IsAssociationTypeOne() && !isSlice)
 		if err != nil {
 			return nil, err
 		}
@@ -129,9 +130,9 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 	)
 
 	if q.Field.IsAssociationTypeMany() || isSlice {
-		instance = reflekt.CloneType(q.Field.ForeignKey.Model, reflect.Slice)
+		instance = reflekt.CloneType(q.Field.ForeignKey.Reference.Model, reflect.Slice)
 	} else {
-		instance = reflekt.CloneType(q.Field.ForeignKey.Model)
+		instance = reflekt.CloneType(q.Field.ForeignKey.Reference.Model)
 	}
 
 	if err = FetchAssociation(driver, instance, q); err != nil {
@@ -165,17 +166,17 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			)
 
 			for i := 0; i < items.Len(); i++ {
-				value, err := reflekt.GetFieldValue(items.Index(i), q.Field.ForeignKey.AssociationFieldName)
+				value, err := reflekt.GetFieldValue(items.Index(i), q.Field.ForeignKey.Reference.FieldName)
 				if err != nil {
-					return nil
+					return err
 				}
 				instancesMap[value] = items.Index(i)
 			}
 
 			for i := 0; i < value.Len(); i++ {
-				val, err := reflekt.GetFieldValue(value.Index(i), q.Field.ForeignKey.Reference.FieldName)
+				val, err := reflekt.GetFieldValue(value.Index(i), q.Field.ForeignKey.FieldName)
 				if err != nil {
-					return nil
+					return err
 				}
 
 				switch val.(type) {
@@ -185,7 +186,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 
 				instance, ok := instancesMap[val]
 				if ok {
-					if err := reflekt.SetFieldValue(value.Index(i), q.Field.ForeignKey.FieldName, instance.Interface()); err != nil {
+					if err := reflekt.SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance.Interface()); err != nil {
 						return err
 					}
 				}
