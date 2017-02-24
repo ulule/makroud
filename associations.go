@@ -8,64 +8,19 @@ import (
 	"github.com/ulule/sqlxx/reflekt"
 )
 
-// Association is a field association.
-type Association struct {
-	Type AssociationType
+// AssociationQueries are a slice of relation query ready to be ordered by level
+type AssociationQueries []AssociationQuery
 
-	// Model
-	Schema          Schema
-	Model           Model
-	ModelName       string
-	TableName       string
-	PrimaryKeyField Field
-
-	// Field
-	FieldName  string
-	ColumnName string
-
-	// Foreign key
-	FKFieldName  string
-	FKColumnName string
+// AssociationQuery is a relation query
+type AssociationQuery struct {
+	Field    Field
+	Query    string
+	Args     []interface{}
+	Params   map[string]interface{}
+	FetchOne bool
 }
 
-// String representation
-func (a Association) String() string {
-	return fmt.Sprintf("model:%s table:%s field:%s columun:%s fk:%s fk_column:%s",
-		a.ModelName, a.TableName, a.FieldName, a.ColumnName, a.FKFieldName, a.FKColumnName)
-}
-
-// ColumnPath returns database full column path.
-func (a Association) ColumnPath() string {
-	return fmt.Sprintf("%s.%s", a.TableName, a.ColumnName)
-}
-
-// IsOne returns true if the association is an AssociationTypeOne.
-func (a Association) IsOne() bool {
-	return a.Type == AssociationTypeOne
-}
-
-// IsMany returns true if the association is an AssociationTypeMany.
-func (a Association) IsMany() bool {
-	return a.Type == AssociationTypeMany
-}
-
-// ----------------------------------------------------------------------------
-// SQL queries
-// ----------------------------------------------------------------------------
-
-type (
-	// AssociationQuery is a relation query
-	AssociationQuery struct {
-		Field    Field
-		Query    string
-		Args     []interface{}
-		Params   map[string]interface{}
-		FetchOne bool
-	}
-	// AssociationQueries are a slice of relation query ready to be ordered by level
-	AssociationQueries []AssociationQuery
-)
-
+// String returns struct instance string representation.
 func (aq AssociationQuery) String() string {
 	return aq.Query
 }
@@ -78,18 +33,22 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 	)
 
 	for _, field := range fields {
+		if !field.IsAssociation {
+			return nil, fmt.Errorf("field '%s' is not an association", field.Name)
+		}
+
+		if field.ForeignKey == nil {
+			return nil, fmt.Errorf("no ForeignKey instance found for field %s", field.Name)
+		}
+
 		var (
-			err        error
-			params     = map[string]interface{}{}
-			pks        = []interface{}{}
-			fieldName  = field.Association.FKFieldName
-			columnName = field.Association.ColumnName
-			model      = field.Association.Model
-			isOne      = field.Association.IsOne()
+			err    error
+			params = map[string]interface{}{}
+			pks    = []interface{}{}
 		)
 
 		if !isSlice {
-			pks, err = GetPrimaryKeys(out, fieldName)
+			pks, err = GetPrimaryKeys(out, field.ForeignKey.FieldName)
 			if err != nil {
 				return nil, err
 			}
@@ -97,7 +56,7 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 			value := reflect.ValueOf(out).Elem()
 
 			for i := 0; i < value.Len(); i++ {
-				values, err := GetPrimaryKeys(value.Index(i).Interface(), fieldName)
+				values, err := GetPrimaryKeys(value.Index(i).Interface(), field.ForeignKey.FieldName)
 				if err != nil {
 					return nil, err
 				}
@@ -111,12 +70,12 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 		}
 
 		if len(pks) > 1 {
-			params[columnName] = pks
+			params[field.ForeignKey.ColumnName] = pks
 		} else {
-			params[columnName] = pks[0]
+			params[field.ForeignKey.ColumnName] = pks[0]
 		}
 
-		query, args, err := whereQuery(model, params, isOne && !isSlice)
+		query, args, err := whereQuery(field.ForeignKey.Model, params, field.IsAssociationTypeOne() && !isSlice)
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +85,7 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 			Query:    query,
 			Args:     args,
 			Params:   params,
-			FetchOne: isOne,
+			FetchOne: field.IsAssociationTypeOne(),
 		})
 	}
 
@@ -158,33 +117,30 @@ func PreloadAssociations(driver Driver, out interface{}, fields []Field) error {
 // ----------------------------------------------------------------------------
 
 // SetAssociation performs query and populates the given out with values.
-func SetAssociation(driver Driver, out interface{}, query AssociationQuery) error {
-	if !query.Field.IsAssociation {
-		return fmt.Errorf("cannot set association for field: %v", query.Field)
+func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
+	if !q.Field.IsAssociation {
+		return fmt.Errorf("cannot set association for field: %v", q.Field)
 	}
 
 	var (
-		err       error
-		instance  interface{}
-		isSlice   = reflekt.IsSlice(out)
-		assoc     = query.Field.Association
-		destField = query.Field.Name
-		isMany    = query.Field.Association.IsMany()
+		err      error
+		instance interface{}
+		isSlice  = reflekt.IsSlice(out)
 	)
 
-	if assoc.IsMany() || isSlice {
-		instance = reflekt.CloneType(assoc.Model, reflect.Slice)
+	if q.Field.IsAssociationTypeMany() || isSlice {
+		instance = reflekt.CloneType(q.Field.ForeignKey.Model, reflect.Slice)
 	} else {
-		instance = reflekt.CloneType(assoc.Model)
+		instance = reflekt.CloneType(q.Field.ForeignKey.Model)
 	}
 
-	if err = FetchAssociation(driver, instance, query); err != nil {
+	if err = FetchAssociation(driver, instance, q); err != nil {
 		return err
 	}
 
 	// user.Avatars || user.Avatar
 	if !isSlice {
-		return reflekt.SetFieldValue(out, destField, reflect.ValueOf(instance).Elem().Interface())
+		return reflekt.SetFieldValue(out, q.Field.ForeignKey.AssociationFieldName, reflect.ValueOf(instance).Elem().Interface())
 	}
 
 	//
@@ -192,13 +148,13 @@ func SetAssociation(driver Driver, out interface{}, query AssociationQuery) erro
 	//
 
 	// users.Avatar
-	if !isMany {
+	if !q.Field.IsAssociationTypeMany() {
 		value := reflect.ValueOf(out).Elem()
 
 		// user.Avatar
 		if !isSlice {
 			for i := 0; i < value.Len(); i++ {
-				if err := reflekt.SetFieldValue(value.Index(i), query.Field.Name, instance); err != nil {
+				if err := reflekt.SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance); err != nil {
 					return err
 				}
 			}
@@ -209,7 +165,7 @@ func SetAssociation(driver Driver, out interface{}, query AssociationQuery) erro
 			)
 
 			for i := 0; i < items.Len(); i++ {
-				value, err := reflekt.GetFieldValue(items.Index(i), query.Field.Association.FieldName)
+				value, err := reflekt.GetFieldValue(items.Index(i), q.Field.ForeignKey.AssociationFieldName)
 				if err != nil {
 					return nil
 				}
@@ -217,7 +173,7 @@ func SetAssociation(driver Driver, out interface{}, query AssociationQuery) erro
 			}
 
 			for i := 0; i < value.Len(); i++ {
-				val, err := reflekt.GetFieldValue(value.Index(i), query.Field.Association.FKFieldName)
+				val, err := reflekt.GetFieldValue(value.Index(i), q.Field.ForeignKey.Reference.FieldName)
 				if err != nil {
 					return nil
 				}
@@ -229,7 +185,7 @@ func SetAssociation(driver Driver, out interface{}, query AssociationQuery) erro
 
 				instance, ok := instancesMap[val]
 				if ok {
-					if err := reflekt.SetFieldValue(value.Index(i), query.Field.Name, instance.Interface()); err != nil {
+					if err := reflekt.SetFieldValue(value.Index(i), q.Field.ForeignKey.FieldName, instance.Interface()); err != nil {
 						return err
 					}
 				}
@@ -256,7 +212,7 @@ func SetAssociation(driver Driver, out interface{}, query AssociationQuery) erro
 			continue
 		}
 
-		itemPK, err := reflekt.GetFieldValue(item.Interface().(Model), query.Field.Association.FieldName)
+		itemPK, err := reflekt.GetFieldValue(item.Interface().(Model), q.Field.ForeignKey.FieldName)
 		if err != nil {
 			return err
 		}
@@ -271,7 +227,7 @@ func SetAssociation(driver Driver, out interface{}, query AssociationQuery) erro
 				relatedItemInstance = relatedItem.Interface().(Model)
 			)
 
-			relatedFK, err := reflekt.GetFieldValue(relatedItemInstance, query.Field.Association.FieldName)
+			relatedFK, err := reflekt.GetFieldValue(relatedItemInstance, q.Field.ForeignKey.FieldName)
 			if err != nil {
 				return err
 			}
@@ -287,9 +243,9 @@ func SetAssociation(driver Driver, out interface{}, query AssociationQuery) erro
 		//
 
 		var (
-			newSlice      = reflekt.MakeSlice(query.Field.Model)
+			newSlice      = reflekt.MakeSlice(q.Field.Model)
 			newSliceValue = reflect.ValueOf(newSlice)
-			field         = item.FieldByName(query.Field.Name)
+			field         = item.FieldByName(q.Field.Name)
 		)
 
 		for _, related := range itemRelatedItems {
