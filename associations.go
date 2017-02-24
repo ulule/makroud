@@ -48,7 +48,7 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 		)
 
 		if !isSlice {
-			pks, err = GetPrimaryKeys(out, field.ForeignKey.FieldName)
+			pks, err = GetPrimaryKeys(out, field.ForeignKey.Reference.FieldName)
 			if err != nil {
 				return nil, err
 			}
