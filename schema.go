@@ -150,13 +150,21 @@ func newSchema(model Model) (Schema, error) {
 
 		schema.Associations[field.Name] = field
 
-		assocSchema, err := GetSchema(field.Association.Model)
+		nextModel := field.ForeignKey.Reference.Model
+		if field.IsAssociationTypeMany() {
+			nextModel = field.ForeignKey.Model
+		}
+
+		nextSchema, err := GetSchema(nextModel)
 		if err != nil {
 			return Schema{}, err
 		}
 
-		for k, v := range assocSchema.Associations {
-			schema.Associations[fmt.Sprintf("%s.%s", field.Name, k)] = v
+		for k, v := range nextSchema.Associations {
+			key := fmt.Sprintf("%s.%s", field.Name, k)
+			if _, ok := schema.Associations[key]; !ok {
+				schema.Associations[key] = v
+			}
 		}
 	}
 
