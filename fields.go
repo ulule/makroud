@@ -43,31 +43,18 @@ type Field struct {
 	Association *Association
 }
 
+// String returns struct instance string representation.
 func (f Field) String() string {
 	p := fmt.Sprintf("field(model:%s table:%s name:%s column:%s)", f.ModelName, f.TableName, f.Name, f.ColumnName)
-
 	if f.IsAssociation {
 		return fmt.Sprintf("%s -- assoc(%s)", p, f.Association)
 	}
-
 	return fmt.Sprintf(p)
 }
 
 // ColumnPath returns database full column path.
 func (f Field) ColumnPath() string {
 	return fmt.Sprintf("%s.%s", f.TableName, f.ColumnName)
-}
-
-// ReverseAssociation reverses association (used for AssociationTypeMany).
-func (f *Field) ReverseAssociation() {
-	var (
-		tableName      = f.TableName
-		assocTableName = f.Association.TableName
-	)
-
-	f.Association.TableName = tableName
-	f.TableName = assocTableName
-	f.ColumnName = fmt.Sprintf("%s_%s", snaker.CamelToSnake(f.ModelName), f.Association.PrimaryKeyField.ColumnName)
 }
 
 // NewField returns full column name from model, field and tag.
@@ -188,7 +175,14 @@ func NewField(model Model, name string) (Field, error) {
 	}
 
 	if field.Association.Type == AssociationTypeMany {
-		field.ReverseAssociation()
+		var (
+			tableName      = field.TableName
+			assocTableName = field.Association.TableName
+		)
+
+		field.Association.TableName = tableName
+		field.TableName = assocTableName
+		field.ColumnName = fmt.Sprintf("%s_%s", snaker.CamelToSnake(field.ModelName), field.Association.PrimaryKeyField.ColumnName)
 	}
 
 	return field, nil
