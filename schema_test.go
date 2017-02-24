@@ -78,29 +78,85 @@ func TestSchema_GetSchema_InfiniteLoop(t *testing.T) {
 	assert.NotNil(t, schema)
 }
 
-func TestSchema_AssociationsByPath(t *testing.T) {
+func TestSchema_Associations(t *testing.T) {
 	schema, err := sqlxx.GetSchema(Article{})
 	assert.Nil(t, err)
 
-	fields, err := schema.AssociationsByPath()
-	assert.Nil(t, err)
-
 	results := []struct {
-		path      string
-		modelName string
-		tableName string
-		name      string
+		path string
+		fk   *sqlxx.ForeignKey
 	}{
-		{"Author", "User", "users", "ID"},
-		{"Author.Avatars", "Avatar", "avatars", "ID"},
+		{
+			path: "Author",
+			fk: &sqlxx.ForeignKey{
+				ModelName:            "Article",
+				TableName:            "articles",
+				FieldName:            "AuthorID",
+				ColumnName:           "author_id",
+				AssociationFieldName: "Author",
+				Reference: &sqlxx.ForeignKey{
+					ModelName:  "User",
+					TableName:  "users",
+					FieldName:  "ID",
+					ColumnName: "id",
+				},
+			},
+		},
+		{
+			path: "Author.Avatars",
+			fk: &sqlxx.ForeignKey{
+				ModelName:            "Avatar",
+				TableName:            "avatars",
+				FieldName:            "UserID",
+				ColumnName:           "user_id",
+				AssociationFieldName: "User",
+				Reference: &sqlxx.ForeignKey{
+					ModelName:            "User",
+					TableName:            "users",
+					FieldName:            "ID",
+					ColumnName:           "id",
+					AssociationFieldName: "Avatars",
+				},
+			},
+		},
+		{
+			path: "Author.APIKey",
+			fk: &sqlxx.ForeignKey{
+				ModelName:            "User",
+				TableName:            "users",
+				FieldName:            "APIKeyID",
+				ColumnName:           "api_key_id",
+				AssociationFieldName: "APIKey",
+				Reference: &sqlxx.ForeignKey{
+					ModelName:  "APIKey",
+					TableName:  "api_keys",
+					FieldName:  "ID",
+					ColumnName: "id",
+				},
+			},
+		},
+		{
+			path: "Author.APIKey.Partner",
+			fk: &sqlxx.ForeignKey{
+				ModelName:            "APIKey",
+				TableName:            "api_keys",
+				FieldName:            "PartnerID",
+				ColumnName:           "partner_id",
+				AssociationFieldName: "Partner",
+				Reference: &sqlxx.ForeignKey{
+					ModelName:  "Partner",
+					TableName:  "partners",
+					FieldName:  "ID",
+					ColumnName: "id",
+				},
+			},
+		},
 	}
 
 	for _, tt := range results {
-		f, ok := fields[tt.path]
+		f, ok := schema.Associations[tt.path]
 		assert.True(t, ok, tt.path)
-		assert.Equal(t, tt.modelName, f.Association.ModelName)
-		assert.Equal(t, tt.tableName, f.Association.TableName)
-		assert.Equal(t, tt.name, f.Association.FieldName)
+		assert.Equal(t, tt.fk, f.ForeignKey, tt.path)
 	}
 }
 
