@@ -14,8 +14,10 @@ func TestAssociations_GetAssociationQueries(t *testing.T) {
 	assert.Nil(t, err)
 
 	var assocs []sqlxx.Field
-	for _, v := range schema.Associations {
-		assocs = append(assocs, v)
+	for k, v := range schema.Associations {
+		if len(k) <= 2 {
+			assocs = append(assocs, v)
+		}
 	}
 
 	queries, err := sqlxx.GetAssociationQueries(article, assocs)
