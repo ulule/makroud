@@ -10,6 +10,69 @@ import (
 	"github.com/ulule/sqlxx/reflekt"
 )
 
+// ForeignKey is a foreign key
+type ForeignKey struct {
+	ModelName            string
+	TableName            string
+	FieldName            string
+	ColumnName           string
+	AssociationFieldName string
+	Reference            *ForeignKey
+}
+
+// ColumnPath is the foreign key column path.
+func (fk ForeignKey) ColumnPath() string {
+	return fmt.Sprintf("%s.%s", fk.TableName, fk.ColumnName)
+}
+
+// NewForeignKey returns a new ForeignKey instance from the given field instance.
+func NewForeignKey(field Field, associationType AssociationType) (*ForeignKey, error) {
+	var (
+		referenceModel     = GetModelFromType(field.Type)
+		referenceModelName = GetModelName(referenceModel)
+		referenceTableName = referenceModel.TableName()
+	)
+
+	// Article.Author(User)
+	if associationType == AssociationTypeOne {
+		return &ForeignKey{
+			ModelName:            field.ModelName,                                      // Article
+			TableName:            field.TableName,                                      // articles
+			FieldName:            fmt.Sprintf("%s%s", field.Name, PrimaryKeyFieldName), // AuthorID
+			ColumnName:           field.ColumnName,                                     // author_id
+			AssociationFieldName: field.Name,                                           // Author
+
+			Reference: &ForeignKey{
+				ModelName:  referenceModelName,                   // User
+				TableName:  referenceTableName,                   // users
+				FieldName:  PrimaryKeyFieldName,                  // ID
+				ColumnName: strings.ToLower(PrimaryKeyFieldName), // id
+			},
+		}, nil
+	}
+
+	// User.Avatars(Avatar) -- Avatar.UserID
+	if associationType == AssociationTypeMany {
+		return &ForeignKey{
+			ModelName:            referenceModelName,                                                                               // Avatar
+			TableName:            referenceTableName,                                                                               // avatars
+			FieldName:            fmt.Sprintf("%s%s", field.ModelName, PrimaryKeyFieldName),                                        // UserID
+			ColumnName:           fmt.Sprintf("%s_%s", snaker.CamelToSnake(field.ModelName), strings.ToLower(PrimaryKeyFieldName)), // user_id
+			AssociationFieldName: field.ModelName,                                                                                  // User
+
+			Reference: &ForeignKey{
+				ModelName:            field.ModelName,                      // User
+				TableName:            field.TableName,                      // users
+				FieldName:            PrimaryKeyFieldName,                  // ID
+				ColumnName:           strings.ToLower(PrimaryKeyFieldName), // id
+				AssociationFieldName: field.Name,                           // Avatars
+			},
+		}, nil
+	}
+
+	return nil, nil
+}
+
 // Field is a field.
 type Field struct {
 	// The reflect.StructField instance
@@ -35,10 +98,15 @@ type Field struct {
 	IsExcluded bool
 	// Does this field is a primary key?
 	IsPrimaryKey bool
-	// Does this field is a foreign key?
+	// Does this field is a foreign key (the foreign key ID)?
 	IsForeignKey bool
+
 	// Does this field is an association?
 	IsAssociation bool
+	// The association type
+	AssociationType AssociationType
+	// ForeignKey contains foreign key relations information
+	ForeignKey *ForeignKey
 
 	// The association struct instance
 	Association *Association
@@ -173,6 +241,11 @@ func NewField(model Model, name string) (Field, error) {
 
 	if !columnNameOverrided {
 		field.ColumnName = fmt.Sprintf("%s_id", columnName)
+	}
+
+	field.ForeignKey, err = NewForeignKey(field, associationType)
+	if err != nil {
+		return field, err
 	}
 
 	if field.Association.Type == AssociationTypeMany {
