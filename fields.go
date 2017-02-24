@@ -165,6 +165,10 @@ type ForeignKey struct {
 	Reference            *ForeignKey
 }
 
+func (fk ForeignKey) String() string {
+	return fmt.Sprintf("model:%s field:%s assoc:%s -- reference: %s", fk.ModelName, fk.FieldName, fk.AssociationFieldName, fk.Reference)
+}
+
 // ColumnPath is the foreign key column path.
 func (fk ForeignKey) ColumnPath() string {
 	return fmt.Sprintf("%s.%s", fk.TableName, fk.ColumnName)
