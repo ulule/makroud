@@ -435,3 +435,27 @@ func TestPreload_ManyToMany_Level1(t *testing.T) {
 		}
 	}
 }
+
+func TestPreload_DifferentIDTypes_Slice(t *testing.T) {
+	is := assert.New(t)
+
+	db, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	articles := fixtures.Articles
+	is.Nil(Preload(db, &articles, "MainTag"))
+	is.Equal(fixtures.Tags[0].ID, uint(articles[0].MainTagID.Int64))
+	is.Equal(fixtures.Tags[0], *articles[0].MainTag)
+}
+
+func TestPreload_DifferentIDTypes_One(t *testing.T) {
+	is := assert.New(t)
+
+	db, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	article := fixtures.Articles[0]
+	is.Nil(Preload(db, &article, "MainTag"))
+	is.Equal(fixtures.Tags[0].ID, uint(article.MainTagID.Int64))
+	is.Equal(fixtures.Tags[0], *article.MainTag)
+}

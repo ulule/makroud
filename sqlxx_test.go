@@ -29,6 +29,7 @@ var dropTables = `
 	DROP TABLE IF EXISTS comments CASCADE;
 	DROP TABLE IF EXISTS avatars CASCADE;
 	DROP TABLE IF EXISTS categories CASCADE;
+	DROP TABLE IF EXISTS tags CASCADE;
 	DROP TABLE IF EXISTS articles CASCADE;
 	DROP TABLE IF EXISTS articles_categories CASCADE;
 	DROP TABLE IF EXISTS partners CASCADE;
@@ -79,11 +80,17 @@ CREATE TABLE avatars (
     updated_at 		timestamp with time zone default current_timestamp
 );
 
+CREATE TABLE tags (
+	id 				serial primary key not null,
+	name 			varchar(255) not null
+);
+
 CREATE TABLE articles (
 	id 				serial primary key not null,
 	title 			varchar(255) not null,
 	author_id 		integer references users(id),
 	reviewer_id 	integer references users(id),
+	main_tag_id 	integer references tags(id),
 	is_published 	boolean default true,
     created_at 		timestamp with time zone default current_timestamp,
     updated_at 		timestamp with time zone default current_timestamp
@@ -117,6 +124,7 @@ type TestData struct {
 	Avatars            []Avatar
 	Articles           []Article
 	Categories         []Category
+	Tags               []Tag
 	ArticlesCategories []ArticleCategory
 	Partners           []Partner
 }
@@ -208,6 +216,14 @@ type Category struct {
 
 func (Category) TableName() string { return "categories" }
 
+// This model has a different ID type.
+type Tag struct {
+	ID   uint   `db:"id"`
+	Name string `db:"name"`
+}
+
+func (Tag) TableName() string { return "tags" }
+
 type Article struct {
 	ID          int       `db:"id" sqlxx:"primary_key:true"`
 	Title       string    `db:"title"`
@@ -218,6 +234,8 @@ type Article struct {
 	UpdatedAt   time.Time `db:"updated_at"`
 	Author      User
 	Reviewer    *User
+	MainTagID   sql.NullInt64 `db:"main_tag_id"`
+	MainTag     *Tag
 	// Categories  []Category
 }
 
@@ -230,6 +248,10 @@ type ArticleCategory struct {
 }
 
 func (ArticleCategory) TableName() string { return "articles_categories" }
+
+// ----------------------------------------------------------------------------
+// Models with different IDs
+// ----------------------------------------------------------------------------
 
 func dbParam(param string) string {
 	param = strings.ToUpper(param)
@@ -282,9 +304,15 @@ func loadData(t *testing.T, driver Driver) *TestData {
 	categories := []Category{}
 	require.NoError(t, driver.Select(&categories, "SELECT * FROM categories"))
 
+	// Tags
+	driver.MustExec("INSERT INTO tags (name) VALUES ($1)", "Tag")
+	tags := []Tag{}
+	require.NoError(t, driver.Select(&tags, "SELECT * FROM tags"))
+	tag := tags[0]
+
 	// Articles
 	for i := 0; i < 5; i++ {
-		driver.MustExec("INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3)", fmt.Sprintf("Title #%d", i), user.ID, user.ID)
+		driver.MustExec("INSERT INTO articles (title, author_id, reviewer_id, main_tag_id) VALUES ($1, $2, $3, $4)", fmt.Sprintf("Title #%d", i), user.ID, user.ID, tag.ID)
 	}
 	articles := []Article{}
 	require.NoError(t, driver.Select(&articles, "SELECT * FROM articles"))
@@ -304,6 +332,7 @@ func loadData(t *testing.T, driver Driver) *TestData {
 		Profiles:           profiles,
 		Avatars:            avatars,
 		Categories:         categories,
+		Tags:               tags,
 		Articles:           articles,
 		ArticlesCategories: articlesCategories,
 		Partners:           partners,
