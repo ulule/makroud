@@ -35,8 +35,14 @@ func Delete(driver Driver, out interface{}) error {
 	return nil
 }
 
-// SoftDelete soft deletes the model in the database
+// SoftDelete is an alias for Archive
 func SoftDelete(driver Driver, out interface{}, fieldName string) error {
+	return Archive(driver, out, fieldName)
+}
+
+// Archive archives the model in the database
+func Archive(driver Driver, out interface{}, fieldName string) error {
+
 	schema, err := GetSchema(out)
 	if err != nil {
 		return err
