@@ -371,14 +371,14 @@ func TestPreload_OneToOne_Level2_Either(t *testing.T) {
 	comment := createComment(t, db, &user, &article)
 	assert.NotEmpty(t, comment)
 
+	// Preload
+	assert.Nil(t, Preload(db, &comment, "User", "User.Avatar"))
+
 	// Level 1 with Value
-	assert.Nil(t, Preload(db, &comment, "User"))
 	assert.NotZero(t, comment.User)
 	assert.Equal(t, user.ID, comment.UserID)
 	assert.Equal(t, user.Username, comment.User.Username)
 
-	// Level 2 with Pointer
-	assert.Nil(t, Preload(db, &comment, "User.Avatar"))
 	if assert.NotNil(t, comment.User.Avatar) {
 		assert.Equal(t, user.Avatar.ID, comment.User.Avatar.ID)
 		assert.Equal(t, user.Avatar.Path, comment.User.Avatar.Path)
