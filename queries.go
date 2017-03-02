@@ -1,7 +1,7 @@
 package sqlxx
 
 import (
-	"database/sql/driver"
+	sqlDriver "database/sql/driver"
 	"fmt"
 	"reflect"
 	"strings"
@@ -31,7 +31,7 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 			}
 			values = append(values, pks[i])
 		} else {
-			valuer := reflekt.Copy(pks[i]).(driver.Valuer)
+			valuer := reflekt.Copy(pks[i]).(sqlDriver.Valuer)
 			if v, err := valuer.Value(); err == nil && v != nil {
 				values = append(values, v)
 			}
@@ -243,12 +243,12 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 	type Relationship struct {
 		item                       interface{}
 		itemValue                  reflect.Value
-		itemPK                     interface{}
+		itemPK                     int64
 		itemChild                  interface{}
 		itemChildFieldName         string
 		itemChildPK                interface{}
 		itemChildPKFieldName       string
-		itemChildRelationPK        interface{}
+		itemChildRelationPK        int64
 		itemChildRelationFieldName string
 	}
 
@@ -258,7 +258,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 			var (
 				slice               = reflect.ValueOf(out).Elem()
 				relationships       []Relationship
-				childrenRelationPKs []interface{}
+				childrenRelationPKs []int64
 			)
 
 			for i := 0; i < slice.Len(); i++ {
@@ -272,10 +272,12 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 				)
 
 				// Retrieve Article.ID
-				itemPK, err := reflekt.GetFieldValue(item, itemPKFieldName)
+				v, err := reflekt.GetFieldValue(item, itemPKFieldName)
 				if err != nil {
 					return err
 				}
+
+				itemPK, _ := IntToInt64(v)
 
 				// Retrieve Article.User previously fetched
 				itemChild, err := reflekt.GetFieldValue(item, itemChildFieldName)
@@ -284,16 +286,26 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 				}
 
 				// Retrieve Article.UserID
-				itemChildPK, err := reflekt.GetFieldValue(itemChild, child.relation.ParentSchema.PrimaryField.Name)
+				v, err = reflekt.GetFieldValue(itemChild, child.relation.ParentSchema.PrimaryField.Name)
 				if err != nil {
 					return err
 				}
 
+				itemChildPK, _ := IntToInt64(v)
+
 				// Retrieve Article.User.APIKeyID (for SELECT IN)
-				itemChildRelationPK, err := reflekt.GetFieldValue(itemChild, child.relation.RelatedFKField())
+				v, err = reflekt.GetFieldValue(itemChild, child.relation.RelatedFKField())
 				if err != nil {
 					return err
 				}
+
+				if valuer, ok := v.(sqlDriver.Valuer); ok {
+					if valuerValuer, err := valuer.Value(); err == nil {
+						v = valuerValuer
+					}
+				}
+
+				itemChildRelationPK, _ := IntToInt64(v)
 
 				relationships = append(relationships, Relationship{
 					item:                       item,
@@ -308,7 +320,6 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 				})
 
 				var exists bool
-
 				for _, v := range childrenRelationPKs {
 					if v == itemChildRelationPK {
 						exists = true
@@ -340,10 +351,12 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 					instance := instances.Index(i)
 
 					// APIKey.ID
-					instancePK, err := reflekt.GetFieldValue(instance, child.relation.Schema.PrimaryField.Name)
+					v, err := reflekt.GetFieldValue(instance, child.relation.Schema.PrimaryField.Name)
 					if err != nil {
 						return err
 					}
+
+					instancePK, _ := IntToInt64(v)
 
 					if relationship.itemChildRelationPK == instancePK {
 						itemChildCopy := reflekt.Copy(relationship.itemChild)
