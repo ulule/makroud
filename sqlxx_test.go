@@ -311,6 +311,17 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 	}
 }
 
+func createComment(t *testing.T, driver sqlxx.Driver, user *User, article *Article) Comment {
+	var id int
+	err := driver.QueryRowx("INSERT INTO comments (content, user_id, article_id) VALUES ($1, $2, $3) RETURNING id", "Lorem Ipsum", user.ID, article.ID).Scan(&id)
+	assert.Nil(t, err)
+
+	comment := Comment{}
+	assert.NoError(t, driver.Get(&comment, "SELECT * FROM comments WHERE id = $1", id))
+
+	return comment
+}
+
 func createArticle(t *testing.T, driver sqlxx.Driver, user *User) Article {
 	var id int
 	err := driver.QueryRowx("INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3) RETURNING id", "Title", user.ID, user.ID).Scan(&id)
