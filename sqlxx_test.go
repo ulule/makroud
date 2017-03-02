@@ -323,6 +323,17 @@ func createArticle(t *testing.T, driver Driver, user *User) Article {
 	return article
 }
 
+func createComment(t *testing.T, driver Driver, user *User, article *Article) Comment {
+	var id int
+	err := driver.QueryRowx("INSERT INTO comments (content, user_id, article_id) VALUES ($1, $2, $3) RETURNING id", "Lorem Ipsum", user.ID, article.ID).Scan(&id)
+	require.Nil(t, err)
+
+	comment := Comment{}
+	require.NoError(t, driver.Get(&comment, "SELECT * FROM comments WHERE id = $1", id))
+
+	return comment
+}
+
 func createUser(t *testing.T, driver Driver, username string) User {
 	key := fmt.Sprintf("%s-apikey", username)
 

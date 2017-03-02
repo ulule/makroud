@@ -354,6 +354,37 @@ func TestPreload_OneToOne_Level2(t *testing.T) {
 	is.Equal("spiderman-apikey", article.Author.APIKey.Key)
 }
 
+func TestPreload_OneToOne_Level2_Either(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	user := createUser(t, db, "spiderman")
+	assert.NotEmpty(t, user)
+	assert.Nil(t, Preload(db, &user, "Avatar"))
+	if !assert.NotNil(t, user.Avatar) {
+		t.FailNow()
+	}
+
+	article := createArticle(t, db, &user)
+	assert.NotEmpty(t, article)
+
+	comment := createComment(t, db, &user, &article)
+	assert.NotEmpty(t, comment)
+
+	// Level 1 with Value
+	assert.Nil(t, Preload(db, &comment, "User"))
+	assert.NotZero(t, comment.User)
+	assert.Equal(t, user.ID, comment.UserID)
+	assert.Equal(t, user.Username, comment.User.Username)
+
+	// Level 2 with Pointer
+	assert.Nil(t, Preload(db, &comment, "User.Avatar"))
+	if assert.NotNil(t, comment.User.Avatar) {
+		assert.Equal(t, user.Avatar.ID, comment.User.Avatar.ID)
+		assert.Equal(t, user.Avatar.Path, comment.User.Avatar.Path)
+	}
+}
+
 func TestPreload_ManyToOne_Level2_Multiple(t *testing.T) {
 	is := assert.New(t)
 
