@@ -361,9 +361,7 @@ func TestPreload_OneToOne_Level2_MultipleEither(t *testing.T) {
 	user := createUser(t, db, "spiderman")
 	assert.NotEmpty(t, user)
 	assert.Nil(t, Preload(db, &user, "Avatar"))
-	if !assert.NotNil(t, user.Avatar) {
-		t.FailNow()
-	}
+	assert.NotNil(t, user.Avatar)
 
 	article := createArticle(t, db, &user)
 	assert.NotEmpty(t, article)
