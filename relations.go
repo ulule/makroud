@@ -292,34 +292,43 @@ func setRelation(driver Driver, out interface{}, rq RelationQuery) error {
 				}
 			}
 		} else {
-			instancesMap := map[interface{}]reflect.Value{}
-
-			items := reflect.ValueOf(instance).Elem()
+			var (
+				instancesMap = map[int64]reflect.Value{}
+				items        = reflect.ValueOf(instance).Elem()
+			)
 
 			for i := 0; i < items.Len(); i++ {
 				value, err := reflekt.GetFieldValue(items.Index(i), rq.relation.Reference.Name)
-
 				if err != nil {
 					return nil
 				}
 
-				instancesMap[value] = items.Index(i)
+				key, err := IntToInt64(value)
+				if err != nil {
+					return err
+				}
+
+				instancesMap[key] = items.Index(i)
 			}
 
 			for i := 0; i < value.Len(); i++ {
 				val, err := reflekt.GetFieldValue(value.Index(i), rq.relation.RelatedFKField())
-
 				if err != nil {
 					return nil
 				}
 
-				switch val.(type) {
-				case sql.NullInt64:
-					val = int(val.(sql.NullInt64).Int64)
+				var key int64
+
+				if v, ok := val.(sql.NullInt64); ok {
+					key = v.Int64
+				} else {
+					key, err = IntToInt64(val)
+					if err != nil {
+						return err
+					}
 				}
 
-				instance, ok := instancesMap[val]
-
+				instance, ok := instancesMap[key]
 				if ok {
 					if err := reflekt.SetFieldValue(value.Index(i), rq.relation.Name, instance.Interface()); err != nil {
 						return err
