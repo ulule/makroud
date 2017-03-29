@@ -370,7 +370,7 @@ func Preload(driver Driver, out interface{}, fields ...string) error {
 				}
 			}
 
-			return nil
+			continue
 		}
 
 		instance, err := reflekt.GetFieldValue(out, child.field)
