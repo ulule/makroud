@@ -493,3 +493,31 @@ func TestPreload_DifferentIDTypes_One(t *testing.T) {
 	is.Equal(fixtures.Tags[0].ID, uint(article.MainTagID.Int64))
 	is.Equal(fixtures.Tags[0], *article.MainTag)
 }
+
+func TestPreload_Many_RelationPointer(t *testing.T) {
+	is := assert.New(t)
+
+	db, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	projects := fixtures.Projects
+
+	for _, project := range projects {
+		is.Nil(project.User)
+		is.Nil(project.Manager)
+	}
+
+	is.Nil(Preload(
+		db,
+		&projects,
+		"User",
+		"Manager",
+		"Manager.User"))
+
+	for _, project := range projects {
+		is.NotNil(project.Manager)
+		is.Equal(project.Manager.ID, fixtures.Managers[0].ID)
+		is.NotNil(project.Manager.User)
+		is.Equal(project.Manager.User.ID, fixtures.User.ID)
+	}
+}
