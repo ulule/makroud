@@ -10,8 +10,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
-	require "github.com/stretchr/testify/require"
+	assert "github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -328,13 +327,13 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 	// Managers
 	driver.MustExec("INSERT INTO managers (name, user_id) VALUES ($1, $2)", "Super Owl", user.ID)
 	managers := []Manager{}
-	require.NoError(t, driver.Select(&managers, "SELECT * FROM managers"))
+	assert.NoError(t, driver.Select(&managers, "SELECT * FROM managers"))
 	manager := managers[0]
 
 	// Projects
 	driver.MustExec("INSERT INTO projects (name, manager_id, user_id) VALUES ($1, $2, $3)", "Super Project", manager.ID, user.ID)
 	projects := []Project{}
-	require.NoError(t, driver.Select(&projects, "SELECT * FROM projects"))
+	assert.NoError(t, driver.Select(&projects, "SELECT * FROM projects"))
 
 	// Avatars
 	for i := 0; i < 5; i++ {
@@ -358,7 +357,7 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 	// Tags
 	driver.MustExec("INSERT INTO tags (name) VALUES ($1)", "Tag")
 	tags := []Tag{}
-	require.NoError(t, driver.Select(&tags, "SELECT * FROM tags"))
+	assert.NoError(t, driver.Select(&tags, "SELECT * FROM tags"))
 	tag := tags[0]
 
 	// Articles

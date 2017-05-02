@@ -3,7 +3,8 @@ package sqlxx_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	assert "github.com/stretchr/testify/require"
+
 	"github.com/ulule/sqlxx"
 )
 

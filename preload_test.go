@@ -3,7 +3,7 @@ package sqlxx_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	assert "github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -185,9 +185,7 @@ func TestPreload_OneToOne_Level2_MultipleEither(t *testing.T) {
 	user := createUser(t, db, "spiderman")
 	assert.NotEmpty(t, user)
 	assert.Nil(t, sqlxx.Preload(db, &user, "Avatar"))
-	if !assert.NotNil(t, user.Avatar) {
-		t.FailNow()
-	}
+	assert.NotNil(t, user.Avatar)
 
 	article := createArticle(t, db, &user)
 	assert.NotEmpty(t, article)
@@ -207,7 +205,7 @@ func TestPreload_OneToOne_Level2_MultipleEither(t *testing.T) {
 	assert.Equal(t, user.Username, comment.User.Username)
 
 	// Level 2 with Pointer
-	if assert.NotNil(t, comment.User.Avatar) {
+	if comment.User.Avatar != nil {
 		assert.Equal(t, user.Avatar.ID, comment.User.Avatar.ID)
 		assert.Equal(t, user.Avatar.Path, comment.User.Avatar.Path)
 	}
