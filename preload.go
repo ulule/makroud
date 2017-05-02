@@ -3,8 +3,6 @@ package sqlxx
 import (
 	"fmt"
 	"strings"
-
-	"github.com/ulule/sqlxx/reflekt"
 )
 
 // Preloader is a custom preloader.
@@ -14,12 +12,12 @@ type Preloader func(d Driver) (Driver, error)
 func Preload(driver Driver, out interface{}, paths ...string) error {
 	var (
 		err error
-		// isSlice           = reflekt.IsSlice(out)
+		// isSlice           = IsSlice(out)
 		rootAssociations  []Field
 		childAssociations []Field
 	)
 
-	if !reflekt.GetIndirectValue(out).CanAddr() {
+	if !GetIndirectValue(out).CanAddr() {
 		return fmt.Errorf("model instance must be addressable (pointer required)")
 	}
 
@@ -59,18 +57,18 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 	// }
 
 	// for _, child := range childAssociations {
-	// 	instance, err := reflekt.GetFieldValue(out, child.Name)
+	// 	instance, err := GetFieldValue(out, child.Name)
 	// 	if err != nil {
 	// 		return err
 	// 	}
 
-	// 	cp := reflekt.Copy(instance)
+	// 	cp := Copy(instance)
 
 	// 	if err = Preload(driver, cp, child.Association.FieldName); err != nil {
 	// 		return err
 	// 	}
 
-	// 	if err = reflekt.SetFieldValue(out, child.Name, cp); err != nil {
+	// 	if err = SetFieldValue(out, child.Name, cp); err != nil {
 	// 		return err
 	// 	}
 	// }
@@ -96,25 +94,25 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 // 		)
 
 // 		// Retrieve Article.ID
-// 		itemPK, err := reflekt.GetFieldValue(item, itemPKFieldName)
+// 		itemPK, err := GetFieldValue(item, itemPKFieldName)
 // 		if err != nil {
 // 			return err
 // 		}
 
 // 		// Retrieve Article.User previously fetched
-// 		itemChild, err := reflekt.GetFieldValue(item, itemChildFieldName)
+// 		itemChild, err := GetFieldValue(item, itemChildFieldName)
 // 		if err != nil {
 // 			return err
 // 		}
 
 // 		// Retrieve Article.UserID
-// 		itemChildPK, err := reflekt.GetFieldValue(itemChild, child.relation.ParentSchema.PrimaryField.Name)
+// 		itemChildPK, err := GetFieldValue(itemChild, child.relation.ParentSchema.PrimaryField.Name)
 // 		if err != nil {
 // 			return err
 // 		}
 
 // 		// Retrieve Article.User.APIKeyID (for SELECT IN)
-// 		itemChildRelationPK, err := reflekt.GetFieldValue(itemChild, child.relation.RelatedFKField())
+// 		itemChildRelationPK, err := GetFieldValue(itemChild, child.relation.RelatedFKField())
 // 		if err != nil {
 // 			return err
 // 		}
@@ -146,7 +144,7 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 // 	}
 
 // 	// Build a []APIKey slice
-// 	t := reflect.SliceOf(reflekt.GetIndirectType(reflect.TypeOf(child.relation.Model)))
+// 	t := reflect.SliceOf(GetIndirectType(reflect.TypeOf(child.relation.Model)))
 // 	s := reflect.New(t)
 // 	s.Elem().Set(reflect.MakeSlice(t, 0, 0))
 
@@ -163,17 +161,17 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 // 			instance := instances.Index(i)
 
 // 			// APIKey.ID
-// 			instancePK, err := reflekt.GetFieldValue(instance, child.relation.Schema.PrimaryField.Name)
+// 			instancePK, err := GetFieldValue(instance, child.relation.Schema.PrimaryField.Name)
 // 			if err != nil {
 // 				return err
 // 			}
 
 // 			if relationship.itemChildRelationPK == instancePK {
-// 				itemChildCopy := reflekt.Copy(relationship.itemChild)
-// 				if err = reflekt.SetFieldValue(itemChildCopy, relationship.itemChildRelationFieldName, instance.Interface()); err != nil {
+// 				itemChildCopy := Copy(relationship.itemChild)
+// 				if err = SetFieldValue(itemChildCopy, relationship.itemChildRelationFieldName, instance.Interface()); err != nil {
 // 					return err
 // 				}
-// 				if err = reflekt.SetFieldValue(relationship.itemValue, relationship.itemChildFieldName, itemChildCopy); err != nil {
+// 				if err = SetFieldValue(relationship.itemValue, relationship.itemChildFieldName, itemChildCopy); err != nil {
 // 					return err
 // 				}
 // 			}

@@ -3,8 +3,6 @@ package sqlxx
 import (
 	"fmt"
 	"time"
-
-	"github.com/ulule/sqlxx/reflekt"
 )
 
 // Delete deletes the model in the database
@@ -15,10 +13,10 @@ func Delete(driver Driver, out interface{}) error {
 	}
 
 	pkField := schema.PrimaryKeyField
-	pkValue, _ := reflekt.GetFieldValue(out, pkField.Name)
+	pkValue, _ := GetFieldValue(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
-	if reflekt.IsZeroValue(pkValue) {
+	if IsZeroValue(pkValue) {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
 
@@ -49,10 +47,10 @@ func Archive(driver Driver, out interface{}, fieldName string) error {
 	}
 
 	pkField := schema.PrimaryKeyField
-	pkValue, err := reflekt.GetFieldValue(out, pkField.Name)
+	pkValue, err := GetFieldValue(out, pkField.Name)
 
 	// GO TO HELL ZERO VALUES DELETION
-	if reflekt.IsZeroValue(pkValue) {
+	if IsZeroValue(pkValue) {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
 

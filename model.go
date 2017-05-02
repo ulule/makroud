@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-
-	"github.com/ulule/sqlxx/reflekt"
 )
 
 // ----------------------------------------------------------------------------
@@ -19,7 +17,7 @@ type Model interface {
 
 // GetModelFromInterface returns interface as a Model interface.
 func GetModelFromInterface(itf interface{}) Model {
-	value := reflekt.GetIndirectValue(itf)
+	value := GetIndirectValue(itf)
 
 	// Single instance
 	if value.IsValid() && value.Kind() == reflect.Struct {
@@ -42,9 +40,9 @@ func GetModelFromInterface(itf interface{}) Model {
 // GetModelFromType returns model type.
 func GetModelFromType(typ reflect.Type) Model {
 	if typ.Kind() == reflect.Slice {
-		typ = reflekt.GetIndirectType(typ.Elem())
+		typ = GetIndirectType(typ.Elem())
 	} else {
-		typ = reflekt.GetIndirectType(typ)
+		typ = GetIndirectType(typ)
 	}
 
 	if model, isModel := reflect.New(typ).Elem().Interface().(Model); isModel {

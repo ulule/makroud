@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/oleiade/reflections"
-	"github.com/ulule/sqlxx/reflekt"
 )
 
 // Schema is a model schema.
@@ -114,7 +113,7 @@ func GetSchema(itf interface{}) (Schema, error) {
 func newSchema(model Model) (Schema, error) {
 	schema := Schema{
 		Model:        model,
-		ModelName:    reflekt.GetIndirectType(model).Name(),
+		ModelName:    GetIndirectType(model).Name(),
 		TableName:    model.TableName(),
 		Fields:       map[string]Field{},
 		Associations: map[string]Field{},

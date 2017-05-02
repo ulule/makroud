@@ -7,7 +7,6 @@ import (
 	"reflect"
 
 	"github.com/serenize/snaker"
-	"github.com/ulule/sqlxx/reflekt"
 )
 
 // Field is a field.
@@ -17,7 +16,7 @@ type Field struct {
 	// The reflect Type of the field
 	Type reflect.Type
 	// The field struct tags
-	Tags reflekt.FieldTags
+	Tags FieldTags
 
 	// Model is the zero-valued field's model used to generate schema from.
 	Model Model
@@ -72,14 +71,14 @@ func (f Field) ColumnPath() string {
 
 // NewField returns full column name from model, field and tag.
 func NewField(model Model, name string) (Field, error) {
-	structField, fieldFound := reflekt.GetIndirectValue(model).Type().FieldByName(name)
+	structField, fieldFound := GetIndirectValue(model).Type().FieldByName(name)
 	if !fieldFound {
 		return Field{}, fmt.Errorf("field '%s' not found in model", name)
 	}
 
 	var (
 		err          error
-		tags         = reflekt.GetFieldTags(structField, SupportedTags, TagsMapping)
+		tags         = GetFieldTags(structField, SupportedTags, TagsMapping)
 		columnName   = snaker.CamelToSnake(name)
 		isExcluded   = false
 		isForeignKey = false

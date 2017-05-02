@@ -3,8 +3,6 @@ package sqlxx
 import (
 	"fmt"
 	"strings"
-
-	"github.com/ulule/sqlxx/reflekt"
 )
 
 // Save saves the model and populate it to the database
@@ -51,9 +49,9 @@ func Save(driver Driver, out interface{}) error {
 	var query string
 
 	pkField := schema.PrimaryKeyField
-	pkValue, _ := reflekt.GetFieldValue(out, pkField.Name)
+	pkValue, _ := GetFieldValue(out, pkField.Name)
 
-	if reflekt.IsZeroValue(pkValue) {
+	if IsZeroValue(pkValue) {
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
 			schema.TableName,
 			strings.Join(columns, ", "),

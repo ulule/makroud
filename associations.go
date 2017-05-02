@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
-
-	"github.com/ulule/sqlxx/reflekt"
 )
 
 // AssociationQueries are a slice of relation query ready to be ordered by level
@@ -29,7 +27,7 @@ func (aq AssociationQuery) String() string {
 func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries, error) {
 	var (
 		queries = AssociationQueries{}
-		isSlice = reflekt.IsSlice(out)
+		isSlice = IsSlice(out)
 	)
 
 	for _, field := range fields {
@@ -126,13 +124,13 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 	var (
 		err      error
 		instance interface{}
-		isSlice  = reflekt.IsSlice(out)
+		isSlice  = IsSlice(out)
 	)
 
 	if q.Field.IsAssociationTypeMany() || isSlice {
-		instance = reflekt.CloneType(q.Field.ForeignKey.Reference.Model, reflect.Slice)
+		instance = CloneType(q.Field.ForeignKey.Reference.Model, reflect.Slice)
 	} else {
-		instance = reflekt.CloneType(q.Field.ForeignKey.Reference.Model)
+		instance = CloneType(q.Field.ForeignKey.Reference.Model)
 	}
 
 	if err = FetchAssociation(driver, instance, q); err != nil {
@@ -141,7 +139,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 
 	// user.Avatars || user.Avatar
 	if !isSlice {
-		return reflekt.SetFieldValue(out, q.Field.ForeignKey.AssociationFieldName, reflect.ValueOf(instance).Elem().Interface())
+		return SetFieldValue(out, q.Field.ForeignKey.AssociationFieldName, reflect.ValueOf(instance).Elem().Interface())
 	}
 
 	//
@@ -155,7 +153,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 		// user.Avatar
 		if !isSlice {
 			for i := 0; i < value.Len(); i++ {
-				if err := reflekt.SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance); err != nil {
+				if err := SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance); err != nil {
 					return err
 				}
 			}
@@ -166,7 +164,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			)
 
 			for i := 0; i < items.Len(); i++ {
-				value, err := reflekt.GetFieldValue(items.Index(i), q.Field.ForeignKey.Reference.FieldName)
+				value, err := GetFieldValue(items.Index(i), q.Field.ForeignKey.Reference.FieldName)
 				if err != nil {
 					return err
 				}
@@ -174,7 +172,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			}
 
 			for i := 0; i < value.Len(); i++ {
-				val, err := reflekt.GetFieldValue(value.Index(i), q.Field.ForeignKey.FieldName)
+				val, err := GetFieldValue(value.Index(i), q.Field.ForeignKey.FieldName)
 				if err != nil {
 					return err
 				}
@@ -186,7 +184,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 
 				instance, ok := instancesMap[val]
 				if ok {
-					if err := reflekt.SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance.Interface()); err != nil {
+					if err := SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance.Interface()); err != nil {
 						return err
 					}
 				}
@@ -213,7 +211,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			continue
 		}
 
-		itemPK, err := reflekt.GetFieldValue(item.Interface().(Model), q.Field.ForeignKey.FieldName)
+		itemPK, err := GetFieldValue(item.Interface().(Model), q.Field.ForeignKey.FieldName)
 		if err != nil {
 			return err
 		}
@@ -228,7 +226,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 				relatedItemInstance = relatedItem.Interface().(Model)
 			)
 
-			relatedFK, err := reflekt.GetFieldValue(relatedItemInstance, q.Field.ForeignKey.FieldName)
+			relatedFK, err := GetFieldValue(relatedItemInstance, q.Field.ForeignKey.FieldName)
 			if err != nil {
 				return err
 			}
@@ -244,7 +242,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 		//
 
 		var (
-			newSlice      = reflekt.MakeSlice(q.Field.Model)
+			newSlice      = MakeSlice(q.Field.Model)
 			newSliceValue = reflect.ValueOf(newSlice)
 			field         = item.FieldByName(q.Field.Name)
 		)
@@ -261,7 +259,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 
 // FetchAssociation fetches the given relation.
 func FetchAssociation(driver Driver, out interface{}, query AssociationQuery) error {
-	if query.FetchOne && !reflekt.IsSlice(out) {
+	if query.FetchOne && !IsSlice(out) {
 		if err := driver.Get(out, driver.Rebind(query.Query), query.Args...); err != nil {
 			return err
 		}

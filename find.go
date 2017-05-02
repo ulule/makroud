@@ -5,14 +5,13 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/ulule/sqlxx/reflekt"
 )
 
 // GetPrimaryKeys returns primary keys for the given interface.
 func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	var values []interface{}
 
-	pks, err := reflekt.GetFieldValues(out, name)
+	pks, err := GetFieldValues(out, name)
 	if err != nil {
 		return nil, err
 	}
@@ -20,13 +19,13 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	for i := range pks {
 		pk := pks[i]
 
-		if valuer, ok := reflekt.Copy(pk).(driver.Valuer); ok {
+		if valuer, ok := Copy(pk).(driver.Valuer); ok {
 			if v, err := valuer.Value(); err == nil && v != nil {
 				pk = v
 			}
 		}
 
-		if !reflekt.IsZeroValue(pk) {
+		if !IsZeroValue(pk) {
 			values = append(values, pk)
 		}
 	}
