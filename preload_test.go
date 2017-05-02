@@ -122,45 +122,45 @@ func TestPreload_ManyToOne_Level1_Different_Pointer_Null(t *testing.T) {
 	}
 }
 
-// func TestPreload_ManyToOne_Level1_Different(t *testing.T) {
-// 	db, _, shutdown := dbConnection(t)
-// 	defer shutdown()
+func TestPreload_ManyToOne_Level1_Different(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
 
-// 	batman := createUser(t, db, "batman")
-// 	robin := createUser(t, db, "robin")
-// 	catwoman := createUser(t, db, "catwoman")
-// 	article1 := createArticle(t, db, &batman)
-// 	article2 := createArticle(t, db, &robin)
-// 	article3 := createArticle(t, db, &catwoman)
+	batman := createUser(t, db, "batman")
+	robin := createUser(t, db, "robin")
+	catwoman := createUser(t, db, "catwoman")
+	article1 := createArticle(t, db, &batman)
+	article2 := createArticle(t, db, &robin)
+	article3 := createArticle(t, db, &catwoman)
 
-// 	articles := []Article{
-// 		article1,
-// 		article2,
-// 		article3,
-// 	}
+	articles := []Article{
+		article1,
+		article2,
+		article3,
+	}
 
-// 	assert.Nil(t, sqlxx.Preload(db, &articles, "Author", "Reviewer"))
-// 	assert.Equal(t, articles[0].AuthorID, batman.ID)
-// 	assert.NotZero(t, articles[0].Author)
-// 	assert.Equal(t, articles[0].ReviewerID, batman.ID)
-// 	assert.NotZero(t, articles[0].Reviewer)
-// 	assert.Equal(t, articles[1].AuthorID, robin.ID)
-// 	assert.NotZero(t, articles[1].Author)
-// 	assert.Equal(t, articles[1].ReviewerID, robin.ID)
-// 	assert.NotZero(t, articles[1].Reviewer)
-// 	assert.Equal(t, articles[2].AuthorID, catwoman.ID)
-// 	assert.NotZero(t, articles[2].Author)
-// 	assert.Equal(t, articles[2].ReviewerID, catwoman.ID)
-// 	assert.NotZero(t, articles[2].Reviewer)
+	assert.Nil(t, sqlxx.Preload(db, &articles, "Author", "Reviewer"))
+	assert.Equal(t, articles[0].AuthorID, batman.ID)
+	assert.NotZero(t, articles[0].Author)
+	assert.Equal(t, articles[0].ReviewerID, batman.ID)
+	assert.NotZero(t, articles[0].Reviewer)
+	assert.Equal(t, articles[1].AuthorID, robin.ID)
+	assert.NotZero(t, articles[1].Author)
+	assert.Equal(t, articles[1].ReviewerID, robin.ID)
+	assert.NotZero(t, articles[1].Reviewer)
+	assert.Equal(t, articles[2].AuthorID, catwoman.ID)
+	assert.NotZero(t, articles[2].Author)
+	assert.Equal(t, articles[2].ReviewerID, catwoman.ID)
+	assert.NotZero(t, articles[2].Reviewer)
 
-// 	assert.Equal(t, articles[0].Author, batman)
-// 	assert.Equal(t, articles[1].Author, robin)
-// 	assert.Equal(t, articles[2].Author, catwoman)
+	assert.Equal(t, articles[0].Author, batman)
+	assert.Equal(t, articles[1].Author, robin)
+	assert.Equal(t, articles[2].Author, catwoman)
 
-// 	assert.Equal(t, articles[0].Reviewer, &batman)
-// 	assert.Equal(t, articles[1].Reviewer, &robin)
-// 	assert.Equal(t, articles[2].Reviewer, &catwoman)
-// }
+	assert.Equal(t, articles[0].Reviewer, &batman)
+	assert.Equal(t, articles[1].Reviewer, &robin)
+	assert.Equal(t, articles[2].Reviewer, &catwoman)
+}
 
 // func TestPreload_OneToOne_Level2(t *testing.T) {
 // 	db, _, shutdown := dbConnection(t)
