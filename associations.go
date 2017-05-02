@@ -134,7 +134,8 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 		instance = CloneType(q.Field.ForeignKey.Reference.Model)
 	}
 
-	if err = FetchAssociation(driver, instance, q); err != nil {
+	err = FetchAssociation(driver, instance, q)
+	if err != nil {
 		return err
 	}
 

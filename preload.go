@@ -1,7 +1,9 @@
 package sqlxx
 
 import (
+	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -13,12 +15,12 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 	var (
 		err error
 		// isSlice           = IsSlice(out)
-		rootAssociations  []Field
-		childAssociations []Field
+		assocs         []Field
+		assocsOfAssocs = map[string]Field{}
 	)
 
 	if !GetIndirectValue(out).CanAddr() {
-		return fmt.Errorf("model instance must be addressable (pointer required)")
+		return errors.New("model instance must be addressable (pointer required)")
 	}
 
 	schema, err := GetSchema(out)
@@ -33,15 +35,17 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 		}
 
 		splits := strings.Split(path, ".")
+
 		if len(splits) == 1 {
-			rootAssociations = append(rootAssociations, assoc)
+			assocs = append(assocs, assoc)
 		}
+
 		if len(splits) == 2 {
-			childAssociations = append(childAssociations, assoc)
+			assocsOfAssocs[splits[0]] = assoc
 		}
 	}
 
-	err = PreloadAssociations(driver, out, rootAssociations)
+	err = PreloadAssociations(driver, out, assocs)
 	if err != nil {
 		return err
 	}
@@ -57,22 +61,38 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 	// 	return nil
 	// }
 
-	// for _, child := range childAssociations {
-	// 	instance, err := GetFieldValue(out, child.Name)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+	for k, v := range assocsOfAssocs {
+		// At this step, value can be either a value or a pointer.
+		value, err := GetFieldValue(reflect.ValueOf(out), k)
+		if err != nil {
+			return err
+		}
 
-	// 	cp := Copy(instance)
+		// We must reflect to check the addressability.
+		reflected := reflect.ValueOf(value)
+		isValue := false
 
-	// 	if err = Preload(driver, cp, child.Association.FieldName); err != nil {
-	// 		return err
-	// 	}
+		// Value is a value? Create a pointer to.
+		if !reflected.CanAddr() {
+			value = Copy(value)
+			isValue = true
+		}
 
-	// 	if err = SetFieldValue(out, child.Name, cp); err != nil {
-	// 		return err
-	// 	}
-	// }
+		err = Preload(driver, value, v.Name)
+		if err != nil {
+			return err
+		}
+
+		// Relation was initially a value.
+		if isValue {
+			value = reflect.Indirect(reflect.ValueOf(value)).Interface()
+		}
+
+		err = SetFieldValue(out, k, value)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

@@ -162,21 +162,21 @@ func TestPreload_ManyToOne_Level1_Different(t *testing.T) {
 	assert.Equal(t, articles[2].Reviewer, &catwoman)
 }
 
-// func TestPreload_OneToOne_Level2(t *testing.T) {
-// 	db, _, shutdown := dbConnection(t)
-// 	defer shutdown()
+func TestPreload_OneToOne_Level2(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
 
-// 	user := createUser(t, db, "spiderman")
+	user := createUser(t, db, "spiderman")
 
-// 	article := createArticle(t, db, &user)
-// 	assert.Nil(t, sqlxx.Preload(db, &article, "Author", "Author.APIKey"))
-// 	assert.NotZero(t, article.Author)
-// 	assert.NotZero(t, article.Author.APIKey)
-// 	assert.Equal(t, user.ID, article.AuthorID)
-// 	assert.Equal(t, user.Username, article.Author.Username)
-// 	assert.NotZero(t, article.Author.APIKey.ID)
-// 	assert.Equal(t, "spiderman-apikey", article.Author.APIKey.Key)
-// }
+	article := createArticle(t, db, &user)
+	assert.Nil(t, sqlxx.Preload(db, &article, "Author", "Author.APIKey"))
+	assert.NotZero(t, article.Author)
+	assert.NotZero(t, article.Author.APIKey)
+	assert.Equal(t, user.ID, article.AuthorID)
+	assert.Equal(t, user.Username, article.Author.Username)
+	assert.NotZero(t, article.Author.APIKey.ID)
+	assert.Equal(t, "spiderman-apikey", article.Author.APIKey.Key)
+}
 
 func TestPreload_OneToOne_Level2_MultipleEither(t *testing.T) {
 	db, _, shutdown := dbConnection(t)

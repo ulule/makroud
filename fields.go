@@ -2,9 +2,8 @@ package sqlxx
 
 import (
 	"fmt"
-	"strings"
-
 	"reflect"
+	"strings"
 
 	"github.com/serenize/snaker"
 )
@@ -89,11 +88,13 @@ func NewField(model Model, name string) (Field, error) {
 		fieldType = fieldType.Elem()
 	}
 
-	if v := tags.GetByKey(SQLXStructTagName, StructTagSQLXField); v != "" {
+	v := tags.GetByKey(SQLXStructTagName, StructTagSQLXField)
+	if v != "" {
 		columnName = v
 	}
 
-	if tag := tags.GetByKey(SQLXStructTagName, StructTagSQLXField); structField.PkgPath != "" || tag == "-" {
+	tag := tags.GetByKey(SQLXStructTagName, StructTagSQLXField)
+	if structField.PkgPath != "" || tag == "-" {
 		isExcluded = true
 	}
 
