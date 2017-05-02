@@ -10,7 +10,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
+	require "github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -30,84 +31,107 @@ var dropTables = `
 	DROP TABLE IF EXISTS comments CASCADE;
 	DROP TABLE IF EXISTS avatars CASCADE;
 	DROP TABLE IF EXISTS categories CASCADE;
+	DROP TABLE IF EXISTS tags CASCADE;
 	DROP TABLE IF EXISTS articles CASCADE;
 	DROP TABLE IF EXISTS articles_categories CASCADE;
 	DROP TABLE IF EXISTS partners CASCADE;
 	DROP TABLE IF EXISTS media CASCADE;
+	DROP TABLE IF EXISTS projects CASCADE;
+	DROP TABLE IF EXISTS managers CASCADE;
 `
 
-var dbSchema = `CREATE TABLE api_keys (
-	id 	serial primary key not null,
-	partner_id integer,
-	key varchar(255) not null
+var dbSchema = `
+CREATE TABLE api_keys (
+	id 		serial primary key not null,
+	partner_id 	integer,
+	key 		varchar(255) not null
 );
 
 CREATE TABLE partners (
-	id 	serial primary key not null,
-	name varchar(255) not null
+	id 		serial primary key not null,
+	name		varchar(255) not null
+);
+
+CREATE TABLE managers (
+	id 		serial primary key not null,
+	name		varchar(255) not null,
+	user_id 	integer
+);
+
+CREATE TABLE projects (
+	id 		serial primary key not null,
+	name		varchar(255) not null,
+	manager_id 	integer,
+	user_id 	integer
 );
 
 CREATE TABLE users (
-	id 				serial primary key not null,
-	username 	    varchar(30) not null,
-	is_active 		boolean default true,
-	api_key_id		integer,
-	avatar_id		integer,
-    created_at 		timestamp with time zone default current_timestamp,
-    updated_at 		timestamp with time zone default current_timestamp,
-    deleted_at 		timestamp with time zone
+	id 		serial primary key not null,
+	username 	 varchar(30) not null,
+	is_active 	boolean default true,
+	api_key_id	integer,
+	avatar_id	integer,
+	created_at 	timestamp with time zone default current_timestamp,
+	updated_at 	timestamp with time zone default current_timestamp,
+	deleted_at 	timestamp with time zone
 );
 
 CREATE TABLE profiles (
-	id 				serial primary key not null,
-	user_id 		integer references users(id),
-	first_name 		varchar(255) not null,
-	last_name 		varchar(255) not null
+	id 		serial primary key not null,
+	user_id		integer references users(id),
+	first_name 	varchar(255) not null,
+	last_name 	varchar(255) not null
 );
 
 CREATE TABLE media (
-	id 				serial primary key not null,
-	path 			varchar(255) not null,
-    created_at 		timestamp with time zone default current_timestamp,
-    updated_at 		timestamp with time zone default current_timestamp
+	id		serial primary key not null,
+	path 		varchar(255) not null,
+	created_at	timestamp with time zone default current_timestamp,
+	updated_at	timestamp with time zone default current_timestamp
 );
 
 CREATE TABLE avatars (
-	id 				serial primary key not null,
-	path 			varchar(255) not null,
-	user_id 		integer references users(id),
-    created_at 		timestamp with time zone default current_timestamp,
-    updated_at 		timestamp with time zone default current_timestamp
+	id 		serial primary key not null,
+	path 		varchar(255) not null,
+	user_id 	integer references users(id),
+	created_at 	timestamp with time zone default current_timestamp,
+	updated_at 	timestamp with time zone default current_timestamp
+);
+
+CREATE TABLE tags (
+	id 		serial primary key not null,
+	name 		varchar(255) not null
 );
 
 CREATE TABLE articles (
-	id 				serial primary key not null,
-	title 			varchar(255) not null,
-	author_id 		integer references users(id),
+	id 		serial primary key not null,
+	title 		varchar(255) not null,
+	author_id 	integer references users(id),
 	reviewer_id 	integer references users(id),
+	main_tag_id 	integer references tags(id),
 	is_published 	boolean default true,
-    created_at 		timestamp with time zone default current_timestamp,
-    updated_at 		timestamp with time zone default current_timestamp
+	created_at 	timestamp with time zone default current_timestamp,
+	updated_at 	timestamp with time zone default current_timestamp
 );
 
 CREATE TABLE comments (
-	id 				serial primary key not null,
-	user_id			integer references users(id),
-	article_id		integer references articles(id),
-	content			text,
-    created_at 		timestamp with time zone default current_timestamp,
-    updated_at 		timestamp with time zone default current_timestamp
+	id 		serial primary key not null,
+	user_id		integer references users(id),
+	article_id	integer references articles(id),
+	content		text,
+	created_at 	timestamp with time zone default current_timestamp,
+	updated_at 	timestamp with time zone default current_timestamp
 );
 
 CREATE TABLE categories (
-	id 				serial primary key not null,
-	name 			varchar(255) not null,
-	user_id 		integer references users(id)
+	id 		serial primary key not null,
+	name 		varchar(255) not null,
+	user_id 	integer references users(id)
 );
 
 CREATE TABLE articles_categories (
-	id 				serial primary key not null,
-	article_id 		integer references articles(id),
+	id 		serial primary key not null,
+	article_id 	integer references articles(id),
 	category_id 	integer references categories(id)
 );`
 
@@ -118,8 +142,11 @@ type TestData struct {
 	Avatars            []Avatar
 	Articles           []Article
 	Categories         []Category
+	Tags               []Tag
 	ArticlesCategories []ArticleCategory
 	Partners           []Partner
+	Managers           []Manager
+	Projects           []Project
 }
 
 type Partner struct {
@@ -128,6 +155,26 @@ type Partner struct {
 }
 
 func (Partner) TableName() string { return "partners" }
+
+type Manager struct {
+	ID     int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
+	Name   string `db:"name"`
+	UserID int    `db:"user_id"`
+	User   *User
+}
+
+func (Manager) TableName() string { return "managers" }
+
+type Project struct {
+	ID        int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
+	Name      string `db:"name"`
+	ManagerID int    `db:"manager_id"`
+	UserID    int    `db:"user_id"`
+	Manager   *Manager
+	User      *User
+}
+
+func (Project) TableName() string { return "projects" }
 
 type APIKey struct {
 	ID        int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
@@ -209,6 +256,14 @@ type Category struct {
 
 func (Category) TableName() string { return "categories" }
 
+// This model has a different ID type.
+type Tag struct {
+	ID   uint   `db:"id"`
+	Name string `db:"name"`
+}
+
+func (Tag) TableName() string { return "tags" }
+
 type Article struct {
 	ID          int       `db:"id" sqlxx:"primary_key:true"`
 	Title       string    `db:"title"`
@@ -219,7 +274,8 @@ type Article struct {
 	UpdatedAt   time.Time `db:"updated_at"`
 	Author      User
 	Reviewer    *User
-	// Categories  []Category
+	MainTagID   sql.NullInt64 `db:"main_tag_id"`
+	MainTag     *Tag
 }
 
 func (Article) TableName() string { return "articles" }
@@ -231,6 +287,10 @@ type ArticleCategory struct {
 }
 
 func (ArticleCategory) TableName() string { return "articles_categories" }
+
+// ----------------------------------------------------------------------------
+// Models with different IDs
+// ----------------------------------------------------------------------------
 
 func dbParam(param string) string {
 	param = strings.ToUpper(param)
@@ -255,6 +315,7 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 	assert.NoError(t, driver.Select(&apiKeys, "SELECT * FROM api_keys"))
 	apiKey := apiKeys[0]
 
+	// Media
 	driver.MustExec("INSERT INTO media (path) VALUES ($1)", "media/avatar.png")
 	media := Media{}
 	assert.NoError(t, driver.Get(&media, "SELECT * FROM media LIMIT 1"))
@@ -263,6 +324,17 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 	driver.MustExec("INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)", "jdoe", apiKey.ID, media.ID)
 	user := User{}
 	assert.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", "jdoe"))
+
+	// Managers
+	driver.MustExec("INSERT INTO managers (name, user_id) VALUES ($1, $2)", "Super Owl", user.ID)
+	managers := []Manager{}
+	require.NoError(t, driver.Select(&managers, "SELECT * FROM managers"))
+	manager := managers[0]
+
+	// Projects
+	driver.MustExec("INSERT INTO projects (name, manager_id, user_id) VALUES ($1, $2, $3)", "Super Project", manager.ID, user.ID)
+	projects := []Project{}
+	require.NoError(t, driver.Select(&projects, "SELECT * FROM projects"))
 
 	// Avatars
 	for i := 0; i < 5; i++ {
@@ -283,9 +355,15 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 	categories := []Category{}
 	assert.NoError(t, driver.Select(&categories, "SELECT * FROM categories"))
 
+	// Tags
+	driver.MustExec("INSERT INTO tags (name) VALUES ($1)", "Tag")
+	tags := []Tag{}
+	require.NoError(t, driver.Select(&tags, "SELECT * FROM tags"))
+	tag := tags[0]
+
 	// Articles
 	for i := 0; i < 5; i++ {
-		driver.MustExec("INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3)", fmt.Sprintf("Title #%d", i), user.ID, user.ID)
+		driver.MustExec("INSERT INTO articles (title, author_id, reviewer_id, main_tag_id) VALUES ($1, $2, $3, $4)", fmt.Sprintf("Title #%d", i), user.ID, user.ID, tag.ID)
 	}
 	articles := []Article{}
 	assert.NoError(t, driver.Select(&articles, "SELECT * FROM articles"))
@@ -305,9 +383,12 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 		Profiles:           profiles,
 		Avatars:            avatars,
 		Categories:         categories,
+		Tags:               tags,
 		Articles:           articles,
 		ArticlesCategories: articlesCategories,
 		Partners:           partners,
+		Managers:           managers,
+		Projects:           projects,
 	}
 }
 

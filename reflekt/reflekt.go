@@ -69,8 +69,17 @@ func CloneType(itf interface{}, args ...reflect.Kind) interface{} {
 
 // Copy makes a copy of the given interface.
 func Copy(itf interface{}) interface{} {
-	cp := reflect.New(GetIndirectType(reflect.TypeOf(itf)))
+	// Original type
+	t := reflect.TypeOf(itf)
+
+	cp := reflect.New(t)
 	cp.Elem().Set(reflect.ValueOf(itf))
+
+	// Avoid double pointers if itf is a pointer
+	if t.Kind() == reflect.Ptr {
+		return cp.Elem().Interface()
+	}
+
 	return cp.Interface()
 }
 
@@ -116,6 +125,14 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 	value, ok := itf.(reflect.Value)
 	if !ok {
 		value = GetIndirectValue(itf)
+	}
+
+	// Avoid calling FieldByName on ptr
+	value = reflect.Indirect(value)
+
+	// Avoid calling FieldByName on zero value
+	if !value.IsValid() {
+		return nil, nil
 	}
 
 	field := value.FieldByName(name)
