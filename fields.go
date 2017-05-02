@@ -117,7 +117,8 @@ func NewField(model Model, name string) (Field, error) {
 	}
 
 	// Early return if the field type is not an association
-	if modelType := GetModelFromType(field.Type); modelType == nil {
+	modelType := GetModelFromType(field.Type)
+	if modelType == nil {
 		return field, nil
 	}
 

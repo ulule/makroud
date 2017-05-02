@@ -25,7 +25,8 @@ func Save(driver Driver, out interface{}) error {
 			defaultValue string
 		)
 
-		if tag := column.Tags.Get(StructTagName); tag != nil {
+		tag := column.Tags.Get(StructTagName)
+		if tag != nil {
 			isIgnored = len(tag.Get(StructTagIgnored)) != 0
 			defaultValue = tag.Get(StructTagDefault)
 			hasDefault = len(defaultValue) != 0

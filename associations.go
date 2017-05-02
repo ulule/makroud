@@ -103,7 +103,8 @@ func PreloadAssociations(driver Driver, out interface{}, fields []Field) error {
 	}
 
 	for _, query := range queries {
-		if err := SetAssociation(driver, out, query); err != nil {
+		err := SetAssociation(driver, out, query)
+		if err != nil {
 			return err
 		}
 	}
@@ -153,7 +154,8 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 		// user.Avatar
 		if !isSlice {
 			for i := 0; i < value.Len(); i++ {
-				if err := SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance); err != nil {
+				err := SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance)
+				if err != nil {
 					return err
 				}
 			}
@@ -184,7 +186,8 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 
 				instance, ok := instancesMap[val]
 				if ok {
-					if err := SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance.Interface()); err != nil {
+					err := SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance.Interface())
+					if err != nil {
 						return err
 					}
 				}
@@ -260,10 +263,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 // FetchAssociation fetches the given relation.
 func FetchAssociation(driver Driver, out interface{}, query AssociationQuery) error {
 	if query.FetchOne && !IsSlice(out) {
-		if err := driver.Get(out, driver.Rebind(query.Query), query.Args...); err != nil {
-			return err
-		}
-		return nil
+		return driver.Get(out, driver.Rebind(query.Query), query.Args...)
 	}
 
 	return driver.Select(out, driver.Rebind(query.Query), query.Args...)

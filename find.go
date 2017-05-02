@@ -19,8 +19,10 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	for i := range pks {
 		pk := pks[i]
 
-		if valuer, ok := Copy(pk).(driver.Valuer); ok {
-			if v, err := valuer.Value(); err == nil && v != nil {
+		valuer, ok := Copy(pk).(driver.Valuer)
+		if ok {
+			v, err := valuer.Value()
+			if err == nil && v != nil {
 				pk = v
 			}
 		}

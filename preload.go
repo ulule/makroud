@@ -41,7 +41,8 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 		}
 	}
 
-	if err = PreloadAssociations(driver, out, rootAssociations); err != nil {
+	err = PreloadAssociations(driver, out, rootAssociations)
+	if err != nil {
 		return err
 	}
 

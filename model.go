@@ -45,7 +45,8 @@ func GetModelFromType(typ reflect.Type) Model {
 		typ = GetIndirectType(typ)
 	}
 
-	if model, isModel := reflect.New(typ).Elem().Interface().(Model); isModel {
+	model, isModel := reflect.New(typ).Elem().Interface().(Model)
+	if isModel {
 		return model
 	}
 

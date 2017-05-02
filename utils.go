@@ -282,7 +282,8 @@ func (t *FieldTags) Set(name string, property FieldTagProperty) {
 
 // HasKey is a convenient shortcuts to check if a key is present.
 func (t FieldTags) HasKey(name string, key string) bool {
-	if tag := t.Get(name); tag != nil {
+	tag := t.Get(name)
+	if tag != nil {
 		return true
 	}
 	return false
@@ -290,7 +291,8 @@ func (t FieldTags) HasKey(name string, key string) bool {
 
 // GetByKey is a convenient shortcuts to get the value for a given tag key.
 func (t FieldTags) GetByKey(name string, key string) string {
-	if tag := t.Get(name); tag != nil {
+	tag := t.Get(name)
+	if tag != nil {
 		return tag.Get(key)
 	}
 	return ""
@@ -301,7 +303,8 @@ func GetFieldTags(field reflect.StructField, tagNames []string, propertyMapping 
 	rawTags := map[string]string{}
 
 	for _, name := range tagNames {
-		if _, ok := rawTags[name]; !ok {
+		_, ok := rawTags[name]
+		if !ok {
 			v := field.Tag.Get(name)
 			if len(v) != 0 {
 				rawTags[name] = v
