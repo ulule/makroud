@@ -9,20 +9,25 @@ import (
 
 // IntToInt64 converts given int to int64.
 func IntToInt64(value interface{}) (int64, error) {
-	var (
-		int64Type = reflect.TypeOf(int64(0))
-		v         = reflect.Indirect(reflect.ValueOf(value))
-	)
+	// sql.NullInt* support
+	if valuer, ok := value.(driver.Valuer); ok {
+		if v, err := valuer.Value(); err == nil && v != nil {
+			value = v
+		}
+	}
 
-	if !v.IsValid() {
+	int64Type := reflect.TypeOf(int64(0))
+	reflected := reflect.Indirect(reflect.ValueOf(value))
+
+	if !reflected.IsValid() {
 		return 0, fmt.Errorf("invalid value: %v", value)
 	}
 
-	if !v.Type().ConvertibleTo(int64Type) {
-		return 0, fmt.Errorf("unable to convert %v to int64", v.Type())
+	if !reflected.Type().ConvertibleTo(int64Type) {
+		return 0, fmt.Errorf("unable to convert %v to int64", reflected.Type())
 	}
 
-	return v.Convert(int64Type).Int(), nil
+	return reflected.Convert(int64Type).Int(), nil
 }
 
 // GetIndirectValue returns the value that the interface v contains or that the pointer v points to.
@@ -147,6 +152,25 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 	}
 
 	return field.Interface(), nil
+}
+
+func getFieldValues(instance interface{}, field string) (value reflect.Value, ptr reflect.Value, err error) {
+	indirect := reflect.Indirect(reflect.ValueOf(instance))
+
+	if !indirect.IsValid() {
+		return value, ptr, nil
+	}
+
+	value = indirect.FieldByName(field)
+	if !value.IsValid() {
+		return value, ptr, fmt.Errorf("no such field %s in %+v", field, instance)
+	}
+
+	if value.CanAddr() {
+		ptr = value.Addr()
+	}
+
+	return value, ptr, nil
 }
 
 // SetFieldValue sets the provided value
