@@ -1,7 +1,6 @@
 package sqlxx
 
 import (
-	"database/sql"
 	"fmt"
 	"reflect"
 )
@@ -26,6 +25,7 @@ func (aq AssociationQuery) String() string {
 // GetAssociationQueries returns relation queries ASC sorted by their level
 func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries, error) {
 	var (
+		err     error
 		queries = AssociationQueries{}
 		isSlice = IsSlice(out)
 	)
@@ -39,20 +39,23 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 			return nil, fmt.Errorf("no ForeignKey instance found for field %s", field.Name)
 		}
 
-		var (
-			err    error
-			params = map[string]interface{}{}
-			pks    = []interface{}{}
-		)
+		params := map[string]interface{}{}
+		pks := []interface{}{}
 
 		if !isSlice {
-			// For Category.User, should be: Category.UserID
-			pks, err = GetPrimaryKeys(out, field.ForeignKey.FieldName)
+			fieldName := field.ForeignKey.FieldName
+
+			if field.IsAssociationTypeMany() {
+				fieldName = field.ForeignKey.Reference.FieldName
+			}
+
+			pks, err = GetPrimaryKeys(out, fieldName)
 			if err != nil {
 				return nil, err
 			}
 		} else {
 			value := reflect.ValueOf(out).Elem()
+
 			for i := 0; i < value.Len(); i++ {
 				values, err := GetPrimaryKeys(value.Index(i).Interface(), field.ForeignKey.FieldName)
 				if err != nil {
@@ -62,19 +65,25 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 			}
 		}
 
-		// Zero
 		if len(pks) == 0 {
 			continue
 		}
 
-		if len(pks) > 1 {
-			// For Category.User, should be: users.id
-			params[field.ForeignKey.Reference.ColumnName] = pks
-		} else {
-			params[field.ForeignKey.Reference.ColumnName] = pks[0]
+		model := field.ForeignKey.Reference.Model
+		columnName := field.ForeignKey.Reference.ColumnName
+
+		if field.IsAssociationTypeMany() {
+			model = field.ForeignKey.Model
+			columnName = field.ForeignKey.ColumnName
 		}
 
-		query, args, err := whereQuery(field.ForeignKey.Reference.Model, params, field.IsAssociationTypeOne() && !isSlice)
+		if len(pks) > 1 {
+			params[columnName] = pks
+		} else {
+			params[columnName] = pks[0]
+		}
+
+		query, args, err := whereQuery(model, params, field.IsAssociationTypeOne() && !isSlice)
 		if err != nil {
 			return nil, err
 		}
@@ -123,71 +132,73 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 	}
 
 	var (
-		err      error
-		instance interface{}
-		isSlice  = IsSlice(out)
+		isSlice = IsSlice(out)
+		assoc   interface{}
 	)
 
-	if q.Field.IsAssociationTypeMany() || isSlice {
-		instance = CloneType(q.Field.ForeignKey.Reference.Model, reflect.Slice)
+	if q.Field.IsAssociationTypeMany() {
+		assoc = CloneType(q.Field.ForeignKey.Model, reflect.Slice)
 	} else {
-		instance = CloneType(q.Field.ForeignKey.Reference.Model)
+		if isSlice {
+			assoc = CloneType(q.Field.ForeignKey.Reference.Model, reflect.Slice)
+		} else {
+			assoc = CloneType(q.Field.ForeignKey.Reference.Model)
+		}
 	}
 
-	err = FetchAssociation(driver, instance, q)
+	err := FetchAssociation(driver, assoc, q)
 	if err != nil {
 		return err
 	}
 
-	// user.Avatars || user.Avatar
+	// Single instance
+
 	if !isSlice {
-		return SetFieldValue(out, q.Field.ForeignKey.AssociationFieldName, reflect.ValueOf(instance).Elem().Interface())
+		v := reflect.ValueOf(assoc).Elem().Interface()
+		f := q.Field.ForeignKey.AssociationFieldName
+
+		if q.Field.IsAssociationTypeMany() {
+			f = q.Field.Name
+		}
+
+		return SetFieldValue(out, f, v)
 	}
 
-	//
-	// Slice
-	//
+	// Slice of instances
 
-	// users.Avatar
+	instances := reflect.ValueOf(out).Elem()
+
+	// OneTo
+
 	if !q.Field.IsAssociationTypeMany() {
-		value := reflect.ValueOf(out).Elem()
+		assocs := reflect.ValueOf(assoc).Elem()
 
-		// user.Avatar
-		if !isSlice {
-			for i := 0; i < value.Len(); i++ {
-				err := SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			var (
-				instancesMap = map[interface{}]reflect.Value{}
-				items        = reflect.ValueOf(instance).Elem()
-			)
+		for i := 0; i < instances.Len(); i++ {
+			instance := instances.Index(i).Addr()
 
-			for i := 0; i < items.Len(); i++ {
-				value, err := GetFieldValue(items.Index(i), q.Field.ForeignKey.Reference.FieldName)
-				if err != nil {
-					return err
-				}
-				instancesMap[value] = items.Index(i)
+			fkv, err := GetFieldValue(instance.Interface(), q.Field.ForeignKey.FieldName)
+			if err != nil {
+				return err
 			}
 
-			for i := 0; i < value.Len(); i++ {
-				val, err := GetFieldValue(value.Index(i), q.Field.ForeignKey.FieldName)
+			fk, err := IntToInt64(fkv)
+			if err != nil {
+				return err
+			}
+
+			for ii := 0; ii < assocs.Len(); ii++ {
+				pkv, err := GetFieldValue(assocs.Index(ii).Interface(), "ID")
 				if err != nil {
 					return err
 				}
 
-				switch val.(type) {
-				case sql.NullInt64:
-					val = int(val.(sql.NullInt64).Int64)
+				pk, err := IntToInt64(pkv)
+				if err != nil {
+					return err
 				}
 
-				instance, ok := instancesMap[val]
-				if ok {
-					err := SetFieldValue(value.Index(i), q.Field.ForeignKey.AssociationFieldName, instance.Interface())
+				if fk == pk {
+					err = SetFieldValue(instance.Interface(), q.Field.ForeignKey.AssociationFieldName, assocs.Index(ii).Interface())
 					if err != nil {
 						return err
 					}
@@ -198,64 +209,47 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 		return nil
 	}
 
-	//
-	// Users.Avatars
-	//
+	// ManyTo
 
-	// Users
-	items := reflect.ValueOf(out).Elem()
+	assocs := reflect.ValueOf(assoc).Elem()
 
-	// Avatars
-	relatedItems := reflect.ValueOf(instance).Elem()
+	for i := 0; i < instances.Len(); i++ {
+		instance := instances.Index(i).Addr()
 
-	// Iterate over slice items (Users)
-	for i := 0; i < items.Len(); i++ {
-		item := items.Index(i)
-		if !item.CanSet() {
-			continue
-		}
-
-		itemPK, err := GetFieldValue(item.Interface().(Model), q.Field.ForeignKey.FieldName)
+		pkv, err := GetFieldValue(instance.Interface(), q.Field.ForeignKey.FieldName)
 		if err != nil {
 			return err
 		}
 
-		// Build the related items's item
-		itemRelatedItems := []reflect.Value{}
+		pk, err := IntToInt64(pkv)
+		if err != nil {
+			return err
+		}
 
-		// Iterate over related items (Avatars)
-		for ii := 0; ii < relatedItems.Len(); ii++ {
-			var (
-				relatedItem         = relatedItems.Index(ii)
-				relatedItemInstance = relatedItem.Interface().(Model)
-			)
+		slc := reflect.ValueOf(MakeSlice(q.Field.Model))
 
-			relatedFK, err := GetFieldValue(relatedItemInstance, q.Field.ForeignKey.FieldName)
+		for ii := 0; ii < assocs.Len(); ii++ {
+			assocv := assocs.Index(ii).Addr()
+
+			fkv, err := GetFieldValue(assocv.Interface(), q.Field.ForeignKey.FieldName)
 			if err != nil {
 				return err
 			}
 
-			// Compare User's avatar
-			if itemPK == relatedFK {
-				itemRelatedItems = append(itemRelatedItems, relatedItem)
+			fk, err := IntToInt64(fkv)
+			if err != nil {
+				return err
+			}
+
+			if pk == fk {
+				slc = reflect.Append(slc, assocv)
 			}
 		}
 
-		//
-		// Build the related model instance slice and set it to related item.
-		//
-
-		var (
-			newSlice      = MakeSlice(q.Field.Model)
-			newSliceValue = reflect.ValueOf(newSlice)
-			field         = item.FieldByName(q.Field.Name)
-		)
-
-		for _, related := range itemRelatedItems {
-			newSliceValue = reflect.Append(newSliceValue, related)
+		err = SetFieldValue(instance.Interface(), q.Field.ForeignKey.AssociationFieldName, slc.Interface())
+		if err != nil {
+			return err
 		}
-
-		field.Set(newSliceValue)
 	}
 
 	return nil
