@@ -41,18 +41,10 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 		}
 	}
 
-	//
-	// 1st level
-	//
-
 	err = PreloadAssociations(driver, out, assocs)
 	if err != nil {
 		return err
 	}
-
-	//
-	// 2nd level: associations of association
-	//
 
 	if IsSlice(out) {
 		for k, v := range assocsOfAssocs {

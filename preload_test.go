@@ -1,6 +1,7 @@
 package sqlxx_test
 
 import (
+	"fmt"
 	"testing"
 
 	assert "github.com/stretchr/testify/require"
@@ -239,24 +240,24 @@ func TestPreload_ManyToOne_Level2_Multiple(t *testing.T) {
 	assert.Equal(t, "deadpool-apikey", articles[1].Author.APIKey.Key)
 }
 
-// // ----------------------------------------------------------------------------
-// // Preloads: ToMany
-// // ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// Preloads: ToMany
+// ----------------------------------------------------------------------------
 
-// func TestPreload_OneToMany_Level1_Simple(t *testing.T) {
-// 	db, _, shutdown := dbConnection(t)
-// 	defer shutdown()
+func TestPreload_OneToMany_Level1_Simple(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
 
-// 	user := createUser(t, db, "wonderwoman")
-// 	assert.Nil(t, sqlxx.Preload(db, &user, "Avatars"))
-// 	assert.Len(t, user.Avatars, 5)
+	user := createUser(t, db, "wonderwoman")
+	assert.Nil(t, sqlxx.Preload(db, &user, "Avatars"))
+	assert.Len(t, user.Avatars, 5)
 
-// 	for i, a := range user.Avatars {
-// 		assert.NotZero(t, a.ID)
-// 		assert.Equal(t, user.ID, a.UserID)
-// 		assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
-// 	}
-// }
+	for i, a := range user.Avatars {
+		assert.NotZero(t, a.ID)
+		assert.Equal(t, user.ID, a.UserID)
+		assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
+	}
+}
 
 // func TestPreload_ManyToMany_Level1(t *testing.T) {
 // 	db, _, shutdown := dbConnection(t)
