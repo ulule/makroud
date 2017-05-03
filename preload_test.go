@@ -211,33 +211,33 @@ func TestPreload_OneToOne_Level2_MultipleEither(t *testing.T) {
 	}
 }
 
-// func TestPreload_ManyToOne_Level2_Multiple(t *testing.T) {
-// 	db, _, shutdown := dbConnection(t)
-// 	defer shutdown()
+func TestPreload_ManyToOne_Level2_Multiple(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
 
-// 	user := createUser(t, db, "spiderman")
-// 	article := createArticle(t, db, &user)
+	user := createUser(t, db, "spiderman")
+	article := createArticle(t, db, &user)
 
-// 	deadpool := createUser(t, db, "deadpool")
-// 	article2 := createArticle(t, db, &deadpool)
+	deadpool := createUser(t, db, "deadpool")
+	article2 := createArticle(t, db, &deadpool)
 
-// 	articles := []Article{article, article2}
+	articles := []Article{article, article2}
 
-// 	assert.Nil(t, sqlxx.Preload(db, &articles, "Author", "Author.APIKey"))
+	assert.Nil(t, sqlxx.Preload(db, &articles, "Author", "Author.APIKey"))
 
-// 	assert.Equal(t, user.ID, articles[0].Author.ID)
-// 	assert.Equal(t, user.ID, articles[0].AuthorID)
-// 	assert.Equal(t, user.Username, articles[0].Author.Username)
-// 	assert.NotZero(t, articles[0].Author.APIKeyID)
+	assert.Equal(t, user.ID, articles[0].Author.ID)
+	assert.Equal(t, user.ID, articles[0].AuthorID)
+	assert.Equal(t, user.Username, articles[0].Author.Username)
+	assert.NotZero(t, articles[0].Author.APIKeyID)
 
-// 	assert.Equal(t, "spiderman-apikey", articles[0].Author.APIKey.Key)
+	assert.Equal(t, "spiderman-apikey", articles[0].Author.APIKey.Key)
 
-// 	assert.Equal(t, deadpool.ID, articles[1].Author.ID)
-// 	assert.Equal(t, deadpool.ID, articles[1].AuthorID)
-// 	assert.Equal(t, deadpool.Username, articles[1].Author.Username)
-// 	assert.NotZero(t, articles[1].Author.APIKeyID)
-// 	assert.Equal(t, "deadpool-apikey", articles[1].Author.APIKey.Key)
-// }
+	assert.Equal(t, deadpool.ID, articles[1].Author.ID)
+	assert.Equal(t, deadpool.ID, articles[1].AuthorID)
+	assert.Equal(t, deadpool.Username, articles[1].Author.Username)
+	assert.NotZero(t, articles[1].Author.APIKeyID)
+	assert.Equal(t, "deadpool-apikey", articles[1].Author.APIKey.Key)
+}
 
 // // ----------------------------------------------------------------------------
 // // Preloads: ToMany

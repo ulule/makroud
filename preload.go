@@ -12,13 +12,6 @@ type Preloader func(d Driver) (Driver, error)
 
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, paths ...string) error {
-	var (
-		err error
-		// isSlice           = IsSlice(out)
-		assocs         []Field
-		assocsOfAssocs = map[string]Field{}
-	)
-
 	if !GetIndirectValue(out).CanAddr() {
 		return errors.New("model instance must be addressable (pointer required)")
 	}
@@ -27,6 +20,9 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 	if err != nil {
 		return err
 	}
+
+	assocs := []Field{}
+	assocsOfAssocs := map[string]Field{}
 
 	for _, path := range paths {
 		assoc, ok := schema.Associations[path]
@@ -45,21 +41,28 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 		}
 	}
 
+	//
+	// 1st level
+	//
+
 	err = PreloadAssociations(driver, out, assocs)
 	if err != nil {
 		return err
 	}
 
-	// if isSlice {
-	// 	for _, child := range childAssociations {
-	// 		spew.Dump(child)
+	//
+	// 2nd level: associations of association
+	//
 
-	// 		// if err = preloadSlice(driver, out, schema, child); err != nil {
-	// 		// 	return err
-	// 		// }
-	// 	}
-	// 	return nil
-	// }
+	if IsSlice(out) {
+		for k, v := range assocsOfAssocs {
+			err = preloadAssociationForSlice(driver, out, schema, k, v)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 
 	for k, v := range assocsOfAssocs {
 		// At this step, value can be either a value or a pointer.
@@ -97,107 +100,96 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 	return nil
 }
 
-// func preloadSlice(driver Driver, out interface{}, schema Schema, field Field) error {
-// 	var (
-// 		err                 error
-// 		slice               = reflect.ValueOf(out).Elem()
-// 		childrenRelationPKs []interface{}
-// 	)
+func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, fieldName string, field Field) error {
+	slice := reflect.ValueOf(out).Elem()
 
-// 	for i := 0; i < slice.Len(); i++ {
-// 		var (
-// 			// Article
-// 			itemValue            = slice.Index(i)
-// 			item                 = itemValue.Interface()
-// 			itemPKFieldName      = schema.PrimaryField.Name
-// 			itemChildFieldName   = child.field
-// 			itemChildPKFieldName = child.relation.RelatedFKField()
-// 		)
+	type rel struct {
+		item  reflect.Value // ex: pointer to Article
+		assoc reflect.Value // ex: pointer to Article.User
+		field string        // ex: APIKey (for Article.User.APIKey)
+	}
 
-// 		// Retrieve Article.ID
-// 		itemPK, err := GetFieldValue(item, itemPKFieldName)
-// 		if err != nil {
-// 			return err
-// 		}
+	// fk -> relation
+	relations := map[int64]rel{}
 
-// 		// Retrieve Article.User previously fetched
-// 		itemChild, err := GetFieldValue(item, itemChildFieldName)
-// 		if err != nil {
-// 			return err
-// 		}
+	// Articles
+	for i := 0; i < slice.Len(); i++ {
+		value := slice.Index(i)
 
-// 		// Retrieve Article.UserID
-// 		itemChildPK, err := GetFieldValue(itemChild, child.relation.ParentSchema.PrimaryField.Name)
-// 		if err != nil {
-// 			return err
-// 		}
+		if value.Kind() != reflect.Ptr && value.CanAddr() {
+			value = value.Addr()
+		}
 
-// 		// Retrieve Article.User.APIKeyID (for SELECT IN)
-// 		itemChildRelationPK, err := GetFieldValue(itemChild, child.relation.RelatedFKField())
-// 		if err != nil {
-// 			return err
-// 		}
+		// Retrieve Article.User previously fetched
+		assocValue, assocPtr, err := getFieldValues(value.Interface(), fieldName)
+		if err != nil {
+			return err
+		}
 
-// 		relationships = append(relationships, Relationship{
-// 			item:                       item,
-// 			itemValue:                  itemValue,
-// 			itemPK:                     itemPK,
-// 			itemChild:                  itemChild,
-// 			itemChildFieldName:         itemChildFieldName,
-// 			itemChildPK:                itemChildPK,
-// 			itemChildPKFieldName:       itemChildPKFieldName,
-// 			itemChildRelationPK:        itemChildRelationPK,
-// 			itemChildRelationFieldName: child.relationField,
-// 		})
+		// Retrieve Article.User.APIKeyID (for SELECT IN)
+		fkv, err := GetFieldValue(assocValue.Interface(), field.ForeignKey.FieldName)
+		if err != nil {
+			return err
+		}
 
-// 		var exists bool
-// 		for _, v := range childrenRelationPKs {
-// 			if v == itemChildRelationPK {
-// 				exists = true
-// 				break
-// 			}
-// 		}
+		fk, err := IntToInt64(fkv)
+		if err != nil {
+			return err
+		}
 
-// 		if !exists {
-// 			childrenRelationPKs = append(childrenRelationPKs, itemChildRelationPK)
-// 		}
+		if fk != int64(0) {
+			relations[fk] = rel{
+				item:  value,
+				assoc: assocPtr,
+				field: field.ForeignKey.AssociationFieldName,
+			}
+		}
+	}
 
-// 	}
+	var fks []int64
+	for k := range relations {
+		fks = append(fks, k)
+	}
 
-// 	// Build a []APIKey slice
-// 	t := reflect.SliceOf(GetIndirectType(reflect.TypeOf(child.relation.Model)))
-// 	s := reflect.New(t)
-// 	s.Elem().Set(reflect.MakeSlice(t, 0, 0))
+	// Build a []APIKey slice
+	fkAssocType := reflect.SliceOf(GetIndirectType(reflect.TypeOf(field.ForeignKey.Reference.Model)))
+	fkAssocs := reflect.New(fkAssocType)
+	fkAssocs.Elem().Set(reflect.MakeSlice(fkAssocType, 0, 0))
 
-// 	// SELECT * FROM from api_keys WHERE id IN childrenRelationPKs
-// 	if err = FindByParams(driver, s.Interface(), map[string]interface{}{child.relation.Schema.PrimaryField.ColumnName: childrenRelationPKs}); err != nil {
-// 		return err
-// 	}
+	// SELECT * FROM from api_keys WHERE id IN childrenRelationPKs
+	// TODO: HERE GET PRIMAREY KEY OF REFERENCE
+	err := FindByParams(driver, fkAssocs.Interface(), map[string]interface{}{"id": fks})
+	if err != nil {
+		return err
+	}
 
-// 	instances := s.Elem()
+	// Slice ptr -> value
+	fkAssocs = fkAssocs.Elem()
 
-// 	// Set the relations
-// 	for _, relationship := range relationships {
-// 		for i := 0; i < instances.Len(); i++ {
-// 			instance := instances.Index(i)
+	for i := 0; i < fkAssocs.Len(); i++ {
+		assoc := fkAssocs.Index(i)
 
-// 			// APIKey.ID
-// 			instancePK, err := GetFieldValue(instance, child.relation.Schema.PrimaryField.Name)
-// 			if err != nil {
-// 				return err
-// 			}
+		// APIKey.ID
+		pkv, err := GetFieldValue(assoc, "ID")
+		if err != nil {
+			return err
+		}
 
-// 			if relationship.itemChildRelationPK == instancePK {
-// 				itemChildCopy := Copy(relationship.itemChild)
-// 				if err = SetFieldValue(itemChildCopy, relationship.itemChildRelationFieldName, instance.Interface()); err != nil {
-// 					return err
-// 				}
-// 				if err = SetFieldValue(relationship.itemValue, relationship.itemChildFieldName, itemChildCopy); err != nil {
-// 					return err
-// 				}
-// 			}
-// 		}
-// 	}
+		pk, err := IntToInt64(pkv)
+		if err != nil {
+			return err
+		}
 
-// 	return nil
-// }
+		if pk != int64(0) {
+			relation, ok := relations[pk]
+			if ok {
+				err := SetFieldValue(relation.assoc.Interface(), relation.field, assoc.Interface())
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
