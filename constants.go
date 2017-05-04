@@ -3,6 +3,15 @@ package sqlxx
 // AssociationType is an association type.
 type AssociationType uint8
 
+func (a AssociationType) String() string {
+	return map[AssociationType]string{
+		AssociationTypeUndefined:  "undefined",
+		AssociationTypeOne:        "one",
+		AssociationTypeMany:       "many",
+		AssociationTypeManyToMany: "many-to-many",
+	}[a]
+}
+
 // Association types
 const (
 	AssociationTypeUndefined = AssociationType(iota)
