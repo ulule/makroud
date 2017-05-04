@@ -97,32 +97,24 @@ func PreloadAssociations(driver Driver, out interface{}, fields []Field) error {
 
 // SetAssociation performs query and populates the given out with values.
 func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
-	if !q.Field.IsAssociation {
-		return fmt.Errorf("cannot set association for field: %v", q.Field)
+	err := checkAssociation(q.Field)
+	if err != nil {
+		return err
 	}
 
-	var (
-		err     error
-		isSlice = IsSlice(out)
-		assoc   = q.Field.CreateAssociation(isSlice)
-	)
+	isSlice := IsSlice(out)
+	assoc := q.Field.CreateAssociation(isSlice)
 
 	err = FetchAssociation(driver, assoc, q)
 	if err != nil {
 		return err
 	}
 
-	// Single instance
-
 	if !isSlice {
 		return SetFieldValue(out, q.Field.OneToAssociationFieldName(), reflect.ValueOf(assoc).Elem().Interface())
 	}
 
-	// Slice of instances
-
 	instances := reflect.ValueOf(out).Elem()
-
-	// OneTo
 
 	if !q.Field.IsAssociationTypeMany() {
 		assocs := reflect.ValueOf(assoc).Elem()
@@ -136,12 +128,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			}
 
 			for ii := 0; ii < assocs.Len(); ii++ {
-				pkv, err := GetFieldValue(assocs.Index(ii).Interface(), "ID")
-				if err != nil {
-					return err
-				}
-
-				pk, err := IntToInt64(pkv)
+				pk, err := GetInt64PrimaryKey(assocs.Index(ii).Interface(), "ID")
 				if err != nil {
 					return err
 				}
@@ -157,8 +144,6 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 
 		return nil
 	}
-
-	// ManyTo
 
 	assocs := reflect.ValueOf(assoc).Elem()
 
