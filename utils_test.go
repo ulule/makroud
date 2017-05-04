@@ -1,12 +1,11 @@
 package sqlxx_test
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 
 	assert "github.com/stretchr/testify/require"
-
-	"database/sql"
 
 	"github.com/ulule/sqlxx"
 )
