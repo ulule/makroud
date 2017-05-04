@@ -13,7 +13,11 @@ func Delete(driver Driver, out interface{}) error {
 	}
 
 	pkField := schema.PrimaryKeyField
-	pkValue, _ := GetFieldValue(out, pkField.Name)
+
+	pkValue, err := GetFieldValue(out, pkField.Name)
+	if err != nil {
+		return err
+	}
 
 	// GO TO HELL ZERO VALUES DELETION
 	if IsZeroValue(pkValue) {
@@ -47,8 +51,11 @@ func Archive(driver Driver, out interface{}, fieldName string) error {
 	}
 
 	pkField := schema.PrimaryKeyField
-	pkValue, err := GetFieldValue(out, pkField.Name)
 
+	pkValue, err := GetFieldValue(out, pkField.Name)
+	if err != nil {
+		return err
+	}
 	// GO TO HELL ZERO VALUES DELETION
 	if IsZeroValue(pkValue) {
 		return fmt.Errorf("%v has no primary key, cannot be deleted", out)

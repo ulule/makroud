@@ -50,7 +50,11 @@ func Save(driver Driver, out interface{}) error {
 	var query string
 
 	pkField := schema.PrimaryKeyField
-	pkValue, _ := GetFieldValue(out, pkField.Name)
+
+	pkValue, err := GetFieldValue(out, pkField.Name)
+	if err != nil {
+		return err
+	}
 
 	if IsZeroValue(pkValue) {
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
