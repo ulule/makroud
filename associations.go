@@ -27,49 +27,33 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 	var (
 		err     error
 		queries AssociationQueries
-		isSlice = IsSlice(out)
 	)
 
 	for _, field := range fields {
-		if !field.IsAssociation {
-			return nil, fmt.Errorf("field '%s' is not an association", field.Name)
+		err = checkAssociation(field)
+		if err != nil {
+			return nil, err
 		}
 
-		if field.ForeignKey == nil {
-			return nil, fmt.Errorf("no ForeignKey instance found for field %s", field.Name)
-		}
-
-		params := map[string]interface{}{}
-		var pks []interface{}
-
-		if !isSlice {
-			pks, err = GetPrimaryKeys(out, field.RelationFieldName())
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			slc := reflect.ValueOf(out).Elem()
-			for i := 0; i < slc.Len(); i++ {
-				v, err := GetPrimaryKeys(slc.Index(i).Interface(), field.RelationFieldName())
-				if err != nil {
-					return nil, err
-				}
-				pks = append(pks, v...)
-			}
+		pks, err := getAssociationPrimaryKeys(out, field)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(pks) == 0 {
 			continue
 		}
 
+		params := map[string]interface{}{}
 		columnName := field.RelationColumnName()
+
 		if len(pks) > 1 {
 			params[columnName] = pks
 		} else {
 			params[columnName] = pks[0]
 		}
 
-		query, args, err := whereQuery(field.RelationModel(), params, field.IsAssociationTypeOne() && !isSlice)
+		query, args, err := whereQuery(field.RelationModel(), params, field.IsAssociationTypeOne() && !IsSlice(out))
 		if err != nil {
 			return nil, err
 		}
@@ -217,4 +201,54 @@ func FetchAssociation(driver Driver, out interface{}, query AssociationQuery) er
 	}
 
 	return driver.Select(out, driver.Rebind(query.Query), query.Args...)
+}
+
+func checkAssociation(field Field) error {
+	if !field.IsAssociation {
+		return fmt.Errorf("field '%s' is not an association", field.Name)
+	}
+
+	if field.ForeignKey == nil {
+		return fmt.Errorf("no ForeignKey instance found for field %s", field.Name)
+	}
+
+	return nil
+}
+
+func getAssociationPrimaryKeys(instance interface{}, association Field) ([]int64, error) {
+	var (
+		err    error
+		values []interface{}
+		pks    []int64
+	)
+
+	if !IsSlice(instance) {
+		values, err = GetPrimaryKeys(instance, association.RelationFieldName())
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		slc := reflect.ValueOf(instance).Elem()
+
+		for i := 0; i < slc.Len(); i++ {
+			v, err := GetPrimaryKeys(slc.Index(i).Interface(), association.RelationFieldName())
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, v...)
+		}
+	}
+
+	for _, value := range values {
+		pk, err := IntToInt64(value)
+		if err != nil {
+			return nil, err
+		}
+
+		if pk != int64(0) {
+			pks = append(pks, pk)
+		}
+	}
+
+	return pks, nil
 }

@@ -57,17 +57,14 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 	}
 
 	for k, v := range assocsOfAssocs {
-		// At this step, value can be either a value or a pointer.
 		value, err := GetFieldValue(reflect.ValueOf(out), k)
 		if err != nil {
 			return err
 		}
 
-		// We must reflect to check the addressability.
 		reflected := reflect.ValueOf(value)
 		isValue := false
 
-		// Value is a value? Create a pointer to.
 		if !reflected.CanAddr() {
 			value = Copy(value)
 			isValue = true
@@ -78,7 +75,6 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 			return err
 		}
 
-		// Relation was initially a value.
 		if isValue {
 			value = reflect.Indirect(reflect.ValueOf(value)).Interface()
 		}
@@ -134,13 +130,10 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 		fks = append(fks, k)
 	}
 
-	// Build a []APIKey slice
 	fkAssocType := reflect.SliceOf(GetIndirectType(reflect.TypeOf(field.ForeignKey.Reference.Model)))
 	fkAssocs := reflect.New(fkAssocType)
 	fkAssocs.Elem().Set(reflect.MakeSlice(fkAssocType, 0, 0))
 
-	// SELECT * FROM from api_keys WHERE id IN childrenRelationPKs
-	// TODO: HERE GET PRIMAREY KEY OF REFERENCE
 	err := FindByParams(driver, fkAssocs.Interface(), map[string]interface{}{"id": fks})
 	if err != nil {
 		return err
