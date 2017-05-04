@@ -155,7 +155,7 @@ func NewField(schema *Schema, model Model, name string) (Field, error) {
 		return Field{}, fmt.Errorf("schema is required to build a Field instance")
 	}
 
-	structField, fieldFound := GetIndirectValue(model).Type().FieldByName(name)
+	structField, fieldFound := reflect.Indirect(reflect.ValueOf(model)).Type().FieldByName(name)
 	if !fieldFound {
 		return Field{}, fmt.Errorf("field '%s' not found in model", name)
 	}

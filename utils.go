@@ -45,22 +45,6 @@ func GetInt64PrimaryKey(instance interface{}, field string) (int64, error) {
 	return pk, nil
 }
 
-// GetIndirectValue returns the value that the interface v contains or that the pointer v points to.
-func GetIndirectValue(itf interface{}) reflect.Value {
-	v, ok := itf.(reflect.Value)
-	if !ok {
-		v = reflect.ValueOf(itf)
-	}
-
-	v = reflect.Indirect(v)
-
-	if v.Kind() == reflect.Interface && !v.IsNil() {
-		v = v.Elem()
-	}
-
-	return v
-}
-
 // GetIndirectType returns indirect type for the given type.
 func GetIndirectType(itf interface{}) reflect.Type {
 	t, ok := itf.(reflect.Type)
@@ -150,7 +134,7 @@ func GetFieldValues(out interface{}, name string) ([]interface{}, error) {
 func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 	value, ok := itf.(reflect.Value)
 	if !ok {
-		value = GetIndirectValue(itf)
+		value = reflect.Indirect(reflect.ValueOf(itf))
 	}
 
 	// Avoid calling FieldByName on ptr
@@ -192,7 +176,7 @@ func getFieldValues(instance interface{}, field string) (value reflect.Value, pt
 func SetFieldValue(itf interface{}, name string, value interface{}) error {
 	v, ok := itf.(reflect.Value)
 	if !ok {
-		v = GetIndirectValue(itf)
+		v = reflect.Indirect(reflect.ValueOf(itf))
 	}
 
 	field := v.FieldByName(name)
@@ -204,7 +188,7 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 		return fmt.Errorf("cannot set %s field on %v%+v", name, v.Type().Name(), v.Interface())
 	}
 
-	fv := GetIndirectValue(value)
+	fv := reflect.Indirect(reflect.ValueOf(value))
 	if field.Type().Kind() == reflect.Ptr {
 		fv = reflect.ValueOf(Copy(fv.Interface()))
 	}

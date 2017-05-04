@@ -17,7 +17,7 @@ type Model interface {
 
 // GetModelFromInterface returns interface as a Model interface.
 func GetModelFromInterface(itf interface{}) Model {
-	value := GetIndirectValue(itf)
+	value := reflect.Indirect(reflect.ValueOf(itf))
 
 	// Single instance
 	if value.IsValid() && value.Kind() == reflect.Struct {

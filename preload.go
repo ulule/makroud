@@ -12,7 +12,7 @@ type Preloader func(d Driver) (Driver, error)
 
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, paths ...string) error {
-	if !GetIndirectValue(out).CanAddr() {
+	if !reflect.Indirect(reflect.ValueOf(out)).CanAddr() {
 		return errors.New("model instance must be addressable (pointer required)")
 	}
 

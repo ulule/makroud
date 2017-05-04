@@ -22,6 +22,45 @@ func (aq AssociationQuery) String() string {
 	return aq.Query
 }
 
+// GetAssociationPrimaryKeys returns primary keys for a given association.
+func GetAssociationPrimaryKeys(instance interface{}, field Field) ([]int64, error) {
+	var (
+		err    error
+		values []interface{}
+		pks    []int64
+	)
+
+	if !IsSlice(instance) {
+		values, err = GetPrimaryKeys(instance, field.RelationFieldName())
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		slc := reflect.ValueOf(instance).Elem()
+
+		for i := 0; i < slc.Len(); i++ {
+			v, err := GetPrimaryKeys(slc.Index(i).Interface(), field.RelationFieldName())
+			if err != nil {
+				return nil, err
+			}
+			values = append(values, v...)
+		}
+	}
+
+	for _, value := range values {
+		pk, err := IntToInt64(value)
+		if err != nil {
+			return nil, err
+		}
+
+		if pk != int64(0) {
+			pks = append(pks, pk)
+		}
+	}
+
+	return pks, nil
+}
+
 // GetAssociationQueries returns relation queries ASC sorted by their level
 func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries, error) {
 	var (
@@ -35,7 +74,7 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 			return nil, err
 		}
 
-		pks, err := getAssociationPrimaryKeys(out, field)
+		pks, err := GetAssociationPrimaryKeys(out, field)
 		if err != nil {
 			return nil, err
 		}
@@ -70,10 +109,6 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 	return queries, nil
 }
 
-// ----------------------------------------------------------------------------
-// Preloading
-// ----------------------------------------------------------------------------
-
 // PreloadAssociations preloads relations of out from queries.
 func PreloadAssociations(driver Driver, out interface{}, fields []Field) error {
 	queries, err := GetAssociationQueries(out, fields)
@@ -90,10 +125,6 @@ func PreloadAssociations(driver Driver, out interface{}, fields []Field) error {
 
 	return nil
 }
-
-// ----------------------------------------------------------------------------
-// Getter / setter
-// ----------------------------------------------------------------------------
 
 // SetAssociation performs query and populates the given out with values.
 func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
@@ -198,42 +229,4 @@ func checkAssociation(field Field) error {
 	}
 
 	return nil
-}
-
-func getAssociationPrimaryKeys(instance interface{}, association Field) ([]int64, error) {
-	var (
-		err    error
-		values []interface{}
-		pks    []int64
-	)
-
-	if !IsSlice(instance) {
-		values, err = GetPrimaryKeys(instance, association.RelationFieldName())
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		slc := reflect.ValueOf(instance).Elem()
-
-		for i := 0; i < slc.Len(); i++ {
-			v, err := GetPrimaryKeys(slc.Index(i).Interface(), association.RelationFieldName())
-			if err != nil {
-				return nil, err
-			}
-			values = append(values, v...)
-		}
-	}
-
-	for _, value := range values {
-		pk, err := IntToInt64(value)
-		if err != nil {
-			return nil, err
-		}
-
-		if pk != int64(0) {
-			pks = append(pks, pk)
-		}
-	}
-
-	return pks, nil
 }
