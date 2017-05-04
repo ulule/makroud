@@ -411,3 +411,13 @@ func GetFieldTags(field reflect.StructField, tagNames []string, propertyMapping 
 
 	return tags
 }
+
+// InInt64Slice returns true if needle is found in the given slice.
+func InInt64Slice(slc []int64, needle int64) bool {
+	for _, item := range slc {
+		if item == needle {
+			return true
+		}
+	}
+	return false
+}

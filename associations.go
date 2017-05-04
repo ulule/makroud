@@ -36,7 +36,7 @@ func getAssociationPrimaryKeys(instance interface{}, field Field) ([]int64, erro
 			return nil, err
 		}
 
-		if pk != int64(0) {
+		if pk != int64(0) && !InInt64Slice(pks, pk) {
 			pks = append(pks, pk)
 		}
 	}

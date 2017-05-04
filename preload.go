@@ -93,7 +93,7 @@ func Preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 		}
 	}
 
-	return nil, nil
+	return queries, nil
 }
 
 func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, fieldName string, field Field) (Queries, error) {
@@ -138,7 +138,9 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 
 	var fks []int64
 	for k := range relations {
-		fks = append(fks, k)
+		if !InInt64Slice(fks, k) {
+			fks = append(fks, k)
+		}
 	}
 
 	fkAssocType := reflect.SliceOf(GetIndirectType(reflect.TypeOf(field.ForeignKey.Reference.Model)))
