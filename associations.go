@@ -44,8 +44,8 @@ func getAssociationPrimaryKeys(instance interface{}, field Field) ([]int64, erro
 	return pks, nil
 }
 
-// GetAssociationQueries returns relation queries ASC sorted by their level
-func GetAssociationQueries(out interface{}, fields []Field) (Queries, error) {
+// getAssociationQueries returns relation queries ASC sorted by their level
+func getAssociationQueries(out interface{}, fields []Field) (Queries, error) {
 	var (
 		err     error
 		queries Queries
@@ -93,20 +93,20 @@ func GetAssociationQueries(out interface{}, fields []Field) (Queries, error) {
 }
 
 // preloadAssociations preloads relations of out from queries.
-func preloadAssociations(driver Driver, out interface{}, fields []Field) error {
-	queries, err := GetAssociationQueries(out, fields)
+func preloadAssociations(driver Driver, out interface{}, fields []Field) (Queries, error) {
+	queries, err := getAssociationQueries(out, fields)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, query := range queries {
 		err := setAssociation(driver, out, query)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return queries, nil
 }
 
 // setAssociation performs query and populates the given out with values.

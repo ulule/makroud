@@ -14,14 +14,17 @@ func TestSave_Save(t *testing.T) {
 	defer shutdown()
 
 	user := User{Username: "thoas"}
-	assert.Nil(t, sqlxx.Save(db, &user))
+
+	_, err := sqlxx.Save(db, &user)
+	assert.NoError(t, err)
 
 	assert.NotZero(t, user.ID)
 	assert.Equal(t, true, user.IsActive)
 	assert.NotZero(t, user.UpdatedAt)
 
 	user.Username = "gilles"
-	assert.Nil(t, sqlxx.Save(db, &user))
+	_, err = sqlxx.Save(db, &user)
+	assert.NoError(t, err)
 
 	m := map[string]interface{}{"username": "gilles"}
 

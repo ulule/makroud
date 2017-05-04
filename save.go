@@ -6,10 +6,10 @@ import (
 )
 
 // Save saves the model and populate it to the database
-func Save(driver Driver, out interface{}) error {
+func Save(driver Driver, out interface{}) (Queries, error) {
 	schema, err := GetSchema(out)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var (
@@ -53,7 +53,7 @@ func Save(driver Driver, out interface{}) error {
 
 	pkValue, err := GetFieldValue(out, pkField.Name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if IsZeroValue(pkValue) {
@@ -79,17 +79,18 @@ func Save(driver Driver, out interface{}) error {
 		query = fmt.Sprintf("%s RETURNING %s", query, strings.Join(ignoredColumns, ", "))
 	}
 
+	queries := Queries{{Query: query}}
+
 	stmt, err := driver.PrepareNamed(query)
 	if err != nil {
-		return err
+		return queries, err
 	}
-
 	defer stmt.Close()
 
 	err = stmt.Get(out, out)
 	if err != nil {
-		return err
+		return queries, err
 	}
 
-	return nil
+	return queries, nil
 }

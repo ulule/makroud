@@ -11,23 +11,26 @@ import (
 type Preloader func(d Driver) (Driver, error)
 
 // Preload preloads related fields.
-func Preload(driver Driver, out interface{}, paths ...string) error {
+func Preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 	if !reflect.Indirect(reflect.ValueOf(out)).CanAddr() {
-		return errors.New("model instance must be addressable (pointer required)")
+		return nil, errors.New("model instance must be addressable (pointer required)")
 	}
 
 	schema, err := GetSchema(out)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	assocs := []Field{}
-	assocsOfAssocs := map[string]Field{}
+	var (
+		assocs         []Field
+		assocsOfAssocs = map[string]Field{}
+		queries        Queries
+	)
 
 	for _, path := range paths {
 		assoc, ok := schema.Associations[path]
 		if !ok {
-			return fmt.Errorf("%s is not a valid association", path)
+			return nil, fmt.Errorf("%s is not a valid association", path)
 		}
 
 		splits := strings.Split(path, ".")
@@ -41,25 +44,29 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 		}
 	}
 
-	err = preloadAssociations(driver, out, assocs)
+	q, err := preloadAssociations(driver, out, assocs)
+	queries = append(queries, q...)
 	if err != nil {
-		return err
+		return queries, err
 	}
 
 	if IsSlice(out) {
 		for k, v := range assocsOfAssocs {
-			err = preloadAssociationForSlice(driver, out, schema, k, v)
+			q, err = preloadAssociationForSlice(driver, out, schema, k, v)
+			queries = append(queries, q...)
 			if err != nil {
-				return err
+				return queries, err
 			}
+
 		}
-		return nil
+
+		return queries, nil
 	}
 
 	for k, v := range assocsOfAssocs {
 		value, err := GetFieldValue(reflect.ValueOf(out), k)
 		if err != nil {
-			return err
+			return queries, err
 		}
 
 		reflected := reflect.ValueOf(value)
@@ -70,9 +77,10 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 			isValue = true
 		}
 
-		err = Preload(driver, value, v.Name)
+		q, err = Preload(driver, value, v.Name)
+		queries = append(queries, q...)
 		if err != nil {
-			return err
+			return queries, err
 		}
 
 		if isValue {
@@ -81,15 +89,18 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 
 		err = SetFieldValue(out, k, value)
 		if err != nil {
-			return err
+			return queries, err
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
-func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, fieldName string, field Field) error {
-	slice := reflect.ValueOf(out).Elem()
+func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, fieldName string, field Field) (Queries, error) {
+	var (
+		slice   = reflect.ValueOf(out).Elem()
+		queries Queries
+	)
 
 	type rel struct {
 		item  reflect.Value // ex: pointer to Article
@@ -108,12 +119,12 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 
 		assocValue, assocPtr, err := getFieldValues(value.Interface(), fieldName)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		fk, err := GetInt64PrimaryKey(assocValue.Interface(), field.ForeignKey.FieldName)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if fk != int64(0) {
@@ -134,9 +145,10 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 	fkAssocs := reflect.New(fkAssocType)
 	fkAssocs.Elem().Set(reflect.MakeSlice(fkAssocType, 0, 0))
 
-	err := FindByParams(driver, fkAssocs.Interface(), map[string]interface{}{"id": fks})
+	q, err := FindByParams(driver, fkAssocs.Interface(), map[string]interface{}{"id": fks})
+	queries = append(queries, q...)
 	if err != nil {
-		return err
+		return queries, err
 	}
 
 	fkAssocs = fkAssocs.Elem()
@@ -146,7 +158,7 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 
 		pk, err := GetInt64PrimaryKey(assoc, "ID")
 		if err != nil {
-			return err
+			return queries, err
 		}
 
 		if pk != int64(0) {
@@ -154,11 +166,11 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 			if ok {
 				err := SetFieldValue(relation.assoc.Interface(), relation.field, assoc.Interface())
 				if err != nil {
-					return err
+					return queries, err
 				}
 			}
 		}
 	}
 
-	return nil
+	return queries, nil
 }

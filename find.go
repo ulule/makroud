@@ -1,47 +1,18 @@
 package sqlxx
 
 import (
-	"database/sql/driver"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
 
-// GetPrimaryKeys returns primary keys for the given interface.
-func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
-	var values []interface{}
-
-	pks, err := GetFieldValues(out, name)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range pks {
-		pk := pks[i]
-
-		valuer, ok := Copy(pk).(driver.Valuer)
-		if ok {
-			v, err := valuer.Value()
-			if err == nil && v != nil {
-				pk = v
-			}
-		}
-
-		if !IsZeroValue(pk) {
-			values = append(values, pk)
-		}
-	}
-
-	return values, nil
-}
-
 // GetByParams executes a where with the given params and populates the given model.
-func GetByParams(driver Driver, out interface{}, params map[string]interface{}) error {
+func GetByParams(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
 	return where(driver, out, params, true)
 }
 
 // FindByParams executes a where with the given params and populates the given models.
-func FindByParams(driver Driver, out interface{}, params map[string]interface{}) error {
+func FindByParams(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
 	return where(driver, out, params, false)
 }
 
@@ -70,17 +41,19 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 }
 
 // where executes a where clause.
-func where(driver Driver, out interface{}, params map[string]interface{}, fetchOne bool) error {
+func where(driver Driver, out interface{}, params map[string]interface{}, fetchOne bool) (Queries, error) {
 	model := GetModelFromInterface(out)
 
 	query, args, err := whereQuery(model, params, fetchOne)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	queries := Queries{{Query: query, Args: args, Params: params}}
 
 	if fetchOne {
-		return driver.Get(out, driver.Rebind(query), args...)
+		return queries, driver.Get(out, driver.Rebind(query), args...)
 	}
 
-	return driver.Select(out, driver.Rebind(query), args...)
+	return queries, driver.Select(out, driver.Rebind(query), args...)
 }

@@ -15,7 +15,9 @@ func TestPreload_Unaddressable(t *testing.T) {
 	defer shutdown()
 
 	article := Article{}
-	assert.NotNil(t, sqlxx.Preload(db, article, "Author"))
+
+	_, err := sqlxx.Preload(db, article, "Author")
+	assert.Error(t, err)
 }
 
 func TestPreload_UnknownRelation(t *testing.T) {
@@ -23,7 +25,9 @@ func TestPreload_UnknownRelation(t *testing.T) {
 	defer shutdown()
 
 	article := fixtures.Articles[0]
-	assert.Error(t, sqlxx.Preload(db, &article, "Foo"))
+
+	_, err := sqlxx.Preload(db, &article, "Foo")
+	assert.Error(t, err)
 	assert.Zero(t, article.Author)
 }
 
@@ -32,11 +36,15 @@ func TestPreload_NullPrimaryKey(t *testing.T) {
 	defer shutdown()
 
 	category := createCategory(t, db, "cat1", nil)
-	assert.NoError(t, sqlxx.Preload(db, &category, "User"))
+
+	_, err := sqlxx.Preload(db, &category, "User")
+	assert.NoError(t, err)
 	assert.Zero(t, category.User)
 
 	category = createCategory(t, db, "cat1", &fixtures.User.ID)
-	assert.NoError(t, sqlxx.Preload(db, &category, "User"))
+
+	_, err = sqlxx.Preload(db, &category, "User")
+	assert.NoError(t, err)
 	assert.NotZero(t, category.UserID)
 	assert.NotZero(t, category.User.ID)
 }
@@ -57,13 +65,15 @@ func TestPreload_OneToOne_Level1(t *testing.T) {
 	//
 
 	// Value
-	assert.Nil(t, sqlxx.Preload(db, &article, "Author"))
+	_, err := sqlxx.Preload(db, &article, "Author")
+	assert.NoError(t, err)
 	assert.NotZero(t, article.Author)
 	assert.Equal(t, batman.ID, article.AuthorID)
 	assert.Equal(t, batman.Username, article.Author.Username)
 
 	// Pointer
-	assert.Nil(t, sqlxx.Preload(db, &article, "Reviewer"))
+	_, err = sqlxx.Preload(db, &article, "Reviewer")
+	assert.NoError(t, err)
 	assert.NotZero(t, article.Reviewer)
 	assert.Equal(t, batman.ID, article.ReviewerID)
 	assert.Equal(t, batman.Username, article.Reviewer.Username)
@@ -81,14 +91,16 @@ func TestPreload_ManyToOne_Level1_Same(t *testing.T) {
 	}
 
 	// Value
-	assert.Nil(t, sqlxx.Preload(db, &articles, "Author"))
+	_, err := sqlxx.Preload(db, &articles, "Author")
+	assert.NoError(t, err)
 	for _, a := range articles {
 		assert.Equal(t, batman.ID, a.AuthorID)
 		assert.Equal(t, batman.Username, a.Author.Username)
 	}
 
 	// Pointer
-	assert.Nil(t, sqlxx.Preload(db, &articles, "Reviewer"))
+	_, err = sqlxx.Preload(db, &articles, "Reviewer")
+	assert.NoError(t, err)
 	for _, a := range articles {
 		assert.Equal(t, batman.ID, a.ReviewerID)
 		assert.Equal(t, batman.Username, a.Reviewer.Username)
@@ -116,8 +128,8 @@ func TestPreload_ManyToOne_Level1_Different_Pointer_Null(t *testing.T) {
 		avatars[user.ID] = int(user.AvatarID.Int64)
 	}
 
-	assert.Nil(t, sqlxx.Preload(db, &users, "Avatar"))
-
+	_, err := sqlxx.Preload(db, &users, "Avatar")
+	assert.NoError(t, err)
 	for i, _ := range users {
 		assert.NotNil(t, users[i].Avatar)
 		assert.Equal(t, users[i].Avatar.ID, avatars[users[i].ID])
@@ -141,7 +153,8 @@ func TestPreload_ManyToOne_Level1_Different(t *testing.T) {
 		article3,
 	}
 
-	assert.Nil(t, sqlxx.Preload(db, &articles, "Author", "Reviewer"))
+	_, err := sqlxx.Preload(db, &articles, "Author", "Reviewer")
+	assert.NoError(t, err)
 	assert.Equal(t, articles[0].AuthorID, batman.ID)
 	assert.NotZero(t, articles[0].Author)
 	assert.Equal(t, articles[0].ReviewerID, batman.ID)
@@ -171,7 +184,8 @@ func TestPreload_OneToOne_Level2(t *testing.T) {
 	user := createUser(t, db, "spiderman")
 
 	article := createArticle(t, db, &user)
-	assert.Nil(t, sqlxx.Preload(db, &article, "Author", "Author.APIKey"))
+	_, err := sqlxx.Preload(db, &article, "Author", "Author.APIKey")
+	assert.NoError(t, err)
 	assert.NotZero(t, article.Author)
 	assert.NotZero(t, article.Author.APIKey)
 	assert.Equal(t, user.ID, article.AuthorID)
@@ -186,7 +200,9 @@ func TestPreload_OneToOne_Level2_MultipleEither(t *testing.T) {
 
 	user := createUser(t, db, "spiderman")
 	assert.NotEmpty(t, user)
-	assert.Nil(t, sqlxx.Preload(db, &user, "Avatar"))
+
+	_, err := sqlxx.Preload(db, &user, "Avatar")
+	assert.NoError(t, err)
 	assert.NotNil(t, user.Avatar)
 
 	article := createArticle(t, db, &user)
@@ -198,7 +214,8 @@ func TestPreload_OneToOne_Level2_MultipleEither(t *testing.T) {
 	comments := []Comment{comment}
 
 	// Preload
-	assert.Nil(t, sqlxx.Preload(db, &comments, "User", "User.Avatar"))
+	_, err = sqlxx.Preload(db, &comments, "User", "User.Avatar")
+	assert.NoError(t, err)
 	comment = comments[0]
 
 	// Level 1 with Value
@@ -225,7 +242,8 @@ func TestPreload_ManyToOne_Level2_Multiple(t *testing.T) {
 
 	articles := []Article{article, article2}
 
-	assert.Nil(t, sqlxx.Preload(db, &articles, "Author", "Author.APIKey"))
+	_, err := sqlxx.Preload(db, &articles, "Author", "Author.APIKey")
+	assert.NoError(t, err)
 
 	assert.Equal(t, user.ID, articles[0].Author.ID)
 	assert.Equal(t, user.ID, articles[0].AuthorID)
@@ -250,9 +268,10 @@ func TestPreload_OneToMany_Level1_Simple(t *testing.T) {
 	defer shutdown()
 
 	user := createUser(t, db, "wonderwoman")
-	assert.Nil(t, sqlxx.Preload(db, &user, "Avatars"))
-	assert.Len(t, user.Avatars, 5)
 
+	_, err := sqlxx.Preload(db, &user, "Avatars")
+	assert.NoError(t, err)
+	assert.Len(t, user.Avatars, 5)
 	for i, a := range user.Avatars {
 		assert.NotZero(t, a.ID)
 		assert.Equal(t, user.ID, a.UserID)
@@ -273,8 +292,9 @@ func TestPreload_ManyToMany_Level1(t *testing.T) {
 		assert.Zero(t, user.Avatars)
 	}
 
-	assert.Nil(t, sqlxx.Preload(db, &users, "Avatars"))
+	_, err := sqlxx.Preload(db, &users, "Avatars")
 
+	assert.NoError(t, err)
 	for _, user := range users {
 		assert.NotZero(t, user.Avatars)
 		for _, avatar := range user.Avatars {

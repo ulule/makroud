@@ -14,8 +14,12 @@ func TestDelete_Delete(t *testing.T) {
 	defer shutdown()
 
 	user := User{Username: "thoas"}
-	assert.Nil(t, sqlxx.Save(db, &user))
-	assert.Nil(t, sqlxx.Delete(db, &user))
+
+	_, err := sqlxx.Save(db, &user)
+	assert.NoError(t, err)
+
+	_, err = sqlxx.Delete(db, &user)
+	assert.NoError(t, err)
 
 	m := map[string]interface{}{"username": "thoas"}
 
@@ -39,8 +43,12 @@ func TestDelete_SoftDelete(t *testing.T) {
 	defer shutdown()
 
 	user := User{Username: "thoas"}
-	assert.Nil(t, sqlxx.Save(db, &user))
-	assert.Nil(t, sqlxx.SoftDelete(db, &user, "DeletedAt"))
+
+	_, err := sqlxx.Save(db, &user)
+	assert.NoError(t, err)
+
+	_, err = sqlxx.SoftDelete(db, &user, "DeletedAt")
+	assert.NoError(t, err)
 
 	m := map[string]interface{}{"username": "thoas"}
 

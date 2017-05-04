@@ -26,7 +26,9 @@ func TestFind_GetByParams(t *testing.T) {
 	defer shutdown()
 
 	user := User{}
-	assert.NoError(t, sqlxx.GetByParams(db, &user, map[string]interface{}{"username": "jdoe", "is_active": true}))
+
+	_, err := sqlxx.GetByParams(db, &user, map[string]interface{}{"username": "jdoe", "is_active": true})
+	assert.NoError(t, err)
 
 	assert.Equal(t, 1, user.ID)
 	assert.Equal(t, "jdoe", user.Username)
@@ -40,7 +42,9 @@ func TestFind_FindByParams(t *testing.T) {
 	defer shutdown()
 
 	users := []User{}
-	assert.NoError(t, sqlxx.FindByParams(db, &users, map[string]interface{}{"is_active": true}))
+
+	_, err := sqlxx.FindByParams(db, &users, map[string]interface{}{"is_active": true})
+	assert.NoError(t, err)
 	assert.Len(t, users, 1)
 
 	user := users[0]
@@ -52,7 +56,8 @@ func TestFind_FindByParams(t *testing.T) {
 
 	// SELEC IN
 	users = []User{}
-	assert.NoError(t, sqlxx.FindByParams(db, &users, map[string]interface{}{"is_active": true, "id": []int{1, 2, 3}}))
+	_, err = sqlxx.FindByParams(db, &users, map[string]interface{}{"is_active": true, "id": []int{1, 2, 3}})
+	assert.NoError(t, err)
 	assert.Equal(t, 1, users[0].ID)
 	assert.Equal(t, "jdoe", user.Username)
 }

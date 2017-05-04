@@ -30,6 +30,34 @@ func IntToInt64(value interface{}) (int64, error) {
 	return reflected.Convert(int64Type).Int(), nil
 }
 
+// GetPrimaryKeys returns primary keys for the given interface.
+func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
+	var values []interface{}
+
+	pks, err := GetFieldValues(out, name)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range pks {
+		pk := pks[i]
+
+		valuer, ok := Copy(pk).(driver.Valuer)
+		if ok {
+			v, err := valuer.Value()
+			if err == nil && v != nil {
+				pk = v
+			}
+		}
+
+		if !IsZeroValue(pk) {
+			values = append(values, pk)
+		}
+	}
+
+	return values, nil
+}
+
 // GetInt64PrimaryKey returns int64 primary key for the given instance.
 func GetInt64PrimaryKey(instance interface{}, field string) (int64, error) {
 	pkv, err := GetFieldValue(instance, field)
