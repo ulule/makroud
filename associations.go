@@ -43,30 +43,18 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 		pks := []interface{}{}
 
 		if !isSlice {
-			fieldName := field.ForeignKey.FieldName
-
-			if field.IsAssociationTypeMany() {
-				fieldName = field.ForeignKey.Reference.FieldName
-			}
-
-			pks, err = GetPrimaryKeys(out, fieldName)
+			pks, err = GetPrimaryKeys(out, field.RelationFieldName())
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			value := reflect.ValueOf(out).Elem()
-
-			fieldName := field.ForeignKey.FieldName
-			if field.IsAssociationTypeMany() {
-				fieldName = field.ForeignKey.Reference.FieldName
-			}
-
-			for i := 0; i < value.Len(); i++ {
-				values, err := GetPrimaryKeys(value.Index(i).Interface(), fieldName)
+			slc := reflect.ValueOf(out).Elem()
+			for i := 0; i < slc.Len(); i++ {
+				v, err := GetPrimaryKeys(slc.Index(i).Interface(), field.RelationFieldName())
 				if err != nil {
 					return nil, err
 				}
-				pks = append(pks, values...)
+				pks = append(pks, v...)
 			}
 		}
 
@@ -74,21 +62,14 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 			continue
 		}
 
-		model := field.ForeignKey.Reference.Model
-		columnName := field.ForeignKey.Reference.ColumnName
-
-		if field.IsAssociationTypeMany() {
-			model = field.ForeignKey.Model
-			columnName = field.ForeignKey.ColumnName
-		}
-
+		columnName := field.RelationColumnName()
 		if len(pks) > 1 {
 			params[columnName] = pks
 		} else {
 			params[columnName] = pks[0]
 		}
 
-		query, args, err := whereQuery(model, params, field.IsAssociationTypeOne() && !isSlice)
+		query, args, err := whereQuery(field.RelationModel(), params, field.IsAssociationTypeOne() && !isSlice)
 		if err != nil {
 			return nil, err
 		}
@@ -218,25 +199,10 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 
 	assocs := reflect.ValueOf(assoc).Elem()
 
-	fieldName := q.Field.ForeignKey.FieldName
-	if q.Field.IsAssociationTypeMany() {
-		fieldName = q.Field.ForeignKey.Reference.FieldName
-	}
-
-	model := q.Field.Model
-	if q.Field.IsAssociationTypeMany() {
-		model = q.Field.ForeignKey.Model
-	}
-
-	associationField := q.Field.ForeignKey.AssociationFieldName
-	if q.Field.IsAssociationTypeMany() {
-		associationField = q.Field.ForeignKey.Reference.AssociationFieldName
-	}
-
 	for i := 0; i < instances.Len(); i++ {
 		instance := instances.Index(i).Addr()
 
-		pkv, err := GetFieldValue(instance.Interface(), fieldName)
+		pkv, err := GetFieldValue(instance.Interface(), q.Field.RelationFieldName())
 		if err != nil {
 			return err
 		}
@@ -246,7 +212,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			return err
 		}
 
-		slc := reflect.ValueOf(MakeSlice(model))
+		slc := reflect.ValueOf(MakeSlice(q.Field.ParentModel()))
 
 		for ii := 0; ii < assocs.Len(); ii++ {
 			assocv := assocs.Index(ii).Addr()
@@ -266,7 +232,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			}
 		}
 
-		err = SetFieldValue(instance.Interface(), associationField, slc.Interface())
+		err = SetFieldValue(instance.Interface(), q.Field.RelationAssociationFieldName(), slc.Interface())
 		if err != nil {
 			return err
 		}

@@ -66,6 +66,51 @@ func (f Field) IsAssociationTypeMany() bool {
 	return f.AssociationType == AssociationTypeMany
 }
 
+// RelationFieldName returns relation field name.
+func (f Field) RelationFieldName() string {
+	name := f.ForeignKey.FieldName
+	if f.IsAssociationTypeMany() {
+		name = f.ForeignKey.Reference.FieldName
+	}
+	return name
+}
+
+// RelationColumnName returns relation columnn name.
+func (f Field) RelationColumnName() string {
+	name := f.ForeignKey.Reference.ColumnName
+	if f.IsAssociationTypeMany() {
+		name = f.ForeignKey.ColumnName
+	}
+	return name
+}
+
+// RelationModel returns relation model.
+func (f Field) RelationModel() Model {
+	model := f.ForeignKey.Reference.Model
+	if f.IsAssociationTypeMany() {
+		model = f.ForeignKey.Model
+	}
+	return model
+}
+
+// ParentModel returns parent model.
+func (f Field) ParentModel() Model {
+	model := f.Model
+	if f.IsAssociationTypeMany() {
+		model = f.ForeignKey.Model
+	}
+	return model
+}
+
+// RelationAssociationFieldName returns relation association field name.
+func (f Field) RelationAssociationFieldName() string {
+	name := f.ForeignKey.AssociationFieldName
+	if f.IsAssociationTypeMany() {
+		name = f.ForeignKey.Reference.AssociationFieldName
+	}
+	return name
+}
+
 // ColumnPath returns database full column path.
 func (f Field) ColumnPath() string {
 	return fmt.Sprintf("%s.%s", f.TableName, f.ColumnName)
