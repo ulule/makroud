@@ -5,11 +5,11 @@ import (
 	"reflect"
 )
 
-// AssociationQueries are a slice of relation query ready to be ordered by level
-type AssociationQueries []AssociationQuery
+// Queries is a list of Query instances
+type Queries []Query
 
-// AssociationQuery is a relation query
-type AssociationQuery struct {
+// Query is a relation query
+type Query struct {
 	Field    Field
 	Query    string
 	Args     []interface{}
@@ -18,12 +18,12 @@ type AssociationQuery struct {
 }
 
 // String returns struct instance string representation.
-func (aq AssociationQuery) String() string {
-	return aq.Query
+func (q Query) String() string {
+	return q.Query
 }
 
-// GetAssociationPrimaryKeys returns primary keys for a given association.
-func GetAssociationPrimaryKeys(instance interface{}, field Field) ([]int64, error) {
+// getAssociationPrimaryKeys returns primary keys for a given association.
+func getAssociationPrimaryKeys(instance interface{}, field Field) ([]int64, error) {
 	var (
 		err    error
 		values []interface{}
@@ -62,10 +62,10 @@ func GetAssociationPrimaryKeys(instance interface{}, field Field) ([]int64, erro
 }
 
 // GetAssociationQueries returns relation queries ASC sorted by their level
-func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries, error) {
+func GetAssociationQueries(out interface{}, fields []Field) (Queries, error) {
 	var (
 		err     error
-		queries AssociationQueries
+		queries Queries
 	)
 
 	for _, field := range fields {
@@ -74,7 +74,7 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 			return nil, err
 		}
 
-		pks, err := GetAssociationPrimaryKeys(out, field)
+		pks, err := getAssociationPrimaryKeys(out, field)
 		if err != nil {
 			return nil, err
 		}
@@ -97,7 +97,7 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 			return nil, err
 		}
 
-		queries = append(queries, AssociationQuery{
+		queries = append(queries, Query{
 			Field:    field,
 			Query:    query,
 			Args:     args,
@@ -109,15 +109,15 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 	return queries, nil
 }
 
-// PreloadAssociations preloads relations of out from queries.
-func PreloadAssociations(driver Driver, out interface{}, fields []Field) error {
+// preloadAssociations preloads relations of out from queries.
+func preloadAssociations(driver Driver, out interface{}, fields []Field) error {
 	queries, err := GetAssociationQueries(out, fields)
 	if err != nil {
 		return err
 	}
 
 	for _, query := range queries {
-		err := SetAssociation(driver, out, query)
+		err := setAssociation(driver, out, query)
 		if err != nil {
 			return err
 		}
@@ -126,8 +126,8 @@ func PreloadAssociations(driver Driver, out interface{}, fields []Field) error {
 	return nil
 }
 
-// SetAssociation performs query and populates the given out with values.
-func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
+// setAssociation performs query and populates the given out with values.
+func setAssociation(driver Driver, out interface{}, q Query) error {
 	err := checkAssociation(q.Field)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 	isSlice := IsSlice(out)
 	assoc := q.Field.CreateAssociation(isSlice)
 
-	err = FetchAssociation(driver, assoc, q)
+	err = fetchAssociation(driver, assoc, q)
 	if err != nil {
 		return err
 	}
@@ -210,8 +210,8 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 	return nil
 }
 
-// FetchAssociation fetches the given relation.
-func FetchAssociation(driver Driver, out interface{}, query AssociationQuery) error {
+// fetchAssociation fetches the given relation.
+func fetchAssociation(driver Driver, out interface{}, query Query) error {
 	if query.FetchOne && !IsSlice(out) {
 		return driver.Get(out, driver.Rebind(query.Query), query.Args...)
 	}
