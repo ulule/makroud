@@ -202,11 +202,6 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 	return nil
 }
 
-// IsNullableType returns true if the given type is a nullable one.
-func IsNullableType(t reflect.Type) bool {
-	return t.ConvertibleTo(reflect.TypeOf((*driver.Valuer)(nil)).Elem())
-}
-
 // IsSlice returns true if the given interface is a slice.
 func IsSlice(itf interface{}) bool {
 	return GetIndirectType(reflect.ValueOf(itf).Type()).Kind() == reflect.Slice
