@@ -6,10 +6,12 @@ import (
 
 	assert "github.com/stretchr/testify/require"
 
+	"database/sql"
+
 	"github.com/ulule/sqlxx"
 )
 
-func TestIntToInt64(t *testing.T) {
+func TestUtils_IntToInt64(t *testing.T) {
 	valids := []interface{}{
 		int8(1),
 		int16(1),
@@ -22,6 +24,7 @@ func TestIntToInt64(t *testing.T) {
 		uint64(1),
 		float32(1),
 		float64(1),
+		sql.NullInt64{Valid: true, Int64: 1},
 	}
 
 	for _, valid := range valids {
