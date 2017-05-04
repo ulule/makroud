@@ -26,7 +26,7 @@ func (aq AssociationQuery) String() string {
 func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries, error) {
 	var (
 		err     error
-		queries = AssociationQueries{}
+		queries AssociationQueries
 		isSlice = IsSlice(out)
 	)
 
@@ -40,7 +40,7 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 		}
 
 		params := map[string]interface{}{}
-		pks := []interface{}{}
+		var pks []interface{}
 
 		if !isSlice {
 			pks, err = GetPrimaryKeys(out, field.RelationFieldName())
@@ -118,21 +118,12 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 	}
 
 	var (
+		err     error
 		isSlice = IsSlice(out)
-		assoc   interface{}
+		assoc   = q.Field.CreateAssociation(isSlice)
 	)
 
-	if q.Field.IsAssociationTypeMany() {
-		assoc = CloneType(q.Field.ForeignKey.Model, reflect.Slice)
-	} else {
-		if isSlice {
-			assoc = CloneType(q.Field.ForeignKey.Reference.Model, reflect.Slice)
-		} else {
-			assoc = CloneType(q.Field.ForeignKey.Reference.Model)
-		}
-	}
-
-	err := FetchAssociation(driver, assoc, q)
+	err = FetchAssociation(driver, assoc, q)
 	if err != nil {
 		return err
 	}
@@ -140,14 +131,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 	// Single instance
 
 	if !isSlice {
-		v := reflect.ValueOf(assoc).Elem().Interface()
-		f := q.Field.ForeignKey.AssociationFieldName
-
-		if q.Field.IsAssociationTypeMany() {
-			f = q.Field.Name
-		}
-
-		return SetFieldValue(out, f, v)
+		return SetFieldValue(out, q.Field.OneToAssociationFieldName(), reflect.ValueOf(assoc).Elem().Interface())
 	}
 
 	// Slice of instances
@@ -184,7 +168,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 				}
 
 				if fk == pk {
-					err = SetFieldValue(instance.Interface(), q.Field.ForeignKey.AssociationFieldName, assocs.Index(ii).Interface())
+					err = SetFieldValue(instance.Interface(), q.Field.OneToAssociationFieldName(), assocs.Index(ii).Interface())
 					if err != nil {
 						return err
 					}
@@ -232,7 +216,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			}
 		}
 
-		err = SetFieldValue(instance.Interface(), q.Field.RelationAssociationFieldName(), slc.Interface())
+		err = SetFieldValue(instance.Interface(), q.Field.ManyToAssociationFieldName(), slc.Interface())
 		if err != nil {
 			return err
 		}

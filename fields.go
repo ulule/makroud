@@ -102,8 +102,30 @@ func (f Field) ParentModel() Model {
 	return model
 }
 
-// RelationAssociationFieldName returns relation association field name.
-func (f Field) RelationAssociationFieldName() string {
+// CreateAssociation returns a new association instance.
+func (f Field) CreateAssociation(asSlice bool) interface{} {
+	if f.IsAssociationTypeMany() {
+		return CloneType(f.ForeignKey.Model, reflect.Slice)
+	}
+
+	if asSlice {
+		return CloneType(f.ForeignKey.Reference.Model, reflect.Slice)
+	}
+
+	return CloneType(f.ForeignKey.Reference.Model)
+}
+
+// OneToAssociationFieldName returns association field name for oneTo relations.
+func (f Field) OneToAssociationFieldName() string {
+	name := f.ForeignKey.AssociationFieldName
+	if f.IsAssociationTypeMany() {
+		name = f.Name
+	}
+	return name
+}
+
+// ManyToAssociationFieldName returns association field name for manytTo relations.
+func (f Field) ManyToAssociationFieldName() string {
 	name := f.ForeignKey.AssociationFieldName
 	if f.IsAssociationTypeMany() {
 		name = f.ForeignKey.Reference.AssociationFieldName
