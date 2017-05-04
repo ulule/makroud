@@ -122,13 +122,13 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 		for i := 0; i < instances.Len(); i++ {
 			instance := instances.Index(i).Addr()
 
-			fk, err := GetInt64PrimaryKey(instance.Interface(), q.Field.ForeignKey.FieldName)
+			fk, err := GetInt64PrimaryKey(instance.Interface(), q.Field.RelationFieldName())
 			if err != nil {
 				return err
 			}
 
 			for ii := 0; ii < assocs.Len(); ii++ {
-				pk, err := GetInt64PrimaryKey(assocs.Index(ii).Interface(), "ID")
+				pk, err := GetInt64PrimaryKey(assocs.Index(ii).Interface(), q.Field.RelationPrimaryKeyFieldName())
 				if err != nil {
 					return err
 				}

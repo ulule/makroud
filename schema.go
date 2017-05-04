@@ -125,7 +125,7 @@ func newSchema(model Model) (Schema, error) {
 	}
 
 	for _, name := range fields {
-		field, err := NewField(model, name)
+		field, err := NewField(&schema, model, name)
 		if err != nil {
 			return Schema{}, err
 		}
@@ -149,12 +149,7 @@ func newSchema(model Model) (Schema, error) {
 
 		schema.Associations[field.Name] = field
 
-		nextModel := field.ForeignKey.Reference.Model
-		if field.IsAssociationTypeMany() {
-			nextModel = field.ForeignKey.Model
-		}
-
-		nextSchema, err := GetSchema(nextModel)
+		nextSchema, err := GetSchema(field.RelationModel())
 		if err != nil {
 			return Schema{}, err
 		}

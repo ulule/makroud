@@ -16,28 +16,24 @@ type Field struct {
 	Type reflect.Type
 	// The field struct tags
 	Tags FieldTags
-
+	// Schema is the related model schema
+	Schema *Schema
 	// Model is the zero-valued field's model used to generate schema from.
 	Model Model
 	// Model name that contains this field
 	ModelName string
 	// Table name of the model that contains this field
 	TableName string
-	// PrimaryKeyFieldName is the primary key field name
-	PrimaryKeyFieldName string
-
 	// The field name
 	Name string
 	// The database column name
 	ColumnName string
-
 	// Does this field is excluded? (anonymous, private, non-sql...)
 	IsExcluded bool
 	// Does this field is a primary key?
 	IsPrimaryKey bool
 	// Does this field is a foreign key (the foreign key ID)?
 	IsForeignKey bool
-
 	// Does this field is an association?
 	IsAssociation bool
 	// The association type
@@ -48,12 +44,13 @@ type Field struct {
 
 // String returns struct instance string representation.
 func (f Field) String() string {
-	return fmt.Sprintf("field(model:%s table:%s pk:%s name:%s column:%s)",
+	return fmt.Sprintf("Field{model:%s pk:%s table:%s name:%s column:%s, association:%s}",
 		f.ModelName,
+		f.Schema.PrimaryKeyField.Name,
 		f.TableName,
-		f.PrimaryKeyFieldName,
 		f.Name,
-		f.ColumnName)
+		f.ColumnName,
+		f.AssociationType)
 }
 
 // IsAssociationTypeOne returns true if the field is an AssociationTypeOne.
@@ -64,6 +61,20 @@ func (f Field) IsAssociationTypeOne() bool {
 // IsAssociationTypeMany returns true if the field is an AssociationTypeMany.
 func (f Field) IsAssociationTypeMany() bool {
 	return f.AssociationType == AssociationTypeMany
+}
+
+// PrimaryKeyFieldName returns primary key field name.
+func (f Field) PrimaryKeyFieldName() string {
+	return f.Schema.PrimaryKeyField.Name
+}
+
+// RelationPrimaryKeyFieldName returns primary key field name.
+func (f Field) RelationPrimaryKeyFieldName() string {
+	name := f.ForeignKey.Schema.PrimaryKeyField.Name
+	if f.IsAssociationTypeMany() {
+		name = f.ForeignKey.Reference.Schema.PrimaryKeyField.Name
+	}
+	return name
 }
 
 // RelationFieldName returns relation field name.
@@ -139,7 +150,11 @@ func (f Field) ColumnPath() string {
 }
 
 // NewField returns full column name from model, field and tag.
-func NewField(model Model, name string) (Field, error) {
+func NewField(schema *Schema, model Model, name string) (Field, error) {
+	if schema == nil {
+		return Field{}, fmt.Errorf("schema is required to build a Field instance")
+	}
+
 	structField, fieldFound := GetIndirectValue(model).Type().FieldByName(name)
 	if !fieldFound {
 		return Field{}, fmt.Errorf("field '%s' not found in model", name)
@@ -173,6 +188,7 @@ func NewField(model Model, name string) (Field, error) {
 	}
 
 	field := Field{
+		Schema:        schema,
 		StructField:   structField,
 		Type:          fieldType,
 		Tags:          tags,
@@ -227,6 +243,7 @@ func NewField(model Model, name string) (Field, error) {
 
 // ForeignKey is a foreign key
 type ForeignKey struct {
+	Schema               *Schema
 	Model                Model
 	ModelName            string
 	TableName            string
@@ -253,9 +270,15 @@ func NewForeignKey(field Field) (*ForeignKey, error) {
 		referenceTableName = referenceModel.TableName()
 	)
 
+	referenceSchema, err := GetSchema(referenceModel)
+	if err != nil {
+		return nil, err
+	}
+
 	// Article.Author(User)
 	if field.AssociationType == AssociationTypeOne {
 		return &ForeignKey{
+			Schema:               &referenceSchema,
 			Model:                field.Model,                                          // Article model
 			ModelName:            field.ModelName,                                      // Article
 			TableName:            field.TableName,                                      // articles

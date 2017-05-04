@@ -21,7 +21,8 @@ func TestFields_IsForeignKey(t *testing.T) {
 	}
 
 	for i, tt := range testers {
-		field, err := sqlxx.NewField(tt.model, tt.field)
+		schema, err := sqlxx.GetSchema(tt.model)
+		field, err := sqlxx.NewField(&schema, tt.model, tt.field)
 		assert.Nil(t, err)
 		assert.Equal(t, tt.result, field.IsForeignKey, fmt.Sprintf("index: %d", i))
 	}
@@ -39,7 +40,8 @@ func TestFields_IsExcludedField(t *testing.T) {
 	}
 
 	for i, tt := range testers {
-		field, err := sqlxx.NewField(tt.model, tt.field)
+		schema, err := sqlxx.GetSchema(tt.model)
+		field, err := sqlxx.NewField(&schema, tt.model, tt.field)
 		assert.Nil(t, err)
 		assert.Equal(t, tt.result, field.IsExcluded, fmt.Sprintf("index: %d", i))
 	}
