@@ -30,6 +30,21 @@ func IntToInt64(value interface{}) (int64, error) {
 	return reflected.Convert(int64Type).Int(), nil
 }
 
+// GetInt64PrimaryKey returns int64 primary key for the given instance.
+func GetInt64PrimaryKey(instance interface{}, field string) (int64, error) {
+	pkv, err := GetFieldValue(instance, field)
+	if err != nil {
+		return 0, err
+	}
+
+	pk, err := IntToInt64(pkv)
+	if err != nil {
+		return 0, err
+	}
+
+	return pk, nil
+}
+
 // GetIndirectValue returns the value that the interface v contains or that the pointer v points to.
 func GetIndirectValue(itf interface{}) reflect.Value {
 	v, ok := itf.(reflect.Value)

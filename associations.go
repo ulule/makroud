@@ -146,12 +146,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 		for i := 0; i < instances.Len(); i++ {
 			instance := instances.Index(i).Addr()
 
-			fkv, err := GetFieldValue(instance.Interface(), q.Field.ForeignKey.FieldName)
-			if err != nil {
-				return err
-			}
-
-			fk, err := IntToInt64(fkv)
+			fk, err := GetInt64PrimaryKey(instance.Interface(), q.Field.ForeignKey.FieldName)
 			if err != nil {
 				return err
 			}
@@ -186,12 +181,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 	for i := 0; i < instances.Len(); i++ {
 		instance := instances.Index(i).Addr()
 
-		pkv, err := GetFieldValue(instance.Interface(), q.Field.RelationFieldName())
-		if err != nil {
-			return err
-		}
-
-		pk, err := IntToInt64(pkv)
+		pk, err := GetInt64PrimaryKey(instance.Interface(), q.Field.RelationFieldName())
 		if err != nil {
 			return err
 		}
@@ -201,12 +191,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 		for ii := 0; ii < assocs.Len(); ii++ {
 			assocv := assocs.Index(ii).Addr()
 
-			fkv, err := GetFieldValue(assocv.Interface(), q.Field.ForeignKey.FieldName)
-			if err != nil {
-				return err
-			}
-
-			fk, err := IntToInt64(fkv)
+			fk, err := GetInt64PrimaryKey(assocv.Interface(), q.Field.ForeignKey.FieldName)
 			if err != nil {
 				return err
 			}

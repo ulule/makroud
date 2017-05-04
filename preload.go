@@ -101,10 +101,8 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 		field string        // ex: APIKey (for Article.User.APIKey)
 	}
 
-	// fk -> relation
 	relations := map[int64]rel{}
 
-	// Articles
 	for i := 0; i < slice.Len(); i++ {
 		value := slice.Index(i)
 
@@ -112,19 +110,12 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 			value = value.Addr()
 		}
 
-		// Retrieve Article.User previously fetched
 		assocValue, assocPtr, err := getFieldValues(value.Interface(), fieldName)
 		if err != nil {
 			return err
 		}
 
-		// Retrieve Article.User.APIKeyID (for SELECT IN)
-		fkv, err := GetFieldValue(assocValue.Interface(), field.ForeignKey.FieldName)
-		if err != nil {
-			return err
-		}
-
-		fk, err := IntToInt64(fkv)
+		fk, err := GetInt64PrimaryKey(assocValue.Interface(), field.ForeignKey.FieldName)
 		if err != nil {
 			return err
 		}
@@ -155,19 +146,12 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 		return err
 	}
 
-	// Slice ptr -> value
 	fkAssocs = fkAssocs.Elem()
 
 	for i := 0; i < fkAssocs.Len(); i++ {
 		assoc := fkAssocs.Index(i)
 
-		// APIKey.ID
-		pkv, err := GetFieldValue(assoc, "ID")
-		if err != nil {
-			return err
-		}
-
-		pk, err := IntToInt64(pkv)
+		pk, err := GetInt64PrimaryKey(assoc, "ID")
 		if err != nil {
 			return err
 		}
