@@ -56,8 +56,13 @@ func GetAssociationQueries(out interface{}, fields []Field) (AssociationQueries,
 		} else {
 			value := reflect.ValueOf(out).Elem()
 
+			fieldName := field.ForeignKey.FieldName
+			if field.IsAssociationTypeMany() {
+				fieldName = field.ForeignKey.Reference.FieldName
+			}
+
 			for i := 0; i < value.Len(); i++ {
-				values, err := GetPrimaryKeys(value.Index(i).Interface(), field.ForeignKey.FieldName)
+				values, err := GetPrimaryKeys(value.Index(i).Interface(), fieldName)
 				if err != nil {
 					return nil, err
 				}
@@ -213,10 +218,25 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 
 	assocs := reflect.ValueOf(assoc).Elem()
 
+	fieldName := q.Field.ForeignKey.FieldName
+	if q.Field.IsAssociationTypeMany() {
+		fieldName = q.Field.ForeignKey.Reference.FieldName
+	}
+
+	model := q.Field.Model
+	if q.Field.IsAssociationTypeMany() {
+		model = q.Field.ForeignKey.Model
+	}
+
+	associationField := q.Field.ForeignKey.AssociationFieldName
+	if q.Field.IsAssociationTypeMany() {
+		associationField = q.Field.ForeignKey.Reference.AssociationFieldName
+	}
+
 	for i := 0; i < instances.Len(); i++ {
 		instance := instances.Index(i).Addr()
 
-		pkv, err := GetFieldValue(instance.Interface(), q.Field.ForeignKey.FieldName)
+		pkv, err := GetFieldValue(instance.Interface(), fieldName)
 		if err != nil {
 			return err
 		}
@@ -226,7 +246,7 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			return err
 		}
 
-		slc := reflect.ValueOf(MakeSlice(q.Field.Model))
+		slc := reflect.ValueOf(MakeSlice(model))
 
 		for ii := 0; ii < assocs.Len(); ii++ {
 			assocv := assocs.Index(ii).Addr()
@@ -242,11 +262,11 @@ func SetAssociation(driver Driver, out interface{}, q AssociationQuery) error {
 			}
 
 			if pk == fk {
-				slc = reflect.Append(slc, assocv)
+				slc = reflect.Append(slc, assocv.Elem())
 			}
 		}
 
-		err = SetFieldValue(instance.Interface(), q.Field.ForeignKey.AssociationFieldName, slc.Interface())
+		err = SetFieldValue(instance.Interface(), associationField, slc.Interface())
 		if err != nil {
 			return err
 		}

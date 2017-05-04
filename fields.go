@@ -23,6 +23,8 @@ type Field struct {
 	ModelName string
 	// Table name of the model that contains this field
 	TableName string
+	// PrimaryKeyFieldName is the primary key field name
+	PrimaryKeyFieldName string
 
 	// The field name
 	Name string
@@ -46,9 +48,10 @@ type Field struct {
 
 // String returns struct instance string representation.
 func (f Field) String() string {
-	return fmt.Sprintf("field(model:%s table:%s name:%s column:%s)",
+	return fmt.Sprintf("field(model:%s table:%s pk:%s name:%s column:%s)",
 		f.ModelName,
 		f.TableName,
+		f.PrimaryKeyFieldName,
 		f.Name,
 		f.ColumnName)
 }

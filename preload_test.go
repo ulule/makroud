@@ -2,6 +2,7 @@ package sqlxx_test
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	assert "github.com/stretchr/testify/require"
@@ -259,28 +260,28 @@ func TestPreload_OneToMany_Level1_Simple(t *testing.T) {
 	}
 }
 
-// func TestPreload_ManyToMany_Level1(t *testing.T) {
-// 	db, _, shutdown := dbConnection(t)
-// 	defer shutdown()
+func TestPreload_ManyToMany_Level1(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
 
-// 	users := []User{}
-// 	for i := 1; i < 6; i++ {
-// 		users = append(users, createUser(t, db, fmt.Sprintf("user%d", i)))
-// 	}
+	users := []User{}
+	for i := 1; i < 6; i++ {
+		users = append(users, createUser(t, db, fmt.Sprintf("user%d", i)))
+	}
 
-// 	for _, user := range users {
-// 		assert.Zero(t, user.Avatars)
-// 	}
+	for _, user := range users {
+		assert.Zero(t, user.Avatars)
+	}
 
-// 	assert.Nil(t, sqlxx.Preload(db, &users, "Avatars"))
+	assert.Nil(t, sqlxx.Preload(db, &users, "Avatars"))
 
-// 	for _, user := range users {
-// 		assert.NotZero(t, user.Avatars)
-// 		for _, avatar := range user.Avatars {
-// 			assert.NotZero(t, avatar.ID)
-// 			assert.Equal(t, user.ID, avatar.UserID)
-// 			assert.Equal(t, user.ID, avatar.UserID)
-// 			assert.True(t, strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
-// 		}
-// 	}
-// }
+	for _, user := range users {
+		assert.NotZero(t, user.Avatars)
+		for _, avatar := range user.Avatars {
+			assert.NotZero(t, avatar.ID)
+			assert.Equal(t, user.ID, avatar.UserID)
+			assert.Equal(t, user.ID, avatar.UserID)
+			assert.True(t, strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
+		}
+	}
+}
