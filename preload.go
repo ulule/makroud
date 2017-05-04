@@ -147,7 +147,7 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 	fkAssocs := reflect.New(fkAssocType)
 	fkAssocs.Elem().Set(reflect.MakeSlice(fkAssocType, 0, 0))
 
-	q, err := FindByParams(driver, fkAssocs.Interface(), map[string]interface{}{"id": fks})
+	q, err := FindByParams(driver, fkAssocs.Interface(), map[string]interface{}{field.RelationColumnName(): fks})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err
@@ -156,9 +156,7 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 	fkAssocs = fkAssocs.Elem()
 
 	for i := 0; i < fkAssocs.Len(); i++ {
-		assoc := fkAssocs.Index(i)
-
-		pk, err := GetInt64PrimaryKey(assoc, "ID")
+		pk, err := GetInt64PrimaryKey(fkAssocs.Index(i).Interface(), field.RelationPrimaryKeyFieldName())
 		if err != nil {
 			return queries, err
 		}
@@ -166,7 +164,7 @@ func preloadAssociationForSlice(driver Driver, out interface{}, schema Schema, f
 		if pk != int64(0) {
 			relation, ok := relations[pk]
 			if ok {
-				err := SetFieldValue(relation.assoc.Interface(), relation.field, assoc.Interface())
+				err := SetFieldValue(relation.assoc.Interface(), relation.field, fkAssocs.Index(i).Interface())
 				if err != nil {
 					return queries, err
 				}
