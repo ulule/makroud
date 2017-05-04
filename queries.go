@@ -8,9 +8,20 @@ import (
 // Queries is a list of Query instances
 type Queries []Query
 
+// ByTable returns queries for a given table.
+func (q Queries) ByTable(name string) (*Query, bool) {
+	for i := range q {
+		if strings.Contains(q[i].Query, fmt.Sprintf("FROM %v", name)) {
+			return &q[i], true
+		}
+	}
+
+	return nil, false
+}
+
 // Query is a relation query
 type Query struct {
-	// SQLX things
+	// sqlx things
 	Query  string
 	Args   []interface{}
 	Params map[string]interface{}
