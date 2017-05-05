@@ -40,6 +40,8 @@ type Field struct {
 	AssociationType AssociationType
 	// ForeignKey contains foreign key relations information
 	ForeignKey *ForeignKey
+	// DestinationField is the value destination field if the field is an association.
+	DestinationField string
 }
 
 // String returns struct instance string representation.

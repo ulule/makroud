@@ -21,74 +21,77 @@ func Preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 		return nil, err
 	}
 
-	var (
-		assocs         []Field
-		assocsOfAssocs = map[string]Field{}
-		queries        Queries
-	)
+	mapping := map[int][]Field{}
+	var queries Queries
 
 	for _, path := range paths {
-		assoc, ok := schema.Associations[path]
+		field, ok := schema.Associations[path]
 		if !ok {
 			return nil, fmt.Errorf("%s is not a valid association", path)
 		}
 
 		splits := strings.Split(path, ".")
+		level := len(splits)
 
-		if len(splits) == 1 {
-			assocs = append(assocs, assoc)
+		_, ok = mapping[level]
+		if !ok {
+			mapping[level] = []Field{}
 		}
 
-		if len(splits) == 2 {
-			assocsOfAssocs[splits[0]] = assoc
-		}
+		field.DestinationField = splits[0]
+
+		mapping[level] = append(mapping[level], field)
 	}
 
-	q, err := preloadOneToAssociations(driver, out, assocs)
-	queries = append(queries, q...)
-	if err != nil {
-		return queries, err
-	}
-
-	if IsSlice(out) {
-		for k, v := range assocsOfAssocs {
-			q, err = preloadManyToAssociations(driver, out, schema, k, v)
+	for level, fields := range mapping {
+		if level == 1 {
+			q, err := preloadOneToAssociations(driver, out, fields)
 			queries = append(queries, q...)
 			if err != nil {
 				return queries, err
 			}
-
-		}
-		return queries, nil
-	}
-
-	for k, v := range assocsOfAssocs {
-		value, err := GetFieldValue(reflect.ValueOf(out), k)
-		if err != nil {
-			return queries, err
 		}
 
-		reflected := reflect.ValueOf(value)
-		isValue := false
+		if level == 2 {
+			if IsSlice(out) {
+				for _, field := range fields {
+					q, err := preloadManyToAssociations(driver, out, schema, field.DestinationField, field)
+					queries = append(queries, q...)
+					if err != nil {
+						return queries, err
+					}
+				}
+			} else {
+				for _, field := range fields {
+					value, err := GetFieldValue(reflect.ValueOf(out), field.DestinationField)
+					if err != nil {
+						return queries, err
+					}
 
-		if !reflected.CanAddr() {
-			value = Copy(value)
-			isValue = true
-		}
+					reflected := reflect.ValueOf(value)
+					isValue := false
 
-		q, err = Preload(driver, value, v.Name)
-		queries = append(queries, q...)
-		if err != nil {
-			return queries, err
-		}
+					if !reflected.CanAddr() {
+						value = Copy(value)
+						isValue = true
+					}
 
-		if isValue {
-			value = reflect.Indirect(reflect.ValueOf(value)).Interface()
-		}
+					q, err := Preload(driver, value, field.Name)
+					queries = append(queries, q...)
+					if err != nil {
+						return queries, err
+					}
 
-		err = SetFieldValue(out, k, value)
-		if err != nil {
-			return queries, err
+					if isValue {
+						value = reflect.Indirect(reflect.ValueOf(value)).Interface()
+					}
+
+					err = SetFieldValue(out, field.DestinationField, value)
+					if err != nil {
+						return queries, err
+					}
+				}
+			}
 		}
 	}
 
