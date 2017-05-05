@@ -20,7 +20,8 @@ func TestFind_GetByParams(t *testing.T) {
 	assert.Len(t, queries, 1)
 	assert.Contains(t, queries[0].Query, "users.username = ?")
 	assert.Contains(t, queries[0].Query, "users.is_active = ?")
-	assert.EqualValues(t, queries[0].Args, []interface{}{user.Username, true})
+	assert.Contains(t, queries[0].Args, user.Username)
+	assert.Contains(t, queries[0].Args, true)
 
 	assert.Equal(t, 1, user.ID)
 	assert.Equal(t, "jdoe", user.Username)
@@ -40,7 +41,7 @@ func TestFind_FindByParams(t *testing.T) {
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
 	assert.Contains(t, queries[0].Query, "users.is_active = ?")
-	assert.EqualValues(t, queries[0].Args, []interface{}{true})
+	assert.Contains(t, queries[0].Args, true)
 	assert.Len(t, users, 1)
 
 	user := users[0]
@@ -58,7 +59,10 @@ func TestFind_FindByParams(t *testing.T) {
 	assert.Len(t, queries, 1)
 	assert.Contains(t, queries[0].Query, "users.is_active = ?")
 	assert.Contains(t, queries[0].Query, "users.id IN (?, ?, ?)")
-	assert.EqualValues(t, queries[0].Args, []interface{}{true, 1, 2, 3})
+	assert.Contains(t, queries[0].Args, true)
+	assert.Contains(t, queries[0].Args, 1)
+	assert.Contains(t, queries[0].Args, 2)
+	assert.Contains(t, queries[0].Args, 3)
 
 	assert.Equal(t, 1, users[0].ID)
 	assert.Equal(t, "jdoe", user.Username)
