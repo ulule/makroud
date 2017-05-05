@@ -92,8 +92,8 @@ func getAssociationQueries(out interface{}, fields []Field) (Queries, error) {
 	return queries, nil
 }
 
-// preloadAssociations preloads relations of out from queries.
-func preloadAssociations(driver Driver, out interface{}, fields []Field) (Queries, error) {
+// preloadOneToAssociations preloads relations of out from queries.
+func preloadOneToAssociations(driver Driver, out interface{}, fields []Field) (Queries, error) {
 	queries, err := getAssociationQueries(out, fields)
 	if err != nil {
 		return nil, err
@@ -103,6 +103,85 @@ func preloadAssociations(driver Driver, out interface{}, fields []Field) (Querie
 		err := setAssociation(driver, out, query)
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	return queries, nil
+}
+
+func preloadManyToAssociations(driver Driver, out interface{}, schema Schema, fieldName string, field Field) (Queries, error) {
+	var (
+		slice   = reflect.ValueOf(out).Elem()
+		queries Queries
+	)
+
+	type rel struct {
+		item  reflect.Value // ex: pointer to Article
+		assoc reflect.Value // ex: pointer to Article.User
+		field string        // ex: APIKey (for Article.User.APIKey)
+	}
+
+	relations := map[int64]rel{}
+
+	for i := 0; i < slice.Len(); i++ {
+		value := slice.Index(i)
+
+		if value.Kind() != reflect.Ptr && value.CanAddr() {
+			value = value.Addr()
+		}
+
+		assocValue, assocPtr, err := getFieldValues(value.Interface(), fieldName)
+		if err != nil {
+			return nil, err
+		}
+
+		fk, err := GetInt64PrimaryKey(assocValue.Interface(), field.ForeignKey.FieldName)
+		if err != nil {
+			return nil, err
+		}
+
+		if fk != int64(0) {
+			relations[fk] = rel{
+				item:  value,
+				assoc: assocPtr,
+				field: field.ForeignKey.AssociationFieldName,
+			}
+		}
+	}
+
+	var fks []int64
+	for k := range relations {
+		if !InInt64Slice(fks, k) {
+			fks = append(fks, k)
+		}
+	}
+
+	fkAssocType := reflect.SliceOf(GetIndirectType(reflect.TypeOf(field.ForeignKey.Reference.Model)))
+	fkAssocs := reflect.New(fkAssocType)
+	fkAssocs.Elem().Set(reflect.MakeSlice(fkAssocType, 0, 0))
+
+	q, err := FindByParams(driver, fkAssocs.Interface(), map[string]interface{}{field.RelationColumnName(): fks})
+	queries = append(queries, q...)
+	if err != nil {
+		return queries, err
+	}
+
+	fkAssocs = fkAssocs.Elem()
+
+	for i := 0; i < fkAssocs.Len(); i++ {
+		pk, err := GetInt64PrimaryKey(fkAssocs.Index(i).Interface(), field.RelationPrimaryKeyFieldName())
+		if err != nil {
+			return queries, err
+		}
+
+		if pk != int64(0) {
+			relation, ok := relations[pk]
+			if ok {
+				err := SetFieldValue(relation.assoc.Interface(), relation.field, fkAssocs.Index(i).Interface())
+				if err != nil {
+					return queries, err
+				}
+			}
 		}
 	}
 
