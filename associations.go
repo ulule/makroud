@@ -92,11 +92,10 @@ func getAssociationQueries(out interface{}, fields []Field) (Queries, error) {
 	return queries, nil
 }
 
-// preloadOneToAssociations preloads relations of out from queries.
-func preloadOneToAssociations(driver Driver, out interface{}, fields []Field) (Queries, error) {
-	queries, err := getAssociationQueries(out, fields)
+func preloadOneToAssociation(driver Driver, out interface{}, field Field) (Queries, error) {
+	queries, err := getAssociationQueries(out, []Field{field})
 	if err != nil {
-		return nil, err
+		return queries, err
 	}
 
 	for _, query := range queries {
@@ -109,7 +108,7 @@ func preloadOneToAssociations(driver Driver, out interface{}, fields []Field) (Q
 	return queries, nil
 }
 
-func preloadManyToAssociations(driver Driver, out interface{}, schema Schema, fieldName string, field Field) (Queries, error) {
+func preloadManyToAssociation(driver Driver, out interface{}, field Field) (Queries, error) {
 	var (
 		slice   = reflect.ValueOf(out).Elem()
 		queries Queries
@@ -130,7 +129,7 @@ func preloadManyToAssociations(driver Driver, out interface{}, schema Schema, fi
 			value = value.Addr()
 		}
 
-		assocValue, assocPtr, err := getFieldValues(value.Interface(), fieldName)
+		assocValue, assocPtr, err := getFieldValues(value.Interface(), field.DestinationField)
 		if err != nil {
 			return nil, err
 		}

@@ -54,17 +54,19 @@ func Preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 		fields := mapping[level]
 
 		if level == 1 {
-			q, err := preloadOneToAssociations(driver, out, fields)
-			queries = append(queries, q...)
-			if err != nil {
-				return queries, err
+			for _, field := range fields {
+				q, err := preloadOneToAssociation(driver, out, field)
+				queries = append(queries, q...)
+				if err != nil {
+					return queries, err
+				}
 			}
 		}
 
 		if level == 2 {
 			if IsSlice(out) {
 				for _, field := range fields {
-					q, err := preloadManyToAssociations(driver, out, schema, field.DestinationField, field)
+					q, err := preloadManyToAssociation(driver, out, field)
 					queries = append(queries, q...)
 					if err != nil {
 						return queries, err
