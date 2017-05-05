@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -43,7 +44,15 @@ func Preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 		mapping[level] = append(mapping[level], field)
 	}
 
-	for level, fields := range mapping {
+	var levels []int
+	for level := range mapping {
+		levels = append(levels, level)
+	}
+	sort.Ints(levels)
+
+	for _, level := range levels {
+		fields := mapping[level]
+
 		if level == 1 {
 			q, err := preloadOneToAssociations(driver, out, fields)
 			queries = append(queries, q...)
