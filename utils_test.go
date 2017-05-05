@@ -10,6 +10,19 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
+func TestUtils_GetPrimaryKeys(t *testing.T) {
+	_, fixtures, shutdown := dbConnection(t)
+	defer shutdown()
+
+	pks, err := sqlxx.GetPrimaryKeys(&fixtures.Articles, "ID")
+	assert.Nil(t, err)
+	assert.Equal(t, []interface{}{1, 2, 3, 4, 5}, pks)
+
+	pks, err = sqlxx.GetPrimaryKeys(&fixtures.Articles[0], "ID")
+	assert.Nil(t, err)
+	assert.Equal(t, []interface{}{1}, pks)
+}
+
 func TestUtils_IntToInt64(t *testing.T) {
 	valids := []interface{}{
 		int8(1),

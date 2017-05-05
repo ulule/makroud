@@ -24,10 +24,7 @@ func Delete(driver Driver, out interface{}) (Queries, error) {
 		return nil, fmt.Errorf("%v has no primary key, cannot be deleted", out)
 	}
 
-	query := fmt.Sprintf("DELETE FROM %s WHERE %s = :%s",
-		schema.TableName,
-		pkField.ColumnName,
-		pkField.ColumnName)
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s = :%s", schema.TableName, pkField.ColumnName, pkField.ColumnName)
 
 	queries := Queries{{Query: query}}
 

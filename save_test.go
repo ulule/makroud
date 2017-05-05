@@ -15,16 +15,22 @@ func TestSave_Save(t *testing.T) {
 
 	user := User{Username: "thoas"}
 
-	_, err := sqlxx.Save(db, &user)
+	queries, err := sqlxx.Save(db, &user)
 	assert.NoError(t, err)
+	assert.NotNil(t, queries)
+	assert.Len(t, queries, 1)
+	assert.Contains(t, queries[0].Query, "INSERT INTO")
 
 	assert.NotZero(t, user.ID)
 	assert.Equal(t, true, user.IsActive)
 	assert.NotZero(t, user.UpdatedAt)
 
 	user.Username = "gilles"
-	_, err = sqlxx.Save(db, &user)
+
+	queries, err = sqlxx.Save(db, &user)
 	assert.NoError(t, err)
+	assert.Contains(t, queries[0].Query, "UPDATE users SET")
+	assert.Contains(t, queries[0].Query, "username = :username")
 
 	m := map[string]interface{}{"username": "gilles"}
 
