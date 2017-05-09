@@ -10,7 +10,11 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
-func TestPreload_Unaddressable(t *testing.T) {
+// ----------------------------------------------------------------------------
+// Errors
+// ----------------------------------------------------------------------------
+
+func TestPreload_Error_Unaddressable(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -21,7 +25,7 @@ func TestPreload_Unaddressable(t *testing.T) {
 	assert.Nil(t, queries)
 }
 
-func TestPreload_UnknownRelation(t *testing.T) {
+func TestPreload_Error_UnknownRelation(t *testing.T) {
 	db, fixtures, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -33,7 +37,11 @@ func TestPreload_UnknownRelation(t *testing.T) {
 	assert.Zero(t, article.Author)
 }
 
-func TestPreload_NullPrimaryKey(t *testing.T) {
+// ----------------------------------------------------------------------------
+// Primary keys
+// ----------------------------------------------------------------------------
+
+func TestPreload_PrimaryKey_Null(t *testing.T) {
 	db, fixtures, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -57,7 +65,11 @@ func TestPreload_NullPrimaryKey(t *testing.T) {
 	assert.NotZero(t, category.User.ID)
 }
 
-func TestPreload_OneToOne_Level1(t *testing.T) {
+// ----------------------------------------------------------------------------
+// Single instance preloads
+// ----------------------------------------------------------------------------
+
+func TestPreload_Single_One_Level1(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -90,7 +102,120 @@ func TestPreload_OneToOne_Level1(t *testing.T) {
 	assert.Equal(t, batman.Username, article.Reviewer.Username)
 }
 
-func TestPreload_ManyToOne_Level1(t *testing.T) {
+func TestPreload_Single_One_Level2(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	user := createUser(t, db, "spiderman")
+	article := createArticle(t, db, &user)
+
+	queries, err := sqlxx.Preload(db, &article, "Author", "Author.APIKey")
+	assert.NoError(t, err)
+	assert.NotNil(t, queries)
+
+	authorQuery, ok := queries.ByTable("users")
+	assert.True(t, ok)
+	assert.Contains(t, authorQuery.Query, "WHERE users.id = ? LIMIT 1")
+	assert.Len(t, authorQuery.Args, 1)
+
+	apikeyQuery, ok := queries.ByTable("api_keys")
+	assert.True(t, ok)
+	assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
+	assert.Len(t, apikeyQuery.Args, 1)
+
+	assert.NotZero(t, article.Author)
+	assert.NotZero(t, article.Author.APIKey)
+	assert.Equal(t, user.ID, article.AuthorID)
+	assert.Equal(t, user.Username, article.Author.Username)
+	assert.NotZero(t, article.Author.APIKey.ID)
+	assert.Equal(t, "spiderman-apikey", article.Author.APIKey.Key)
+}
+
+func TestPreload_Single_One_Level2_ValueAndPointer(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	user := createUser(t, db, "spiderman")
+	assert.NotEmpty(t, user)
+
+	queries, err := sqlxx.Preload(db, &user, "Avatar")
+	assert.NoError(t, err)
+	assert.NotNil(t, queries)
+	assert.Len(t, queries, 1)
+	assert.Contains(t, queries[0].Query, "FROM media WHERE media.id = ? LIMIT 1")
+	assert.Len(t, queries[0].Args, 1)
+	assert.NotNil(t, user.Avatar)
+	assert.EqualValues(t, user.AvatarID.Int64, queries[0].Args[0])
+
+	article := createArticle(t, db, &user)
+	assert.NotEmpty(t, article)
+
+	comment := createComment(t, db, &user, &article)
+	assert.NotEmpty(t, comment)
+
+	comments := []Comment{comment}
+
+	queries, err = sqlxx.Preload(db, &comments, "User", "User.Avatar")
+	assert.NoError(t, err)
+	assert.NotNil(t, queries)
+	assert.Len(t, queries, 2)
+
+	comment = comments[0]
+
+	userQuery, ok := queries.ByTable("users")
+	assert.True(t, ok)
+
+	avatarQuery, ok := queries.ByTable("media")
+	assert.True(t, ok)
+
+	assert.Contains(t, userQuery.Query, "FROM users WHERE users.id IN (?)")
+	assert.Len(t, userQuery.Args, 1)
+	assert.EqualValues(t, comment.User.ID, userQuery.Args[0])
+
+	assert.Contains(t, avatarQuery.Query, "WHERE media.id IN (?)")
+	assert.Len(t, avatarQuery.Args, 1)
+	assert.NotNil(t, user.Avatar)
+	assert.EqualValues(t, comment.User.Avatar.ID, avatarQuery.Args[0])
+
+	// Level 1 with Value
+	assert.NotZero(t, comment.User)
+	assert.Equal(t, user.ID, comment.UserID)
+	assert.Equal(t, user.Username, comment.User.Username)
+
+	// Level 2 with Pointer
+	if comment.User.Avatar != nil {
+		assert.Equal(t, user.Avatar.ID, comment.User.Avatar.ID)
+		assert.Equal(t, user.Avatar.Path, comment.User.Avatar.Path)
+	}
+}
+
+func TestPreload_Single_Many_Level1(t *testing.T) {
+	db, _, shutdown := dbConnection(t)
+	defer shutdown()
+
+	user := createUser(t, db, "wonderwoman")
+
+	queries, err := sqlxx.Preload(db, &user, "Avatars")
+	assert.NoError(t, err)
+	assert.NotNil(t, queries)
+	assert.Len(t, queries, 1)
+	assert.Contains(t, queries[0].Query, "WHERE avatars.user_id = ?")
+	assert.Len(t, queries[0].Args, 1)
+	assert.EqualValues(t, user.ID, queries[0].Args[0])
+
+	assert.Len(t, user.Avatars, 5)
+	for i, a := range user.Avatars {
+		assert.NotZero(t, a.ID)
+		assert.Equal(t, user.ID, a.UserID)
+		assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Slice of instances preloads
+// ----------------------------------------------------------------------------
+
+func TestPreload_Slice_Level1_One(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -106,7 +231,7 @@ func TestPreload_ManyToOne_Level1(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "FROM users WHERE users.id = ?")
+	assert.Contains(t, queries[0].Query, "FROM users WHERE users.id IN (?)")
 	assert.Len(t, queries[0].Args, 1)
 
 	for _, a := range articles {
@@ -120,7 +245,7 @@ func TestPreload_ManyToOne_Level1(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "FROM users WHERE users.id = ?")
+	assert.Contains(t, queries[0].Query, "FROM users WHERE users.id IN (?)")
 	assert.Len(t, queries[0].Args, 1)
 
 	for _, a := range articles {
@@ -130,7 +255,7 @@ func TestPreload_ManyToOne_Level1(t *testing.T) {
 	}
 }
 
-func TestPreload_Slice_ManyToOne_Level1_Different_Pointer_Null(t *testing.T) {
+func TestPreload_Slice_Level1_One_DifferentPointerNull(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -160,7 +285,7 @@ func TestPreload_Slice_ManyToOne_Level1_Different_Pointer_Null(t *testing.T) {
 	}
 }
 
-func TestPreload_ManyToOne_Level1_Different(t *testing.T) {
+func TestPreload_Slice_Level1_One_Different(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -204,94 +329,40 @@ func TestPreload_ManyToOne_Level1_Different(t *testing.T) {
 	assert.Equal(t, articles[2].Reviewer, &catwoman)
 }
 
-func TestPreload_OneToOne_Level2(t *testing.T) {
+func TestPreload_Slice_Level1_Many(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
-	user := createUser(t, db, "spiderman")
-	article := createArticle(t, db, &user)
+	users := []User{}
+	for i := 1; i < 6; i++ {
+		users = append(users, createUser(t, db, fmt.Sprintf("user%d", i)))
+	}
 
-	queries, err := sqlxx.Preload(db, &article, "Author", "Author.APIKey")
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
+	for _, user := range users {
+		assert.Zero(t, user.Avatars)
+	}
 
-	authorQuery, ok := queries.ByTable("users")
-	assert.True(t, ok)
-	assert.Contains(t, authorQuery.Query, "WHERE users.id = ? LIMIT 1")
-	assert.Len(t, authorQuery.Args, 1)
-
-	apikeyQuery, ok := queries.ByTable("api_keys")
-	assert.True(t, ok)
-	assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
-	assert.Len(t, apikeyQuery.Args, 1)
-
-	assert.NotZero(t, article.Author)
-	assert.NotZero(t, article.Author.APIKey)
-	assert.Equal(t, user.ID, article.AuthorID)
-	assert.Equal(t, user.Username, article.Author.Username)
-	assert.NotZero(t, article.Author.APIKey.ID)
-	assert.Equal(t, "spiderman-apikey", article.Author.APIKey.Key)
-}
-
-func TestPreload_OneToOne_Level2_ValueAndPointer(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
-
-	user := createUser(t, db, "spiderman")
-	assert.NotEmpty(t, user)
-
-	queries, err := sqlxx.Preload(db, &user, "Avatar")
+	queries, err := sqlxx.Preload(db, &users, "Avatars")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "FROM media WHERE media.id = ? LIMIT 1")
-	assert.Len(t, queries[0].Args, 1)
-	assert.NotNil(t, user.Avatar)
-	assert.EqualValues(t, user.AvatarID.Int64, queries[0].Args[0])
+	assert.Contains(t, queries[0].Query, "avatars.user_id IN (?, ?, ?, ?, ?)")
+	assert.Len(t, queries[0].Args, 5)
 
-	article := createArticle(t, db, &user)
-	assert.NotEmpty(t, article)
+	for _, user := range users {
+		assert.NotZero(t, user.Avatars)
+		assert.Contains(t, queries[0].Args, int64(user.ID))
 
-	comment := createComment(t, db, &user, &article)
-	assert.NotEmpty(t, comment)
-
-	comments := []Comment{comment}
-
-	queries, err = sqlxx.Preload(db, &comments, "User", "User.Avatar")
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 2)
-
-	comment = comments[0]
-
-	userQuery, ok := queries.ByTable("users")
-	assert.True(t, ok)
-
-	avatarQuery, ok := queries.ByTable("media")
-	assert.True(t, ok)
-
-	assert.Contains(t, userQuery.Query, "FROM users WHERE users.id = ?")
-	assert.Len(t, userQuery.Args, 1)
-	assert.EqualValues(t, comment.User.ID, userQuery.Args[0])
-
-	assert.Contains(t, avatarQuery.Query, "WHERE media.id IN (?)")
-	assert.Len(t, avatarQuery.Args, 1)
-	assert.NotNil(t, user.Avatar)
-	assert.EqualValues(t, comment.User.Avatar.ID, avatarQuery.Args[0])
-
-	// Level 1 with Value
-	assert.NotZero(t, comment.User)
-	assert.Equal(t, user.ID, comment.UserID)
-	assert.Equal(t, user.Username, comment.User.Username)
-
-	// Level 2 with Pointer
-	if comment.User.Avatar != nil {
-		assert.Equal(t, user.Avatar.ID, comment.User.Avatar.ID)
-		assert.Equal(t, user.Avatar.Path, comment.User.Avatar.Path)
+		for _, avatar := range user.Avatars {
+			assert.NotZero(t, avatar.ID)
+			assert.Equal(t, user.ID, avatar.UserID)
+			assert.Equal(t, user.ID, avatar.UserID)
+			assert.True(t, strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
+		}
 	}
 }
 
-func TestPreload_ManyToOne_Level2_ValueAndPointer(t *testing.T) {
+func TestPreload_Slice_Level2_One_ValueAndPointer(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
@@ -327,59 +398,4 @@ func TestPreload_ManyToOne_Level2_ValueAndPointer(t *testing.T) {
 
 	assert.NotZero(t, articles[1].Author.APIKeyID)
 	assert.Equal(t, "deadpool-apikey", articles[1].Author.APIKey.Key)
-}
-
-func TestPreload_OneToMany_Level1(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
-
-	user := createUser(t, db, "wonderwoman")
-
-	queries, err := sqlxx.Preload(db, &user, "Avatars")
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "WHERE avatars.user_id = ?")
-	assert.Len(t, queries[0].Args, 1)
-	assert.EqualValues(t, user.ID, queries[0].Args[0])
-
-	assert.Len(t, user.Avatars, 5)
-	for i, a := range user.Avatars {
-		assert.NotZero(t, a.ID)
-		assert.Equal(t, user.ID, a.UserID)
-		assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
-	}
-}
-
-func TestPreload_ManyToMany_Level1(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
-
-	users := []User{}
-	for i := 1; i < 6; i++ {
-		users = append(users, createUser(t, db, fmt.Sprintf("user%d", i)))
-	}
-
-	for _, user := range users {
-		assert.Zero(t, user.Avatars)
-	}
-
-	queries, err := sqlxx.Preload(db, &users, "Avatars")
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "avatars.user_id IN (?, ?, ?, ?, ?)")
-	assert.Len(t, queries[0].Args, 5)
-
-	for _, user := range users {
-		assert.NotZero(t, user.Avatars)
-		assert.Contains(t, queries[0].Args, int64(user.ID))
-
-		for _, avatar := range user.Avatars {
-			assert.NotZero(t, avatar.ID)
-			assert.Equal(t, user.ID, avatar.UserID)
-			assert.Equal(t, user.ID, avatar.UserID)
-			assert.True(t, strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
-		}
-	}
 }
