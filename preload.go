@@ -12,7 +12,18 @@ import (
 type Preloader func(d Driver) (Driver, error)
 
 // Preload preloads related fields.
-func Preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
+func Preload(driver Driver, out interface{}, paths ...string) error {
+	_, err := preload(driver, out, paths...)
+	return err
+}
+
+// PreloadWithQueries preloads related fields and returns performed queries.
+func PreloadWithQueries(driver Driver, out interface{}, paths ...string) (Queries, error) {
+	return preload(driver, out, paths...)
+}
+
+// Preload preloads related fields.
+func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 	if !reflect.Indirect(reflect.ValueOf(out)).CanAddr() {
 		return nil, errors.New("model instance must be addressable (pointer required)")
 	}
@@ -185,7 +196,7 @@ func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, er
 	relations := reflect.New(t)
 	relations.Elem().Set(reflect.MakeSlice(t, 0, 0))
 
-	q, err := FindByParams(driver, relations.Interface(), map[string]interface{}{field.RelationColumnName(): fk})
+	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.RelationColumnName(): fk})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err
@@ -356,7 +367,7 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 	relations := reflect.New(relationType)
 	relations.Elem().Set(reflect.MakeSlice(relationType, 0, 0))
 
-	q, err := FindByParams(driver, relations.Interface(), map[string]interface{}{field.RelationColumnName(): foreignKeys})
+	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.RelationColumnName(): foreignKeys})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err
@@ -435,7 +446,7 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 	relations := reflect.New(relationType)
 	relations.Elem().Set(reflect.MakeSlice(relationType, 0, 0))
 
-	q, err := FindByParams(driver, relations.Interface(), map[string]interface{}{field.RelationColumnName(): foreignKeys})
+	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.RelationColumnName(): foreignKeys})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err

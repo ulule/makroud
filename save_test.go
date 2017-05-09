@@ -15,7 +15,7 @@ func TestSave_Save(t *testing.T) {
 
 	user := User{Username: "thoas"}
 
-	queries, err := sqlxx.Save(db, &user)
+	queries, err := sqlxx.SaveWithQueries(db, &user)
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -27,7 +27,7 @@ func TestSave_Save(t *testing.T) {
 
 	user.Username = "gilles"
 
-	queries, err = sqlxx.Save(db, &user)
+	queries, err = sqlxx.SaveWithQueries(db, &user)
 	assert.NoError(t, err)
 	assert.Contains(t, queries[0].Query, "UPDATE users SET")
 	assert.Contains(t, queries[0].Query, "username = :username")

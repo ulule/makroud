@@ -15,10 +15,10 @@ func TestDelete_Delete(t *testing.T) {
 
 	user := User{Username: "thoas"}
 
-	_, err := sqlxx.Save(db, &user)
+	_, err := sqlxx.SaveWithQueries(db, &user)
 	assert.NoError(t, err)
 
-	queries, err := sqlxx.Delete(db, &user)
+	queries, err := sqlxx.DeleteWithQueries(db, &user)
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -47,10 +47,10 @@ func TestDelete_SoftDelete(t *testing.T) {
 
 	user := User{Username: "thoas"}
 
-	_, err := sqlxx.Save(db, &user)
+	_, err := sqlxx.SaveWithQueries(db, &user)
 	assert.NoError(t, err)
 
-	queries, err := sqlxx.SoftDelete(db, &user, "DeletedAt")
+	queries, err := sqlxx.SoftDeleteWithQueries(db, &user, "DeletedAt")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)

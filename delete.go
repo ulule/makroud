@@ -5,8 +5,40 @@ import (
 	"time"
 )
 
-// Delete deletes the model in the database
-func Delete(driver Driver, out interface{}) (Queries, error) {
+// Delete deletes the given instance.
+func Delete(driver Driver, out interface{}) error {
+	_, err := remove(driver, out)
+	return err
+}
+
+// DeleteWithQueries deletes the given instance and returns performed queries.
+func DeleteWithQueries(driver Driver, out interface{}) (Queries, error) {
+	return remove(driver, out)
+}
+
+// SoftDelete is an alias for Archive.
+func SoftDelete(driver Driver, out interface{}, fieldName string) error {
+	_, err := archive(driver, out, fieldName)
+	return err
+}
+
+// SoftDeleteWithQueries is an alias for Archive.
+func SoftDeleteWithQueries(driver Driver, out interface{}, fieldName string) (Queries, error) {
+	return archive(driver, out, fieldName)
+}
+
+// Archive archives the given instance.
+func Archive(driver Driver, out interface{}, fieldName string) error {
+	_, err := archive(driver, out, fieldName)
+	return err
+}
+
+// ArchiveWithQueries archives the given instance and returns performed queries.
+func ArchiveWithQueries(driver Driver, out interface{}, fieldName string) (Queries, error) {
+	return archive(driver, out, fieldName)
+}
+
+func remove(driver Driver, out interface{}) (Queries, error) {
 	schema, err := GetSchema(out)
 	if err != nil {
 		return nil, err
@@ -36,13 +68,7 @@ func Delete(driver Driver, out interface{}) (Queries, error) {
 	return queries, nil
 }
 
-// SoftDelete is an alias for Archive
-func SoftDelete(driver Driver, out interface{}, fieldName string) (Queries, error) {
-	return Archive(driver, out, fieldName)
-}
-
-// Archive archives the model in the database
-func Archive(driver Driver, out interface{}, fieldName string) (Queries, error) {
+func archive(driver Driver, out interface{}, fieldName string) (Queries, error) {
 	schema, err := GetSchema(out)
 	if err != nil {
 		return nil, err

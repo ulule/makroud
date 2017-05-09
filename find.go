@@ -7,12 +7,24 @@ import (
 )
 
 // GetByParams executes a where with the given params and populates the given model.
-func GetByParams(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
+func GetByParams(driver Driver, out interface{}, params map[string]interface{}) error {
+	_, err := where(driver, out, params, true)
+	return err
+}
+
+// GetByParamsWithQueries executes a where with the given params and populates the given model.
+func GetByParamsWithQueries(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
 	return where(driver, out, params, true)
 }
 
 // FindByParams executes a where with the given params and populates the given models.
-func FindByParams(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
+func FindByParams(driver Driver, out interface{}, params map[string]interface{}) error {
+	_, err := where(driver, out, params, false)
+	return err
+}
+
+// FindByParamsWithQueries executes a where with the given params and populates the given models.
+func FindByParamsWithQueries(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
 	return where(driver, out, params, false)
 }
 
