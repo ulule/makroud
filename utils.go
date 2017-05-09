@@ -11,9 +11,12 @@ import (
 func IntToInt64(value interface{}) (int64, error) {
 	// sql.NullInt* support
 	if valuer, ok := value.(driver.Valuer); ok {
-		if v, err := valuer.Value(); err == nil && v != nil {
-			value = v
+		v, err := valuer.Value()
+		if err != nil || v == nil {
+			return 0, err
 		}
+
+		value = v
 	}
 
 	int64Type := reflect.TypeOf(int64(0))

@@ -121,16 +121,49 @@ func preloadSingle(driver Driver, out interface{}, level int, fields []Field) (Q
 }
 
 func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, error) {
-	queries, err := getAssociationQueries(out, []Field{field})
+	var queries Queries
+
+	err := checkAssociation(field)
+	if err != nil {
+		return nil, err
+	}
+
+	fk, err := GetInt64PrimaryKey(out, field.ForeignKey.FieldName)
+	if err != nil {
+		return nil, err
+	}
+
+	if fk == int64(0) {
+		return nil, err
+	}
+
+	params := map[string]interface{}{field.ForeignKey.Reference.ColumnName: fk}
+
+	query, args, err := whereQuery(field.ForeignKey.Reference.Model, params, field.IsAssociationTypeOne())
+	if err != nil {
+		return nil, err
+	}
+
+	q := Query{
+		Field:    field,
+		Query:    query,
+		Args:     args,
+		Params:   params,
+		FetchOne: field.IsAssociationTypeOne(),
+	}
+
+	queries = append(queries, q)
+
+	relation := field.CreateAssociation(false)
+
+	err = driver.Get(relation, driver.Rebind(q.Query), q.Args...)
 	if err != nil {
 		return queries, err
 	}
 
-	for _, query := range queries {
-		err := setAssociation(driver, out, query)
-		if err != nil {
-			return nil, err
-		}
+	err = SetFieldValue(out, field.ForeignKey.AssociationFieldName, relation)
+	if err != nil {
+		return queries, err
 	}
 
 	return queries, nil
@@ -452,4 +485,16 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 	}
 
 	return queries, nil
+}
+
+func checkAssociation(field Field) error {
+	if !field.IsAssociation {
+		return fmt.Errorf("field '%s' is not an association", field.Name)
+	}
+
+	if field.ForeignKey == nil {
+		return fmt.Errorf("no ForeignKey instance found for field %s", field.Name)
+	}
+
+	return nil
 }
