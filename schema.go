@@ -149,7 +149,12 @@ func newSchema(model Model) (Schema, error) {
 
 		schema.Associations[field.Name] = field
 
-		nextSchema, err := GetSchema(field.RelationModel())
+		nextModel := field.ForeignKey.Reference.Model
+		if field.IsAssociationTypeMany() {
+			nextModel = field.ForeignKey.Model
+		}
+
+		nextSchema, err := GetSchema(nextModel)
 		if err != nil {
 			return Schema{}, err
 		}

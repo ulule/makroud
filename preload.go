@@ -176,7 +176,7 @@ func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, err
 
 	queries = append(queries, q)
 
-	relation := field.CreateAssociation(false)
+	relation := CloneType(field.ForeignKey.Reference.Model)
 
 	err = driver.Get(relation, driver.Rebind(q.Query), q.Args...)
 	if err != nil {
@@ -194,7 +194,7 @@ func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, err
 func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, error) {
 	var queries Queries
 
-	fk, err := GetInt64PrimaryKey(out, field.PrimaryKeyFieldName())
+	fk, err := GetInt64PrimaryKey(out, field.Schema.PrimaryKeyField.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +207,7 @@ func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, er
 	relations := reflect.New(t)
 	relations.Elem().Set(reflect.MakeSlice(t, 0, 0))
 
-	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.RelationColumnName(): fk})
+	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.ForeignKey.ColumnName: fk})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err
@@ -252,7 +252,7 @@ func preloadSlice(driver Driver, out interface{}, level int, fields []Field) (Qu
 			for i := 0; i < slc.Len(); i++ {
 				instance := slc.Index(i).Interface()
 
-				pk, err := GetInt64PrimaryKey(instance, field.PrimaryKeyFieldName())
+				pk, err := GetInt64PrimaryKey(instance, field.Schema.PrimaryKeyField.Name)
 				if err != nil {
 					return queries, err
 				}
@@ -292,7 +292,7 @@ func preloadSlice(driver Driver, out interface{}, level int, fields []Field) (Qu
 			for i := 0; i < slc.Len(); i++ {
 				instance := slc.Index(i).Addr().Interface()
 
-				pk, err := GetInt64PrimaryKey(instance, field.PrimaryKeyFieldName())
+				pk, err := GetInt64PrimaryKey(instance, field.Schema.PrimaryKeyField.Name)
 				if err != nil {
 					return queries, err
 				}
@@ -357,12 +357,12 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 
 		instance := v.Interface()
 
-		pk, err := GetInt64PrimaryKey(instance, field.PrimaryKeyFieldName())
+		pk, err := GetInt64PrimaryKey(instance, field.Schema.PrimaryKeyField.Name)
 		if err != nil {
 			return nil, err
 		}
 
-		fk, err := GetInt64PrimaryKey(instance, field.RelationFieldName())
+		fk, err := GetInt64PrimaryKey(instance, field.ForeignKey.FieldName)
 		if err != nil {
 			return nil, err
 		}
@@ -387,7 +387,7 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 	relations := reflect.New(relationType)
 	relations.Elem().Set(reflect.MakeSlice(relationType, 0, 0))
 
-	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.RelationColumnName(): foreignKeys})
+	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.ForeignKey.Reference.ColumnName: foreignKeys})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err
@@ -406,7 +406,7 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 				relation      = relationValue.Interface()
 			)
 
-			relationPK, err := GetInt64PrimaryKey(relation, field.RelationPrimaryKeyFieldName())
+			relationPK, err := GetInt64PrimaryKey(relation, field.ForeignKey.Schema.PrimaryKeyField.Name)
 			if err != nil {
 				return queries, err
 			}
@@ -447,7 +447,7 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 
 		instance := instanceValue.Interface()
 
-		fk, err := GetInt64PrimaryKey(instance, field.PrimaryKeyFieldName())
+		fk, err := GetInt64PrimaryKey(instance, field.Schema.PrimaryKeyField.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -466,7 +466,7 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 	relations := reflect.New(relationType)
 	relations.Elem().Set(reflect.MakeSlice(relationType, 0, 0))
 
-	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.RelationColumnName(): foreignKeys})
+	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.ForeignKey.ColumnName: foreignKeys})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err
