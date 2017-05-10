@@ -8,9 +8,6 @@ import (
 	"strings"
 )
 
-// Preloader is a custom preloader.
-type Preloader func(d Driver) (Driver, error)
-
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, paths ...string) error {
 	_, err := preload(driver, out, paths...)
