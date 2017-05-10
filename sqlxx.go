@@ -2,9 +2,8 @@ package sqlxx
 
 import (
 	"database/sql"
-	"sync"
-
 	"os"
+	"sync"
 
 	"github.com/jmoiron/sqlx"
 )
