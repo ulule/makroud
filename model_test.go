@@ -19,7 +19,7 @@ func TestModel_TypeToModel(t *testing.T) {
 	}
 
 	for _, r := range results {
-		actual := sqlxx.TypeToModel(reflect.TypeOf(r.value))
+		actual := sqlxx.ToModel(reflect.TypeOf(r.value))
 		assert.IsType(t, r.expected, actual)
 	}
 }

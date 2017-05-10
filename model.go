@@ -6,17 +6,29 @@ import (
 	"strings"
 )
 
-// ----------------------------------------------------------------------------
-// Model
-// ----------------------------------------------------------------------------
-
 // Model represents a database table.
 type Model interface {
 	TableName() string
 }
 
-// InterfaceToModel returns interface as a Model interface.
-func InterfaceToModel(itf interface{}) Model {
+// ToModel converts the given instance to a Model instance.
+func ToModel(itf interface{}) Model {
+	typ, ok := itf.(reflect.Type)
+	if ok {
+		if typ.Kind() == reflect.Slice {
+			typ = GetIndirectType(typ.Elem())
+		} else {
+			typ = GetIndirectType(typ)
+		}
+
+		model, ok := reflect.New(typ).Elem().Interface().(Model)
+		if ok {
+			return model
+		}
+
+		return nil
+	}
+
 	value := reflect.Indirect(reflect.ValueOf(itf))
 
 	// Single instance
@@ -30,27 +42,12 @@ func InterfaceToModel(itf interface{}) Model {
 		if value.Type().Elem().Kind() == reflect.Ptr {
 			return reflect.New(value.Type().Elem().Elem()).Interface().(Model)
 		}
+
 		// Slice of values
 		return reflect.New(value.Type().Elem()).Interface().(Model)
 	}
 
 	return reflect.New(value.Type()).Interface().(Model)
-}
-
-// TypeToModel returns model type.
-func TypeToModel(typ reflect.Type) Model {
-	if typ.Kind() == reflect.Slice {
-		typ = GetIndirectType(typ.Elem())
-	} else {
-		typ = GetIndirectType(typ)
-	}
-
-	model, isModel := reflect.New(typ).Elem().Interface().(Model)
-	if isModel {
-		return model
-	}
-
-	return nil
 }
 
 // GetModelName returns name of the given model.
