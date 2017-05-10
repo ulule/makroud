@@ -8,6 +8,49 @@ import (
 )
 
 // ----------------------------------------------------------------------------
+// Model
+// ----------------------------------------------------------------------------
+
+// ToModel converts the given instance to a Model instance.
+func ToModel(itf interface{}) Model {
+	typ, ok := itf.(reflect.Type)
+	if ok {
+		if typ.Kind() == reflect.Slice {
+			typ = GetIndirectType(typ.Elem())
+		} else {
+			typ = GetIndirectType(typ)
+		}
+
+		model, ok := reflect.New(typ).Elem().Interface().(Model)
+		if ok {
+			return model
+		}
+
+		return nil
+	}
+
+	value := reflect.Indirect(reflect.ValueOf(itf))
+
+	// Single instance
+	if value.IsValid() && value.Kind() == reflect.Struct {
+		return value.Interface().(Model)
+	}
+
+	// Slice of instances
+	if value.Kind() == reflect.Slice {
+		// Slice of pointers
+		if value.Type().Elem().Kind() == reflect.Ptr {
+			return reflect.New(value.Type().Elem().Elem()).Interface().(Model)
+		}
+
+		// Slice of values
+		return reflect.New(value.Type().Elem()).Interface().(Model)
+	}
+
+	return reflect.New(value.Type()).Interface().(Model)
+}
+
+// ----------------------------------------------------------------------------
 // Int64
 // ----------------------------------------------------------------------------
 

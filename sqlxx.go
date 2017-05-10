@@ -87,3 +87,8 @@ type Driver interface {
 	Rebind(query string) string
 	Select(dest interface{}, query string, args ...interface{}) error
 }
+
+// Model represents a database table.
+type Model interface {
+	TableName() string
+}

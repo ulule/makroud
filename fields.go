@@ -115,7 +115,7 @@ func NewField(schema *Schema, model Model, name string) (Field, error) {
 		Tags:          tags,
 		Name:          name,
 		Model:         model,
-		ModelName:     GetModelName(model),
+		ModelName:     reflect.Indirect(reflect.ValueOf(model)).Type().Name(),
 		TableName:     model.TableName(),
 		ColumnName:    columnName,
 		IsExcluded:    isExcluded,
@@ -187,7 +187,7 @@ func (fk ForeignKey) ColumnPath() string {
 func NewForeignKey(field Field) (*ForeignKey, error) {
 	var (
 		referenceModel     = ToModel(field.Type)
-		referenceModelName = GetModelName(referenceModel)
+		referenceModelName = reflect.Indirect(reflect.ValueOf(referenceModel)).Type().Name()
 		referenceTableName = referenceModel.TableName()
 	)
 
