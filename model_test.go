@@ -9,7 +9,7 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
-func TestModel_GetModelFromType(t *testing.T) {
+func TestModel_TypeToModel(t *testing.T) {
 	results := []struct {
 		value    interface{}
 		expected interface{}
@@ -19,7 +19,7 @@ func TestModel_GetModelFromType(t *testing.T) {
 	}
 
 	for _, r := range results {
-		actual := sqlxx.GetModelFromType(reflect.TypeOf(r.value))
+		actual := sqlxx.TypeToModel(reflect.TypeOf(r.value))
 		assert.IsType(t, r.expected, actual)
 	}
 }

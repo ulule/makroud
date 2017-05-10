@@ -54,7 +54,7 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 
 // where executes a where clause.
 func where(driver Driver, out interface{}, params map[string]interface{}, fetchOne bool) (Queries, error) {
-	model := GetModelFromInterface(out)
+	model := InterfaceToModel(out)
 
 	query, args, err := whereQuery(model, params, fetchOne)
 	if err != nil {

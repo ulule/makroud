@@ -125,7 +125,7 @@ func NewField(schema *Schema, model Model, name string) (Field, error) {
 	}
 
 	// Early return if the field type is not an association
-	modelType := GetModelFromType(field.Type)
+	modelType := TypeToModel(field.Type)
 	if modelType == nil {
 		return field, nil
 	}
@@ -186,7 +186,7 @@ func (fk ForeignKey) ColumnPath() string {
 // NewForeignKey returns a new ForeignKey instance from the given field instance.
 func NewForeignKey(field Field) (*ForeignKey, error) {
 	var (
-		referenceModel     = GetModelFromType(field.Type)
+		referenceModel     = TypeToModel(field.Type)
 		referenceModelName = GetModelName(referenceModel)
 		referenceTableName = referenceModel.TableName()
 	)

@@ -86,7 +86,7 @@ func GetSchema(itf interface{}) (Schema, error) {
 	var (
 		err    error
 		schema Schema
-		model  = GetModelFromInterface(itf)
+		model  = InterfaceToModel(itf)
 	)
 
 	if cacheDisabled {

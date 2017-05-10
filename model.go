@@ -15,8 +15,8 @@ type Model interface {
 	TableName() string
 }
 
-// GetModelFromInterface returns interface as a Model interface.
-func GetModelFromInterface(itf interface{}) Model {
+// InterfaceToModel returns interface as a Model interface.
+func InterfaceToModel(itf interface{}) Model {
 	value := reflect.Indirect(reflect.ValueOf(itf))
 
 	// Single instance
@@ -37,8 +37,8 @@ func GetModelFromInterface(itf interface{}) Model {
 	return reflect.New(value.Type()).Interface().(Model)
 }
 
-// GetModelFromType returns model type.
-func GetModelFromType(typ reflect.Type) Model {
+// TypeToModel returns model type.
+func TypeToModel(typ reflect.Type) Model {
 	if typ.Kind() == reflect.Slice {
 		typ = GetIndirectType(typ.Elem())
 	} else {
