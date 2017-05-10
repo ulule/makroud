@@ -15,23 +15,23 @@ import (
 // ----------------------------------------------------------------------------
 
 func TestPreload_Error_Unaddressable(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
 	article := Article{}
 
-	queries, err := sqlxx.PreloadWithQueries(db, article, "Author")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, article, "Author")
 	assert.Error(t, err)
 	assert.Nil(t, queries)
 }
 
 func TestPreload_Error_UnknownRelation(t *testing.T) {
-	db, fixtures, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	article := fixtures.Articles[0]
+	article := env.Articles[0]
 
-	queries, err := sqlxx.PreloadWithQueries(db, &article, "Foo")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Foo")
 	assert.Error(t, err)
 	assert.Nil(t, queries)
 	assert.Zero(t, article.Author)
@@ -42,19 +42,19 @@ func TestPreload_Error_UnknownRelation(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 func TestPreload_PrimaryKey_Null(t *testing.T) {
-	db, fixtures, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	category := createCategory(t, db, "cat1", nil)
+	category := env.createCategory("cat1", nil)
 
-	queries, err := sqlxx.PreloadWithQueries(db, &category, "User")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &category, "User")
 	assert.NoError(t, err)
 	assert.Nil(t, queries)
 	assert.Zero(t, category.User)
 
-	category = createCategory(t, db, "cat1", &fixtures.User.ID)
+	category = env.createCategory("cat1", &env.Users[0].ID)
 
-	queries, err = sqlxx.PreloadWithQueries(db, &category, "User")
+	queries, err = sqlxx.PreloadWithQueries(env.driver, &category, "User")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -70,15 +70,15 @@ func TestPreload_PrimaryKey_Null(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 func TestPreload_Single_One_Level1(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	batman := createUser(t, db, "batman")
-	createUser(t, db, "spiderman")
-	article := createArticle(t, db, &batman)
+	batman := env.createUser("batman")
+	env.createUser("spiderman")
+	article := env.createArticle(&batman)
 
 	// Value
-	queries, err := sqlxx.PreloadWithQueries(db, &article, "Author")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -90,7 +90,7 @@ func TestPreload_Single_One_Level1(t *testing.T) {
 	assert.Equal(t, batman.Username, article.Author.Username)
 
 	// Pointer
-	queries, err = sqlxx.PreloadWithQueries(db, &article, "Reviewer")
+	queries, err = sqlxx.PreloadWithQueries(env.driver, &article, "Reviewer")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -103,13 +103,13 @@ func TestPreload_Single_One_Level1(t *testing.T) {
 }
 
 func TestPreload_Single_One_Level2(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	user := createUser(t, db, "spiderman")
-	article := createArticle(t, db, &user)
+	user := env.createUser("spiderman")
+	article := env.createArticle(&user)
 
-	queries, err := sqlxx.PreloadWithQueries(db, &article, "Author", "Author.APIKey")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKey")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 
@@ -132,13 +132,13 @@ func TestPreload_Single_One_Level2(t *testing.T) {
 }
 
 func TestPreload_Single_One_Level2_ValueAndPointer(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	user := createUser(t, db, "spiderman")
+	user := env.createUser("spiderman")
 	assert.NotEmpty(t, user)
 
-	queries, err := sqlxx.PreloadWithQueries(db, &user, "Avatar")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &user, "Avatar")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -147,15 +147,15 @@ func TestPreload_Single_One_Level2_ValueAndPointer(t *testing.T) {
 	assert.NotNil(t, user.Avatar)
 	assert.EqualValues(t, user.AvatarID.Int64, queries[0].Args[0])
 
-	article := createArticle(t, db, &user)
+	article := env.createArticle(&user)
 	assert.NotEmpty(t, article)
 
-	comment := createComment(t, db, &user, &article)
+	comment := env.createComment(&user, &article)
 	assert.NotEmpty(t, comment)
 
 	comments := []Comment{comment}
 
-	queries, err = sqlxx.PreloadWithQueries(db, &comments, "User", "User.Avatar")
+	queries, err = sqlxx.PreloadWithQueries(env.driver, &comments, "User", "User.Avatar")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 2)
@@ -190,12 +190,12 @@ func TestPreload_Single_One_Level2_ValueAndPointer(t *testing.T) {
 }
 
 func TestPreload_Single_Many_Level1(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	user := createUser(t, db, "wonderwoman")
+	user := env.createUser("wonderwoman")
 
-	queries, err := sqlxx.PreloadWithQueries(db, &user, "Avatars")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &user, "Avatars")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -215,14 +215,14 @@ func TestPreload_Single_Many_Level1(t *testing.T) {
 }
 
 func TestPreload_Single_Many_One_Level2(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	user := createUser(t, db, "wonderwoman")
+	user := env.createUser("wonderwoman")
 
 	// Values
 
-	queries, err := sqlxx.PreloadWithQueries(db, &user, "Avatars", "Avatars.Filter")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &user, "Avatars", "Avatars.Filter")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 2)
@@ -249,7 +249,7 @@ func TestPreload_Single_Many_One_Level2(t *testing.T) {
 
 	// Pointers
 
-	queries, err = sqlxx.PreloadWithQueries(db, &user, "Avatars", "Avatars.FilterPtr")
+	queries, err = sqlxx.PreloadWithQueries(env.driver, &user, "Avatars", "Avatars.FilterPtr")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 2)
@@ -280,18 +280,18 @@ func TestPreload_Single_Many_One_Level2(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 func TestPreload_Slice_Level1_One(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	batman := createUser(t, db, "batman")
+	batman := env.createUser("batman")
 
 	var articles []Article
 	for i := 0; i < 5; i++ {
-		articles = append(articles, createArticle(t, db, &batman))
+		articles = append(articles, env.createArticle(&batman))
 	}
 
 	// Value
-	queries, err := sqlxx.PreloadWithQueries(db, &articles, "Author")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &articles, "Author")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -305,7 +305,7 @@ func TestPreload_Slice_Level1_One(t *testing.T) {
 	}
 
 	// Pointer
-	queries, err = sqlxx.PreloadWithQueries(db, &articles, "Reviewer")
+	queries, err = sqlxx.PreloadWithQueries(env.driver, &articles, "Reviewer")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -320,12 +320,12 @@ func TestPreload_Slice_Level1_One(t *testing.T) {
 }
 
 func TestPreload_Slice_Level1_One_DifferentPointerNull(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	batman := createUser(t, db, "batman")
-	robin := createUser(t, db, "robin")
-	catwoman := createUser(t, db, "catwoman")
+	batman := env.createUser("batman")
+	robin := env.createUser("robin")
+	catwoman := env.createUser("catwoman")
 	users := []User{batman, robin, catwoman}
 
 	// user_id => media_id
@@ -334,7 +334,7 @@ func TestPreload_Slice_Level1_One_DifferentPointerNull(t *testing.T) {
 		avatars[user.ID] = int(user.AvatarID.Int64)
 	}
 
-	queries, err := sqlxx.PreloadWithQueries(db, &users, "Avatar")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &users, "Avatar")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -350,19 +350,19 @@ func TestPreload_Slice_Level1_One_DifferentPointerNull(t *testing.T) {
 }
 
 func TestPreload_Slice_Level1_One_Different(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	batman := createUser(t, db, "batman")
-	robin := createUser(t, db, "robin")
-	catwoman := createUser(t, db, "catwoman")
+	batman := env.createUser("batman")
+	robin := env.createUser("robin")
+	catwoman := env.createUser("catwoman")
 
-	article1 := createArticle(t, db, &batman)
-	article2 := createArticle(t, db, &robin)
-	article3 := createArticle(t, db, &catwoman)
+	article1 := env.createArticle(&batman)
+	article2 := env.createArticle(&robin)
+	article3 := env.createArticle(&catwoman)
 	articles := []Article{article1, article2, article3}
 
-	queries, err := sqlxx.PreloadWithQueries(db, &articles, "Author", "Reviewer")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &articles, "Author", "Reviewer")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 2)
@@ -394,19 +394,19 @@ func TestPreload_Slice_Level1_One_Different(t *testing.T) {
 }
 
 func TestPreload_Slice_Level1_Many(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
 	users := []User{}
 	for i := 1; i < 6; i++ {
-		users = append(users, createUser(t, db, fmt.Sprintf("user%d", i)))
+		users = append(users, env.createUser(fmt.Sprintf("user%d", i)))
 	}
 
 	for _, user := range users {
 		assert.Zero(t, user.Avatars)
 	}
 
-	queries, err := sqlxx.PreloadWithQueries(db, &users, "Avatars")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &users, "Avatars")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -427,16 +427,16 @@ func TestPreload_Slice_Level1_Many(t *testing.T) {
 }
 
 func TestPreload_Slice_Level2_One_ValueAndPointer(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
-	user := createUser(t, db, "spiderman")
-	article := createArticle(t, db, &user)
-	deadpool := createUser(t, db, "deadpool")
-	article2 := createArticle(t, db, &deadpool)
+	user := env.createUser("spiderman")
+	article := env.createArticle(&user)
+	deadpool := env.createUser("deadpool")
+	article2 := env.createArticle(&deadpool)
 	articles := []Article{article, article2}
 
-	queries, err := sqlxx.PreloadWithQueries(db, &articles, "Author", "Author.APIKey")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, &articles, "Author", "Author.APIKey")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 2)

@@ -87,6 +87,7 @@ type Driver interface {
 	Preparex(query string) (*sqlx.Stmt, error)
 	Rebind(query string) string
 	Select(dest interface{}, query string, args ...interface{}) error
+	Close() error
 }
 
 // Model represents a database table.

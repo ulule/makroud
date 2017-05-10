@@ -10,15 +10,15 @@ import (
 )
 
 func TestDelete_Delete(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
 	user := User{Username: "thoas"}
 
-	_, err := sqlxx.SaveWithQueries(db, &user)
+	_, err := sqlxx.SaveWithQueries(env.driver, &user)
 	assert.NoError(t, err)
 
-	queries, err := sqlxx.DeleteWithQueries(db, &user)
+	queries, err := sqlxx.DeleteWithQueries(env.driver, &user)
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -32,7 +32,7 @@ func TestDelete_Delete(t *testing.T) {
 	WHERE username = :username
 	`
 
-	stmt, err := db.PrepareNamed(fmt.Sprintf(query, user.TableName()))
+	stmt, err := env.driver.PrepareNamed(fmt.Sprintf(query, user.TableName()))
 	assert.NoError(t, err)
 
 	var count int
@@ -42,15 +42,15 @@ func TestDelete_Delete(t *testing.T) {
 }
 
 func TestDelete_SoftDelete(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
 	user := User{Username: "thoas"}
 
-	_, err := sqlxx.SaveWithQueries(db, &user)
+	_, err := sqlxx.SaveWithQueries(env.driver, &user)
 	assert.NoError(t, err)
 
-	queries, err := sqlxx.SoftDeleteWithQueries(db, &user, "DeletedAt")
+	queries, err := sqlxx.SoftDeleteWithQueries(env.driver, &user, "DeletedAt")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -65,7 +65,7 @@ func TestDelete_SoftDelete(t *testing.T) {
 	AND deleted_at IS NULL
 	`
 
-	stmt, err := db.PrepareNamed(fmt.Sprintf(query, user.TableName()))
+	stmt, err := env.driver.PrepareNamed(fmt.Sprintf(query, user.TableName()))
 	assert.Nil(t, err)
 
 	var count int

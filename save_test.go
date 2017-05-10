@@ -10,12 +10,12 @@ import (
 )
 
 func TestSave_Save(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
 	user := User{Username: "thoas"}
 
-	queries, err := sqlxx.SaveWithQueries(db, &user)
+	queries, err := sqlxx.SaveWithQueries(env.driver, &user)
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -27,7 +27,7 @@ func TestSave_Save(t *testing.T) {
 
 	user.Username = "gilles"
 
-	queries, err = sqlxx.SaveWithQueries(db, &user)
+	queries, err = sqlxx.SaveWithQueries(env.driver, &user)
 	assert.NoError(t, err)
 	assert.Contains(t, queries[0].Query, "UPDATE users SET")
 	assert.Contains(t, queries[0].Query, "username = :username")
@@ -40,7 +40,7 @@ func TestSave_Save(t *testing.T) {
 	WHERE username = :username
 	`
 
-	stmt, err := db.PrepareNamed(fmt.Sprintf(query, user.TableName()))
+	stmt, err := env.driver.PrepareNamed(fmt.Sprintf(query, user.TableName()))
 	assert.Nil(t, err)
 
 	var count int

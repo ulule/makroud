@@ -141,21 +141,6 @@ CREATE TABLE articles_categories (
 	category_id 	integer references categories(id)
 );`
 
-type TestData struct {
-	User               User
-	APIKeys            []APIKey
-	Profiles           []Profile
-	AvatarFilters      []AvatarFilter
-	Avatars            []Avatar
-	Articles           []Article
-	Categories         []Category
-	Tags               []Tag
-	ArticlesCategories []ArticleCategory
-	Partners           []Partner
-	Managers           []Manager
-	Projects           []Project
-}
-
 type Partner struct {
 	ID   int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
 	Name string `db:"name"`
@@ -304,197 +289,279 @@ type ArticleCategory struct {
 func (ArticleCategory) TableName() string { return "articles_categories" }
 
 // ----------------------------------------------------------------------------
-// Models with different IDs
+// Loader
 // ----------------------------------------------------------------------------
 
-func dbParam(param string) string {
-	param = strings.ToUpper(param)
-
-	if v := os.Getenv(fmt.Sprintf("DB_%s", param)); len(v) != 0 {
-		return v
-	}
-
-	return dbDefaultParams[param]
+type environment struct {
+	driver             sqlxx.Driver
+	t                  *testing.T
+	Users              []User
+	APIKeys            []APIKey
+	Profiles           []Profile
+	AvatarFilters      []AvatarFilter
+	Avatars            []Avatar
+	Articles           []Article
+	Categories         []Category
+	Tags               []Tag
+	ArticlesCategories []ArticleCategory
+	Partners           []Partner
+	Managers           []Manager
+	Projects           []Project
+	Medias             []Media
 }
 
-func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
-	// Partners
-	driver.MustExec("INSERT INTO partners (name) VALUES ($1)", "Ulule")
-	partners := []Partner{}
-	assert.NoError(t, driver.Select(&partners, "SELECT * FROM partners"))
-	partner := partners[0]
+func (e *environment) load() {
+	e.insertPartners()
+	e.insertAPIKeys()
+	e.insertMedias()
+	e.insertUsers()
+	e.insertManagers()
+	e.insertProjects()
+	e.insertAvatarFilters()
+	e.insertAvatars()
+	e.insertProfiles()
+	e.insertCategories()
+	e.insertTags()
+	e.insertArticles()
+}
 
-	// API Keys
-	driver.MustExec("INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)", "this-is-my-scret-api-key", partner.ID)
-	apiKeys := []APIKey{}
-	assert.NoError(t, driver.Select(&apiKeys, "SELECT * FROM api_keys"))
-	apiKey := apiKeys[0]
+func (e *environment) insertPartners() {
+	e.driver.MustExec("INSERT INTO partners (name) VALUES ($1)", "Ulule")
+	assert.NoError(e.t, e.driver.Select(&e.Partners, "SELECT * FROM partners"))
+}
 
-	// Media
-	driver.MustExec("INSERT INTO media (path) VALUES ($1)", "media/avatar.png")
-	media := Media{}
-	assert.NoError(t, driver.Get(&media, "SELECT * FROM media LIMIT 1"))
+func (e *environment) insertAPIKeys() {
+	e.driver.MustExec(
+		"INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)",
+		"this-is-my-scret-api-key",
+		e.Partners[0].ID)
 
-	// Users
-	driver.MustExec("INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)", "jdoe", apiKey.ID, media.ID)
-	user := User{}
-	assert.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", "jdoe"))
+	assert.NoError(e.t, e.driver.Select(&e.APIKeys, "SELECT * FROM api_keys"))
+}
 
-	// Managers
-	driver.MustExec("INSERT INTO managers (name, user_id) VALUES ($1, $2)", "Super Owl", user.ID)
-	managers := []Manager{}
-	assert.NoError(t, driver.Select(&managers, "SELECT * FROM managers"))
-	manager := managers[0]
+func (e *environment) insertMedias() {
+	e.driver.MustExec(
+		"INSERT INTO media (path) VALUES ($1)",
+		"media/avatar.png")
 
-	// Projects
-	driver.MustExec("INSERT INTO projects (name, manager_id, user_id) VALUES ($1, $2, $3)", "Super Project", manager.ID, user.ID)
-	projects := []Project{}
-	assert.NoError(t, driver.Select(&projects, "SELECT * FROM projects"))
+	assert.NoError(e.t, e.driver.Select(&e.Medias, "SELECT * FROM media"))
+}
+func (e *environment) insertUsers() {
+	e.driver.MustExec(
+		"INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)",
+		"jdoe",
+		e.APIKeys[0].ID,
+		e.Medias[0].ID)
 
-	// Avatar filters
-	avatarfilterNames := []string{
-		"normal",
-		"clarendon",
-		"juno",
-		"lark",
-		"ludwig",
-		"gingham",
-		"valencia",
-		"xpro",
-		"lo-fi",
-		"amaro",
+	assert.NoError(e.t, e.driver.Select(&e.Users, "SELECT * FROM users WHERE username=$1", "jdoe"))
+}
+
+func (e *environment) insertManagers() {
+	e.driver.MustExec(
+		"INSERT INTO managers (name, user_id) VALUES ($1, $2)",
+		"Super Owl",
+		e.Users[0].ID)
+
+	assert.NoError(e.t, e.driver.Select(&e.Managers, "SELECT * FROM managers"))
+}
+
+func (e *environment) insertProjects() {
+	e.driver.MustExec(
+		"INSERT INTO projects (name, manager_id, user_id) VALUES ($1, $2, $3)",
+		"Super Project",
+		e.Managers[0].ID,
+		e.Users[0].ID)
+
+	assert.NoError(e.t, e.driver.Select(&e.Projects, "SELECT * FROM projects"))
+}
+
+func (e *environment) insertAvatarFilters() {
+	names := []string{"normal", "clarendon", "juno", "lark", "ludwig", "gingham", "valencia"}
+	for _, name := range names {
+		e.driver.MustExec("INSERT INTO avatar_filters (name) VALUES ($1)", name)
 	}
 
-	for _, name := range avatarfilterNames {
-		driver.MustExec("INSERT INTO avatar_filters (name) VALUES ($1)", name)
-	}
+	assert.NoError(e.t, e.driver.Select(&e.AvatarFilters, "SELECT * FROM avatar_filters"))
+}
 
-	avatarFilters := []AvatarFilter{}
-	assert.NoError(t, driver.Select(&avatarFilters, "SELECT * FROM avatar_filters"))
-
-	// Avatars
+func (e *environment) insertAvatars() {
 	for i := 0; i < 5; i++ {
-		driver.MustExec("INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)", fmt.Sprintf("/avatars/%s-%d.png", user.Username, i), user.ID, avatarFilters[0].ID)
+		e.driver.MustExec(
+			"INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)",
+			fmt.Sprintf("/avatars/%s-%d.png", e.Users[0].Username, i),
+			e.Users[0].ID,
+			e.AvatarFilters[0].ID)
 	}
-	avatars := []Avatar{}
-	assert.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
 
-	// Profiles
-	driver.MustExec("INSERT INTO profiles (user_id, first_name, last_name) VALUES ($1, $2, $3)", user.ID, "John", "Doe")
-	profiles := []Profile{}
-	assert.NoError(t, driver.Select(&profiles, "SELECT * FROM profiles"))
+	assert.NoError(e.t, e.driver.Select(&e.Avatars, "SELECT * FROM avatars"))
+}
 
-	// Categories
+func (e *environment) insertProfiles() {
+	e.driver.MustExec(
+		"INSERT INTO profiles (user_id, first_name, last_name) VALUES ($1, $2, $3)",
+		e.Users[0].ID,
+		"John",
+		"Doe")
+
+	assert.NoError(e.t, e.driver.Select(&e.Profiles, "SELECT * FROM profiles"))
+}
+
+func (e *environment) insertCategories() {
 	for i := 0; i < 5; i++ {
-		driver.MustExec("INSERT INTO categories (name, user_id) VALUES ($1, $2)", fmt.Sprintf("Category #%d", i), user.ID)
+		e.driver.MustExec(
+			"INSERT INTO categories (name, user_id) VALUES ($1, $2)",
+			fmt.Sprintf("Category #%d", i),
+			e.Users[0].ID)
 	}
-	categories := []Category{}
-	assert.NoError(t, driver.Select(&categories, "SELECT * FROM categories"))
 
-	// Tags
-	driver.MustExec("INSERT INTO tags (name) VALUES ($1)", "Tag")
-	tags := []Tag{}
-	assert.NoError(t, driver.Select(&tags, "SELECT * FROM tags"))
-	tag := tags[0]
+	assert.NoError(e.t, e.driver.Select(&e.Categories, "SELECT * FROM categories"))
+}
 
-	// Articles
+func (e *environment) insertTags() {
+	e.driver.MustExec("INSERT INTO tags (name) VALUES ($1)", "Tag")
+	assert.NoError(e.t, e.driver.Select(&e.Tags, "SELECT * FROM tags"))
+}
+
+func (e *environment) insertArticles() {
 	for i := 0; i < 5; i++ {
-		driver.MustExec("INSERT INTO articles (title, author_id, reviewer_id, main_tag_id) VALUES ($1, $2, $3, $4)", fmt.Sprintf("Title #%d", i), user.ID, user.ID, tag.ID)
+		e.driver.MustExec(
+			"INSERT INTO articles (title, author_id, reviewer_id, main_tag_id) VALUES ($1, $2, $3, $4)",
+			fmt.Sprintf("Title #%d", i),
+			e.Users[0].ID,
+			e.Users[0].ID,
+			e.Tags[0].ID)
 	}
-	articles := []Article{}
-	assert.NoError(t, driver.Select(&articles, "SELECT * FROM articles"))
 
-	// Articles <-> Categories
-	for _, article := range articles {
-		for _, category := range categories {
-			driver.MustExec("INSERT INTO articles_categories (article_id, category_id) VALUES ($1, $2)", article.ID, category.ID)
+	assert.NoError(e.t, e.driver.Select(&e.Articles, "SELECT * FROM articles"))
+
+	for _, article := range e.Articles {
+		for _, category := range e.Categories {
+			e.driver.MustExec(
+				"INSERT INTO articles_categories (article_id, category_id) VALUES ($1, $2)",
+				article.ID,
+				category.ID)
 		}
 	}
-	articlesCategories := []ArticleCategory{}
-	assert.NoError(t, driver.Select(&articlesCategories, "SELECT * FROM articles_categories"))
 
-	return &TestData{
-		APIKeys:            apiKeys,
-		User:               user,
-		Profiles:           profiles,
-		AvatarFilters:      avatarFilters,
-		Avatars:            avatars,
-		Categories:         categories,
-		Tags:               tags,
-		Articles:           articles,
-		ArticlesCategories: articlesCategories,
-		Partners:           partners,
-		Managers:           managers,
-		Projects:           projects,
-	}
+	assert.NoError(e.t, e.driver.Select(&e.ArticlesCategories, "SELECT * FROM articles_categories"))
 }
 
-func createComment(t *testing.T, driver sqlxx.Driver, user *User, article *Article) Comment {
+func (e *environment) createComment(user *User, article *Article) Comment {
 	var id int
-	err := driver.QueryRowx("INSERT INTO comments (content, user_id, article_id) VALUES ($1, $2, $3) RETURNING id", "Lorem Ipsum", user.ID, article.ID).Scan(&id)
-	assert.Nil(t, err)
+
+	err := e.driver.QueryRowx(
+		"INSERT INTO comments (content, user_id, article_id) VALUES ($1, $2, $3) RETURNING id",
+		"Lorem Ipsum",
+		user.ID,
+		article.ID).Scan(&id)
+
+	assert.Nil(e.t, err)
 
 	comment := Comment{}
-	assert.NoError(t, driver.Get(&comment, "SELECT * FROM comments WHERE id = $1", id))
+	assert.NoError(e.t, e.driver.Get(&comment, "SELECT * FROM comments WHERE id = $1", id))
 
 	return comment
 }
 
-func createArticle(t *testing.T, driver sqlxx.Driver, user *User) Article {
+func (e *environment) createArticle(user *User) Article {
 	var id int
-	err := driver.QueryRowx("INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3) RETURNING id", "Title", user.ID, user.ID).Scan(&id)
-	assert.Nil(t, err)
+
+	err := e.driver.QueryRowx(
+		"INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3) RETURNING id",
+		"Title",
+		user.ID,
+		user.ID).Scan(&id)
+
+	assert.Nil(e.t, err)
 
 	article := Article{}
-	assert.NoError(t, driver.Get(&article, "SELECT * FROM articles WHERE id = $1", id))
+	assert.NoError(e.t, e.driver.Get(&article, "SELECT * FROM articles WHERE id = $1", id))
 
 	return article
 }
 
-func createUser(t *testing.T, driver sqlxx.Driver, username string) User {
-	key := fmt.Sprintf("%s-apikey", username)
-	name := fmt.Sprintf("%s-partner", username)
+func (e *environment) createUser(username string) User {
+	var (
+		key  = fmt.Sprintf("%s-apikey", username)
+		name = fmt.Sprintf("%s-partner", username)
+	)
 
-	driver.MustExec("INSERT INTO partners (name) VALUES ($1)", name)
 	partner := Partner{}
-	assert.NoError(t, driver.Get(&partner, "SELECT * FROM partners WHERE name = $1", name))
 
-	driver.MustExec("INSERT INTO media (path) VALUES ($1)", fmt.Sprintf("media/media-%s.png", username))
+	e.driver.MustExec(
+		"INSERT INTO partners (name) VALUES ($1)",
+		name)
+
+	assert.NoError(e.t, e.driver.Get(&partner, "SELECT * FROM partners WHERE name = $1", name))
+
 	media := Media{}
-	assert.NoError(t, driver.Get(&media, "SELECT * FROM media ORDER BY id DESC LIMIT 1"))
 
-	driver.MustExec("INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)", key, partner.ID)
+	e.driver.MustExec(
+		"INSERT INTO media (path) VALUES ($1)",
+		fmt.Sprintf("media/media-%s.png", username))
+
+	assert.NoError(e.t, e.driver.Get(&media, "SELECT * FROM media ORDER BY id DESC LIMIT 1"))
+
 	apiKey := APIKey{}
-	assert.NoError(t, driver.Get(&apiKey, "SELECT * FROM api_keys WHERE key = $1", key))
 
-	driver.MustExec("INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)", username, apiKey.ID, media.ID)
+	e.driver.MustExec(
+		"INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)",
+		key,
+		partner.ID)
+
+	assert.NoError(e.t, e.driver.Get(&apiKey, "SELECT * FROM api_keys WHERE key = $1", key))
+
 	user := User{}
-	assert.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", username))
+
+	e.driver.MustExec(
+		"INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)",
+		username,
+		apiKey.ID,
+		media.ID)
+
+	assert.NoError(e.t, e.driver.Get(&user, "SELECT * FROM users WHERE username=$1", username))
 
 	for i := 1; i < 6; i++ {
-		driver.MustExec("INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)", fmt.Sprintf("/avatars/%s-%d.png", username, i), user.ID, i)
+		e.driver.MustExec(
+			"INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)",
+			fmt.Sprintf("/avatars/%s-%d.png", username, i),
+			user.ID,
+			i)
 	}
-
-	avatars := []Avatar{}
-	assert.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
 
 	return user
 }
 
-func createCategory(t *testing.T, driver sqlxx.Driver, name string, userID *int) Category {
-	driver.MustExec("INSERT INTO categories (name) VALUES ($1)", name)
-
+func (e *environment) createCategory(name string, userID *int) Category {
+	e.driver.MustExec("INSERT INTO categories (name) VALUES ($1)", name)
 	if userID != nil {
-		driver.MustExec("UPDATE categories SET user_id=$1 WHERE name=$2", *userID, name)
+		e.driver.MustExec("UPDATE categories SET user_id=$1 WHERE name=$2", *userID, name)
 	}
 
 	category := Category{}
-	assert.NoError(t, driver.Get(&category, "SELECT * FROM categories WHERE name=$1", name))
+	assert.NoError(e.t, e.driver.Get(&category, "SELECT * FROM categories WHERE name=$1", name))
 
 	return category
 }
 
-func dbConnection(t *testing.T) (*sqlx.DB, *TestData, func()) {
+func (e *environment) teardown() {
+	value := os.Getenv("KEEP_DB")
+	if len(value) == 0 {
+		e.driver.MustExec(dropTables)
+	}
+
+	assert.NoError(e.t, e.driver.Close())
+}
+
+func dbParam(param string) string {
+	param = strings.ToUpper(param)
+	if v := os.Getenv(fmt.Sprintf("DB_%s", param)); len(v) != 0 {
+		return v
+	}
+	return dbDefaultParams[param]
+}
+
+func setup(t *testing.T) *environment {
 	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable;timezone=UTC",
 		dbParam("user"),
 		dbParam("password"),
@@ -508,10 +575,8 @@ func dbConnection(t *testing.T) (*sqlx.DB, *TestData, func()) {
 	dbx.MustExec(dropTables)
 	dbx.MustExec(dbSchema)
 
-	return dbx, loadData(t, dbx), func() {
-		if value := os.Getenv("KEEP_DB"); len(value) == 0 {
-			dbx.MustExec(dropTables)
-		}
-		assert.NoError(t, db.Close())
-	}
+	env := &environment{t: t, driver: dbx}
+	env.load()
+
+	return env
 }

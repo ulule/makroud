@@ -9,12 +9,12 @@ import (
 )
 
 func TestFind_GetByParams(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
 	user := User{}
 
-	queries, err := sqlxx.GetByParamsWithQueries(db, &user, map[string]interface{}{"username": "jdoe", "is_active": true})
+	queries, err := sqlxx.GetByParamsWithQueries(env.driver, &user, map[string]interface{}{"username": "jdoe", "is_active": true})
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -31,12 +31,12 @@ func TestFind_GetByParams(t *testing.T) {
 }
 
 func TestFind_FindByParams(t *testing.T) {
-	db, _, shutdown := dbConnection(t)
-	defer shutdown()
+	env := setup(t)
+	defer env.teardown()
 
 	users := []User{}
 
-	queries, err := sqlxx.FindByParamsWithQueries(db, &users, map[string]interface{}{"is_active": true})
+	queries, err := sqlxx.FindByParamsWithQueries(env.driver, &users, map[string]interface{}{"is_active": true})
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
@@ -53,7 +53,7 @@ func TestFind_FindByParams(t *testing.T) {
 
 	// SELEC IN
 	users = []User{}
-	queries, err = sqlxx.FindByParamsWithQueries(db, &users, map[string]interface{}{"is_active": true, "id": []int{1, 2, 3}})
+	queries, err = sqlxx.FindByParamsWithQueries(env.driver, &users, map[string]interface{}{"is_active": true, "id": []int{1, 2, 3}})
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
