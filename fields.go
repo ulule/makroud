@@ -55,6 +55,11 @@ func (f Field) String() string {
 		f.AssociationType)
 }
 
+// IsValidAssociation returns true if the association is a valid one.
+func (f Field) IsValidAssociation() bool {
+	return f.IsAssociation && f.ForeignKey != nil
+}
+
 // IsAssociationTypeOne returns true if the field is an AssociationTypeOne.
 func (f Field) IsAssociationTypeOne() bool {
 	return f.AssociationType == AssociationTypeOne

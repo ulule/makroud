@@ -142,9 +142,8 @@ func preloadSingle(driver Driver, out interface{}, level int, fields []Field) (Q
 func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, error) {
 	var queries Queries
 
-	err := checkAssociation(field)
-	if err != nil {
-		return nil, err
+	if !field.IsValidAssociation() {
+		return nil, fmt.Errorf("field %s is not a valid association", field.Name)
 	}
 
 	fk, err := GetFieldValueInt64(out, field.ForeignKey.FieldName)
@@ -513,16 +512,4 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 	}
 
 	return queries, nil
-}
-
-func checkAssociation(field Field) error {
-	if !field.IsAssociation {
-		return fmt.Errorf("field '%s' is not an association", field.Name)
-	}
-
-	if field.ForeignKey == nil {
-		return fmt.Errorf("no ForeignKey instance found for field %s", field.Name)
-	}
-
-	return nil
 }
