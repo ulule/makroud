@@ -176,7 +176,7 @@ func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, err
 
 	queries = append(queries, q)
 
-	relation := CloneType(field.ForeignKey.Reference.Model)
+	relation := Copy(field.ForeignKey.Reference.Model)
 
 	err = driver.Get(relation, driver.Rebind(q.Query), q.Args...)
 	if err != nil {

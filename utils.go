@@ -7,6 +7,20 @@ import (
 	"strings"
 )
 
+// ----------------------------------------------------------------------------
+// Int64
+// ----------------------------------------------------------------------------
+
+// InInt64Slice returns true if needle is found in the given slice.
+func InInt64Slice(slc []int64, needle int64) bool {
+	for _, item := range slc {
+		if item == needle {
+			return true
+		}
+	}
+	return false
+}
+
 // IntToInt64 converts given int to int64.
 func IntToInt64(value interface{}) (int64, error) {
 	// sql.NullInt* support
@@ -33,118 +47,9 @@ func IntToInt64(value interface{}) (int64, error) {
 	return reflected.Convert(int64Type).Int(), nil
 }
 
-// GetPrimaryKeys returns primary keys for the given interface.
-func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
-	var values []interface{}
-
-	pks, err := GetFieldValues(out, name)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range pks {
-		pk := pks[i]
-
-		valuer, ok := Copy(pk).(driver.Valuer)
-		if ok {
-			v, err := valuer.Value()
-			if err == nil && v != nil {
-				pk = v
-			}
-		}
-
-		if !IsZeroValue(pk) {
-			values = append(values, pk)
-		}
-	}
-
-	return values, nil
-}
-
-// GetIndirectType returns indirect type for the given type.
-func GetIndirectType(itf interface{}) reflect.Type {
-	t, ok := itf.(reflect.Type)
-	if !ok {
-		t = reflect.TypeOf(itf)
-	}
-
-	if t.Kind() == reflect.Ptr {
-		return GetIndirectType(t.Elem())
-	}
-
-	return t
-}
-
-// MakeSlice takes a type and returns create a slice from.
-func MakeSlice(itf interface{}) interface{} {
-	sliceType := reflect.SliceOf(GetIndirectType(itf))
-	slice := reflect.New(sliceType)
-	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
-	return slice.Elem().Interface()
-}
-
-// CloneType returns a new interface from a given interface.
-func CloneType(itf interface{}, args ...reflect.Kind) interface{} {
-	var kind reflect.Kind
-	if len(args) > 0 {
-		kind = args[0]
-	}
-
-	if kind == reflect.Slice {
-		return reflect.New(reflect.TypeOf(MakeSlice(itf))).Interface()
-	}
-
-	return reflect.New(reflect.TypeOf(itf)).Interface()
-}
-
-// Copy makes a copy of the given interface.
-func Copy(itf interface{}) interface{} {
-	// Original type
-	t := reflect.TypeOf(itf)
-
-	cp := reflect.New(t)
-	cp.Elem().Set(reflect.ValueOf(itf))
-
-	// Avoid double pointers if itf is a pointer
-	if t.Kind() == reflect.Ptr {
-		return cp.Elem().Interface()
-	}
-
-	return cp.Interface()
-}
-
-// GetFieldValuesInSlice returns values for the given field in slice of structs.
-func GetFieldValuesInSlice(slc interface{}, field string) ([]interface{}, error) {
-	var (
-		value  = reflect.ValueOf(slc).Elem()
-		slcLen = value.Len()
-		values []interface{}
-	)
-
-	for i := 0; i < slcLen; i++ {
-		v, err := GetFieldValue(value.Index(i).Interface(), field)
-		if err != nil {
-			return nil, err
-		}
-		values = append(values, v)
-	}
-
-	return values, nil
-}
-
-// GetFieldValues returns values for the given field for struct or slice.
-func GetFieldValues(out interface{}, name string) ([]interface{}, error) {
-	if IsSlice(out) {
-		return GetFieldValuesInSlice(out, name)
-	}
-
-	v, err := GetFieldValue(out, name)
-	if err != nil {
-		return nil, err
-	}
-
-	return []interface{}{v}, nil
-}
+// ----------------------------------------------------------------------------
+// Field values
+// ----------------------------------------------------------------------------
 
 // GetFieldValue returns the value
 func GetFieldValue(itf interface{}, name string) (interface{}, error) {
@@ -188,6 +93,39 @@ func GetFieldValueInt64(instance interface{}, field string) (int64, error) {
 	return converted, nil
 }
 
+// GetFieldValues returns values for the given field for struct or slice.
+func GetFieldValues(out interface{}, name string) ([]interface{}, error) {
+	if IsSlice(out) {
+		return GetFieldValuesInSlice(out, name)
+	}
+
+	v, err := GetFieldValue(out, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return []interface{}{v}, nil
+}
+
+// GetFieldValuesInSlice returns values for the given field in slice of structs.
+func GetFieldValuesInSlice(slc interface{}, field string) ([]interface{}, error) {
+	var (
+		value  = reflect.ValueOf(slc).Elem()
+		slcLen = value.Len()
+		values []interface{}
+	)
+
+	for i := 0; i < slcLen; i++ {
+		v, err := GetFieldValue(value.Index(i).Interface(), field)
+		if err != nil {
+			return nil, err
+		}
+		values = append(values, v)
+	}
+
+	return values, nil
+}
+
 // SetFieldValue sets the provided value
 func SetFieldValue(itf interface{}, name string, value interface{}) error {
 	v, ok := itf.(reflect.Value)
@@ -222,6 +160,10 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 	return nil
 }
 
+// ----------------------------------------------------------------------------
+// Is helpers
+// ----------------------------------------------------------------------------
+
 // IsSlice returns true if the given interface is a slice.
 func IsSlice(itf interface{}) bool {
 	return GetIndirectType(reflect.ValueOf(itf).Type()).Kind() == reflect.Slice
@@ -237,6 +179,47 @@ func IsZeroValue(itf interface{}) bool {
 	}
 
 	return reflect.Indirect(v).Interface() == reflect.Zero(reflect.Indirect(v).Type()).Interface()
+}
+
+// ----------------------------------------------------------------------------
+// Reflection
+// ----------------------------------------------------------------------------
+
+// GetIndirectType returns indirect type for the given type.
+func GetIndirectType(itf interface{}) reflect.Type {
+	t, ok := itf.(reflect.Type)
+	if !ok {
+		t = reflect.TypeOf(itf)
+	}
+
+	if t.Kind() == reflect.Ptr {
+		return GetIndirectType(t.Elem())
+	}
+
+	return t
+}
+
+// MakeSlice takes a type and returns create a slice from.
+func MakeSlice(itf interface{}) interface{} {
+	sliceType := reflect.SliceOf(GetIndirectType(itf))
+	slice := reflect.New(sliceType)
+	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
+	return slice.Elem().Interface()
+}
+
+// Copy makes a copy of the given interface.
+func Copy(itf interface{}) interface{} {
+	t := reflect.TypeOf(itf)
+
+	cp := reflect.New(t)
+	cp.Elem().Set(reflect.ValueOf(itf))
+
+	// Avoid double pointers if itf is a pointer
+	if t.Kind() == reflect.Ptr {
+		return cp.Elem().Interface()
+	}
+
+	return cp.Interface()
 }
 
 // FieldTagProperty is a struct tag property
@@ -402,14 +385,4 @@ func GetFieldTags(field reflect.StructField, tagNames []string, propertyMapping 
 	}
 
 	return tags
-}
-
-// InInt64Slice returns true if needle is found in the given slice.
-func InInt64Slice(slc []int64, needle int64) bool {
-	for _, item := range slc {
-		if item == needle {
-			return true
-		}
-	}
-	return false
 }
