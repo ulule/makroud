@@ -61,21 +61,6 @@ func GetPrimaryKeys(out interface{}, name string) ([]interface{}, error) {
 	return values, nil
 }
 
-// GetInt64PrimaryKey returns int64 primary key for the given instance.
-func GetInt64PrimaryKey(instance interface{}, field string) (int64, error) {
-	pkv, err := GetFieldValue(instance, field)
-	if err != nil {
-		return 0, err
-	}
-
-	pk, err := IntToInt64(pkv)
-	if err != nil {
-		return 0, err
-	}
-
-	return pk, nil
-}
-
 // GetIndirectType returns indirect type for the given type.
 func GetIndirectType(itf interface{}) reflect.Type {
 	t, ok := itf.(reflect.Type)
@@ -186,6 +171,21 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 	}
 
 	return field.Interface(), nil
+}
+
+// GetFieldValueInt64 returns int64 value for the given instance field.
+func GetFieldValueInt64(instance interface{}, field string) (int64, error) {
+	value, err := GetFieldValue(instance, field)
+	if err != nil {
+		return 0, err
+	}
+
+	converted, err := IntToInt64(value)
+	if err != nil {
+		return 0, err
+	}
+
+	return converted, nil
 }
 
 func getFieldValues(instance interface{}, field string) (value reflect.Value, ptr reflect.Value, err error) {
