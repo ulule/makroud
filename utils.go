@@ -204,29 +204,13 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 }
 
 // ----------------------------------------------------------------------------
-// Is helpers
+// Reflection
 // ----------------------------------------------------------------------------
 
 // IsSlice returns true if the given interface is a slice.
 func IsSlice(itf interface{}) bool {
 	return GetIndirectType(reflect.ValueOf(itf).Type()).Kind() == reflect.Slice
 }
-
-// IsZeroValue returns true if the given interface is a zero value.
-func IsZeroValue(itf interface{}) bool {
-	v := reflect.ValueOf(itf)
-
-	// Avoid call of reflect.Value.Interface on zero Value
-	if !v.IsValid() {
-		return true
-	}
-
-	return reflect.Indirect(v).Interface() == reflect.Zero(reflect.Indirect(v).Type()).Interface()
-}
-
-// ----------------------------------------------------------------------------
-// Reflection
-// ----------------------------------------------------------------------------
 
 // GetIndirectType returns indirect type for the given type.
 func GetIndirectType(itf interface{}) reflect.Type {
