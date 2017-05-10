@@ -97,13 +97,24 @@ func preloadSingle(driver Driver, out interface{}, level int, fields []Field) (Q
 				return queries, err
 			}
 
-			relationOut := Copy(relation)
+			var (
+				relationOut = Copy(relation)
+				isSlice     = IsSlice(relation)
+			)
 
 			if field.IsAssociationTypeOne() {
-				q, err := preloadSingleOne(driver, relationOut, field)
-				queries = append(queries, q...)
-				if err != nil {
-					return queries, err
+				if isSlice {
+					q, err := preloadSliceOne(driver, relationOut, field)
+					queries = append(queries, q...)
+					if err != nil {
+						return queries, err
+					}
+				} else {
+					q, err := preloadSingleOne(driver, relationOut, field)
+					queries = append(queries, q...)
+					if err != nil {
+						return queries, err
+					}
 				}
 			}
 
@@ -215,13 +226,22 @@ func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, er
 // ----------------------------------------------------------------------------
 
 func preloadSlice(driver Driver, out interface{}, level int, fields []Field) (Queries, error) {
-	var queries Queries
+	var (
+		queries Queries
+		slc     reflect.Value
+		value   = reflect.ValueOf(out)
+	)
+
+	if value.Kind() == reflect.Slice {
+		slc = value
+	} else {
+		slc = value.Elem()
+	}
 
 	for _, field := range fields {
 		if level > 1 {
 			var (
 				relations []interface{}
-				slc       = reflect.ValueOf(out).Elem()
 				mapping   = map[int64][]interface{}{}
 			)
 

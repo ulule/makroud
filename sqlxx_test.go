@@ -28,6 +28,7 @@ var dropTables = `
 	DROP TABLE IF EXISTS api_keys CASCADE;
 	DROP TABLE IF EXISTS profiles CASCADE;
 	DROP TABLE IF EXISTS comments CASCADE;
+	DROP TABLE IF EXISTS avatar_filters CASCADE;
 	DROP TABLE IF EXISTS avatars CASCADE;
 	DROP TABLE IF EXISTS categories CASCADE;
 	DROP TABLE IF EXISTS tags CASCADE;
@@ -89,17 +90,23 @@ CREATE TABLE media (
 	updated_at	timestamp with time zone default current_timestamp
 );
 
+CREATE TABLE tags (
+	id 		serial primary key not null,
+	name 		varchar(255) not null
+);
+
+CREATE TABLE avatar_filters (
+	id 		serial primary key not null,
+	name 		varchar(255) not null
+);
+
 CREATE TABLE avatars (
 	id 		serial primary key not null,
 	path 		varchar(255) not null,
 	user_id 	integer references users(id),
+	filter_id	integer references avatar_filters(id),
 	created_at 	timestamp with time zone default current_timestamp,
 	updated_at 	timestamp with time zone default current_timestamp
-);
-
-CREATE TABLE tags (
-	id 		serial primary key not null,
-	name 		varchar(255) not null
 );
 
 CREATE TABLE articles (
@@ -138,6 +145,7 @@ type TestData struct {
 	User               User
 	APIKeys            []APIKey
 	Profiles           []Profile
+	AvatarFilters      []AvatarFilter
 	Avatars            []Avatar
 	Articles           []Article
 	Categories         []Category
@@ -206,10 +214,8 @@ type User struct {
 	APIKey   APIKey
 	AvatarID sql.NullInt64 `db:"avatar_id"`
 	Avatar   *Media
-
-	Avatars []Avatar
-	// Comments []Comment
-	Profile Profile
+	Avatars  []Avatar
+	Profile  Profile
 }
 
 func (User) TableName() string { return "users" }
@@ -236,12 +242,21 @@ type Profile struct {
 
 func (Profile) TableName() string { return "profiles" }
 
+type AvatarFilter struct {
+	ID   int    `db:"id" sqlxx:"primary_key:true"`
+	Name string `db:"name"`
+}
+
+func (AvatarFilter) TableName() string { return "avatar_filters" }
+
 type Avatar struct {
 	ID        int       `db:"id" sqlxx:"primary_key:true"`
 	Path      string    `db:"path"`
 	UserID    int       `db:"user_id"`
+	FilterID  int       `db:"filter_id"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
+	Filter    AvatarFilter
 }
 
 func (Avatar) TableName() string { return "avatars" }
@@ -335,9 +350,30 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 	projects := []Project{}
 	assert.NoError(t, driver.Select(&projects, "SELECT * FROM projects"))
 
+	// Avatar filters
+	avatarfilterNames := []string{
+		"normal",
+		"clarendon",
+		"juno",
+		"lark",
+		"ludwig",
+		"gingham",
+		"valencia",
+		"xpro",
+		"lo-fi",
+		"amaro",
+	}
+
+	for _, name := range avatarfilterNames {
+		driver.MustExec("INSERT INTO avatar_filters (name) VALUES ($1)", name)
+	}
+
+	avatarFilters := []AvatarFilter{}
+	assert.NoError(t, driver.Select(&avatarFilters, "SELECT * FROM avatar_filters"))
+
 	// Avatars
 	for i := 0; i < 5; i++ {
-		driver.MustExec("INSERT INTO avatars (path, user_id) VALUES ($1, $2)", fmt.Sprintf("/avatars/%s-%d.png", user.Username, i), user.ID)
+		driver.MustExec("INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)", fmt.Sprintf("/avatars/%s-%d.png", user.Username, i), user.ID, avatarFilters[0].ID)
 	}
 	avatars := []Avatar{}
 	assert.NoError(t, driver.Select(&avatars, "SELECT * FROM avatars"))
@@ -380,6 +416,7 @@ func loadData(t *testing.T, driver sqlxx.Driver) *TestData {
 		APIKeys:            apiKeys,
 		User:               user,
 		Profiles:           profiles,
+		AvatarFilters:      avatarFilters,
 		Avatars:            avatars,
 		Categories:         categories,
 		Tags:               tags,
@@ -434,7 +471,7 @@ func createUser(t *testing.T, driver sqlxx.Driver, username string) User {
 	assert.NoError(t, driver.Get(&user, "SELECT * FROM users WHERE username=$1", username))
 
 	for i := 1; i < 6; i++ {
-		driver.MustExec("INSERT INTO avatars (path, user_id) VALUES ($1, $2)", fmt.Sprintf("/avatars/%s-%d.png", username, i), user.ID)
+		driver.MustExec("INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)", fmt.Sprintf("/avatars/%s-%d.png", username, i), user.ID, i)
 	}
 
 	avatars := []Avatar{}

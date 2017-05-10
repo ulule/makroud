@@ -162,12 +162,7 @@ func GetFieldValues(out interface{}, name string) ([]interface{}, error) {
 }
 
 // GetFieldValue returns the value
-func GetFieldValue(itf interface{}, name string, args ...bool) (interface{}, error) {
-	asPtr := false
-	if len(args) > 0 {
-		asPtr = true
-	}
-
+func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 	value, ok := itf.(reflect.Value)
 	if !ok {
 		value = reflect.Indirect(reflect.ValueOf(itf))
@@ -188,13 +183,6 @@ func GetFieldValue(itf interface{}, name string, args ...bool) (interface{}, err
 	field := value.FieldByName(name)
 	if !field.IsValid() {
 		return nil, fmt.Errorf("no such field %s in %+v", name, itf)
-	}
-
-	if asPtr {
-		if field.Kind() == reflect.Struct {
-			v := field.Interface()
-			return reflect.ValueOf(&v).Interface(), nil
-		}
 	}
 
 	return field.Interface(), nil
