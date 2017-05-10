@@ -214,19 +214,24 @@ func TestPreload_Single_Many_Level1(t *testing.T) {
 	}
 }
 
-func TestPreload_Single_Many_Level2(t *testing.T) {
+func TestPreload_Single_Many_One_Level2(t *testing.T) {
 	db, _, shutdown := dbConnection(t)
 	defer shutdown()
 
 	user := createUser(t, db, "wonderwoman")
 
+	// Values
+
 	queries, err := sqlxx.PreloadWithQueries(db, &user, "Avatars", "Avatars.Filter")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 2)
-	assert.Contains(t, queries[0].Query, "WHERE avatars.user_id = ?")
-	assert.Len(t, queries[0].Args, 1)
-	assert.EqualValues(t, user.ID, queries[0].Args[0])
+
+	avatarQuery, ok := queries.ByTable("avatars")
+	assert.True(t, ok)
+	assert.Contains(t, avatarQuery.Query, "WHERE avatars.user_id = ?")
+	assert.Len(t, avatarQuery.Args, 1)
+	assert.EqualValues(t, user.ID, avatarQuery.Args[0])
 
 	avatarFilterQuery, ok := queries.ByTable("avatar_filters")
 	assert.True(t, ok)
@@ -239,6 +244,34 @@ func TestPreload_Single_Many_Level2(t *testing.T) {
 		assert.Equal(t, user.ID, a.UserID)
 		assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
 		assert.NotZero(t, a.Filter)
+		assert.NotZero(t, a.Filter.ID)
+	}
+
+	// Pointers
+
+	queries, err = sqlxx.PreloadWithQueries(db, &user, "Avatars", "Avatars.FilterPtr")
+	assert.NoError(t, err)
+	assert.NotNil(t, queries)
+	assert.Len(t, queries, 2)
+
+	avatarQuery, ok = queries.ByTable("avatars")
+	assert.True(t, ok)
+	assert.Contains(t, avatarQuery.Query, "WHERE avatars.user_id = ?")
+	assert.Len(t, avatarQuery.Args, 1)
+	assert.EqualValues(t, user.ID, avatarQuery.Args[0])
+
+	avatarFilterQuery, ok = queries.ByTable("avatar_filters")
+	assert.True(t, ok)
+	assert.Contains(t, avatarFilterQuery.Query, "avatar_filters.id IN (?, ?, ?, ?, ?)")
+	assert.Len(t, avatarFilterQuery.Args, 5)
+
+	assert.Len(t, user.Avatars, 5)
+	for i, a := range user.Avatars {
+		assert.NotZero(t, a.ID)
+		assert.Equal(t, user.ID, a.UserID)
+		assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
+		assert.NotNil(t, a.FilterPtr)
+		assert.NotZero(t, a.FilterPtr.ID)
 	}
 }
 

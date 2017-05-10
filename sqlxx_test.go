@@ -257,6 +257,7 @@ type Avatar struct {
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 	Filter    AvatarFilter
+	FilterPtr *AvatarFilter `sqlxx:"fk:FilterID"`
 }
 
 func (Avatar) TableName() string { return "avatars" }

@@ -277,16 +277,21 @@ func NewForeignKey(field Field) (*ForeignKey, error) {
 		return nil, err
 	}
 
+	fieldName := field.Tags.GetByKey(StructTagName, StructTagForeignKey)
+	if fieldName == "" {
+		fieldName = fmt.Sprintf("%s%s", field.Name, PrimaryKeyFieldName)
+	}
+
 	// Article.Author(User)
 	if field.AssociationType == AssociationTypeOne {
 		return &ForeignKey{
 			Schema:               &referenceSchema,
-			Model:                field.Model,                                          // Article model
-			ModelName:            field.ModelName,                                      // Article
-			TableName:            field.TableName,                                      // articles
-			FieldName:            fmt.Sprintf("%s%s", field.Name, PrimaryKeyFieldName), // AuthorID
-			ColumnName:           field.ColumnName,                                     // author_id
-			AssociationFieldName: field.Name,                                           // Author
+			Model:                field.Model,      // Article model
+			ModelName:            field.ModelName,  // Article
+			TableName:            field.TableName,  // articles
+			FieldName:            fieldName,        // AuthorID
+			ColumnName:           field.ColumnName, // author_id
+			AssociationFieldName: field.Name,       // Author
 
 			Reference: &ForeignKey{
 				Model:      referenceModel,                       // User model
