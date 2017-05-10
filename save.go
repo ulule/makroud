@@ -26,6 +26,7 @@ func save(driver Driver, out interface{}) (Queries, error) {
 		columns        = []string{}
 		ignoredColumns = []string{}
 		values         = []string{}
+		query          string
 	)
 
 	for _, column := range schema.Fields {
@@ -48,7 +49,6 @@ func save(driver Driver, out interface{}) (Queries, error) {
 
 		if !isIgnored {
 			columns = append(columns, column.ColumnName)
-
 			if hasDefault {
 				values = append(values, defaultValue)
 			} else {
@@ -57,23 +57,20 @@ func save(driver Driver, out interface{}) (Queries, error) {
 		}
 	}
 
-	var query string
-
 	pkField := schema.PrimaryKeyField
 
-	pkValue, err := GetFieldValue(out, pkField.Name)
+	pk, err := GetFieldValueInt64(out, pkField.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	if IsZeroValue(pkValue) {
+	if pk == int64(0) {
 		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
 			schema.TableName,
 			strings.Join(columns, ", "),
 			strings.Join(values, ", "))
 	} else {
 		updates := []string{}
-
 		for i := range columns {
 			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
 		}
@@ -81,7 +78,7 @@ func save(driver Driver, out interface{}) (Queries, error) {
 		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s = :%s",
 			schema.TableName,
 			strings.Join(updates, ", "),
-			pkField.ColumnName,
+			pkField.ColumnPath(),
 			pkField.ColumnName)
 	}
 
@@ -89,7 +86,9 @@ func save(driver Driver, out interface{}) (Queries, error) {
 		query = fmt.Sprintf("%s RETURNING %s", query, strings.Join(ignoredColumns, ", "))
 	}
 
-	queries := Queries{{Query: query}}
+	queries := Queries{{
+		Query: query,
+	}}
 
 	stmt, err := driver.PrepareNamed(query)
 	if err != nil {

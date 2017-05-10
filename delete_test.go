@@ -22,7 +22,7 @@ func TestDelete_Delete(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "DELETE FROM users WHERE id = :id")
+	assert.Contains(t, queries[0].Query, "DELETE FROM users WHERE users.id = :id")
 
 	m := map[string]interface{}{"username": "thoas"}
 
@@ -54,7 +54,7 @@ func TestDelete_SoftDelete(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "UPDATE users SET deleted_at = :deleted_at WHERE id = :id")
+	assert.Contains(t, queries[0].Query, "UPDATE users SET deleted_at = :deleted_at WHERE users.id = :id")
 
 	m := map[string]interface{}{"username": "thoas"}
 

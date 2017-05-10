@@ -61,7 +61,11 @@ func where(driver Driver, out interface{}, params map[string]interface{}, fetchO
 		return nil, err
 	}
 
-	queries := Queries{{Query: query, Args: args, Params: params}}
+	queries := Queries{{
+		Query:  query,
+		Args:   args,
+		Params: params,
+	}}
 
 	if fetchOne {
 		return queries, driver.Get(out, driver.Rebind(query), args...)

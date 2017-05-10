@@ -46,21 +46,31 @@ func remove(driver Driver, out interface{}) (Queries, error) {
 
 	pkField := schema.PrimaryKeyField
 
-	pkValue, err := GetFieldValue(out, pkField.Name)
+	pk, err := GetFieldValueInt64(out, pkField.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	// GO TO HELL ZERO VALUES DELETION
-	if IsZeroValue(pkValue) {
-		return nil, fmt.Errorf("%v has no primary key, cannot be deleted", out)
+	if pk == int64(0) {
+		return nil, fmt.Errorf("%v cannot be deleted (no primary key)", out)
 	}
 
-	query := fmt.Sprintf("DELETE FROM %s WHERE %s = :%s", schema.TableName, pkField.ColumnName, pkField.ColumnName)
+	query := fmt.Sprintf(
+		"DELETE FROM %s WHERE %s = :%s",
+		schema.TableName,
+		pkField.ColumnPath(),
+		pkField.ColumnName)
 
-	queries := Queries{{Query: query}}
+	params := map[string]interface{}{
+		pkField.ColumnName: pk,
+	}
 
-	_, err = driver.NamedExec(query, out)
+	queries := Queries{{
+		Query:  query,
+		Params: params,
+	}}
+
+	_, err = driver.NamedExec(query, params)
 	if err != nil {
 		return queries, err
 	}
@@ -74,36 +84,40 @@ func archive(driver Driver, out interface{}, fieldName string) (Queries, error) 
 		return nil, err
 	}
 
-	pkField := schema.PrimaryKeyField
+	var (
+		pkField        = schema.PrimaryKeyField
+		deletedAtField = schema.Fields[fieldName]
+		now            = time.Now().UTC()
+	)
 
-	pkValue, err := GetFieldValue(out, pkField.Name)
+	pk, err := GetFieldValueInt64(out, pkField.Name)
 	if err != nil {
 		return nil, err
 	}
-	// GO TO HELL ZERO VALUES DELETION
-	if IsZeroValue(pkValue) {
-		return nil, fmt.Errorf("%v has no primary key, cannot be deleted", out)
+
+	if pk == int64(0) {
+		return nil, fmt.Errorf("%v cannot be archived (no primary key)", out)
 	}
 
-	field := schema.Fields[fieldName]
-
-	now := time.Now()
-
-	query := fmt.Sprintf("UPDATE %s SET %s = :%s WHERE %s = :%s",
+	query := fmt.Sprintf(
+		"UPDATE %s SET %s = :%s WHERE %s = :%s",
 		schema.TableName,
-		field.ColumnName,
-		field.ColumnName,
-		pkField.ColumnName,
+		deletedAtField.ColumnName,
+		deletedAtField.ColumnName,
+		pkField.ColumnPath(),
 		pkField.ColumnName)
 
-	m := map[string]interface{}{
-		field.ColumnName:   now,
-		pkField.ColumnName: pkValue,
+	params := map[string]interface{}{
+		deletedAtField.ColumnName: now,
+		pkField.ColumnName:        pk,
 	}
 
-	queries := Queries{{Query: query, Params: m}}
+	queries := Queries{{
+		Query:  query,
+		Params: params,
+	}}
 
-	_, err = driver.NamedExec(query, m)
+	_, err = driver.NamedExec(query, params)
 	if err != nil {
 		return queries, err
 	}
