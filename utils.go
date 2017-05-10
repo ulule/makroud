@@ -188,25 +188,6 @@ func GetFieldValueInt64(instance interface{}, field string) (int64, error) {
 	return converted, nil
 }
 
-func getFieldValues(instance interface{}, field string) (value reflect.Value, ptr reflect.Value, err error) {
-	indirect := reflect.Indirect(reflect.ValueOf(instance))
-
-	if !indirect.IsValid() {
-		return value, ptr, nil
-	}
-
-	value = indirect.FieldByName(field)
-	if !value.IsValid() {
-		return value, ptr, fmt.Errorf("no such field %s in %+v", field, instance)
-	}
-
-	if value.CanAddr() {
-		ptr = value.Addr()
-	}
-
-	return value, ptr, nil
-}
-
 // SetFieldValue sets the provided value
 func SetFieldValue(itf interface{}, name string, value interface{}) error {
 	v, ok := itf.(reflect.Value)
