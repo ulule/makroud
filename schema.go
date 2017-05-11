@@ -23,7 +23,7 @@ type Schema struct {
 func (s Schema) FieldNames() []string {
 	var names []string
 	for _, f := range s.Fields {
-		names = append(names, f.Name)
+		names = append(names, f.FieldName)
 	}
 	return names
 }
@@ -141,15 +141,15 @@ func newSchema(model Model) (Schema, error) {
 		}
 
 		if !field.IsAssociation {
-			schema.Fields[field.Name] = field
+			schema.Fields[field.FieldName] = field
 			continue
 		}
 
-		if _, ok := schema.Associations[field.Name]; ok {
+		if _, ok := schema.Associations[field.FieldName]; ok {
 			continue
 		}
 
-		schema.Associations[field.Name] = field
+		schema.Associations[field.FieldName] = field
 
 		nextModel := field.ForeignKey.Reference.Model
 		if field.IsAssociationTypeMany() {
@@ -162,7 +162,7 @@ func newSchema(model Model) (Schema, error) {
 		}
 
 		for k, v := range nextSchema.Associations {
-			key := fmt.Sprintf("%s.%s", field.Name, k)
+			key := fmt.Sprintf("%s.%s", field.FieldName, k)
 			if _, ok := schema.Associations[key]; !ok {
 				schema.Associations[key] = v
 			}

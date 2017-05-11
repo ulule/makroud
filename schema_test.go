@@ -65,7 +65,7 @@ func TestSchema_Fields(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, tt.model, f.ModelName)
 			assert.Equal(t, tt.table, f.TableName)
-			assert.Equal(t, tt.name, f.Name)
+			assert.Equal(t, tt.name, f.FieldName)
 			assert.Equal(t, tt.column, f.ColumnName)
 			assert.Equal(t, tt.columnPath, f.ColumnPath())
 		}
@@ -166,13 +166,13 @@ func TestSchema_PrimaryKeyField(t *testing.T) {
 	// Implicit
 	schema, err := sqlxx.GetSchema(ImplicitPrimaryKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, schema.PrimaryKeyField.Name, "ID")
+	assert.Equal(t, schema.PrimaryKeyField.FieldName, "ID")
 	assert.Equal(t, schema.PrimaryKeyField.ColumnName, "id")
 
 	// Explicit
 	schema, err = sqlxx.GetSchema(ExplicitPrimaryKey{})
 	assert.Nil(t, err)
-	assert.Equal(t, schema.PrimaryKeyField.Name, "TadaID")
+	assert.Equal(t, schema.PrimaryKeyField.FieldName, "TadaID")
 	assert.Equal(t, schema.PrimaryKeyField.ColumnName, "tada_id")
 }
 

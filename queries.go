@@ -45,7 +45,7 @@ func (q Query) String() string {
 		msg = append(msg, fmt.Sprintf("Params:\t%v", q.Params))
 	}
 
-	if q.Field.Name != "" {
+	if q.Field.FieldName != "" {
 		msg = append(msg, fmt.Sprintf("Field:\t%v", q.Field))
 	}
 

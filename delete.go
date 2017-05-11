@@ -46,7 +46,7 @@ func remove(driver Driver, out interface{}) (Queries, error) {
 
 	pkField := schema.PrimaryKeyField
 
-	pk, err := GetFieldValueInt64(out, pkField.Name)
+	pk, err := GetFieldValueInt64(out, pkField.FieldName)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func archive(driver Driver, out interface{}, fieldName string) (Queries, error) 
 		now            = time.Now().UTC()
 	)
 
-	pk, err := GetFieldValueInt64(out, pkField.Name)
+	pk, err := GetFieldValueInt64(out, pkField.FieldName)
 	if err != nil {
 		return nil, err
 	}

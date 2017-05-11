@@ -59,7 +59,7 @@ func save(driver Driver, out interface{}) (Queries, error) {
 
 	pkField := schema.PrimaryKeyField
 
-	pk, err := GetFieldValueInt64(out, pkField.Name)
+	pk, err := GetFieldValueInt64(out, pkField.FieldName)
 	if err != nil {
 		return nil, err
 	}

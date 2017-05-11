@@ -171,7 +171,7 @@ func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, err
 	var queries Queries
 
 	if !field.IsValidAssociation() {
-		return nil, fmt.Errorf("field %s is not a valid association", field.Name)
+		return nil, fmt.Errorf("field %s is not a valid association", field.FieldName)
 	}
 
 	fk, err := GetFieldValueInt64(out, field.ForeignKey.FieldName)
@@ -218,7 +218,7 @@ func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, err
 func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, error) {
 	var queries Queries
 
-	fk, err := GetFieldValueInt64(out, field.Schema.PrimaryKeyField.Name)
+	fk, err := GetFieldValueInt64(out, field.Schema.PrimaryKeyField.FieldName)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,7 @@ func preloadSlice(driver Driver, out interface{}, field Field, isRelation bool) 
 		for i := 0; i < slc.Len(); i++ {
 			instance := slc.Index(i).Interface()
 
-			pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.Name)
+			pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.FieldName)
 			if err != nil {
 				return queries, err
 			}
@@ -309,7 +309,7 @@ func preloadSlice(driver Driver, out interface{}, field Field, isRelation bool) 
 		for i := 0; i < slc.Len(); i++ {
 			instance := slc.Index(i).Addr().Interface()
 
-			pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.Name)
+			pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.FieldName)
 			if err != nil {
 				return queries, err
 			}
@@ -371,7 +371,7 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 
 		instance := v.Interface()
 
-		pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.Name)
+		pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.FieldName)
 		if err != nil {
 			return nil, err
 		}
@@ -416,7 +416,7 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 				relation      = relationValue.Interface()
 			)
 
-			relationPK, err := GetFieldValueInt64(relation, field.ForeignKey.Schema.PrimaryKeyField.Name)
+			relationPK, err := GetFieldValueInt64(relation, field.ForeignKey.Schema.PrimaryKeyField.FieldName)
 			if err != nil {
 				return queries, err
 			}
@@ -455,7 +455,7 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 
 		instance := instanceValue.Interface()
 
-		fk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.Name)
+		fk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.FieldName)
 		if err != nil {
 			return nil, err
 		}

@@ -25,7 +25,7 @@ type Field struct {
 	// Table name of the model that contains this field
 	TableName string
 	// The field name
-	Name string
+	FieldName string
 	// The database column name
 	ColumnName string
 	// Does this field is excluded? (anonymous, private, non-sql...)
@@ -42,21 +42,15 @@ type Field struct {
 	ForeignKey *ForeignKey
 	// DestinationField is the value destination field if the field is an association.
 	DestinationField string
-	// DestinationPath is the asbolute destination path.
-	DestinationPath string
-	// AssociationPath is the association path
-	AssociationPath string
-	// ParentDestinationPath is the parent destination path
-	ParentDestinationPath string
 }
 
 // String returns struct instance string representation.
 func (f Field) String() string {
 	return fmt.Sprintf("Field{model:%s pk:%s table:%s name:%s column:%s, association:%s}",
 		f.ModelName,
-		f.Schema.PrimaryKeyField.Name,
+		f.Schema.PrimaryKeyField.FieldName,
 		f.TableName,
-		f.Name,
+		f.FieldName,
 		f.ColumnName,
 		f.AssociationType)
 }
@@ -124,7 +118,7 @@ func NewField(schema *Schema, model Model, name string) (Field, error) {
 		StructField:   structField,
 		Type:          fieldType,
 		Tags:          tags,
-		Name:          name,
+		FieldName:     name,
 		Model:         model,
 		ModelName:     reflect.Indirect(reflect.ValueOf(model)).Type().Name(),
 		TableName:     model.TableName(),
@@ -209,7 +203,7 @@ func NewForeignKey(field Field) (*ForeignKey, error) {
 
 	fieldName := field.Tags.GetByKey(StructTagName, StructTagForeignKey)
 	if fieldName == "" {
-		fieldName = fmt.Sprintf("%s%s", field.Name, PrimaryKeyFieldName)
+		fieldName = fmt.Sprintf("%s%s", field.FieldName, PrimaryKeyFieldName)
 	}
 
 	// Article.Author(User)
@@ -221,7 +215,7 @@ func NewForeignKey(field Field) (*ForeignKey, error) {
 			TableName:            field.TableName,  // articles
 			FieldName:            fieldName,        // AuthorID
 			ColumnName:           field.ColumnName, // author_id
-			AssociationFieldName: field.Name,       // Author
+			AssociationFieldName: field.FieldName,  // Author
 
 			Reference: &ForeignKey{
 				Model:      referenceModel,                       // User model
@@ -249,7 +243,7 @@ func NewForeignKey(field Field) (*ForeignKey, error) {
 				TableName:            field.TableName,                      // users
 				FieldName:            PrimaryKeyFieldName,                  // ID
 				ColumnName:           strings.ToLower(PrimaryKeyFieldName), // id
-				AssociationFieldName: field.Name,                           // Avatars
+				AssociationFieldName: field.FieldName,                      // Avatars
 			},
 		}, nil
 	}
