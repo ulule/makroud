@@ -37,6 +37,7 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 
 	type mapper struct {
 		level        int
+		isRelation   bool
 		path         string
 		parts        []string
 		nextIterPath string
@@ -53,10 +54,14 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 
 		splits := strings.Split(path, ".")
 		count := len(splits)
-
-		rel := &mapper{level: count, path: path, parts: splits}
-		rel.left = splits[0]
+		rel := &mapper{
+			level: count,
+			path:  path,
+			parts: splits,
+			left:  splits[0],
+		}
 		if count > 1 {
+			rel.isRelation = true
 			rel.nextIterPath = splits[count-1]
 			rel.leftPath = strings.Join(splits[:count-1], ".")
 			rel.left = splits[count-2]
@@ -68,9 +73,9 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 		if rel.level <= 2 {
 			var q Queries
 			if !isSlice {
-				q, err = preloadSingle(driver, out, rel.level, field)
+				q, err = preloadSingle(driver, out, field, rel.isRelation)
 			} else {
-				q, err = preloadSlice(driver, out, rel.level, field)
+				q, err = preloadSlice(driver, out, field, rel.isRelation)
 			}
 			queries = append(queries, q...)
 			if err != nil {
@@ -107,10 +112,10 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 // Single instance preload
 // ----------------------------------------------------------------------------
 
-func preloadSingle(driver Driver, out interface{}, level int, field Field) (Queries, error) {
+func preloadSingle(driver Driver, out interface{}, field Field, isRelation bool) (Queries, error) {
 	var queries Queries
 
-	if level > 1 {
+	if isRelation {
 		relation, err := GetFieldValue(out, field.DestinationField)
 		if err != nil {
 			return queries, err
@@ -244,7 +249,7 @@ func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, er
 // Slice of instances preload
 // ----------------------------------------------------------------------------
 
-func preloadSlice(driver Driver, out interface{}, level int, field Field) (Queries, error) {
+func preloadSlice(driver Driver, out interface{}, field Field, isRelation bool) (Queries, error) {
 	var (
 		queries Queries
 		slc     reflect.Value
@@ -257,7 +262,7 @@ func preloadSlice(driver Driver, out interface{}, level int, field Field) (Queri
 		slc = value.Elem()
 	}
 
-	if level > 1 {
+	if isRelation {
 		var (
 			relations []interface{}
 			mapping   = map[int64][]interface{}{}
