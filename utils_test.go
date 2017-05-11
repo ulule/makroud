@@ -50,3 +50,43 @@ func TestUtils_IntToInt64(t *testing.T) {
 		assert.Equal(t, int64(0), v)
 	}
 }
+
+func TestUtils_MakePointer(t *testing.T) {
+	type embedType struct {
+		value int
+	}
+
+	type anyType struct {
+		value    int
+		embed    embedType
+		embedPtr *embedType
+	}
+
+	any := anyType{value: 1}
+	anyPtr := &anyType{value: 1}
+
+	results := []interface{}{
+		sqlxx.MakePointer(any),
+		sqlxx.MakePointer(anyPtr),
+	}
+
+	for _, r := range results {
+		assert.Equal(t, 1, r.(*anyType).value)
+		assert.Equal(t, reflect.ValueOf(r).Kind(), reflect.Ptr)
+		assert.Equal(t, reflect.ValueOf(r).Type().Elem(), reflect.TypeOf(anyType{}))
+	}
+
+	anyWithEmbed := anyType{value: 1, embed: embedType{value: 2}}
+	anyWithEmbedPtr := anyType{value: 1, embedPtr: &embedType{value: 2}}
+
+	results = []interface{}{
+		sqlxx.MakePointer(anyWithEmbed.embed),
+		sqlxx.MakePointer(anyWithEmbedPtr.embedPtr),
+	}
+
+	for _, r := range results {
+		assert.Equal(t, 2, r.(*embedType).value)
+		assert.Equal(t, reflect.ValueOf(r).Kind(), reflect.Ptr)
+		assert.Equal(t, reflect.ValueOf(r).Type().Elem(), reflect.TypeOf(embedType{}))
+	}
+}

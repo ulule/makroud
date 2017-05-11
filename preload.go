@@ -82,7 +82,7 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 				return queries, err
 			}
 		} else {
-			newOut := Copy(funk.Get(out, rel.leftPath))
+			newOut := MakePointer(funk.Get(out, rel.leftPath))
 
 			q, err := preload(driver, newOut, rel.nextIterPath)
 			queries = append(queries, q...)
@@ -122,7 +122,7 @@ func preloadSingle(driver Driver, out interface{}, field Field, isRelation bool)
 		}
 
 		var (
-			relationOut = Copy(relation)
+			relationOut = MakePointer(relation)
 			isSlice     = IsSlice(relation)
 		)
 
@@ -198,7 +198,7 @@ func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, err
 
 	queries = append(queries, q)
 
-	relation := Copy(field.ForeignKey.Reference.Model)
+	relation := MakePointer(field.ForeignKey.Reference.Model)
 
 	err = driver.Get(relation, driver.Rebind(q.Query), q.Args...)
 	if err != nil {
@@ -279,7 +279,7 @@ func preloadSlice(driver Driver, out interface{}, field Field, isRelation bool) 
 				return queries, err
 			}
 
-			relationOut := Copy(relation)
+			relationOut := MakePointer(relation)
 			mapping[pk] = append(mapping[pk], relationOut)
 			relations = append(relations, relationOut)
 		}

@@ -191,7 +191,7 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 
 	fv := reflect.Indirect(reflect.ValueOf(value))
 	if field.Type().Kind() == reflect.Ptr {
-		fv = reflect.ValueOf(Copy(fv.Interface()))
+		fv = reflect.ValueOf(MakePointer(fv.Interface()))
 	}
 
 	if field.Type() != fv.Type() {
@@ -234,8 +234,8 @@ func MakeSlice(itf interface{}) interface{} {
 	return slice.Elem().Interface()
 }
 
-// Copy makes a copy of the given interface.
-func Copy(itf interface{}) interface{} {
+// MakePointer makes a copy of the given interface and returns a pointer.
+func MakePointer(itf interface{}) interface{} {
 	t := reflect.TypeOf(itf)
 
 	cp := reflect.New(t)
