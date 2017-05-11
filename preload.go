@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sort"
 	"strings"
+
+	funk "github.com/thoas/go-funk"
 )
 
 // Preload preloads related fields.
@@ -33,7 +34,6 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 	var (
 		queries Queries
 		isSlice = IsSlice(out)
-		mapping = map[int][]Field{}
 	)
 
 	for _, path := range paths {
@@ -42,38 +42,41 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 			return nil, fmt.Errorf("%s is not a valid association", path)
 		}
 
-		splits := strings.Split(path, ".")
-		level := len(splits)
+		relation := BuildRelation(path)
+		field.DestinationField = relation.Left
 
-		_, ok = mapping[level]
-		if !ok {
-			mapping[level] = []Field{}
-		}
-
-		field.DestinationField = splits[0]
-
-		mapping[level] = append(mapping[level], field)
-	}
-
-	var levels []int
-	for level := range mapping {
-		levels = append(levels, level)
-	}
-	sort.Ints(levels)
-
-	for _, level := range levels {
-		var q Queries
-
-		if !isSlice {
-			q, err = preloadSingle(driver, out, level, mapping[level])
+		if relation.Level <= 2 {
+			var q Queries
+			if !isSlice {
+				q, err = preloadSingle(driver, out, relation.Level, field)
+			} else {
+				q, err = preloadSlice(driver, out, relation.Level, field)
+			}
+			queries = append(queries, q...)
+			if err != nil {
+				return queries, err
+			}
 		} else {
-			q, err = preloadSlice(driver, out, level, mapping[level])
-		}
+			newOut := Copy(funk.Get(out, relation.LeftPath))
 
-		queries = append(queries, q...)
+			q, err := preload(driver, newOut, relation.NextIterationPath)
+			queries = append(queries, q...)
+			if err != nil {
+				return queries, err
+			}
 
-		if err != nil {
-			return queries, err
+			parts := relation.Parts[:len(relation.Parts)-1]
+			curr := reflect.ValueOf(out)
+
+			for _, part := range parts {
+				v := curr.Elem().FieldByName(part)
+				if part == relation.Left {
+					if v.CanSet() {
+						v.Set(reflect.ValueOf(newOut).Elem())
+					}
+				}
+				curr = v.Addr()
+			}
 		}
 	}
 
@@ -84,56 +87,54 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 // Single instance preload
 // ----------------------------------------------------------------------------
 
-func preloadSingle(driver Driver, out interface{}, level int, fields []Field) (Queries, error) {
+func preloadSingle(driver Driver, out interface{}, level int, field Field) (Queries, error) {
 	var queries Queries
 
-	for _, field := range fields {
-		if level > 1 {
-			relation, err := GetFieldValue(out, field.DestinationField)
-			if err != nil {
-				return queries, err
-			}
+	if level > 1 {
+		relation, err := GetFieldValue(out, field.DestinationField)
+		if err != nil {
+			return queries, err
+		}
 
-			var (
-				relationOut = Copy(relation)
-				isSlice     = IsSlice(relation)
-			)
+		var (
+			relationOut = Copy(relation)
+			isSlice     = IsSlice(relation)
+		)
 
-			if field.IsAssociationTypeOne() {
-				if isSlice {
-					q, err := preloadSliceOne(driver, relationOut, field)
-					queries = append(queries, q...)
-					if err != nil {
-						return queries, err
-					}
-				} else {
-					q, err := preloadSingleOne(driver, relationOut, field)
-					queries = append(queries, q...)
-					if err != nil {
-						return queries, err
-					}
+		if field.IsAssociationTypeOne() {
+			if isSlice {
+				q, err := preloadSliceOne(driver, relationOut, field)
+				queries = append(queries, q...)
+				if err != nil {
+					return queries, err
 				}
 			} else {
-				// TODO
+				q, err := preloadSingleOne(driver, relationOut, field)
+				queries = append(queries, q...)
+				if err != nil {
+					return queries, err
+				}
 			}
+		} else {
+			// TODO
+		}
 
-			err = SetFieldValue(out, field.DestinationField, relationOut)
+		err = SetFieldValue(out, field.DestinationField, relationOut)
+		if err != nil {
+			return queries, err
+		}
+	} else {
+		if field.IsAssociationTypeOne() {
+			q, err := preloadSingleOne(driver, out, field)
+			queries = append(queries, q...)
 			if err != nil {
 				return queries, err
 			}
 		} else {
-			if field.IsAssociationTypeOne() {
-				q, err := preloadSingleOne(driver, out, field)
-				queries = append(queries, q...)
-				if err != nil {
-					return queries, err
-				}
-			} else {
-				q, err := preloadSingleMany(driver, out, field)
-				queries = append(queries, q...)
-				if err != nil {
-					return queries, err
-				}
+			q, err := preloadSingleMany(driver, out, field)
+			queries = append(queries, q...)
+			if err != nil {
+				return queries, err
 			}
 		}
 	}
@@ -223,7 +224,7 @@ func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, er
 // Slice of instances preload
 // ----------------------------------------------------------------------------
 
-func preloadSlice(driver Driver, out interface{}, level int, fields []Field) (Queries, error) {
+func preloadSlice(driver Driver, out interface{}, level int, field Field) (Queries, error) {
 	var (
 		queries Queries
 		slc     reflect.Value
@@ -236,81 +237,79 @@ func preloadSlice(driver Driver, out interface{}, level int, fields []Field) (Qu
 		slc = value.Elem()
 	}
 
-	for _, field := range fields {
-		if level > 1 {
-			var (
-				relations []interface{}
-				mapping   = map[int64][]interface{}{}
-			)
+	if level > 1 {
+		var (
+			relations []interface{}
+			mapping   = map[int64][]interface{}{}
+		)
 
-			// Build relations preload slice
+		// Build relations preload slice
 
-			for i := 0; i < slc.Len(); i++ {
-				instance := slc.Index(i).Interface()
+		for i := 0; i < slc.Len(); i++ {
+			instance := slc.Index(i).Interface()
 
-				pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.Name)
-				if err != nil {
-					return queries, err
-				}
-
-				relation, err := GetFieldValue(instance, field.DestinationField)
-				if err != nil {
-					return queries, err
-				}
-
-				relationOut := Copy(relation)
-				mapping[pk] = append(mapping[pk], relationOut)
-				relations = append(relations, relationOut)
+			pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.Name)
+			if err != nil {
+				return queries, err
 			}
 
-			// Preload
-
-			if field.IsAssociationTypeOne() {
-				q, err := preloadSliceOne(driver, relations, field)
-				queries = append(queries, q...)
-				if err != nil {
-					return queries, err
-				}
-			} else {
-				q, err := preloadSliceMany(driver, relations, field)
-				queries = append(queries, q...)
-				if err != nil {
-					return queries, err
-				}
+			relation, err := GetFieldValue(instance, field.DestinationField)
+			if err != nil {
+				return queries, err
 			}
 
-			// Set it back
+			relationOut := Copy(relation)
+			mapping[pk] = append(mapping[pk], relationOut)
+			relations = append(relations, relationOut)
+		}
 
-			for i := 0; i < slc.Len(); i++ {
-				instance := slc.Index(i).Addr().Interface()
+		// Preload
 
-				pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.Name)
-				if err != nil {
-					return queries, err
-				}
-
-				instanceRelations := mapping[pk]
-
-				if field.IsAssociationTypeOne() && len(instanceRelations) > 0 {
-					err = SetFieldValue(instance, field.DestinationField, instanceRelations[0])
-					if err != nil {
-						return queries, err
-					}
-				}
+		if field.IsAssociationTypeOne() {
+			q, err := preloadSliceOne(driver, relations, field)
+			queries = append(queries, q...)
+			if err != nil {
+				return queries, err
 			}
 		} else {
-			if field.IsAssociationTypeOne() {
-				q, err := preloadSliceOne(driver, out, field)
-				queries = append(queries, q...)
+			q, err := preloadSliceMany(driver, relations, field)
+			queries = append(queries, q...)
+			if err != nil {
+				return queries, err
+			}
+		}
+
+		// Set it back
+
+		for i := 0; i < slc.Len(); i++ {
+			instance := slc.Index(i).Addr().Interface()
+
+			pk, err := GetFieldValueInt64(instance, field.Schema.PrimaryKeyField.Name)
+			if err != nil {
+				return queries, err
+			}
+
+			instanceRelations := mapping[pk]
+
+			if field.IsAssociationTypeOne() && len(instanceRelations) > 0 {
+				err = SetFieldValue(instance, field.DestinationField, instanceRelations[0])
 				if err != nil {
 					return queries, err
 				}
-			} else {
-				q, err := preloadSliceMany(driver, out, field)
-				queries = append(queries, q...)
-				if err != nil {
-					return queries, err
-				}
+			}
+		}
+	} else {
+		if field.IsAssociationTypeOne() {
+			q, err := preloadSliceOne(driver, out, field)
+			queries = append(queries, q...)
+			if err != nil {
+				return queries, err
+			}
+		} else {
+			q, err := preloadSliceMany(driver, out, field)
+			queries = append(queries, q...)
+			if err != nil {
+				return queries, err
 			}
 		}
 	}
@@ -496,4 +495,47 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 	}
 
 	return queries, nil
+}
+
+// ----------------------------------------------------------------------------
+// Helpers
+// ----------------------------------------------------------------------------
+
+// Relation is a relation.
+type Relation struct {
+	Level             int
+	Path              string
+	Parts             []string
+	NextIterationPath string
+	LeftPath          string
+	Left              string
+	Right             string
+}
+
+// BuildRelation returns a relation.
+func BuildRelation(path string) *Relation {
+	var (
+		splits = strings.Split(path, ".")
+		count  = len(splits)
+	)
+
+	if count == 0 {
+		return nil
+	}
+
+	relation := &Relation{
+		Level: count,
+		Path:  path,
+		Parts: splits,
+	}
+
+	relation.Left = splits[0]
+	if count > 1 {
+		relation.NextIterationPath = splits[count-1]
+		relation.LeftPath = strings.Join(splits[:count-1], ".")
+		relation.Left = splits[count-2]
+		relation.Right = splits[count-1]
+	}
+
+	return relation
 }

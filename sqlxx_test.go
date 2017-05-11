@@ -195,12 +195,15 @@ type User struct {
 	UpdatedAt time.Time  `db:"updated_at" sqlxx:"default:now()"`
 	DeletedAt *time.Time `db:"deleted_at"`
 
-	APIKeyID int `db:"api_key_id"`
-	APIKey   APIKey
+	APIKeyID  int `db:"api_key_id"`
+	APIKey    APIKey
+	APIKeyPtr *APIKey `sqlxx:"fk:APIKeyID"`
+
 	AvatarID sql.NullInt64 `db:"avatar_id"`
 	Avatar   *Media
-	Avatars  []Avatar
-	Profile  Profile
+
+	Avatars []Avatar
+	Profile Profile
 }
 
 func (User) TableName() string { return "users" }

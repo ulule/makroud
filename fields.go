@@ -42,6 +42,12 @@ type Field struct {
 	ForeignKey *ForeignKey
 	// DestinationField is the value destination field if the field is an association.
 	DestinationField string
+	// DestinationPath is the asbolute destination path.
+	DestinationPath string
+	// AssociationPath is the association path
+	AssociationPath string
+	// ParentDestinationPath is the parent destination path
+	ParentDestinationPath string
 }
 
 // String returns struct instance string representation.

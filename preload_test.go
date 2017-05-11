@@ -69,66 +69,145 @@ func TestPreload_PrimaryKey_Null(t *testing.T) {
 // Single instance preloads
 // ----------------------------------------------------------------------------
 
-func TestPreload_Single_One_Level1(t *testing.T) {
+func TestPreload_Single_One(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
-	batman := env.createUser("batman")
-	env.createUser("spiderman")
-	article := env.createArticle(&batman)
+	var (
+		user    = env.createUser("batman")
+		article = env.createArticle(&user)
+	)
 
-	// Value
-	queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author")
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "FROM users WHERE users.id = ? LIMIT 1")
-	assert.Len(t, queries[0].Args, 1)
-	assert.EqualValues(t, article.AuthorID, queries[0].Args[0])
-	assert.NotZero(t, article.Author)
-	assert.Equal(t, batman.ID, article.AuthorID)
-	assert.Equal(t, batman.Username, article.Author.Username)
+	// level 1
+	{
+		// Value
 
-	// Pointer
-	queries, err = sqlxx.PreloadWithQueries(env.driver, &article, "Reviewer")
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "FROM users WHERE users.id = ? LIMIT 1")
-	assert.Len(t, queries[0].Args, 1)
-	assert.EqualValues(t, article.ReviewerID, queries[0].Args[0])
-	assert.NotZero(t, article.Reviewer)
-	assert.Equal(t, batman.ID, article.ReviewerID)
-	assert.Equal(t, batman.Username, article.Reviewer.Username)
-}
+		assert.Zero(t, article.Author)
 
-func TestPreload_Single_One_Level2(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
+		queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author")
+		assert.NoError(t, err)
+		assert.NotNil(t, queries)
+		assert.Len(t, queries, 1)
 
-	user := env.createUser("spiderman")
-	article := env.createArticle(&user)
+		userQuery, ok := queries.ByTable("users")
+		assert.True(t, ok)
+		assert.Contains(t, userQuery.Query, "FROM users WHERE users.id = ? LIMIT 1")
+		assert.Len(t, userQuery.Args, 1)
+		assert.EqualValues(t, article.AuthorID, userQuery.Args[0])
+		assert.NotZero(t, article.Author)
+		assert.Equal(t, user.ID, article.AuthorID)
+		assert.Equal(t, user.Username, article.Author.Username)
 
-	queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKey")
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
+		// Pointer
 
-	authorQuery, ok := queries.ByTable("users")
-	assert.True(t, ok)
-	assert.Contains(t, authorQuery.Query, "WHERE users.id = ? LIMIT 1")
-	assert.Len(t, authorQuery.Args, 1)
+		assert.Nil(t, article.Reviewer)
 
-	apikeyQuery, ok := queries.ByTable("api_keys")
-	assert.True(t, ok)
-	assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
-	assert.Len(t, apikeyQuery.Args, 1)
+		queries, err = sqlxx.PreloadWithQueries(env.driver, &article, "Reviewer")
+		assert.NoError(t, err)
+		assert.NotNil(t, queries)
+		assert.Len(t, queries, 1)
 
-	assert.NotZero(t, article.Author)
-	assert.NotZero(t, article.Author.APIKey)
-	assert.Equal(t, user.ID, article.AuthorID)
-	assert.Equal(t, user.Username, article.Author.Username)
-	assert.NotZero(t, article.Author.APIKey.ID)
-	assert.Equal(t, "spiderman-apikey", article.Author.APIKey.Key)
+		userQuery, ok = queries.ByTable("users")
+		assert.True(t, ok)
+		assert.Contains(t, userQuery.Query, "FROM users WHERE users.id = ? LIMIT 1")
+		assert.Len(t, userQuery.Args, 1)
+		assert.EqualValues(t, article.ReviewerID, userQuery.Args[0])
+		assert.NotZero(t, article.Reviewer)
+		assert.Equal(t, user.ID, article.ReviewerID)
+		assert.Equal(t, user.Username, article.Reviewer.Username)
+	}
+
+	// level 2
+	{
+		// Value
+
+		article.Author = User{}
+
+		queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKey")
+		assert.NoError(t, err)
+		assert.NotNil(t, queries)
+
+		authorQuery, ok := queries.ByTable("users")
+		assert.True(t, ok)
+		assert.Contains(t, authorQuery.Query, "WHERE users.id = ? LIMIT 1")
+		assert.Len(t, authorQuery.Args, 1)
+
+		apikeyQuery, ok := queries.ByTable("api_keys")
+		assert.True(t, ok)
+		assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
+		assert.Len(t, apikeyQuery.Args, 1)
+
+		assert.NotZero(t, article.Author)
+		assert.Equal(t, user.ID, article.AuthorID)
+		assert.Equal(t, user.Username, article.Author.Username)
+
+		assert.NotZero(t, article.Author.APIKey)
+		assert.NotZero(t, article.Author.APIKey.ID)
+		assert.Equal(t, fmt.Sprintf("%s-apikey", user.Username), article.Author.APIKey.Key)
+
+		// Pointer
+
+		article.Author = User{}
+
+		queries, err = sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKeyPtr")
+		assert.NoError(t, err)
+		assert.NotNil(t, queries)
+
+		authorQuery, ok = queries.ByTable("users")
+		assert.True(t, ok)
+		assert.Contains(t, authorQuery.Query, "WHERE users.id = ? LIMIT 1")
+		assert.Len(t, authorQuery.Args, 1)
+
+		apikeyQuery, ok = queries.ByTable("api_keys")
+		assert.True(t, ok)
+		assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
+		assert.Len(t, apikeyQuery.Args, 1)
+
+		assert.NotZero(t, article.Author)
+		assert.Equal(t, user.ID, article.AuthorID)
+		assert.Equal(t, user.Username, article.Author.Username)
+
+		assert.NotNil(t, article.Author.APIKeyPtr)
+		assert.NotZero(t, article.Author.APIKeyPtr.ID)
+		assert.Equal(t, fmt.Sprintf("%s-apikey", user.Username), article.Author.APIKeyPtr.Key)
+	}
+
+	// Level 3
+	{
+		// Value
+
+		article.Author = User{}
+
+		queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKey", "Author.APIKey.Partner")
+		assert.NoError(t, err)
+		assert.NotNil(t, queries)
+
+		authorQuery, ok := queries.ByTable("users")
+		assert.True(t, ok)
+		assert.Contains(t, authorQuery.Query, "WHERE users.id = ? LIMIT 1")
+		assert.Len(t, authorQuery.Args, 1)
+
+		apikeyQuery, ok := queries.ByTable("api_keys")
+		assert.True(t, ok)
+		assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
+		assert.Len(t, apikeyQuery.Args, 1)
+
+		partnerQuery, ok := queries.ByTable("partners")
+		assert.True(t, ok)
+		assert.Contains(t, partnerQuery.Query, "WHERE partners.id = ? LIMIT 1")
+		assert.Len(t, partnerQuery.Args, 1)
+
+		assert.NotZero(t, article.Author)
+		assert.Equal(t, user.ID, article.AuthorID)
+		assert.Equal(t, user.Username, article.Author.Username)
+
+		assert.NotZero(t, article.Author.APIKey)
+		assert.NotZero(t, article.Author.APIKey.ID)
+		assert.Equal(t, fmt.Sprintf("%s-apikey", user.Username), article.Author.APIKey.Key)
+
+		assert.NotZero(t, article.Author.APIKey.Partner)
+		assert.NotZero(t, article.Author.APIKey.Partner.ID)
+	}
 }
 
 func TestPreload_Single_One_Level2_ValueAndPointer(t *testing.T) {
