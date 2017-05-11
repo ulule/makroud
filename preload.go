@@ -22,6 +22,8 @@ func PreloadWithQueries(driver Driver, out interface{}, paths ...string) (Querie
 
 // Preload preloads related fields.
 func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
+	var queries Queries
+
 	if !reflect.Indirect(reflect.ValueOf(out)).CanAddr() {
 		return nil, errors.New("model instance must be addressable (pointer required)")
 	}
@@ -31,10 +33,17 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 		return nil, err
 	}
 
-	var (
-		queries Queries
-		isSlice = IsSlice(out)
-	)
+	isSlice := IsSlice(out)
+
+	type mapper struct {
+		level        int
+		path         string
+		parts        []string
+		nextIterPath string
+		leftPath     string
+		left         string
+		right        string
+	}
 
 	for _, path := range paths {
 		field, ok := schema.Associations[path]
@@ -42,35 +51,46 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 			return nil, fmt.Errorf("%s is not a valid association", path)
 		}
 
-		relation := BuildRelation(path)
-		field.DestinationField = relation.Left
+		splits := strings.Split(path, ".")
+		count := len(splits)
 
-		if relation.Level <= 2 {
+		rel := &mapper{level: count, path: path, parts: splits}
+		rel.left = splits[0]
+		if count > 1 {
+			rel.nextIterPath = splits[count-1]
+			rel.leftPath = strings.Join(splits[:count-1], ".")
+			rel.left = splits[count-2]
+			rel.right = splits[count-1]
+		}
+
+		field.DestinationField = rel.left
+
+		if rel.level <= 2 {
 			var q Queries
 			if !isSlice {
-				q, err = preloadSingle(driver, out, relation.Level, field)
+				q, err = preloadSingle(driver, out, rel.level, field)
 			} else {
-				q, err = preloadSlice(driver, out, relation.Level, field)
+				q, err = preloadSlice(driver, out, rel.level, field)
 			}
 			queries = append(queries, q...)
 			if err != nil {
 				return queries, err
 			}
 		} else {
-			newOut := Copy(funk.Get(out, relation.LeftPath))
+			newOut := Copy(funk.Get(out, rel.leftPath))
 
-			q, err := preload(driver, newOut, relation.NextIterationPath)
+			q, err := preload(driver, newOut, rel.nextIterPath)
 			queries = append(queries, q...)
 			if err != nil {
 				return queries, err
 			}
 
-			parts := relation.Parts[:len(relation.Parts)-1]
+			parts := rel.parts[:len(rel.parts)-1]
 			curr := reflect.ValueOf(out)
 
 			for _, part := range parts {
 				v := curr.Elem().FieldByName(part)
-				if part == relation.Left {
+				if part == rel.left {
 					if v.CanSet() {
 						v.Set(reflect.ValueOf(newOut).Elem())
 					}
@@ -495,47 +515,4 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 	}
 
 	return queries, nil
-}
-
-// ----------------------------------------------------------------------------
-// Helpers
-// ----------------------------------------------------------------------------
-
-// Relation is a relation.
-type Relation struct {
-	Level             int
-	Path              string
-	Parts             []string
-	NextIterationPath string
-	LeftPath          string
-	Left              string
-	Right             string
-}
-
-// BuildRelation returns a relation.
-func BuildRelation(path string) *Relation {
-	var (
-		splits = strings.Split(path, ".")
-		count  = len(splits)
-	)
-
-	if count == 0 {
-		return nil
-	}
-
-	relation := &Relation{
-		Level: count,
-		Path:  path,
-		Parts: splits,
-	}
-
-	relation.Left = splits[0]
-	if count > 1 {
-		relation.NextIterationPath = splits[count-1]
-		relation.LeftPath = strings.Join(splits[:count-1], ".")
-		relation.Left = splits[count-2]
-		relation.Right = splits[count-1]
-	}
-
-	return relation
 }
