@@ -237,7 +237,7 @@ func TestPreload_Single_Many(t *testing.T) {
 		}
 	}
 
-	// Level 2
+	// Level 2 - One
 	{
 		user.Avatars = []Avatar{}
 

@@ -140,8 +140,6 @@ func preloadSingle(driver Driver, out interface{}, field Field, isRelation bool)
 					return queries, err
 				}
 			}
-		} else {
-			// TODO
 		}
 
 		err = SetFieldValue(out, field.DestinationField, relationOut)
@@ -268,8 +266,6 @@ func preloadSlice(driver Driver, out interface{}, field Field, isRelation bool) 
 			mapping   = map[int64][]interface{}{}
 		)
 
-		// Build relations preload slice
-
 		for i := 0; i < slc.Len(); i++ {
 			instance := slc.Index(i).Interface()
 
@@ -288,8 +284,6 @@ func preloadSlice(driver Driver, out interface{}, field Field, isRelation bool) 
 			relations = append(relations, relationOut)
 		}
 
-		// Preload
-
 		if field.IsAssociationTypeOne() {
 			q, err := preloadSliceOne(driver, relations, field)
 			queries = append(queries, q...)
@@ -303,8 +297,6 @@ func preloadSlice(driver Driver, out interface{}, field Field, isRelation bool) 
 				return queries, err
 			}
 		}
-
-		// Set it back
 
 		for i := 0; i < slc.Len(); i++ {
 			instance := slc.Index(i).Addr().Interface()
@@ -344,6 +336,7 @@ func preloadSlice(driver Driver, out interface{}, field Field, isRelation bool) 
 
 func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, error) {
 	var slc reflect.Value
+
 	if reflect.ValueOf(out).Kind() == reflect.Slice {
 		slc = reflect.ValueOf(out)
 	} else {
@@ -353,10 +346,8 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 	var (
 		queries     Queries
 		foreignKeys []int64
-		mapping     = map[int64]map[int64]reflect.Value{} // pk -> fk -> pk instance value
+		mapping     = map[int64]map[int64]reflect.Value{}
 	)
-
-	// Build mapping
 
 	for i := 0; i < slc.Len(); i++ {
 		v := slc.Index(i)
@@ -393,8 +384,6 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 		mapping[pk][fk] = v
 	}
 
-	// Perform queries (SELECT IN)
-
 	relationType := reflect.SliceOf(GetIndirectType(reflect.TypeOf(field.ForeignKey.Reference.Model)))
 	relations := reflect.New(relationType)
 	relations.Elem().Set(reflect.MakeSlice(relationType, 0, 0))
@@ -404,8 +393,6 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 	if err != nil {
 		return queries, err
 	}
-
-	// Iterate over instances and set related relation
 
 	relations = relations.Elem()
 
@@ -440,11 +427,9 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 	var (
 		slc         = reflect.ValueOf(out).Elem()
 		queries     Queries
-		foreignKeys []int64                     // As it's reversed, here foreign keys are instances primary keys
-		mapping     = map[int64]reflect.Value{} // fk -> fk instance value
+		foreignKeys []int64
+		mapping     = map[int64]reflect.Value{}
 	)
-
-	// Build mapping
 
 	for i := 0; i < slc.Len(); i++ {
 		instanceValue := slc.Index(i)
@@ -466,8 +451,6 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 		}
 	}
 
-	// Perform queries (SELECT IN)
-
 	relationType := reflect.SliceOf(GetIndirectType(reflect.TypeOf(field.ForeignKey.Model)))
 	relations := reflect.New(relationType)
 	relations.Elem().Set(reflect.MakeSlice(relationType, 0, 0))
@@ -477,8 +460,6 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 	if err != nil {
 		return queries, err
 	}
-
-	// Iterate over instances and set related relation
 
 	relations = relations.Elem()
 
