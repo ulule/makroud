@@ -354,6 +354,9 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 
 		if v.Kind() == reflect.Interface {
 			v = reflect.ValueOf(v.Interface())
+			if v.IsNil() {
+				continue
+			}
 		}
 
 		if v.Kind() != reflect.Ptr && v.CanAddr() {

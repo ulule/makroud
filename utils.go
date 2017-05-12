@@ -190,6 +190,10 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 	}
 
 	fv := reflect.Indirect(reflect.ValueOf(value))
+	if !fv.IsValid() {
+		return nil
+	}
+
 	if field.Type().Kind() == reflect.Ptr {
 		fv = reflect.ValueOf(MakePointer(fv.Interface()))
 	}
