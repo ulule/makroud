@@ -387,6 +387,10 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 		mapping[pk][fk] = v
 	}
 
+	if len(foreignKeys) == 0 {
+		return queries, nil
+	}
+
 	relationType := reflect.SliceOf(GetIndirectType(reflect.TypeOf(field.ForeignKey.Reference.Model)))
 	relations := reflect.New(relationType)
 	relations.Elem().Set(reflect.MakeSlice(relationType, 0, 0))
