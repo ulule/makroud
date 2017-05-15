@@ -92,14 +92,21 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 
 			parts := rel.parts[:len(rel.parts)-1]
 			curr := reflect.ValueOf(out)
+			isRoot := true
 
 			for _, part := range parts {
+				if isSlice && isRoot {
+					continue
+				}
+
 				v := curr.Elem().FieldByName(part)
+
 				if part == rel.left {
 					if v.CanSet() {
 						v.Set(reflect.ValueOf(newOut).Elem())
 					}
 				}
+
 				curr = v.Addr()
 			}
 		}

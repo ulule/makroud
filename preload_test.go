@@ -435,6 +435,53 @@ func TestPreload_Slice_One(t *testing.T) {
 			assert.Equal(t, tt.article.Reviewer, &tt.user)
 		}
 	}
+
+	// Level 2 and more
+	{
+
+		var (
+			projects = env.Projects
+			project  = projects[0]
+		)
+
+		assert.Len(t, projects, 1)
+		assert.Nil(t, project.Manager)
+
+		queries, err := sqlxx.PreloadWithQueries(env.driver, &projects, "Manager", "Manager.User", "Manager.User.Avatar")
+		assert.NoError(t, err)
+		assert.NotNil(t, queries)
+		assert.Len(t, queries, 3)
+
+		managerQuery, ok := queries.ByTable("managers")
+		assert.True(t, ok)
+		assert.Contains(t, managerQuery.Query, "WHERE managers.id IN")
+		assert.Len(t, managerQuery.Args, 1)
+		assert.Equal(t, int64(env.Projects[0].ManagerID), managerQuery.Args[0])
+
+		userQuery, ok := queries.ByTable("users")
+		assert.True(t, ok)
+		assert.Contains(t, userQuery.Query, "WHERE users.id IN")
+		assert.Len(t, userQuery.Args, 1)
+		assert.Equal(t, int64(env.Users[0].ID), userQuery.Args[0])
+
+		mediaQuery, ok := queries.ByTable("media")
+		assert.True(t, ok)
+		assert.Contains(t, mediaQuery.Query, "WHERE media.id IN")
+		assert.Len(t, mediaQuery.Args, 1)
+		assert.Equal(t, int64(env.Medias[0].ID), mediaQuery.Args[0])
+
+		for _, project := range projects {
+			assert.NotNil(t, project.Manager)
+			assert.Equal(t, env.Managers[0].ID, project.Manager.ID)
+
+			assert.NotNil(t, project.Manager.User)
+			assert.Equal(t, env.Users[0].ID, project.Manager.User.ID)
+
+			assert.NotNil(t, project.Manager.User.Avatar)
+			assert.Equal(t, env.Medias[0].ID, project.Manager.User.Avatar.ID)
+		}
+	}
+
 }
 
 func TestPreload_Slice_Many(t *testing.T) {
