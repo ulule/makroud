@@ -92,10 +92,10 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 
 			parts := rel.parts[:len(rel.parts)-1]
 			curr := reflect.ValueOf(out)
-			isRoot := true
+			currIsSlice := isSlice
 
 			for _, part := range parts {
-				if isSlice && isRoot {
+				if currIsSlice {
 					continue
 				}
 
@@ -108,6 +108,7 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 				}
 
 				curr = v.Addr()
+				currIsSlice = IsSlice(curr)
 			}
 		}
 	}
