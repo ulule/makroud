@@ -1,0 +1,8 @@
+#!/bin/bash
+
+SOURCE_DIRECTORY=$(dirname "${BASH_SOURCE[0]}")
+cd "${SOURCE_DIRECTORY}/.."
+
+scripts/database
+
+SQLXX_DISABLE_CACHE=1 go test -v
