@@ -1,0 +1,26 @@
+memo = "d3d7aa435eb349b69080b309261d06b8eda5b35e1cb6e9b901641bba03d4fb34"
+
+[[projects]]
+  name = "github.com/jmoiron/sqlx"
+  packages = [".","reflectx"]
+  revision = "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f"
+
+[[projects]]
+  name = "github.com/lib/pq"
+  packages = [".","oid"]
+  revision = "2704adc878c21e1329f46f6e56a1c387d788ff94"
+
+[[projects]]
+  name = "github.com/oleiade/reflections"
+  packages = ["."]
+  revision = "0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb"
+
+[[projects]]
+  name = "github.com/serenize/snaker"
+  packages = ["."]
+  revision = "1c7f65329f6524115af8ca01ab604c00cddf5558"
+
+[[projects]]
+  name = "github.com/thoas/go-funk"
+  packages = ["."]
+  revision = "f3f88281fd8e61652ad62c230cacab8ad536d975"

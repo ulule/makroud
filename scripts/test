@@ -1,0 +1,10 @@
+#!/bin/bash
+
+SOURCE_DIRECTORY=$(dirname "${BASH_SOURCE[0]}")
+cd "${SOURCE_DIRECTORY}/.."
+
+scripts/database
+
+go get -d -u github.com/stretchr/testify/require
+
+SQLXX_DISABLE_CACHE=1 go test -v
