@@ -1,4 +1,4 @@
-memo = "83e088918dd03fdb461834300bcb2656b33a5fc198f98bb3140920ce97b18f8d"
+memo = "d29a39fd8e380ed396c5652c0452de3fc1237be967ac21d7a055c0328cea38ad"
 
 [[projects]]
   branch = "master"
@@ -20,6 +20,12 @@ memo = "83e088918dd03fdb461834300bcb2656b33a5fc198f98bb3140920ce97b18f8d"
   name = "github.com/oleiade/reflections"
   packages = ["."]
   revision = "0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   name = "github.com/satori/go.uuid"
