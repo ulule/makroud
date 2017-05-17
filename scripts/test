@@ -7,4 +7,9 @@ scripts/database
 
 go get -d -u github.com/stretchr/testify/require
 
-SQLXX_DISABLE_CACHE=1 go test -v
+OPTIONS=""
+if [ -n "$1" ]; then
+    OPTIONS="$@"
+fi
+
+SQLXX_DISABLE_CACHE=1 go test -v ${OPTIONS}
