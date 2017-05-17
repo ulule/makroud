@@ -1,4 +1,10 @@
-memo = "d3d7aa435eb349b69080b309261d06b8eda5b35e1cb6e9b901641bba03d4fb34"
+memo = "83e088918dd03fdb461834300bcb2656b33a5fc198f98bb3140920ce97b18f8d"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/heetch/sqalx"
+  packages = ["."]
+  revision = "eb9035de7e6fb5c0051b6253c2e33b181ea28cda"
 
 [[projects]]
   name = "github.com/jmoiron/sqlx"
@@ -14,6 +20,12 @@ memo = "d3d7aa435eb349b69080b309261d06b8eda5b35e1cb6e9b901641bba03d4fb34"
   name = "github.com/oleiade/reflections"
   packages = ["."]
   revision = "0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb"
+
+[[projects]]
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/serenize/snaker"
