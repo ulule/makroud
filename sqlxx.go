@@ -87,6 +87,7 @@ type Driver interface {
 	Rebind(query string) string
 	Select(dest interface{}, query string, args ...interface{}) error
 	Close() error
+	Ping() error
 }
 
 // Model represents a database table.
