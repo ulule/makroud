@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // ----------------------------------------------------------------------------
@@ -70,7 +72,7 @@ func IntToInt64(value interface{}) (int64, error) {
 	if valuer, ok := value.(driver.Valuer); ok {
 		v, err := valuer.Value()
 		if err != nil || v == nil {
-			return 0, err
+			return 0, errors.Wrap(err, "cannot convert to int64")
 		}
 
 		value = v
@@ -80,11 +82,11 @@ func IntToInt64(value interface{}) (int64, error) {
 	reflected := reflect.Indirect(reflect.ValueOf(value))
 
 	if !reflected.IsValid() {
-		return 0, fmt.Errorf("invalid value: %v", value)
+		return 0, errors.Errorf("invalid value: %v", value)
 	}
 
 	if !reflected.Type().ConvertibleTo(int64Type) {
-		return 0, fmt.Errorf("unable to convert %v to int64", reflected.Type())
+		return 0, errors.Errorf("unable to convert %v to int64", reflected.Type())
 	}
 
 	return reflected.Convert(int64Type).Int(), nil
@@ -115,7 +117,7 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 
 	field := value.FieldByName(name)
 	if !field.IsValid() {
-		return nil, fmt.Errorf("no such field %s in %+v", name, itf)
+		return nil, errors.Errorf("no such field %s in %+v", name, itf)
 	}
 
 	return field.Interface(), nil
@@ -182,11 +184,11 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 
 	field := v.FieldByName(name)
 	if !field.IsValid() {
-		return fmt.Errorf("no such field %s in %+v", name, v.Interface())
+		return errors.Errorf("no such field %s in %+v", name, v.Interface())
 	}
 
 	if !field.CanSet() {
-		return fmt.Errorf("cannot set %s field on %v%+v", name, v.Type().Name(), v.Interface())
+		return errors.Errorf("cannot set %s field on %v%+v", name, v.Type().Name(), v.Interface())
 	}
 
 	fv := reflect.Indirect(reflect.ValueOf(value))
@@ -199,7 +201,7 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 	}
 
 	if field.Type() != fv.Type() {
-		return fmt.Errorf("provided value type %v didn't match field type %v", fv.Type(), field.Type())
+		return errors.Errorf("provided value type %v didn't match field type %v", fv.Type(), field.Type())
 	}
 
 	field.Set(fv)

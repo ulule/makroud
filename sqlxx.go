@@ -2,9 +2,11 @@ package sqlxx
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"sync"
 
+	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -71,6 +73,9 @@ var TagsMapping = map[string]string{
 	"db": "field",
 }
 
+// ErrInvalidDriver is returned when given driver is undefined.
+var ErrInvalidDriver = fmt.Errorf("a sqlxx driver is required")
+
 // Driver can either be a *sqlx.DB or a *sqlx.Tx.
 type Driver interface {
 	sqlx.Execer
@@ -88,6 +93,9 @@ type Driver interface {
 	Select(dest interface{}, query string, args ...interface{}) error
 	Close() error
 	Ping() error
+	Beginx() (sqalx.Node, error)
+	Rollback() error
+	Commit() error
 }
 
 // Model represents a database table.

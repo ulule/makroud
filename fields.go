@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/serenize/snaker"
 )
 
@@ -78,12 +79,12 @@ func (f Field) ColumnPath() string {
 // NewField returns full column name from model, field and tag.
 func NewField(schema *Schema, model Model, name string) (Field, error) {
 	if schema == nil {
-		return Field{}, fmt.Errorf("schema is required to build a Field instance")
+		return Field{}, errors.Errorf("schema is required to build a Field instance")
 	}
 
 	structField, fieldFound := reflect.Indirect(reflect.ValueOf(model)).Type().FieldByName(name)
 	if !fieldFound {
-		return Field{}, fmt.Errorf("field '%s' not found in model", name)
+		return Field{}, errors.Errorf("field '%s' not found in model", name)
 	}
 
 	var (
@@ -109,7 +110,8 @@ func NewField(schema *Schema, model Model, name string) (Field, error) {
 		isExcluded = true
 	}
 
-	if tags.HasKey(StructTagName, StructTagForeignKey) || (len(name) > len(PrimaryKeyFieldName) && strings.HasSuffix(name, PrimaryKeyFieldName)) {
+	if tags.HasKey(StructTagName, StructTagForeignKey) ||
+		(len(name) > len(PrimaryKeyFieldName) && strings.HasSuffix(name, PrimaryKeyFieldName)) {
 		isForeignKey = true
 	}
 
@@ -146,7 +148,7 @@ func NewField(schema *Schema, model Model, name string) (Field, error) {
 	}
 
 	if associationType == AssociationTypeUndefined {
-		return field, fmt.Errorf("unable to guess the association type for field %s", name)
+		return field, errors.Errorf("unable to guess the association type for field %s", name)
 	}
 
 	field.IsAssociation = true

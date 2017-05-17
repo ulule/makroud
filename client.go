@@ -11,9 +11,6 @@ import (
 // ClientDriver define the driver name used in sqlxx.
 const ClientDriver = "postgres"
 
-// ErrInvalidClient is returned when given client is undefined.
-var ErrInvalidClient = errors.New("a sqlxx client is required")
-
 // Client is a wrapper that can interact with the database.
 type Client struct {
 	sqalx.Node
@@ -47,7 +44,6 @@ func (e *clientOption) String() string {
 
 // New returns a new Client instance.
 func New(options ...Option) (*Client, error) {
-
 	client := &Client{}
 	client.init()
 
@@ -60,7 +56,7 @@ func New(options ...Option) (*Client, error) {
 
 	dbx, err := sqlx.Connect(ClientDriver, client.option.String())
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannot connect to %s server", ClientDriver)
+		return nil, errors.Wrapf(err, "sqlxx: cannot connect to %s server", ClientDriver)
 	}
 
 	dbx.SetMaxIdleConns(client.option.maxIdleConnections)
@@ -68,7 +64,7 @@ func New(options ...Option) (*Client, error) {
 
 	connection, err := sqalx.New(dbx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannot instantiate %s client driver", ClientDriver)
+		return nil, errors.Wrapf(err, "sqlxx: cannot instantiate %s client driver", ClientDriver)
 	}
 
 	client.Node = connection
@@ -122,19 +118,7 @@ func (e *Client) Ping() error {
 		}()
 	}
 	if err != nil {
-		return errors.Wrap(err, "cannot ping database")
+		return errors.Wrap(err, "sqlxx: cannot ping database")
 	}
 	return nil
-}
-
-// copy will create a client clone with given connection.
-func (e *Client) copy(connection sqalx.Node) *Client {
-	if connection == nil {
-		panic("sqlxx: connection is required")
-	}
-
-	return &Client{
-		Node:   connection,
-		option: e.option,
-	}
 }

@@ -21,10 +21,10 @@ func TestTransaction_Commit(t *testing.T) {
 	is.NoError(err)
 	is.NotNil(queries)
 
-	err = sqlxx.Transaction(env.driver, func(client *sqlxx.Client) error {
+	err = sqlxx.Transaction(env.driver, func(driver sqlxx.Driver) error {
 		user.Username = "thoas"
 
-		queries, err := sqlxx.SaveWithQueries(client, user)
+		queries, err := sqlxx.SaveWithQueries(driver, user)
 		is.NoError(err)
 		is.NotNil(queries)
 
@@ -53,10 +53,10 @@ func TestTransaction_Rollback(t *testing.T) {
 	is.NoError(err)
 	is.NotNil(queries)
 
-	err = sqlxx.Transaction(env.driver, func(client *sqlxx.Client) error {
+	err = sqlxx.Transaction(env.driver, func(driver sqlxx.Driver) error {
 		user.Username = "thoas"
 
-		queries, err := sqlxx.SaveWithQueries(client, user)
+		queries, err := sqlxx.SaveWithQueries(driver, user)
 		is.NoError(err)
 		is.NotNil(queries)
 

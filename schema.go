@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/oleiade/reflections"
+	"github.com/pkg/errors"
 )
 
 // Schema is a model schema.
@@ -123,7 +124,7 @@ func newSchema(model Model) (Schema, error) {
 
 	fields, err := reflections.Fields(model)
 	if err != nil {
-		return Schema{}, err
+		return Schema{}, errors.Wrapf(err, "cannot use reflections to obtain %T fields", model)
 	}
 
 	for _, name := range fields {
@@ -145,7 +146,8 @@ func newSchema(model Model) (Schema, error) {
 			continue
 		}
 
-		if _, ok := schema.Associations[field.FieldName]; ok {
+		_, ok := schema.Associations[field.FieldName]
+		if ok {
 			continue
 		}
 
@@ -163,7 +165,8 @@ func newSchema(model Model) (Schema, error) {
 
 		for k, v := range nextSchema.Associations {
 			key := fmt.Sprintf("%s.%s", field.FieldName, k)
-			if _, ok := schema.Associations[key]; !ok {
+			_, ok := schema.Associations[key]
+			if !ok {
 				schema.Associations[key] = v
 			}
 		}

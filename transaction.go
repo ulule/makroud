@@ -5,25 +5,24 @@ import (
 )
 
 // Transaction will creates a transaction.
-func Transaction(client *Client, handler func(client *Client) error) error {
-	if client == nil {
-		return ErrInvalidClient
+func Transaction(driver Driver, handler func(driver Driver) error) error {
+	if driver == nil {
+		return errors.Wrap(ErrInvalidDriver, "sqlxx: cannot create a transaction")
 	}
 
-	tx, err := client.Beginx()
+	tx, err := driver.Beginx()
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot create a transaction")
 	}
 
-	session := client.copy(tx)
-
-	err = handler(session)
+	client := &Client{Node: tx}
+	err = handler(client)
 	if err != nil {
 
 		thr := tx.Rollback()
 		if thr != nil {
 			// TODO: Add an observer to collect this error.
-			thr = errors.Wrap(err, "sqlxx: cannot rollback transaction")
+			thr = errors.Wrap(thr, "sqlxx: cannot rollback transaction")
 			_ = thr
 		}
 
