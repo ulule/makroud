@@ -75,25 +75,27 @@ func save(driver Driver, out interface{}) (Queries, error) {
 	}
 
 	if pk == int64(0) {
-		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		query = fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s)`,
 			schema.TableName,
 			strings.Join(columns, ", "),
-			strings.Join(values, ", "))
+			strings.Join(values, ", "),
+		)
 	} else {
 		updates := []string{}
 		for i := range columns {
 			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
 		}
 
-		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s = :%s",
+		query = fmt.Sprintf(`UPDATE %s SET %s WHERE %s = :%s`,
 			schema.TableName,
 			strings.Join(updates, ", "),
 			pkField.ColumnPath(),
-			pkField.ColumnName)
+			pkField.ColumnName,
+		)
 	}
 
 	if len(ignoredColumns) > 0 {
-		query = fmt.Sprintf("%s RETURNING %s", query, strings.Join(ignoredColumns, ", "))
+		query = fmt.Sprintf(`%s RETURNING %s`, query, strings.Join(ignoredColumns, ", "))
 	}
 
 	queries := Queries{{

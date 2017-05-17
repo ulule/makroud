@@ -44,13 +44,14 @@ func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (stri
 		return "", nil, err
 	}
 
-	q := fmt.Sprintf("SELECT %s FROM %s WHERE %s",
+	q := fmt.Sprintf(`SELECT %s FROM %s WHERE %s`,
 		schema.ColumnPaths(),
 		model.TableName(),
-		schema.WhereColumnPaths(params))
+		schema.WhereColumnPaths(params),
+	)
 
 	if fetchOne {
-		q = fmt.Sprintf("%s LIMIT 1", q)
+		q = fmt.Sprintf(`%s LIMIT 1`, q)
 	}
 
 	query, args, err := sqlx.Named(q, params)

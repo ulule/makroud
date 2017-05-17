@@ -68,11 +68,11 @@ func remove(driver Driver, out interface{}) (Queries, error) {
 		return nil, errors.Errorf("%v cannot be deleted (no primary key)", out)
 	}
 
-	query := fmt.Sprintf(
-		"DELETE FROM %s WHERE %s = :%s",
+	query := fmt.Sprintf(`DELETE FROM %s WHERE %s = :%s`,
 		schema.TableName,
 		pkField.ColumnPath(),
-		pkField.ColumnName)
+		pkField.ColumnName,
+	)
 
 	params := map[string]interface{}{
 		pkField.ColumnName: pk,
@@ -116,13 +116,13 @@ func archive(driver Driver, out interface{}, fieldName string) (Queries, error) 
 		return nil, errors.Errorf("%v cannot be archived (no primary key)", out)
 	}
 
-	query := fmt.Sprintf(
-		"UPDATE %s SET %s = :%s WHERE %s = :%s",
+	query := fmt.Sprintf(`UPDATE %s SET %s = :%s WHERE %s = :%s`,
 		schema.TableName,
 		deletedAtField.ColumnName,
 		deletedAtField.ColumnName,
 		pkField.ColumnPath(),
-		pkField.ColumnName)
+		pkField.ColumnName,
+	)
 
 	params := map[string]interface{}{
 		deletedAtField.ColumnName: now,
