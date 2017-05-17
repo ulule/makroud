@@ -337,10 +337,7 @@ func (t *FieldTags) Set(name string, property FieldTagProperty) {
 // HasKey is a convenient shortcuts to check if a key is present.
 func (t FieldTags) HasKey(name string, key string) bool {
 	tag := t.Get(name)
-	if tag != nil {
-		return true
-	}
-	return false
+	return tag != nil
 }
 
 // GetByKey is a convenient shortcuts to get the value for a given tag key.

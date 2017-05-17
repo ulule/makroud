@@ -84,11 +84,7 @@ func remove(driver Driver, out interface{}) (Queries, error) {
 	}}
 
 	_, err = driver.NamedExec(query, params)
-	if err != nil {
-		return queries, err
-	}
-
-	return queries, nil
+	return queries, err
 }
 
 func archive(driver Driver, out interface{}, fieldName string) (Queries, error) {
@@ -135,9 +131,5 @@ func archive(driver Driver, out interface{}, fieldName string) (Queries, error) 
 	}}
 
 	_, err = driver.NamedExec(query, params)
-	if err != nil {
-		return queries, err
-	}
-
-	return queries, nil
+	return queries, err
 }

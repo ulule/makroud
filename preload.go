@@ -251,11 +251,7 @@ func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, er
 	}
 
 	err = SetFieldValue(out, field.ForeignKey.Reference.AssociationFieldName, relations.Interface())
-	if err != nil {
-		return queries, err
-	}
-
-	return queries, nil
+	return queries, err
 }
 
 // ----------------------------------------------------------------------------

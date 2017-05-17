@@ -109,9 +109,5 @@ func save(driver Driver, out interface{}) (Queries, error) {
 	defer stmt.Close()
 
 	err = stmt.Get(out, out)
-	if err != nil {
-		return queries, err
-	}
-
-	return queries, nil
+	return queries, err
 }
