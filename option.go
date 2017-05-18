@@ -68,8 +68,8 @@ func DisableSSL() Option {
 	})
 }
 
-// WithTimezone will configure the Client to use given timezone.
-func WithTimezone(timezone string) Option {
+// Timezone will configure the Client to use given timezone.
+func Timezone(timezone string) Option {
 	return option(func(client *Client) error {
 		client.option.timezone = timezone
 		return nil
