@@ -4,23 +4,23 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	assert "github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
 
-var dbDefaultParams = map[string]string{
-	"USER":     "postgres",
-	"PASSWORD": "",
-	"HOST":     "localhost",
-	"PORT":     "5432",
-	"NAME":     "sqlxx_test",
+var dbDefaultOptions = map[string]sqlxx.Option{
+	"USER":     sqlxx.User("postgres"),
+	"PASSWORD": sqlxx.Password(""),
+	"HOST":     sqlxx.Host("localhost"),
+	"PORT":     sqlxx.Port(5432),
+	"NAME":     sqlxx.Database("sqlxx_test"),
 }
 
 var dropTables = `
@@ -66,14 +66,14 @@ CREATE TABLE projects (
 );
 
 CREATE TABLE users (
-	id 		serial primary key not null,
-	username 	 varchar(30) not null,
-	is_active 	boolean default true,
-	api_key_id	integer,
-	avatar_id	integer,
-	created_at 	timestamp with time zone default current_timestamp,
-	updated_at 	timestamp with time zone default current_timestamp,
-	deleted_at 	timestamp with time zone
+	id          serial primary key not null,
+	username    varchar(30) not null,
+	is_active   boolean default true,
+	api_key_id  integer,
+	avatar_id   integer,
+	created_at  timestamp with time zone default current_timestamp,
+	updated_at  timestamp with time zone default current_timestamp,
+	deleted_at  timestamp with time zone
 );
 
 CREATE TABLE profiles (
@@ -296,7 +296,7 @@ func (ArticleCategory) TableName() string { return "articles_categories" }
 // ----------------------------------------------------------------------------
 
 type environment struct {
-	driver             sqlxx.Driver
+	driver             *sqlxx.Client
 	t                  *testing.T
 	Users              []User
 	APIKeys            []APIKey
@@ -556,29 +556,54 @@ func (e *environment) teardown() {
 	assert.NoError(e.t, e.driver.Close())
 }
 
-func dbParam(param string) string {
+func dbParamString(option func(string) sqlxx.Option, param string, env ...string) sqlxx.Option {
 	param = strings.ToUpper(param)
-	if v := os.Getenv(fmt.Sprintf("DB_%s", param)); len(v) != 0 {
-		return v
+	v := os.Getenv(fmt.Sprintf("DB_%s", param))
+	if len(v) != 0 {
+		return option(v)
 	}
-	return dbDefaultParams[param]
+	for i := range env {
+		v = os.Getenv(env[i])
+		if len(v) != 0 {
+			return option(v)
+		}
+	}
+	return dbDefaultOptions[param]
+}
+
+func dbParamInt(option func(int) sqlxx.Option, param string, env ...string) sqlxx.Option {
+	param = strings.ToUpper(param)
+	v := os.Getenv(fmt.Sprintf("DB_%s", param))
+	n, err := strconv.Atoi(v)
+	if err == nil {
+		return option(n)
+	}
+	for i := range env {
+		v = os.Getenv(env[i])
+		n, err = strconv.Atoi(v)
+		if err == nil {
+			return option(n)
+		}
+	}
+	return dbDefaultOptions[param]
 }
 
 func setup(t *testing.T) *environment {
-	db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable;timezone=UTC",
-		dbParam("user"),
-		dbParam("password"),
-		dbParam("host"),
-		dbParam("port"),
-		dbParam("name")))
 
+	db, err := sqlxx.New(
+		dbParamString(sqlxx.Host, "host", "PGHOST"),
+		dbParamInt(sqlxx.Port, "port", "PGPORT"),
+		dbParamString(sqlxx.User, "user", "PGUSER"),
+		dbParamString(sqlxx.Password, "password", "PGPASSWORD"),
+		dbParamString(sqlxx.Database, "name", "PGDATABASE"),
+	)
 	assert.NoError(t, err)
+	assert.NotNil(t, db)
 
-	dbx := sqlx.NewDb(db, "postgres")
-	dbx.MustExec(dropTables)
-	dbx.MustExec(dbSchema)
+	db.MustExec(dropTables)
+	db.MustExec(dbSchema)
 
-	env := &environment{t: t, driver: dbx}
+	env := &environment{t: t, driver: db}
 	env.load()
 
 	return env

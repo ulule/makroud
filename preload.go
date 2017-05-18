@@ -1,27 +1,34 @@
 package sqlxx
 
 import (
-	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 
+	"github.com/pkg/errors"
 	funk "github.com/thoas/go-funk"
 )
 
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, paths ...string) error {
-	_, err := preload(driver, out, paths...)
+	_, err := PreloadWithQueries(driver, out, paths...)
 	return err
 }
 
 // PreloadWithQueries preloads related fields and returns performed queries.
 func PreloadWithQueries(driver Driver, out interface{}, paths ...string) (Queries, error) {
-	return preload(driver, out, paths...)
+	queries, err := preload(driver, out, paths...)
+	if err != nil {
+		return queries, errors.Wrap(err, "sqlxx: cannot execute preload")
+	}
+	return queries, nil
 }
 
 // Preload preloads related fields.
 func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
+	if driver == nil {
+		return nil, ErrInvalidDriver
+	}
+
 	var queries Queries
 
 	if !reflect.Indirect(reflect.ValueOf(out)).CanAddr() {
@@ -49,7 +56,7 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 	for _, path := range paths {
 		field, ok := schema.Associations[path]
 		if !ok {
-			return nil, fmt.Errorf("%s is not a valid association", path)
+			return nil, errors.Errorf("%s is not a valid association", path)
 		}
 
 		splits := strings.Split(path, ".")
@@ -177,7 +184,7 @@ func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, err
 	var queries Queries
 
 	if !field.IsValidAssociation() {
-		return nil, fmt.Errorf("field %s is not a valid association", field.FieldName)
+		return nil, errors.Errorf("field %s is not a valid association", field.FieldName)
 	}
 
 	fk, err := GetFieldValueInt64(out, field.ForeignKey.FieldName)
@@ -244,11 +251,7 @@ func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, er
 	}
 
 	err = SetFieldValue(out, field.ForeignKey.Reference.AssociationFieldName, relations.Interface())
-	if err != nil {
-		return queries, err
-	}
-
-	return queries, nil
+	return queries, err
 }
 
 // ----------------------------------------------------------------------------

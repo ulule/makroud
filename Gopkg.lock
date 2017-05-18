@@ -1,10 +1,10 @@
-memo = "7ef02b80f76248d7724668d7fbbd4074b31bc288e8320b2d161478123c557cea"
+memo = "d29a39fd8e380ed396c5652c0452de3fc1237be967ac21d7a055c0328cea38ad"
 
 [[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  branch = "master"
+  name = "github.com/heetch/sqalx"
+  packages = ["."]
+  revision = "eb9035de7e6fb5c0051b6253c2e33b181ea28cda"
 
 [[projects]]
   name = "github.com/jmoiron/sqlx"
@@ -22,20 +22,21 @@ memo = "7ef02b80f76248d7724668d7fbbd4074b31bc288e8320b2d161478123c557cea"
   revision = "0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb"
 
 [[projects]]
-  name = "github.com/pmezard/go-difflib"
-  packages = ["difflib"]
-  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
-  version = "v1.0.0"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/serenize/snaker"
   packages = ["."]
   revision = "1c7f65329f6524115af8ca01ab604c00cddf5558"
-
-[[projects]]
-  name = "github.com/stretchr/testify"
-  packages = ["assert","require"]
-  revision = "4d4bfba8f1d1027c4fdbe371823030df51419987"
 
 [[projects]]
   name = "github.com/thoas/go-funk"

@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 )
@@ -17,6 +18,14 @@ func (q Queries) ByTable(name string) (*Query, bool) {
 	}
 
 	return nil, false
+}
+
+func (q Queries) String() string {
+	buffer := &bytes.Buffer{}
+	for i := range q {
+		buffer.WriteString(q[i].String())
+	}
+	return buffer.String()
 }
 
 // Query is a relation query

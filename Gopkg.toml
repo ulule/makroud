@@ -49,10 +49,18 @@
 ## what source location any dependent projects specify.
 # source = "https://github.com/myfork/package.git"
 
+ignored = [
+  "github.com/stretchr/testify/require",
+  "github.com/davecgh/go-spew"
+]
 
 [[dependencies]]
   name = "github.com/jmoiron/sqlx"
   revision = "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f"
+
+[[dependencies]]
+  name = "github.com/heetch/sqalx"
+  revision = "eb9035de7e6fb5c0051b6253c2e33b181ea28cda"
 
 [[dependencies]]
   name = "github.com/lib/pq"
@@ -63,16 +71,8 @@
   revision = "0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb"
 
 [[dependencies]]
-  name = "github.com/pmezard/go-difflib"
-  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
-
-[[dependencies]]
   name = "github.com/serenize/snaker"
   revision = "1c7f65329f6524115af8ca01ab604c00cddf5558"
-
-[[dependencies]]
-  name = "github.com/stretchr/testify"
-  revision = "4d4bfba8f1d1027c4fdbe371823030df51419987"
 
 [[dependencies]]
   name = "github.com/thoas/go-funk"

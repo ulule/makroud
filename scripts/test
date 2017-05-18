@@ -5,4 +5,11 @@ cd "${SOURCE_DIRECTORY}/.."
 
 scripts/database
 
-SQLXX_DISABLE_CACHE=1 go test -v
+go get -d -u github.com/stretchr/testify/require
+
+OPTIONS=""
+if [ -n "$1" ]; then
+    OPTIONS="$@"
+fi
+
+SQLXX_DISABLE_CACHE=1 go test -v ${OPTIONS}

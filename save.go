@@ -3,20 +3,30 @@ package sqlxx
 import (
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Save saves the model and populate it to the database
 func Save(driver Driver, out interface{}) error {
-	_, err := save(driver, out)
+	_, err := SaveWithQueries(driver, out)
 	return err
 }
 
 // SaveWithQueries saves the given instance and returns performed queries.
 func SaveWithQueries(driver Driver, out interface{}) (Queries, error) {
-	return save(driver, out)
+	queries, err := save(driver, out)
+	if err != nil {
+		return queries, errors.Wrap(err, "sqlxx: cannot execute save")
+	}
+	return queries, nil
 }
 
 func save(driver Driver, out interface{}) (Queries, error) {
+	if driver == nil {
+		return nil, ErrInvalidDriver
+	}
+
 	schema, err := GetSchema(out)
 	if err != nil {
 		return nil, err
@@ -65,25 +75,27 @@ func save(driver Driver, out interface{}) (Queries, error) {
 	}
 
 	if pk == int64(0) {
-		query = fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		query = fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s)`,
 			schema.TableName,
 			strings.Join(columns, ", "),
-			strings.Join(values, ", "))
+			strings.Join(values, ", "),
+		)
 	} else {
 		updates := []string{}
 		for i := range columns {
 			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
 		}
 
-		query = fmt.Sprintf("UPDATE %s SET %s WHERE %s = :%s",
+		query = fmt.Sprintf(`UPDATE %s SET %s WHERE %s = :%s`,
 			schema.TableName,
 			strings.Join(updates, ", "),
 			pkField.ColumnPath(),
-			pkField.ColumnName)
+			pkField.ColumnName,
+		)
 	}
 
 	if len(ignoredColumns) > 0 {
-		query = fmt.Sprintf("%s RETURNING %s", query, strings.Join(ignoredColumns, ", "))
+		query = fmt.Sprintf(`%s RETURNING %s`, query, strings.Join(ignoredColumns, ", "))
 	}
 
 	queries := Queries{{
@@ -97,9 +109,5 @@ func save(driver Driver, out interface{}) (Queries, error) {
 	defer stmt.Close()
 
 	err = stmt.Get(out, out)
-	if err != nil {
-		return queries, err
-	}
-
-	return queries, nil
+	return queries, err
 }
