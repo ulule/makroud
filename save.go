@@ -106,7 +106,11 @@ func save(driver Driver, out interface{}) (Queries, error) {
 	if err != nil {
 		return queries, err
 	}
-	defer stmt.Close()
+	defer func() {
+		// TODO: Add an observer to collect this error.
+		thr := stmt.Close()
+		_ = thr
+	}()
 
 	err = stmt.Get(out, out)
 	return queries, err
