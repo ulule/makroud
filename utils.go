@@ -60,6 +60,10 @@ var int64Type = reflect.TypeOf(int64(0))
 
 // IntToInt64 converts given int to int64.
 func IntToInt64(value interface{}) (int64, error) {
+	if cast, ok := value.(int64); ok {
+		return cast, nil
+	}
+
 	// sql.NullInt* support
 	if valuer, ok := value.(driver.Valuer); ok {
 		v, err := valuer.Value()
