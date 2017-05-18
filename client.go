@@ -14,10 +14,10 @@ const ClientDriver = "postgres"
 // Client is a wrapper that can interact with the database.
 type Client struct {
 	sqalx.Node
-	option clientOption
+	options clientOptions
 }
 
-type clientOption struct {
+type clientOptions struct {
 	port               int
 	host               string
 	user               string
@@ -29,7 +29,7 @@ type clientOption struct {
 	maxIdleConnections int
 }
 
-func (e *clientOption) String() string {
+func (e *clientOptions) String() string {
 	return fmt.Sprintf("%s://%s:%s@%s:%d/%s?sslmode=%s;timezone=%s",
 		ClientDriver,
 		e.user,
@@ -44,8 +44,19 @@ func (e *clientOption) String() string {
 
 // New returns a new Client instance.
 func New(options ...Option) (*Client, error) {
-	client := &Client{}
-	client.init()
+	client := &Client{
+		options: clientOptions{
+			host:               "localhost",
+			port:               5432,
+			user:               "postgres",
+			password:           "",
+			dbName:             "postgres",
+			sslMode:            "disable",
+			timezone:           "UTC",
+			maxOpenConnections: 5,
+			maxIdleConnections: 2,
+		},
+	}
 
 	for _, option := range options {
 		err := option.apply(client)
@@ -54,13 +65,13 @@ func New(options ...Option) (*Client, error) {
 		}
 	}
 
-	dbx, err := sqlx.Connect(ClientDriver, client.option.String())
+	dbx, err := sqlx.Connect(ClientDriver, client.options.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "sqlxx: cannot connect to %s server", ClientDriver)
 	}
 
-	dbx.SetMaxIdleConns(client.option.maxIdleConnections)
-	dbx.SetMaxOpenConns(client.option.maxOpenConnections)
+	dbx.SetMaxIdleConns(client.options.maxIdleConnections)
+	dbx.SetMaxOpenConns(client.options.maxOpenConnections)
 
 	connection, err := sqalx.New(dbx)
 	if err != nil {
@@ -70,18 +81,6 @@ func New(options ...Option) (*Client, error) {
 	client.Node = connection
 
 	return client, nil
-}
-
-// init configures default parameters for a Client.
-func (e *Client) init() {
-	e.option.port = 5432
-	e.option.host = "localhost"
-	e.option.user = "postgres"
-	e.option.dbName = e.option.user
-	e.option.sslMode = "disable"
-	e.option.timezone = "UTC"
-	e.option.maxOpenConnections = 5
-	e.option.maxIdleConnections = 2
 }
 
 // Ping verify that the database connection is healthy.
