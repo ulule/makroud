@@ -46,7 +46,7 @@ func Password(password string) Option {
 // Database will configure the Client to use the given database name.
 func Database(dbname string) Option {
 	return option(func(client *Client) error {
-		client.option.dbname = dbname
+		client.option.dbName = dbname
 		return nil
 	})
 }

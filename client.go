@@ -22,7 +22,7 @@ type clientOption struct {
 	host               string
 	user               string
 	password           string
-	dbname             string
+	dbName             string
 	sslMode            string
 	timezone           string
 	maxOpenConnections int
@@ -36,7 +36,7 @@ func (e *clientOption) String() string {
 		e.password,
 		e.host,
 		e.port,
-		e.dbname,
+		e.dbName,
 		e.sslMode,
 		e.timezone,
 	)
@@ -86,8 +86,8 @@ func (e *Client) init() {
 		e.option.user = "postgres"
 	}
 
-	if e.option.dbname == "" {
-		e.option.dbname = e.option.user
+	if e.option.dbName == "" {
+		e.option.dbName = e.option.user
 	}
 
 	if e.option.sslMode == "" {
