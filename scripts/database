@@ -1,0 +1,88 @@
+#!/bin/bash
+
+set -eo pipefail
+
+export PGUSER='postgres'
+export PGPASSWORD=''
+export PGDATABASE='postgres'
+
+DOCKER_DB_PORT=${DOCKER_DB_PORT:-5432}
+
+CONTAINER_NAME="sqlxx-db"
+CONTAINER_IMAGE="postgres:9.6"
+
+create_database() {
+    declare dbname="$1"
+
+    echo "[database] create ${dbname} database"
+    echo "CREATE DATABASE ${dbname} OWNER ${PGUSER} ENCODING 'UTF8';" | docker run --rm -i \
+        -e PGUSER="${PGUSER}" \
+        -e PGPASSWORD="${PGPASSWORD}" \
+        -e PGDATABASE="${PGDATABASE}" \
+        --link "${CONTAINER_NAME}:postgres" "${CONTAINER_IMAGE}" \
+        bash -c 'psql -h postgres >/dev/null'
+
+}
+
+do_start() {
+
+    if [[ -n "$(docker ps -q -f name="${CONTAINER_NAME}" 2> /dev/null)" ]]; then
+        echo "[database] ${CONTAINER_NAME} already started. (use --restart otherwise)"
+        return 0
+    fi
+
+    if [[ -n "$(docker ps -a -q -f name="${CONTAINER_NAME}" 2> /dev/null)" ]]; then
+        echo "[database] start ${CONTAINER_NAME}"
+        docker start "${CONTAINER_NAME}"
+        return 0
+    fi
+
+    echo "[database] update postgres images"
+    docker pull ${CONTAINER_IMAGE}
+
+    echo "[database] start new ${CONTAINER_NAME} container"
+    docker run --name "${CONTAINER_NAME}" \
+        -e POSTGRES_USER="${PGUSER}" \
+        -e POSTGRES_PASSWORD="${PGPASSWORD}" \
+        -e POSTGRES_DB='${PGDATABASE}' \
+        -p ${DOCKER_DB_PORT}:5432 -d ${CONTAINER_IMAGE} >/dev/null
+
+    for i in {30..0}; do
+
+        echo "SELECT 1;" | docker run --rm -i \
+            -e PGUSER="${PGUSER}" \
+            -e PGPASSWORD="${PGPASSWORD}" \
+            -e PGDATABASE="${PGDATABASE}" \
+            --link "${CONTAINER_NAME}:postgres" "${CONTAINER_IMAGE}" \
+            bash -c 'psql -h postgres >/dev/null 2>&1' && break
+
+        echo '[database] waiting postgres init...'
+        sleep 2
+
+    done
+
+    create_database "sqlxx_test"
+
+}
+
+do_stop() {
+
+    echo "[database] stop ${CONTAINER_NAME} container"
+    docker stop "${CONTAINER_NAME}" >/dev/null 2>&1 || true
+    docker rm "${CONTAINER_NAME}" >/dev/null 2>&1 || true
+
+}
+
+case "$1" in
+    --stop)
+        do_stop
+    ;;
+    --restart)
+        do_stop
+        do_start
+    ;;
+    --start | *)
+        do_start
+    ;;
+esac
+exit 0

@@ -1,30 +1,16 @@
-package sqlxx
+package sqlxx_test
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	assert "github.com/stretchr/testify/require"
+
+	"github.com/ulule/sqlxx"
 )
 
-func TestTypeToModel(t *testing.T) {
-	is := assert.New(t)
-
-	results := []struct {
-		value    interface{}
-		expected interface{}
-	}{
-		{&Article{}, Article{}},
-		{Article{}, Article{}},
-	}
-
-	for _, r := range results {
-		actual := TypeToModel(reflect.TypeOf(r.value))
-		is.IsType(r.expected, actual)
-	}
-}
-
-func TestIntToInt64(t *testing.T) {
+func TestUtils_IntToInt64(t *testing.T) {
 	valids := []interface{}{
 		int8(1),
 		int16(1),
@@ -37,10 +23,11 @@ func TestIntToInt64(t *testing.T) {
 		uint64(1),
 		float32(1),
 		float64(1),
+		sql.NullInt64{Valid: true, Int64: 1},
 	}
 
 	for _, valid := range valids {
-		v, err := IntToInt64(valid)
+		v, err := sqlxx.IntToInt64(valid)
 		assert.NoError(t, err)
 		assert.Equal(t, v, int64(1))
 	}
@@ -58,8 +45,48 @@ func TestIntToInt64(t *testing.T) {
 	}
 
 	for _, invalid := range invalids {
-		v, err := IntToInt64(invalid)
+		v, err := sqlxx.IntToInt64(invalid)
 		assert.Error(t, err)
 		assert.Equal(t, int64(0), v)
+	}
+}
+
+func TestUtils_MakePointer(t *testing.T) {
+	type embedType struct {
+		value int
+	}
+
+	type anyType struct {
+		value    int
+		embed    embedType
+		embedPtr *embedType
+	}
+
+	any := anyType{value: 1}
+	anyPtr := &anyType{value: 1}
+
+	results := []interface{}{
+		sqlxx.MakePointer(any),
+		sqlxx.MakePointer(anyPtr),
+	}
+
+	for _, r := range results {
+		assert.Equal(t, 1, r.(*anyType).value)
+		assert.Equal(t, reflect.ValueOf(r).Kind(), reflect.Ptr)
+		assert.Equal(t, reflect.ValueOf(r).Type().Elem(), reflect.TypeOf(anyType{}))
+	}
+
+	anyWithEmbed := anyType{value: 1, embed: embedType{value: 2}}
+	anyWithEmbedPtr := anyType{value: 1, embedPtr: &embedType{value: 2}}
+
+	results = []interface{}{
+		sqlxx.MakePointer(anyWithEmbed.embed),
+		sqlxx.MakePointer(anyWithEmbedPtr.embedPtr),
+	}
+
+	for _, r := range results {
+		assert.Equal(t, 2, r.(*embedType).value)
+		assert.Equal(t, reflect.ValueOf(r).Kind(), reflect.Ptr)
+		assert.Equal(t, reflect.ValueOf(r).Type().Elem(), reflect.TypeOf(embedType{}))
 	}
 }

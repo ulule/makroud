@@ -1,3 +1,3 @@
 test:
 	@(echo "-> Running unit tests...")
-	@(go test -v . ./reflekt)
+	@(SQLXX_DISABLE_CACHE=1 go test -v)

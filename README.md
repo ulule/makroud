@@ -26,9 +26,9 @@ pk := schema.PrimaryKey
 // The model fields
 fields := schema.Fields
 
-// The model relations 
+// The model relations
 relations := schema.Relations
-``` 
+```
 
 ### `GetByParams(db, out, params) error`
 
@@ -38,7 +38,7 @@ Executes a `WHERE` query with `params`, returning the first matching result into
 user := User{}
 
 if err := sqlxx.GetByParams(db, &user, map[string]interface{}{"username": "jdoe"}); err != nil {
-    fmt.Println(user.Username) 
+    fmt.Println(user.Username)
 }
 ```
 
@@ -71,7 +71,7 @@ if err := sqlxx.Save(db, &user); err != nil {
     fmt.Println(user)
 }
 
-// UPDATE 
+// UPDATE
 
 // Here, we already have a primary key
 fmt.Println(user.ID)
@@ -87,9 +87,9 @@ if err := sqlxx.Save(db, &user); err != nil {
 
 ### `Delete(db, out) error`
 
-Executes a `DELETE` on `out` instance primary key. 
+Executes a `DELETE` on `out` instance primary key.
 
-```go 
+```go
 user := User{Username: "jdoe"}
 
 // Create a user
@@ -103,7 +103,7 @@ if err := sqlxx.Delete(db, &user); err != nil {
 }
 ```
 
-### `SoftDelete(db, out, field) error`
+### `Archive(db, out, field) error`
 
 Executes an `UPDATE` on `field` value from `out` instance.
 
@@ -115,8 +115,8 @@ if err := sqlxx.Save(db, &user); err != nil {
     fmt.Println(user)
 }
 
-// Soft delete it by setting deleted_at column  
-if err := sqlxx.SoftDelete(db, &user, "DeletedAt"); err != nil {
+// Archive it by setting deleted_at column
+if err := sqlxx.Archive(db, &user, "DeletedAt"); err != nil {
     fmt.Println(user)
 }
 ```
