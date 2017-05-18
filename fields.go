@@ -158,7 +158,6 @@ func NewField(schema *Schema, model Model, name string) (Field, error) {
 	field.ColumnName = fmt.Sprintf("%s_%s", field.ColumnName, strings.ToLower(PrimaryKeyFieldName))
 
 	field.ForeignKey, err = NewForeignKey(field)
-	// QUESTION return nil, err ?
 	if err != nil {
 		return field, err
 	}
