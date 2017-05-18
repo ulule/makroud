@@ -9,13 +9,19 @@ import (
 )
 
 func TestSchema_GetSchema_InfiniteLoop(t *testing.T) {
-	schema, err := sqlxx.GetSchema(User{})
+	env := setup(t)
+	defer env.teardown()
+
+	schema, err := sqlxx.GetSchema(env.driver, User{})
 	assert.Nil(t, err)
 	assert.NotNil(t, schema)
 }
 
 func TestSchema_FieldNames(t *testing.T) {
-	schema, err := sqlxx.GetSchema(Untagged{})
+	env := setup(t)
+	defer env.teardown()
+
+	schema, err := sqlxx.GetSchema(env.driver, Untagged{})
 	assert.Nil(t, err)
 
 	assert.NotContains(t, schema.FieldNames(), "unexportedField")
@@ -23,6 +29,9 @@ func TestSchema_FieldNames(t *testing.T) {
 }
 
 func TestSchema_Fields(t *testing.T) {
+	env := setup(t)
+	defer env.teardown()
+
 	type Results struct {
 		name       string
 		model      string
@@ -57,7 +66,7 @@ func TestSchema_Fields(t *testing.T) {
 	}
 
 	for _, modelResults := range []ModelResults{untaggedModelResults, taggedModelResults} {
-		schema, err := sqlxx.GetSchema(modelResults.model)
+		schema, err := sqlxx.GetSchema(env.driver, modelResults.model)
 		assert.Nil(t, err)
 
 		for _, tt := range modelResults.results {
@@ -73,7 +82,10 @@ func TestSchema_Fields(t *testing.T) {
 }
 
 func TestSchema_Associations(t *testing.T) {
-	schema, err := sqlxx.GetSchema(Article{})
+	env := setup(t)
+	defer env.teardown()
+
+	schema, err := sqlxx.GetSchema(env.driver, Article{})
 	assert.Nil(t, err)
 
 	results := []struct {
@@ -163,14 +175,17 @@ func TestSchema_Associations(t *testing.T) {
 }
 
 func TestSchema_PrimaryKeyField(t *testing.T) {
+	env := setup(t)
+	defer env.teardown()
+
 	// Implicit
-	schema, err := sqlxx.GetSchema(ImplicitPrimaryKey{})
+	schema, err := sqlxx.GetSchema(env.driver, ImplicitPrimaryKey{})
 	assert.Nil(t, err)
 	assert.Equal(t, schema.PrimaryKeyField.FieldName, "ID")
 	assert.Equal(t, schema.PrimaryKeyField.ColumnName, "id")
 
 	// Explicit
-	schema, err = sqlxx.GetSchema(ExplicitPrimaryKey{})
+	schema, err = sqlxx.GetSchema(env.driver, ExplicitPrimaryKey{})
 	assert.Nil(t, err)
 	assert.Equal(t, schema.PrimaryKeyField.FieldName, "TadaID")
 	assert.Equal(t, schema.PrimaryKeyField.ColumnName, "tada_id")

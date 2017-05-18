@@ -38,8 +38,10 @@ func FindByParamsWithQueries(driver Driver, out interface{}, params map[string]i
 }
 
 // whereQuery returns SQL where clause from model and params.
-func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (string, []interface{}, error) {
-	schema, err := GetSchema(model)
+func whereQuery(driver Driver, model Model, params map[string]interface{},
+	fetchOne bool) (string, []interface{}, error) {
+
+	schema, err := GetSchema(driver, model)
 	if err != nil {
 		return "", nil, err
 	}
@@ -70,7 +72,7 @@ func where(driver Driver, out interface{}, params map[string]interface{}, fetchO
 
 	model := ToModel(out)
 
-	query, args, err := whereQuery(model, params, fetchOne)
+	query, args, err := whereQuery(driver, model, params, fetchOne)
 	if err != nil {
 		return nil, err
 	}

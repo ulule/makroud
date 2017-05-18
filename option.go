@@ -92,3 +92,11 @@ func MaxIdleConnections(maximum int) Option {
 		return nil
 	})
 }
+
+// Cache will configure if the Client should use a cache.
+func Cache(enabled bool) Option {
+	return option(func(options *clientOptions) error {
+		options.withCache = enabled
+		return nil
+	})
+}

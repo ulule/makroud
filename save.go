@@ -27,7 +27,7 @@ func save(driver Driver, out interface{}) (Queries, error) {
 		return nil, ErrInvalidDriver
 	}
 
-	schema, err := GetSchema(out)
+	schema, err := GetSchema(driver, out)
 	if err != nil {
 		return nil, err
 	}

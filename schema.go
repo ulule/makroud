@@ -85,35 +85,35 @@ func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Cond
 
 // GetSchema returns the given schema from global cache
 // If the given schema does not exists, returns false as bool.
-func GetSchema(itf interface{}) (Schema, error) {
+func GetSchema(driver Driver, itf interface{}) (Schema, error) {
 	var (
 		err    error
 		schema Schema
 		model  = ToModel(itf)
 	)
 
-	if cacheDisabled {
-		return newSchema(model)
+	if !driver.hasCache() {
+		return newSchema(driver, model)
 	}
 
-	schema, found := cache.GetSchema(model)
+	schema, found := driver.cache().GetSchema(model)
 	if found {
 		return schema, nil
 	}
 
-	schema, err = newSchema(model)
+	schema, err = newSchema(driver, model)
 	if err != nil {
 		return schema, err
 	}
 
-	cache.SetSchema(schema)
+	driver.cache().SetSchema(schema)
 
 	return schema, nil
 }
 
 // newSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
-func newSchema(model Model) (Schema, error) {
+func newSchema(driver Driver, model Model) (Schema, error) {
 	schema := Schema{
 		Model:        model,
 		ModelName:    GetIndirectType(model).Name(),
@@ -128,7 +128,7 @@ func newSchema(model Model) (Schema, error) {
 	}
 
 	for _, name := range fields {
-		field, err := NewField(&schema, model, name)
+		field, err := NewField(driver, &schema, model, name)
 		if err != nil {
 			return Schema{}, err
 		}
@@ -158,7 +158,7 @@ func newSchema(model Model) (Schema, error) {
 			nextModel = field.ForeignKey.Model
 		}
 
-		nextSchema, err := GetSchema(nextModel)
+		nextSchema, err := GetSchema(driver, nextModel)
 		if err != nil {
 			return Schema{}, err
 		}

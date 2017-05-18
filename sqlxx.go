@@ -3,29 +3,10 @@ package sqlxx
 import (
 	"database/sql"
 	"fmt"
-	"os"
 
 	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
 )
-
-var (
-	// Cache is the shared cache instance.
-	cache *Cache
-	// cacheDisabled is true if cache has been disabled
-	cacheDisabled bool
-)
-
-func init() {
-	if os.Getenv("SQLXX_DISABLE_CACHE") != "" {
-		cacheDisabled = true
-		return
-	}
-
-	if cache == nil {
-		cache = NewCache()
-	}
-}
 
 // AssociationType is an association type.
 type AssociationType uint8
@@ -95,6 +76,8 @@ type Driver interface {
 	Beginx() (sqalx.Node, error)
 	Rollback() error
 	Commit() error
+	hasCache() bool
+	cache() *cache
 }
 
 // Model represents a database table.
