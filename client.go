@@ -74,37 +74,14 @@ func New(options ...Option) (*Client, error) {
 
 // init configures default parameters for a Client.
 func (e *Client) init() {
-	if e.option.port == 0 {
-		e.option.port = 5432
-	}
-
-	if e.option.host == "" {
-		e.option.host = "localhost"
-	}
-
-	if e.option.user == "" {
-		e.option.user = "postgres"
-	}
-
-	if e.option.dbName == "" {
-		e.option.dbName = e.option.user
-	}
-
-	if e.option.sslMode == "" {
-		e.option.sslMode = "disable"
-	}
-
-	if e.option.timezone == "" {
-		e.option.timezone = "UTC"
-	}
-
-	if e.option.maxOpenConnections == 0 {
-		e.option.maxOpenConnections = 5
-	}
-
-	if e.option.maxIdleConnections == 0 {
-		e.option.maxIdleConnections = 2
-	}
+	e.option.port = 5432
+	e.option.host = "localhost"
+	e.option.user = "postgres"
+	e.option.dbName = e.option.user
+	e.option.sslMode = "disable"
+	e.option.timezone = "UTC"
+	e.option.maxOpenConnections = 5
+	e.option.maxIdleConnections = 2
 }
 
 // Ping verify that the database connection is healthy.
