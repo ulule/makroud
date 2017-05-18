@@ -59,6 +59,10 @@ ignored = [
   revision = "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f"
 
 [[dependencies]]
+  name = "github.com/heetch/sqalx"
+  revision = "eb9035de7e6fb5c0051b6253c2e33b181ea28cda"
+
+[[dependencies]]
   name = "github.com/lib/pq"
   revision = "2704adc878c21e1329f46f6e56a1c387d788ff94"
 
