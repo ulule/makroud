@@ -64,16 +64,19 @@ func save(driver Driver, out interface{}) (Queries, error) {
 
 		if !isIgnored {
 			columns = append(columns, column.ColumnName)
-			if hasDefault {
+
+			fv, err := GetFieldValue(out, name)
+			if err != nil {
+				return nil, err
+			}
+
+			if hasDefault && IsZero(fv) {
 				value = defaultValue
 			} else {
 				value = fmt.Sprintf(":%s", column.ColumnName)
-				fv, err := GetFieldValue(out, name)
-				if err != nil {
-					return nil, err
-				}
 				params[column.ColumnName] = fv
 			}
+
 			values = append(values, value)
 		}
 	}

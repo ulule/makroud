@@ -3,8 +3,9 @@ package sqlxx_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -13,24 +14,39 @@ func TestSave_Save(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
-	user := User{Username: "thoas"}
+	is := require.New(t)
 
-	queries, err := sqlxx.SaveWithQueries(env.driver, &user)
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "INSERT INTO")
+	username := "thoas"
+	createdAt := time.Date(2016, 17, 6, 23, 10, 02, 0, time.UTC)
+	isActive := false
+	user := &User{Username: username, IsActive: isActive, CreatedAt: createdAt}
 
-	assert.NotZero(t, user.ID)
-	assert.Equal(t, true, user.IsActive)
-	assert.NotZero(t, user.UpdatedAt)
+	queries, err := sqlxx.SaveWithQueries(env.driver, user)
+	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
+	is.Contains(queries[0].Query, "INSERT INTO users")
+	is.Contains(queries[0].Query, ":created_at")
+	is.Equal(createdAt, queries[0].Params["created_at"])
+	is.Contains(queries[0].Query, ":username")
+	is.Equal(username, queries[0].Params["username"])
+	_, ok := queries[0].Params["is_active"]
+	is.False(ok)
+	is.NotContains(queries[0].Query, ":is_active")
+	_, ok = queries[0].Params["updated_at"]
+	is.False(ok)
+	is.NotContains(queries[0].Query, ":updated_at")
+	is.NotZero(user.ID)
+	is.Equal(true, user.IsActive)
+	is.NotZero(user.UpdatedAt)
 
 	user.Username = "gilles"
 
-	queries, err = sqlxx.SaveWithQueries(env.driver, &user)
-	assert.NoError(t, err)
-	assert.Contains(t, queries[0].Query, "UPDATE users SET")
-	assert.Contains(t, queries[0].Query, "username = :username")
+	queries, err = sqlxx.SaveWithQueries(env.driver, user)
+	is.NoError(err)
+	is.Contains(queries[0].Query, "UPDATE users SET")
+	is.Contains(queries[0].Query, "username = :username")
+	is.Equal("gilles", queries[0].Params["username"])
 
 	m := map[string]interface{}{"username": "gilles"}
 
@@ -41,10 +57,10 @@ func TestSave_Save(t *testing.T) {
 	`
 
 	stmt, err := env.driver.PrepareNamed(fmt.Sprintf(query, user.TableName()))
-	assert.Nil(t, err)
+	is.NoError(err)
 
 	var count int
 	err = stmt.Get(&count, m)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, count)
+	is.NoError(err)
+	is.Equal(1, count)
 }

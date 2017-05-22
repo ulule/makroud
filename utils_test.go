@@ -2,15 +2,18 @@ package sqlxx_test
 
 import (
 	"database/sql"
+	"fmt"
 	"reflect"
 	"testing"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
 
 func TestUtils_IntToInt64(t *testing.T) {
+	is := require.New(t)
+
 	valids := []interface{}{
 		int8(1),
 		int16(1),
@@ -28,8 +31,8 @@ func TestUtils_IntToInt64(t *testing.T) {
 
 	for _, valid := range valids {
 		v, err := sqlxx.IntToInt64(valid)
-		assert.NoError(t, err)
-		assert.Equal(t, v, int64(1))
+		is.NoError(err)
+		is.Equal(v, int64(1))
 	}
 
 	str := "hello"
@@ -46,12 +49,14 @@ func TestUtils_IntToInt64(t *testing.T) {
 
 	for _, invalid := range invalids {
 		v, err := sqlxx.IntToInt64(invalid)
-		assert.Error(t, err)
-		assert.Equal(t, int64(0), v)
+		is.Error(err)
+		is.Equal(int64(0), v)
 	}
 }
 
 func TestUtils_MakePointer(t *testing.T) {
+	is := require.New(t)
+
 	type embedType struct {
 		value int
 	}
@@ -71,9 +76,9 @@ func TestUtils_MakePointer(t *testing.T) {
 	}
 
 	for _, r := range results {
-		assert.Equal(t, 1, r.(*anyType).value)
-		assert.Equal(t, reflect.ValueOf(r).Kind(), reflect.Ptr)
-		assert.Equal(t, reflect.ValueOf(r).Type().Elem(), reflect.TypeOf(anyType{}))
+		is.Equal(1, r.(*anyType).value)
+		is.Equal(reflect.ValueOf(r).Kind(), reflect.Ptr)
+		is.Equal(reflect.ValueOf(r).Type().Elem(), reflect.TypeOf(anyType{}))
 	}
 
 	anyWithEmbed := anyType{value: 1, embed: embedType{value: 2}}
@@ -85,8 +90,94 @@ func TestUtils_MakePointer(t *testing.T) {
 	}
 
 	for _, r := range results {
-		assert.Equal(t, 2, r.(*embedType).value)
-		assert.Equal(t, reflect.ValueOf(r).Kind(), reflect.Ptr)
-		assert.Equal(t, reflect.ValueOf(r).Type().Elem(), reflect.TypeOf(embedType{}))
+		is.Equal(2, r.(*embedType).value)
+		is.Equal(reflect.ValueOf(r).Kind(), reflect.Ptr)
+		is.Equal(reflect.ValueOf(r).Type().Elem(), reflect.TypeOf(embedType{}))
 	}
+}
+
+func TestUtils_IsZero(t *testing.T) {
+	is := require.New(t)
+
+	type user struct {
+		Name   *string
+		Fk     sql.NullInt64
+		FkPtr  *sql.NullInt64
+		Active bool
+	}
+
+	name := "thoas"
+	empty := ""
+	scenarios := []struct {
+		value    user
+		field    string
+		expected bool
+	}{
+		{
+			value:    user{},
+			field:    "Name",
+			expected: true,
+		},
+		{
+			value:    user{Name: &empty},
+			field:    "Name",
+			expected: true,
+		},
+		{
+			value:    user{Name: &name},
+			field:    "Name",
+			expected: false,
+		},
+		{
+			value:    user{},
+			field:    "FkPtr",
+			expected: true,
+		},
+		{
+			value:    user{FkPtr: &sql.NullInt64{}},
+			field:    "FkPtr",
+			expected: true,
+		},
+		{
+			value:    user{FkPtr: &sql.NullInt64{Valid: true, Int64: 64}},
+			field:    "FkPtr",
+			expected: false,
+		},
+		{
+			value:    user{Fk: sql.NullInt64{}},
+			field:    "Fk",
+			expected: true,
+		},
+		{
+			value:    user{Fk: sql.NullInt64{Valid: true}},
+			field:    "Fk",
+			expected: false,
+		},
+		{
+			value:    user{},
+			field:    "Active",
+			expected: true,
+		},
+		{
+			value:    user{Active: false},
+			field:    "Active",
+			expected: true,
+		},
+		{
+			value:    user{Active: true},
+			field:    "Active",
+			expected: false,
+		},
+	}
+
+	for i, scenario := range scenarios {
+		message := fmt.Sprintf("scenario #%d", (i + 1))
+
+		field, err := sqlxx.GetFieldValue(scenario.value, scenario.field)
+		is.NoError(err)
+
+		isZero := sqlxx.IsZero(field)
+		is.Equal(scenario.expected, isZero, message)
+	}
+
 }

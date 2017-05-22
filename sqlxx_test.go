@@ -191,7 +191,7 @@ type User struct {
 	Username string `db:"username"`
 	IsActive bool   `db:"is_active" sqlxx:"default:true"`
 
-	CreatedAt time.Time  `db:"created_at" sqlxx:"auto_now_add:true"`
+	CreatedAt time.Time  `db:"created_at" sqlxx:"default:now()"`
 	UpdatedAt time.Time  `db:"updated_at" sqlxx:"default:now()"`
 	DeletedAt *time.Time `db:"deleted_at"`
 
@@ -215,7 +215,7 @@ type Comment struct {
 	ArticleID int `db:"article_id"`
 	Article   Article
 	Content   string    `db:"content"`
-	CreatedAt time.Time `db:"created_at" sqlxx:"auto_now_add:true"`
+	CreatedAt time.Time `db:"created_at" sqlxx:"default:now()"`
 	UpdatedAt time.Time `db:"updated_at" sqlxx:"default:now()"`
 }
 
