@@ -15,6 +15,7 @@ const ClientDriver = "postgres"
 type Client struct {
 	sqalx.Node
 	store *cache
+	log   Logger
 }
 
 // clientOptions configure a Client instance. clientOptions are set by the Option
@@ -30,6 +31,7 @@ type clientOptions struct {
 	maxOpenConnections int
 	maxIdleConnections int
 	withCache          bool
+	logger             Logger
 }
 
 func (e clientOptions) String() string {
@@ -82,10 +84,15 @@ func New(options ...Option) (*Client, error) {
 
 	client := &Client{
 		Node: connection,
+		log:  &EmptyLogger{},
 	}
 
 	if opts.withCache {
 		client.store = newCache()
+	}
+
+	if opts.logger != nil {
+		client.log = opts.logger
 	}
 
 	return client, nil
@@ -113,4 +120,8 @@ func (e *Client) hasCache() bool {
 
 func (e *Client) cache() *cache {
 	return e.store
+}
+
+func (e *Client) logger() Logger {
+	return e.log
 }

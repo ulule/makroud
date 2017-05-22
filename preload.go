@@ -3,6 +3,7 @@ package sqlxx
 import (
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	funk "github.com/thoas/go-funk"
@@ -16,7 +17,9 @@ func Preload(driver Driver, out interface{}, paths ...string) error {
 
 // PreloadWithQueries preloads related fields and returns performed queries.
 func PreloadWithQueries(driver Driver, out interface{}, paths ...string) (Queries, error) {
+	start := time.Now()
 	queries, err := preload(driver, out, paths...)
+	Log(driver, queries, time.Since(start))
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute preload")
 	}
@@ -244,7 +247,7 @@ func preloadSingleMany(driver Driver, out interface{}, field Field) (Queries, er
 	relations := reflect.New(t)
 	relations.Elem().Set(reflect.MakeSlice(t, 0, 0))
 
-	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.ForeignKey.ColumnName: fk})
+	q, err := findByParams(driver, relations.Interface(), map[string]interface{}{field.ForeignKey.ColumnName: fk})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err
@@ -406,7 +409,7 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 	relations := reflect.New(relationType)
 	relations.Elem().Set(reflect.MakeSlice(relationType, 0, 0))
 
-	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.ForeignKey.Reference.ColumnName: foreignKeys})
+	q, err := findByParams(driver, relations.Interface(), map[string]interface{}{field.ForeignKey.Reference.ColumnName: foreignKeys})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err
@@ -473,7 +476,7 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 	relations := reflect.New(relationType)
 	relations.Elem().Set(reflect.MakeSlice(relationType, 0, 0))
 
-	q, err := FindByParamsWithQueries(driver, relations.Interface(), map[string]interface{}{field.ForeignKey.ColumnName: foreignKeys})
+	q, err := findByParams(driver, relations.Interface(), map[string]interface{}{field.ForeignKey.ColumnName: foreignKeys})
 	queries = append(queries, q...)
 	if err != nil {
 		return queries, err

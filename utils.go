@@ -120,6 +120,10 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 		return nil, errors.Errorf("no such field %s in %+v", name, itf)
 	}
 
+	if field.Kind() == reflect.Ptr && field.IsNil() {
+		return nil, nil
+	}
+
 	return field.Interface(), nil
 }
 

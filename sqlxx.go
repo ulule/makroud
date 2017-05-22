@@ -78,6 +78,7 @@ type Driver interface {
 	Commit() error
 	hasCache() bool
 	cache() *cache
+	logger() Logger
 }
 
 // Model represents a database table.

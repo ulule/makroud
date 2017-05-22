@@ -52,6 +52,8 @@ func remove(driver Driver, out interface{}) (Queries, error) {
 		return nil, ErrInvalidDriver
 	}
 
+	start := time.Now()
+
 	schema, err := GetSchema(driver, out)
 	if err != nil {
 		return nil, err
@@ -83,6 +85,11 @@ func remove(driver Driver, out interface{}) (Queries, error) {
 		Params: params,
 	}}
 
+	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	defer func() {
+		Log(driver, queries, time.Since(start))
+	}()
+
 	_, err = driver.NamedExec(query, params)
 	return queries, err
 }
@@ -91,6 +98,8 @@ func archive(driver Driver, out interface{}, fieldName string) (Queries, error) 
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
+
+	start := time.Now()
 
 	schema, err := GetSchema(driver, out)
 	if err != nil {
@@ -129,6 +138,11 @@ func archive(driver Driver, out interface{}, fieldName string) (Queries, error) 
 		Query:  query,
 		Params: params,
 	}}
+
+	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	defer func() {
+		Log(driver, queries, time.Since(start))
+	}()
 
 	_, err = driver.NamedExec(query, params)
 	return queries, err

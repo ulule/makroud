@@ -1,5 +1,9 @@
 package sqlxx
 
+import (
+	"github.com/pkg/errors"
+)
+
 // Option is used to define Client configuration.
 type Option interface {
 	apply(*clientOptions) error
@@ -97,6 +101,17 @@ func MaxIdleConnections(maximum int) Option {
 func Cache(enabled bool) Option {
 	return option(func(options *clientOptions) error {
 		options.withCache = enabled
+		return nil
+	})
+}
+
+// WithLogger will attach a logger on Client.
+func WithLogger(logger Logger) Option {
+	return option(func(options *clientOptions) error {
+		if logger == nil {
+			return errors.New("sqlxx: a logger instance is required")
+		}
+		options.logger = logger
 		return nil
 	})
 }

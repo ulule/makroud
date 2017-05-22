@@ -41,7 +41,7 @@ func TestDelete_Delete(t *testing.T) {
 	assert.Equal(t, 0, count)
 }
 
-func TestDelete_SoftDelete(t *testing.T) {
+func TestDelete_Archive(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
@@ -50,7 +50,7 @@ func TestDelete_SoftDelete(t *testing.T) {
 	_, err := sqlxx.SaveWithQueries(env.driver, &user)
 	assert.NoError(t, err)
 
-	queries, err := sqlxx.SoftDeleteWithQueries(env.driver, &user, "DeletedAt")
+	queries, err := sqlxx.ArchiveWithQueries(env.driver, &user, "DeletedAt")
 	assert.NoError(t, err)
 	assert.NotNil(t, queries)
 	assert.Len(t, queries, 1)
