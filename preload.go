@@ -386,7 +386,7 @@ func preloadSliceOne(driver Driver, out interface{}, field Field) (Queries, erro
 			return nil, err
 		}
 
-		if fk != 0 && !InInt64Slice(foreignKeys, fk) {
+		if fk != 0 && !funk.ContainsInt64(foreignKeys, fk) {
 			foreignKeys = append(foreignKeys, fk)
 		}
 
@@ -463,7 +463,7 @@ func preloadSliceMany(driver Driver, out interface{}, field Field) (Queries, err
 			return nil, err
 		}
 
-		if fk != 0 && !InInt64Slice(foreignKeys, fk) {
+		if fk != 0 && !funk.ContainsInt64(foreignKeys, fk) {
 			foreignKeys = append(foreignKeys, fk)
 			mapping[fk] = instanceValue
 		}
