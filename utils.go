@@ -56,18 +56,14 @@ func ToModel(itf interface{}) Model {
 // Int64
 // ----------------------------------------------------------------------------
 
-// InInt64Slice returns true if needle is found in the given slice.
-func InInt64Slice(slc []int64, needle int64) bool {
-	for _, item := range slc {
-		if item == needle {
-			return true
-		}
-	}
-	return false
-}
+var int64Type = reflect.TypeOf(int64(0))
 
 // IntToInt64 converts given int to int64.
 func IntToInt64(value interface{}) (int64, error) {
+	if cast, ok := value.(int64); ok {
+		return cast, nil
+	}
+
 	// sql.NullInt* support
 	if valuer, ok := value.(driver.Valuer); ok {
 		v, err := valuer.Value()
@@ -78,7 +74,6 @@ func IntToInt64(value interface{}) (int64, error) {
 		value = v
 	}
 
-	int64Type := reflect.TypeOf(int64(0))
 	reflected := reflect.Indirect(reflect.ValueOf(value))
 
 	if !reflected.IsValid() {
@@ -243,24 +238,25 @@ func IsZero(itf interface{}) bool {
 
 // GetIndirectType returns indirect type for the given type.
 func GetIndirectType(itf interface{}) reflect.Type {
-	t, ok := itf.(reflect.Type)
-	if !ok {
-		t = reflect.TypeOf(itf)
-	}
+	var (
+		t  reflect.Type
+		ok bool
+	)
 
-	if t.Kind() == reflect.Ptr {
-		return GetIndirectType(t.Elem())
+	for {
+		t, ok = itf.(reflect.Type)
+		if !ok {
+			t = reflect.TypeOf(itf)
+		}
+
+		if t.Kind() != reflect.Ptr {
+			break
+		}
+
+		itf = t.Elem()
 	}
 
 	return t
-}
-
-// MakeSlice takes a type and returns create a slice from.
-func MakeSlice(itf interface{}) interface{} {
-	sliceType := reflect.SliceOf(GetIndirectType(itf))
-	slice := reflect.New(sliceType)
-	slice.Elem().Set(reflect.MakeSlice(sliceType, 0, 0))
-	return slice.Elem().Interface()
 }
 
 // MakePointer makes a copy of the given interface and returns a pointer.
