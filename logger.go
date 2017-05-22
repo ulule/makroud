@@ -17,7 +17,7 @@ type Logger interface {
 
 // Log will emmit given queries on driver's attached Logger.
 func Log(driver Driver, queries Queries, duration time.Duration) {
-	if driver == nil || queries == nil {
+	if driver == nil || queries == nil || len(queries) == 0 {
 		return
 	}
 	go func() {
