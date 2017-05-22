@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
@@ -116,14 +115,9 @@ func TestLogger(t *testing.T) {
 	is.Contains(log, "SELECT api_keys.")
 	is.Contains(log, fmt.Sprintf("FROM api_keys WHERE api_keys.id = %d LIMIT 1;", batman.APIKeyID))
 
-	time.Sleep(100 * time.Millisecond)
-
-	for len(logger.logs) > 0 {
-		log, err = logger.read()
-		is.NoError(err)
-		t.Log(log)
-	}
-
+	log, err = logger.read()
+	is.Equal(ErrLogTimeout, err)
+	is.Equal("", log)
 }
 
 type logger struct {
@@ -141,6 +135,6 @@ func (e *logger) read() (string, error) {
 	case log := <-e.logs:
 		return log, nil
 	case <-time.After(500 * time.Millisecond):
-		return "", errors.New("logger timeout")
+		return "", ErrLogTimeout
 	}
 }
