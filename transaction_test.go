@@ -37,7 +37,6 @@ func TestTransaction_Commit(t *testing.T) {
 	is.NoError(err)
 	is.NotNil(queries)
 	is.Equal("thoas", record.Username)
-
 }
 
 func TestTransaction_Rollback(t *testing.T) {
@@ -70,5 +69,4 @@ func TestTransaction_Rollback(t *testing.T) {
 	is.NoError(err)
 	is.NotNil(queries)
 	is.Equal("thaos", record.Username)
-
 }

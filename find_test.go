@@ -3,7 +3,7 @@ package sqlxx_test
 import (
 	"testing"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -12,58 +12,66 @@ func TestFind_GetByParams(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
-	user := User{}
+	is := require.New(t)
 
-	queries, err := sqlxx.GetByParamsWithQueries(env.driver, &user, map[string]interface{}{"username": "jdoe", "is_active": true})
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "users.username = ?")
-	assert.Contains(t, queries[0].Query, "users.is_active = ?")
-	assert.Contains(t, queries[0].Args, user.Username)
-	assert.Contains(t, queries[0].Args, true)
+	user := &User{}
+	queries, err := sqlxx.GetByParamsWithQueries(env.driver, user, map[string]interface{}{
+		"username": "jdoe", "is_active": true,
+	})
+	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
+	is.Contains(queries[0].Query, "users.username = ?")
+	is.Contains(queries[0].Query, "users.is_active = ?")
+	is.Contains(queries[0].Args, user.Username)
+	is.Contains(queries[0].Args, true)
 
-	assert.Equal(t, 1, user.ID)
-	assert.Equal(t, "jdoe", user.Username)
-	assert.True(t, user.IsActive)
-	assert.NotZero(t, user.CreatedAt)
-	assert.NotZero(t, user.UpdatedAt)
+	is.Equal(1, user.ID)
+	is.Equal("jdoe", user.Username)
+	is.True(user.IsActive)
+	is.NotZero(user.CreatedAt)
+	is.NotZero(user.UpdatedAt)
 }
 
 func TestFind_FindByParams(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
-	users := []User{}
+	is := require.New(t)
 
-	queries, err := sqlxx.FindByParamsWithQueries(env.driver, &users, map[string]interface{}{"is_active": true})
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "users.is_active = ?")
-	assert.Contains(t, queries[0].Args, true)
-	assert.Len(t, users, 1)
+	users := []User{}
+	queries, err := sqlxx.FindByParamsWithQueries(env.driver, &users, map[string]interface{}{
+		"is_active": true,
+	})
+	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
+	is.Contains(queries[0].Query, "users.is_active = ?")
+	is.Contains(queries[0].Args, true)
+	is.Len(users, 1)
 
 	user := users[0]
-	assert.Equal(t, 1, user.ID)
-	assert.Equal(t, "jdoe", user.Username)
-	assert.True(t, user.IsActive)
-	assert.NotZero(t, user.CreatedAt)
-	assert.NotZero(t, user.UpdatedAt)
+	is.Equal(1, user.ID)
+	is.Equal("jdoe", user.Username)
+	is.True(user.IsActive)
+	is.NotZero(user.CreatedAt)
+	is.NotZero(user.UpdatedAt)
 
 	// SELEC IN
 	users = []User{}
-	queries, err = sqlxx.FindByParamsWithQueries(env.driver, &users, map[string]interface{}{"is_active": true, "id": []int{1, 2, 3}})
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "users.is_active = ?")
-	assert.Contains(t, queries[0].Query, "users.id IN (?, ?, ?)")
-	assert.Contains(t, queries[0].Args, true)
-	assert.Contains(t, queries[0].Args, 1)
-	assert.Contains(t, queries[0].Args, 2)
-	assert.Contains(t, queries[0].Args, 3)
+	queries, err = sqlxx.FindByParamsWithQueries(env.driver, &users, map[string]interface{}{
+		"is_active": true, "id": []int{1, 2, 3},
+	})
+	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
+	is.Contains(queries[0].Query, "users.is_active = ?")
+	is.Contains(queries[0].Query, "users.id IN (?, ?, ?)")
+	is.Contains(queries[0].Args, true)
+	is.Contains(queries[0].Args, 1)
+	is.Contains(queries[0].Args, 2)
+	is.Contains(queries[0].Args, 3)
 
-	assert.Equal(t, 1, users[0].ID)
-	assert.Equal(t, "jdoe", user.Username)
+	is.Equal(1, users[0].ID)
+	is.Equal("jdoe", user.Username)
 }

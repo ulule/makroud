@@ -1,10 +1,9 @@
 package sqlxx_test
 
 import (
-	"fmt"
 	"testing"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -13,38 +12,47 @@ func TestSave_Save(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
-	user := User{Username: "thoas"}
+	is := require.New(t)
 
-	queries, err := sqlxx.SaveWithQueries(env.driver, &user)
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "INSERT INTO")
+	user := &User{Username: "thoas"}
 
-	assert.NotZero(t, user.ID)
-	assert.Equal(t, true, user.IsActive)
-	assert.NotZero(t, user.UpdatedAt)
+	queries, err := sqlxx.SaveWithQueries(env.driver, user)
+	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
+	is.Contains(queries[0].Query, "INSERT INTO users")
+	is.Contains(queries[0].Query, ":username")
+	is.Contains(queries[0].Params, "username")
+	is.Equal("thoas", queries[0].Params["username"])
+
+	is.NotZero(user.ID)
+	is.Equal(true, user.IsActive)
+	is.NotZero(user.UpdatedAt)
 
 	user.Username = "gilles"
 
-	queries, err = sqlxx.SaveWithQueries(env.driver, &user)
-	assert.NoError(t, err)
-	assert.Contains(t, queries[0].Query, "UPDATE users SET")
-	assert.Contains(t, queries[0].Query, "username = :username")
-
-	m := map[string]interface{}{"username": "gilles"}
+	queries, err = sqlxx.SaveWithQueries(env.driver, user)
+	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
+	is.Contains(queries[0].Query, "UPDATE users SET")
+	is.Contains(queries[0].Query, "username = :username")
 
 	query := `
-	SELECT count(*)
-	FROM %s
-	WHERE username = :username
+		SELECT count(*)
+		FROM users
+		WHERE username = :username
 	`
+	params := map[string]interface{}{
+		"username": "gilles",
+	}
 
-	stmt, err := env.driver.PrepareNamed(fmt.Sprintf(query, user.TableName()))
-	assert.Nil(t, err)
+	stmt, err := env.driver.PrepareNamed(query)
+	is.NoError(err)
+	is.NotNil(stmt)
 
-	var count int
-	err = stmt.Get(&count, m)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, count)
+	count := -1
+	err = stmt.Get(&count, params)
+	is.NoError(err)
+	is.Equal(1, count)
 }
