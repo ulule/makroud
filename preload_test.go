@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -18,23 +18,27 @@ func TestPreload_Error_Unaddressable(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
+	is := require.New(t)
+
 	article := Article{}
 
 	queries, err := sqlxx.PreloadWithQueries(env.driver, article, "Author")
-	assert.Error(t, err)
-	assert.Nil(t, queries)
+	is.Error(err)
+	is.Nil(queries)
 }
 
 func TestPreload_Error_UnknownRelation(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
+	is := require.New(t)
+
 	article := env.Articles[0]
 
 	queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Foo")
-	assert.Error(t, err)
-	assert.Nil(t, queries)
-	assert.Zero(t, article.Author)
+	is.Error(err)
+	is.Nil(queries)
+	is.Zero(article.Author)
 }
 
 // ----------------------------------------------------------------------------
@@ -45,24 +49,26 @@ func TestPreload_PrimaryKey_Null(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
+	is := require.New(t)
+
 	category := env.createCategory("cat1", nil)
 
 	queries, err := sqlxx.PreloadWithQueries(env.driver, &category, "User")
-	assert.NoError(t, err)
-	assert.Nil(t, queries)
-	assert.Zero(t, category.User)
+	is.NoError(err)
+	is.Nil(queries)
+	is.Zero(category.User)
 
 	category = env.createCategory("cat1", &env.Users[0].ID)
 
 	queries, err = sqlxx.PreloadWithQueries(env.driver, &category, "User")
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "FROM users WHERE users.id = ? LIMIT 1")
-	assert.Len(t, queries[0].Args, 1)
-	assert.Equal(t, category.UserID.Int64, queries[0].Args[0])
-	assert.NotZero(t, category.UserID)
-	assert.NotZero(t, category.User.ID)
+	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
+	is.Contains(queries[0].Query, "FROM users WHERE users.id = ? LIMIT 1")
+	is.Len(queries[0].Args, 1)
+	is.Equal(category.UserID.Int64, queries[0].Args[0])
+	is.NotZero(category.UserID)
+	is.NotZero(category.User.ID)
 }
 
 // ----------------------------------------------------------------------------
@@ -73,6 +79,8 @@ func TestPreload_Single_One(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
+	is := require.New(t)
+
 	var (
 		user    = env.createUser("batman")
 		article = env.createArticle(&user)
@@ -82,39 +90,39 @@ func TestPreload_Single_One(t *testing.T) {
 	{
 		// Value
 
-		assert.Zero(t, article.Author)
+		is.Zero(article.Author)
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 1)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
 
 		userQuery, ok := queries.ByTable("users")
-		assert.True(t, ok)
-		assert.Contains(t, userQuery.Query, "FROM users WHERE users.id = ? LIMIT 1")
-		assert.Len(t, userQuery.Args, 1)
-		assert.EqualValues(t, article.AuthorID, userQuery.Args[0])
-		assert.NotZero(t, article.Author)
-		assert.Equal(t, user.ID, article.AuthorID)
-		assert.Equal(t, user.Username, article.Author.Username)
+		is.True(ok)
+		is.Contains(userQuery.Query, "FROM users WHERE users.id = ? LIMIT 1")
+		is.Len(userQuery.Args, 1)
+		is.EqualValues(article.AuthorID, userQuery.Args[0])
+		is.NotZero(article.Author)
+		is.Equal(user.ID, article.AuthorID)
+		is.Equal(user.Username, article.Author.Username)
 
 		// Pointer
 
-		assert.Nil(t, article.Reviewer)
+		is.Nil(article.Reviewer)
 
 		queries, err = sqlxx.PreloadWithQueries(env.driver, &article, "Reviewer")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 1)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
 
 		userQuery, ok = queries.ByTable("users")
-		assert.True(t, ok)
-		assert.Contains(t, userQuery.Query, "FROM users WHERE users.id = ? LIMIT 1")
-		assert.Len(t, userQuery.Args, 1)
-		assert.EqualValues(t, article.ReviewerID, userQuery.Args[0])
-		assert.NotZero(t, article.Reviewer)
-		assert.Equal(t, user.ID, article.ReviewerID)
-		assert.Equal(t, user.Username, article.Reviewer.Username)
+		is.True(ok)
+		is.Contains(userQuery.Query, "FROM users WHERE users.id = ? LIMIT 1")
+		is.Len(userQuery.Args, 1)
+		is.EqualValues(article.ReviewerID, userQuery.Args[0])
+		is.NotZero(article.Reviewer)
+		is.Equal(user.ID, article.ReviewerID)
+		is.Equal(user.Username, article.Reviewer.Username)
 	}
 
 	// level 2
@@ -124,52 +132,52 @@ func TestPreload_Single_One(t *testing.T) {
 		article.Author = User{}
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKey")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
+		is.NoError(err)
+		is.NotNil(queries)
 
 		authorQuery, ok := queries.ByTable("users")
-		assert.True(t, ok)
-		assert.Contains(t, authorQuery.Query, "WHERE users.id = ? LIMIT 1")
-		assert.Len(t, authorQuery.Args, 1)
+		is.True(ok)
+		is.Contains(authorQuery.Query, "WHERE users.id = ? LIMIT 1")
+		is.Len(authorQuery.Args, 1)
 
 		apikeyQuery, ok := queries.ByTable("api_keys")
-		assert.True(t, ok)
-		assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
-		assert.Len(t, apikeyQuery.Args, 1)
+		is.True(ok)
+		is.Contains(apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
+		is.Len(apikeyQuery.Args, 1)
 
-		assert.NotZero(t, article.Author)
-		assert.Equal(t, user.ID, article.AuthorID)
-		assert.Equal(t, user.Username, article.Author.Username)
+		is.NotZero(article.Author)
+		is.Equal(user.ID, article.AuthorID)
+		is.Equal(user.Username, article.Author.Username)
 
-		assert.NotZero(t, article.Author.APIKey)
-		assert.NotZero(t, article.Author.APIKey.ID)
-		assert.Equal(t, fmt.Sprintf("%s-apikey", user.Username), article.Author.APIKey.Key)
+		is.NotZero(article.Author.APIKey)
+		is.NotZero(article.Author.APIKey.ID)
+		is.Equal(fmt.Sprintf("%s-apikey", user.Username), article.Author.APIKey.Key)
 
 		// Pointer
 
 		article.Author = User{}
 
 		queries, err = sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKeyPtr")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
+		is.NoError(err)
+		is.NotNil(queries)
 
 		authorQuery, ok = queries.ByTable("users")
-		assert.True(t, ok)
-		assert.Contains(t, authorQuery.Query, "WHERE users.id = ? LIMIT 1")
-		assert.Len(t, authorQuery.Args, 1)
+		is.True(ok)
+		is.Contains(authorQuery.Query, "WHERE users.id = ? LIMIT 1")
+		is.Len(authorQuery.Args, 1)
 
 		apikeyQuery, ok = queries.ByTable("api_keys")
-		assert.True(t, ok)
-		assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
-		assert.Len(t, apikeyQuery.Args, 1)
+		is.True(ok)
+		is.Contains(apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
+		is.Len(apikeyQuery.Args, 1)
 
-		assert.NotZero(t, article.Author)
-		assert.Equal(t, user.ID, article.AuthorID)
-		assert.Equal(t, user.Username, article.Author.Username)
+		is.NotZero(article.Author)
+		is.Equal(user.ID, article.AuthorID)
+		is.Equal(user.Username, article.Author.Username)
 
-		assert.NotNil(t, article.Author.APIKeyPtr)
-		assert.NotZero(t, article.Author.APIKeyPtr.ID)
-		assert.Equal(t, fmt.Sprintf("%s-apikey", user.Username), article.Author.APIKeyPtr.Key)
+		is.NotNil(article.Author.APIKeyPtr)
+		is.NotZero(article.Author.APIKeyPtr.ID)
+		is.Equal(fmt.Sprintf("%s-apikey", user.Username), article.Author.APIKeyPtr.Key)
 	}
 
 	// Level 3
@@ -179,34 +187,34 @@ func TestPreload_Single_One(t *testing.T) {
 		article.Author = User{}
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKey", "Author.APIKey.Partner")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
+		is.NoError(err)
+		is.NotNil(queries)
 
 		authorQuery, ok := queries.ByTable("users")
-		assert.True(t, ok)
-		assert.Contains(t, authorQuery.Query, "WHERE users.id = ? LIMIT 1")
-		assert.Len(t, authorQuery.Args, 1)
+		is.True(ok)
+		is.Contains(authorQuery.Query, "WHERE users.id = ? LIMIT 1")
+		is.Len(authorQuery.Args, 1)
 
 		apikeyQuery, ok := queries.ByTable("api_keys")
-		assert.True(t, ok)
-		assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
-		assert.Len(t, apikeyQuery.Args, 1)
+		is.True(ok)
+		is.Contains(apikeyQuery.Query, "WHERE api_keys.id = ? LIMIT 1")
+		is.Len(apikeyQuery.Args, 1)
 
 		partnerQuery, ok := queries.ByTable("partners")
-		assert.True(t, ok)
-		assert.Contains(t, partnerQuery.Query, "WHERE partners.id = ? LIMIT 1")
-		assert.Len(t, partnerQuery.Args, 1)
+		is.True(ok)
+		is.Contains(partnerQuery.Query, "WHERE partners.id = ? LIMIT 1")
+		is.Len(partnerQuery.Args, 1)
 
-		assert.NotZero(t, article.Author)
-		assert.Equal(t, user.ID, article.AuthorID)
-		assert.Equal(t, user.Username, article.Author.Username)
+		is.NotZero(article.Author)
+		is.Equal(user.ID, article.AuthorID)
+		is.Equal(user.Username, article.Author.Username)
 
-		assert.NotZero(t, article.Author.APIKey)
-		assert.NotZero(t, article.Author.APIKey.ID)
-		assert.Equal(t, fmt.Sprintf("%s-apikey", user.Username), article.Author.APIKey.Key)
+		is.NotZero(article.Author.APIKey)
+		is.NotZero(article.Author.APIKey.ID)
+		is.Equal(fmt.Sprintf("%s-apikey", user.Username), article.Author.APIKey.Key)
 
-		assert.NotZero(t, article.Author.APIKey.Partner)
-		assert.NotZero(t, article.Author.APIKey.Partner.ID)
+		is.NotZero(article.Author.APIKey.Partner)
+		is.NotZero(article.Author.APIKey.Partner.ID)
 	}
 }
 
@@ -214,26 +222,28 @@ func TestPreload_Single_Many(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
+	is := require.New(t)
+
 	user := env.createUser("wonderwoman")
 
 	// Level 1
 	{
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &user, "Avatars")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 1)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
 
 		avatarQuery, ok := queries.ByTable("avatars")
-		assert.True(t, ok)
-		assert.Contains(t, avatarQuery.Query, "WHERE avatars.user_id = ?")
-		assert.Len(t, avatarQuery.Args, 1)
-		assert.EqualValues(t, user.ID, avatarQuery.Args[0])
+		is.True(ok)
+		is.Contains(avatarQuery.Query, "WHERE avatars.user_id = ?")
+		is.Len(avatarQuery.Args, 1)
+		is.EqualValues(user.ID, avatarQuery.Args[0])
 
-		assert.Len(t, user.Avatars, 5)
+		is.Len(user.Avatars, 5)
 		for i, a := range user.Avatars {
-			assert.NotZero(t, a.ID)
-			assert.Equal(t, user.ID, a.UserID)
-			assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
+			is.NotZero(a.ID)
+			is.Equal(user.ID, a.UserID)
+			is.Equal(fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
 		}
 	}
 
@@ -244,28 +254,28 @@ func TestPreload_Single_Many(t *testing.T) {
 		// Values
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &user, "Avatars", "Avatars.Filter")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 2)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 2)
 
 		avatarQuery, ok := queries.ByTable("avatars")
-		assert.True(t, ok)
-		assert.Contains(t, avatarQuery.Query, "WHERE avatars.user_id = ?")
-		assert.Len(t, avatarQuery.Args, 1)
-		assert.EqualValues(t, user.ID, avatarQuery.Args[0])
+		is.True(ok)
+		is.Contains(avatarQuery.Query, "WHERE avatars.user_id = ?")
+		is.Len(avatarQuery.Args, 1)
+		is.EqualValues(user.ID, avatarQuery.Args[0])
 
 		avatarFilterQuery, ok := queries.ByTable("avatar_filters")
-		assert.True(t, ok)
-		assert.Contains(t, avatarFilterQuery.Query, "avatar_filters.id IN (?, ?, ?, ?, ?)")
-		assert.Len(t, avatarFilterQuery.Args, 5)
+		is.True(ok)
+		is.Contains(avatarFilterQuery.Query, "avatar_filters.id IN (?, ?, ?, ?, ?)")
+		is.Len(avatarFilterQuery.Args, 5)
 
-		assert.Len(t, user.Avatars, 5)
+		is.Len(user.Avatars, 5)
 		for i, a := range user.Avatars {
-			assert.NotZero(t, a.ID)
-			assert.Equal(t, user.ID, a.UserID)
-			assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
-			assert.NotZero(t, a.Filter)
-			assert.NotZero(t, a.Filter.ID)
+			is.NotZero(a.ID)
+			is.Equal(user.ID, a.UserID)
+			is.Equal(fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
+			is.NotZero(a.Filter)
+			is.NotZero(a.Filter.ID)
 		}
 
 		// Pointers
@@ -273,28 +283,28 @@ func TestPreload_Single_Many(t *testing.T) {
 		user.Avatars = []Avatar{}
 
 		queries, err = sqlxx.PreloadWithQueries(env.driver, &user, "Avatars", "Avatars.FilterPtr")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 2)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 2)
 
 		avatarQuery, ok = queries.ByTable("avatars")
-		assert.True(t, ok)
-		assert.Contains(t, avatarQuery.Query, "WHERE avatars.user_id = ?")
-		assert.Len(t, avatarQuery.Args, 1)
-		assert.EqualValues(t, user.ID, avatarQuery.Args[0])
+		is.True(ok)
+		is.Contains(avatarQuery.Query, "WHERE avatars.user_id = ?")
+		is.Len(avatarQuery.Args, 1)
+		is.EqualValues(user.ID, avatarQuery.Args[0])
 
 		avatarFilterQuery, ok = queries.ByTable("avatar_filters")
-		assert.True(t, ok)
-		assert.Contains(t, avatarFilterQuery.Query, "avatar_filters.id IN (?, ?, ?, ?, ?)")
-		assert.Len(t, avatarFilterQuery.Args, 5)
+		is.True(ok)
+		is.Contains(avatarFilterQuery.Query, "avatar_filters.id IN (?, ?, ?, ?, ?)")
+		is.Len(avatarFilterQuery.Args, 5)
 
-		assert.Len(t, user.Avatars, 5)
+		is.Len(user.Avatars, 5)
 		for i, a := range user.Avatars {
-			assert.NotZero(t, a.ID)
-			assert.Equal(t, user.ID, a.UserID)
-			assert.Equal(t, fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
-			assert.NotNil(t, a.FilterPtr)
-			assert.NotZero(t, a.FilterPtr.ID)
+			is.NotZero(a.ID)
+			is.Equal(user.ID, a.UserID)
+			is.Equal(fmt.Sprintf("/avatars/wonderwoman-%d.png", i+1), a.Path)
+			is.NotNil(a.FilterPtr)
+			is.NotZero(a.FilterPtr.ID)
 		}
 	}
 }
@@ -302,6 +312,8 @@ func TestPreload_Single_Many(t *testing.T) {
 func TestPreload_Slice_One(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
+
+	is := require.New(t)
 
 	var (
 		user     User
@@ -318,39 +330,39 @@ func TestPreload_Slice_One(t *testing.T) {
 		// Value
 
 		for i := range articles {
-			assert.Zero(t, articles[i].Author)
+			is.Zero(articles[i].Author)
 		}
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &articles, "Author")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 1)
-		assert.Contains(t, queries[0].Query, "FROM users WHERE users.id IN (?)")
-		assert.Len(t, queries[0].Args, 1)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
+		is.Contains(queries[0].Query, "FROM users WHERE users.id IN (?)")
+		is.Len(queries[0].Args, 1)
 
 		for _, a := range articles {
-			assert.Equal(t, user.ID, a.AuthorID)
-			assert.Equal(t, user.Username, a.Author.Username)
-			assert.EqualValues(t, a.AuthorID, queries[0].Args[0])
+			is.Equal(user.ID, a.AuthorID)
+			is.Equal(user.Username, a.Author.Username)
+			is.EqualValues(a.AuthorID, queries[0].Args[0])
 		}
 
 		// Pointer
 
 		for i := range articles {
-			assert.Nil(t, articles[i].Reviewer)
+			is.Nil(articles[i].Reviewer)
 		}
 
 		queries, err = sqlxx.PreloadWithQueries(env.driver, &articles, "Reviewer")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 1)
-		assert.Contains(t, queries[0].Query, "FROM users WHERE users.id IN (?)")
-		assert.Len(t, queries[0].Args, 1)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
+		is.Contains(queries[0].Query, "FROM users WHERE users.id IN (?)")
+		is.Len(queries[0].Args, 1)
 
 		for _, a := range articles {
-			assert.Equal(t, user.ID, a.ReviewerID)
-			assert.Equal(t, user.Username, a.Reviewer.Username)
-			assert.EqualValues(t, a.ReviewerID, queries[0].Args[0])
+			is.Equal(user.ID, a.ReviewerID)
+			is.Equal(user.Username, a.Reviewer.Username)
+			is.EqualValues(a.ReviewerID, queries[0].Args[0])
 		}
 	}
 
@@ -375,20 +387,20 @@ func TestPreload_Slice_One(t *testing.T) {
 		}
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &users, "Avatar")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 1)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
 
 		avatarQuery, ok := queries.ByTable("media")
-		assert.True(t, ok)
-		assert.Contains(t, avatarQuery.Query, "WHERE media.id IN (?, ?, ?)")
-		assert.Len(t, avatarQuery.Args, 3)
+		is.True(ok)
+		is.Contains(avatarQuery.Query, "WHERE media.id IN (?, ?, ?)")
+		is.Len(avatarQuery.Args, 3)
 
 		for _, user := range users {
 			avatar := user.Avatar
-			assert.NotNil(t, avatar)
-			assert.Equal(t, avatar.ID, avatars[user.ID])
-			assert.Contains(t, queries[0].Args, int64(avatar.ID))
+			is.NotNil(avatar)
+			is.Equal(avatar.ID, avatars[user.ID])
+			is.Contains(queries[0].Args, int64(avatar.ID))
 		}
 	}
 
@@ -410,14 +422,14 @@ func TestPreload_Slice_One(t *testing.T) {
 		}
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &articles, "Author", "Reviewer")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 2)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 2)
 
 		userQuery, ok := queries.ByTable("users")
-		assert.True(t, ok)
-		assert.Contains(t, userQuery.Query, "WHERE users.id IN")
-		assert.Len(t, userQuery.Args, 3)
+		is.True(ok)
+		is.Contains(userQuery.Query, "WHERE users.id IN")
+		is.Len(userQuery.Args, 3)
 
 		table := []struct {
 			user    User
@@ -429,10 +441,10 @@ func TestPreload_Slice_One(t *testing.T) {
 		}
 
 		for _, tt := range table {
-			assert.Equal(t, tt.article.AuthorID, tt.user.ID)
-			assert.Equal(t, tt.article.Author, tt.user)
-			assert.Equal(t, tt.article.ReviewerID, tt.user.ID)
-			assert.Equal(t, tt.article.Reviewer, &tt.user)
+			is.Equal(tt.article.AuthorID, tt.user.ID)
+			is.Equal(tt.article.Author, tt.user)
+			is.Equal(tt.article.ReviewerID, tt.user.ID)
+			is.Equal(tt.article.Reviewer, &tt.user)
 		}
 	}
 
@@ -444,41 +456,41 @@ func TestPreload_Slice_One(t *testing.T) {
 			project  = projects[0]
 		)
 
-		assert.Len(t, projects, 1)
-		assert.Nil(t, project.Manager)
+		is.Len(projects, 1)
+		is.Nil(project.Manager)
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &projects, "Manager", "Manager.User", "Manager.User.Avatar")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 3)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 3)
 
 		managerQuery, ok := queries.ByTable("managers")
-		assert.True(t, ok)
-		assert.Contains(t, managerQuery.Query, "WHERE managers.id IN")
-		assert.Len(t, managerQuery.Args, 1)
-		assert.Equal(t, int64(env.Projects[0].ManagerID), managerQuery.Args[0])
+		is.True(ok)
+		is.Contains(managerQuery.Query, "WHERE managers.id IN")
+		is.Len(managerQuery.Args, 1)
+		is.Equal(int64(env.Projects[0].ManagerID), managerQuery.Args[0])
 
 		userQuery, ok := queries.ByTable("users")
-		assert.True(t, ok)
-		assert.Contains(t, userQuery.Query, "WHERE users.id IN")
-		assert.Len(t, userQuery.Args, 1)
-		assert.Equal(t, int64(env.Users[0].ID), userQuery.Args[0])
+		is.True(ok)
+		is.Contains(userQuery.Query, "WHERE users.id IN")
+		is.Len(userQuery.Args, 1)
+		is.Equal(int64(env.Users[0].ID), userQuery.Args[0])
 
 		mediaQuery, ok := queries.ByTable("media")
-		assert.True(t, ok)
-		assert.Contains(t, mediaQuery.Query, "WHERE media.id IN")
-		assert.Len(t, mediaQuery.Args, 1)
-		assert.Equal(t, int64(env.Medias[0].ID), mediaQuery.Args[0])
+		is.True(ok)
+		is.Contains(mediaQuery.Query, "WHERE media.id IN")
+		is.Len(mediaQuery.Args, 1)
+		is.Equal(int64(env.Medias[0].ID), mediaQuery.Args[0])
 
 		for _, project := range projects {
-			assert.NotNil(t, project.Manager)
-			assert.Equal(t, env.Managers[0].ID, project.Manager.ID)
+			is.NotNil(project.Manager)
+			is.Equal(env.Managers[0].ID, project.Manager.ID)
 
-			assert.NotNil(t, project.Manager.User)
-			assert.Equal(t, env.Users[0].ID, project.Manager.User.ID)
+			is.NotNil(project.Manager.User)
+			is.Equal(env.Users[0].ID, project.Manager.User.ID)
 
-			assert.NotNil(t, project.Manager.User.Avatar)
-			assert.Equal(t, env.Medias[0].ID, project.Manager.User.Avatar.ID)
+			is.NotNil(project.Manager.User.Avatar)
+			is.Equal(env.Medias[0].ID, project.Manager.User.Avatar.ID)
 		}
 	}
 
@@ -488,6 +500,8 @@ func TestPreload_Slice_Many(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
+	is := require.New(t)
+
 	users := []User{}
 	for i := 1; i < 6; i++ {
 		users = append(users, env.createUser(fmt.Sprintf("user%d", i)))
@@ -496,28 +510,28 @@ func TestPreload_Slice_Many(t *testing.T) {
 	// Level 1
 	{
 		for _, user := range users {
-			assert.Nil(t, user.Avatars)
+			is.Nil(user.Avatars)
 		}
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &users, "Avatars")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 1)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
 
 		avatarQuery, ok := queries.ByTable("avatars")
-		assert.True(t, ok)
-		assert.Contains(t, avatarQuery.Query, "avatars.user_id IN (?, ?, ?, ?, ?)")
-		assert.Len(t, avatarQuery.Args, 5)
+		is.True(ok)
+		is.Contains(avatarQuery.Query, "avatars.user_id IN (?, ?, ?, ?, ?)")
+		is.Len(avatarQuery.Args, 5)
 
 		for _, user := range users {
-			assert.NotZero(t, user.Avatars)
-			assert.Contains(t, queries[0].Args, int64(user.ID))
+			is.NotZero(user.Avatars)
+			is.Contains(queries[0].Args, int64(user.ID))
 
 			for _, avatar := range user.Avatars {
-				assert.NotZero(t, avatar.ID)
-				assert.Equal(t, user.ID, avatar.UserID)
-				assert.Equal(t, user.ID, avatar.UserID)
-				assert.True(t, strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
+				is.NotZero(avatar.ID)
+				is.Equal(user.ID, avatar.UserID)
+				is.Equal(user.ID, avatar.UserID)
+				is.True(strings.HasPrefix(avatar.Path, fmt.Sprintf("/avatars/%s-", user.Username)))
 			}
 		}
 	}
@@ -533,30 +547,30 @@ func TestPreload_Slice_Many(t *testing.T) {
 		)
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &articles, "Author", "Author.APIKey")
-		assert.NoError(t, err)
-		assert.NotNil(t, queries)
-		assert.Len(t, queries, 2)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 2)
 
 		authorQuery, ok := queries.ByTable("users")
-		assert.True(t, ok)
-		assert.Contains(t, authorQuery.Query, "WHERE users.id IN (?, ?)")
+		is.True(ok)
+		is.Contains(authorQuery.Query, "WHERE users.id IN (?, ?)")
 
 		apikeyQuery, ok := queries.ByTable("api_keys")
-		assert.True(t, ok)
-		assert.Contains(t, apikeyQuery.Query, "WHERE api_keys.id IN (?, ?)")
+		is.True(ok)
+		is.Contains(apikeyQuery.Query, "WHERE api_keys.id IN (?, ?)")
 
-		assert.Equal(t, user.ID, articles[0].Author.ID)
-		assert.Equal(t, user.ID, articles[0].AuthorID)
+		is.Equal(user.ID, articles[0].Author.ID)
+		is.Equal(user.ID, articles[0].AuthorID)
 
-		assert.Equal(t, user.Username, articles[0].Author.Username)
-		assert.NotZero(t, articles[0].Author.APIKeyID)
-		assert.Equal(t, "spiderman-apikey", articles[0].Author.APIKey.Key)
+		is.Equal(user.Username, articles[0].Author.Username)
+		is.NotZero(articles[0].Author.APIKeyID)
+		is.Equal("spiderman-apikey", articles[0].Author.APIKey.Key)
 
-		assert.Equal(t, deadpool.ID, articles[1].Author.ID)
-		assert.Equal(t, deadpool.ID, articles[1].AuthorID)
-		assert.Equal(t, deadpool.Username, articles[1].Author.Username)
+		is.Equal(deadpool.ID, articles[1].Author.ID)
+		is.Equal(deadpool.ID, articles[1].AuthorID)
+		is.Equal(deadpool.Username, articles[1].Author.Username)
 
-		assert.NotZero(t, articles[1].Author.APIKeyID)
-		assert.Equal(t, "deadpool-apikey", articles[1].Author.APIKey.Key)
+		is.NotZero(articles[1].Author.APIKeyID)
+		is.Equal("deadpool-apikey", articles[1].Author.APIKey.Key)
 	}
 }
