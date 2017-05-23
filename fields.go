@@ -77,7 +77,7 @@ func (f Field) ColumnPath() string {
 }
 
 // NewField returns full column name from model, field and tag.
-func NewField(schema *Schema, model Model, name string) (Field, error) {
+func NewField(driver Driver, schema *Schema, model Model, name string) (Field, error) {
 	if schema == nil {
 		return Field{}, errors.Errorf("schema is required to build a Field instance")
 	}
@@ -157,7 +157,7 @@ func NewField(schema *Schema, model Model, name string) (Field, error) {
 	// author -> author_id
 	field.ColumnName = fmt.Sprintf("%s_%s", field.ColumnName, strings.ToLower(PrimaryKeyFieldName))
 
-	field.ForeignKey, err = NewForeignKey(field)
+	field.ForeignKey, err = NewForeignKey(driver, field)
 	if err != nil {
 		return field, err
 	}
@@ -191,14 +191,14 @@ func (fk ForeignKey) ColumnPath() string {
 }
 
 // NewForeignKey returns a new ForeignKey instance from the given field instance.
-func NewForeignKey(field Field) (*ForeignKey, error) {
+func NewForeignKey(driver Driver, field Field) (*ForeignKey, error) {
 	var (
 		referenceModel     = ToModel(field.Type)
 		referenceModelName = reflect.Indirect(reflect.ValueOf(referenceModel)).Type().Name()
 		referenceTableName = referenceModel.TableName()
 	)
 
-	referenceSchema, err := GetSchema(referenceModel)
+	referenceSchema, err := GetSchema(driver, referenceModel)
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,7 @@ package sqlxx
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -27,7 +28,9 @@ func save(driver Driver, out interface{}) (Queries, error) {
 		return nil, ErrInvalidDriver
 	}
 
-	schema, err := GetSchema(out)
+	start := time.Now()
+
+	schema, err := GetSchema(driver, out)
 	if err != nil {
 		return nil, err
 	}
@@ -36,14 +39,16 @@ func save(driver Driver, out interface{}) (Queries, error) {
 		columns        = []string{}
 		ignoredColumns = []string{}
 		values         = []string{}
+		params         = make(map[string]interface{})
 		query          string
 	)
 
-	for _, column := range schema.Fields {
+	for name, column := range schema.Fields {
 		var (
 			isIgnored    bool
 			hasDefault   bool
 			defaultValue string
+			value        string
 		)
 
 		tag := column.Tags.Get(StructTagName)
@@ -60,10 +65,16 @@ func save(driver Driver, out interface{}) (Queries, error) {
 		if !isIgnored {
 			columns = append(columns, column.ColumnName)
 			if hasDefault {
-				values = append(values, defaultValue)
+				value = defaultValue
 			} else {
-				values = append(values, fmt.Sprintf(":%s", column.ColumnName))
+				value = fmt.Sprintf(":%s", column.ColumnName)
+				fv, err := GetFieldValue(out, name)
+				if err != nil {
+					return nil, err
+				}
+				params[column.ColumnName] = fv
 			}
+			values = append(values, value)
 		}
 	}
 
@@ -86,6 +97,7 @@ func save(driver Driver, out interface{}) (Queries, error) {
 			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
 		}
 
+		params[pkField.ColumnName] = pk
 		query = fmt.Sprintf(`UPDATE %s SET %s WHERE %s = :%s`,
 			schema.TableName,
 			strings.Join(updates, ", "),
@@ -99,14 +111,24 @@ func save(driver Driver, out interface{}) (Queries, error) {
 	}
 
 	queries := Queries{{
-		Query: query,
+		Query:  query,
+		Params: params,
 	}}
+
+	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	defer func() {
+		Log(driver, queries, time.Since(start))
+	}()
 
 	stmt, err := driver.PrepareNamed(query)
 	if err != nil {
 		return queries, err
 	}
-	defer stmt.Close()
+	defer func() {
+		// TODO: Add an observer to collect this error.
+		thr := stmt.Close()
+		_ = thr
+	}()
 
 	err = stmt.Get(out, out)
 	return queries, err

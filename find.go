@@ -2,6 +2,7 @@ package sqlxx
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -15,11 +16,18 @@ func GetByParams(driver Driver, out interface{}, params map[string]interface{}) 
 
 // GetByParamsWithQueries executes a where with the given params and populates the given model.
 func GetByParamsWithQueries(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
+	start := time.Now()
 	queries, err := where(driver, out, params, true)
+	Log(driver, queries, time.Since(start))
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute select")
 	}
 	return queries, nil
+}
+
+// getByParams is a private wrapper which doesn't log statement.
+func getByParams(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
+	return where(driver, out, params, true)
 }
 
 // FindByParams executes a where with the given params and populates the given models.
@@ -30,16 +38,25 @@ func FindByParams(driver Driver, out interface{}, params map[string]interface{})
 
 // FindByParamsWithQueries executes a where with the given params and populates the given models.
 func FindByParamsWithQueries(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
+	start := time.Now()
 	queries, err := where(driver, out, params, false)
+	Log(driver, queries, time.Since(start))
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute select")
 	}
 	return queries, nil
 }
 
+// findByParams is a private wrapper which doesn't log statement.
+func findByParams(driver Driver, out interface{}, params map[string]interface{}) (Queries, error) {
+	return where(driver, out, params, false)
+}
+
 // whereQuery returns SQL where clause from model and params.
-func whereQuery(model Model, params map[string]interface{}, fetchOne bool) (string, []interface{}, error) {
-	schema, err := GetSchema(model)
+func whereQuery(driver Driver, model Model, params map[string]interface{},
+	fetchOne bool) (string, []interface{}, error) {
+
+	schema, err := GetSchema(driver, model)
 	if err != nil {
 		return "", nil, err
 	}
@@ -70,7 +87,7 @@ func where(driver Driver, out interface{}, params map[string]interface{}, fetchO
 
 	model := ToModel(out)
 
-	query, args, err := whereQuery(model, params, fetchOne)
+	query, args, err := whereQuery(driver, model, params, fetchOne)
 	if err != nil {
 		return nil, err
 	}

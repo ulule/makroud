@@ -14,6 +14,8 @@ const ClientDriver = "postgres"
 // Client is a wrapper that can interact with the database.
 type Client struct {
 	sqalx.Node
+	store *cache
+	log   Logger
 }
 
 // clientOptions configure a Client instance. clientOptions are set by the Option
@@ -28,6 +30,8 @@ type clientOptions struct {
 	timezone           string
 	maxOpenConnections int
 	maxIdleConnections int
+	withCache          bool
+	logger             Logger
 }
 
 func (e clientOptions) String() string {
@@ -55,6 +59,7 @@ func New(options ...Option) (*Client, error) {
 		timezone:           "UTC",
 		maxOpenConnections: 5,
 		maxIdleConnections: 2,
+		withCache:          true,
 	}
 
 	for _, option := range options {
@@ -79,6 +84,15 @@ func New(options ...Option) (*Client, error) {
 
 	client := &Client{
 		Node: connection,
+		log:  &EmptyLogger{},
+	}
+
+	if opts.withCache {
+		client.store = newCache()
+	}
+
+	if opts.logger != nil {
+		client.log = opts.logger
 	}
 
 	return client, nil
@@ -98,4 +112,16 @@ func (e *Client) Ping() error {
 		return errors.Wrap(err, "sqlxx: cannot ping database")
 	}
 	return nil
+}
+
+func (e *Client) hasCache() bool {
+	return e.store != nil
+}
+
+func (e *Client) cache() *cache {
+	return e.store
+}
+
+func (e *Client) logger() Logger {
+	return e.log
 }

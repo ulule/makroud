@@ -3,30 +3,10 @@ package sqlxx
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"sync"
 
 	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
 )
-
-var (
-	// Cache is the shared cache instance.
-	cache *Cache
-	// cacheDisabled is true if cache has been disabled
-	cacheDisabled bool
-)
-
-func init() {
-	if os.Getenv("SQLXX_DISABLE_CACHE") != "" {
-		cacheDisabled = true
-		return
-	}
-
-	if cache == nil {
-		cache = NewCache()
-	}
-}
 
 // AssociationType is an association type.
 type AssociationType uint8
@@ -96,50 +76,12 @@ type Driver interface {
 	Beginx() (sqalx.Node, error)
 	Rollback() error
 	Commit() error
+	hasCache() bool
+	cache() *cache
+	logger() Logger
 }
 
 // Model represents a database table.
 type Model interface {
 	TableName() string
-}
-
-// Cache is sqlxx cache.
-type Cache struct {
-	mu      sync.RWMutex
-	schemas map[string]Schema
-}
-
-// NewCache returns new cache instance.
-func NewCache() *Cache {
-	return &Cache{
-		schemas: map[string]Schema{},
-	}
-}
-
-// SetSchema caches the given schema.
-func (c *Cache) SetSchema(schema Schema) {
-	c.mu.Lock()
-	c.schemas[schema.TableName] = schema
-	c.mu.Unlock()
-}
-
-// Flush flushs the cache
-func (c *Cache) Flush() {
-	c.mu.Lock()
-	c.schemas = map[string]Schema{}
-	c.mu.Unlock()
-}
-
-// GetSchema returns the given schema from cache.
-// If the given schema does not exists, returns false as bool.
-func (c *Cache) GetSchema(model Model) (Schema, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	schema, ok := c.schemas[model.TableName()]
-	if !ok {
-		return Schema{}, false
-	}
-
-	return schema, true
 }
