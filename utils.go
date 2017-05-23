@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/jmoiron/sqlx/reflectx"
 	"github.com/pkg/errors"
 )
 
@@ -240,6 +241,15 @@ func GetIndirectType(itf interface{}) reflect.Type {
 	return t
 }
 
+// GetIndirectValue returns indirect value for the given element.
+func GetIndirectValue(element interface{}) reflect.Value {
+	v := reflect.ValueOf(element)
+	for v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	return v
+}
+
 // MakePointer makes a copy of the given interface and returns a pointer.
 func MakePointer(itf interface{}) interface{} {
 	t := reflect.TypeOf(itf)
@@ -253,6 +263,54 @@ func MakePointer(itf interface{}) interface{} {
 	}
 
 	return cp.Interface()
+}
+
+// GetValues will extract given list of args from params using a sqlx mapper.
+// Example: Let's say we have this struct,
+//
+//     type User struct {
+//         IsActive bool
+//     }
+//
+// Using GetValues([]string{"is_active"}, &User{IsActive: true}, stmt.Mapper) will return map[is_active:true]
+func GetValues(args []string, params interface{}, mapper *reflectx.Mapper) (map[string]interface{}, error) {
+	m, ok := params.(map[string]interface{})
+	if ok {
+		return getValuesWithMap(args, m)
+	}
+	return getValuesWithReflect(args, params, mapper)
+}
+
+// getValuesWithMap will filter given map with given list of args.
+func getValuesWithMap(args []string, params map[string]interface{}) (map[string]interface{}, error) {
+	values := make(map[string]interface{})
+
+	for i := range args {
+		value, ok := params[args[i]]
+		if !ok {
+			return values, errors.Errorf("could not find name %s in %#v", args[i], params)
+		}
+		values[args[i]] = value
+	}
+
+	return values, nil
+}
+
+// getValuesWithReflect will analyze given struct to extract values from given list of args.
+func getValuesWithReflect(args []string, params interface{}, mapper *reflectx.Mapper) (map[string]interface{}, error) {
+	values := make(map[string]interface{})
+	source := GetIndirectValue(params)
+
+	fields := mapper.TraversalsByName(source.Type(), args)
+	for i, field := range fields {
+		if len(field) == 0 {
+			return values, errors.Errorf("could not find name %s in %#v", args[i], params)
+		}
+		value := reflectx.FieldByIndexesReadOnly(source, field)
+		values[args[i]] = value.Interface()
+	}
+
+	return values, nil
 }
 
 // FieldTagProperty is a struct tag property

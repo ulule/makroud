@@ -2,6 +2,7 @@ package sqlxx
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
@@ -102,11 +103,7 @@ func New(options ...Option) (*Client, error) {
 func (e *Client) Ping() error {
 	row, err := e.Query("SELECT true")
 	if row != nil {
-		defer func() {
-			// TODO: Add an observer to collect this error.
-			thr := row.Close()
-			_ = thr
-		}()
+		defer e.close(row)
 	}
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot ping database")
@@ -124,4 +121,10 @@ func (e *Client) cache() *cache {
 
 func (e *Client) logger() Logger {
 	return e.log
+}
+
+func (e *Client) close(closer io.Closer) {
+	// TODO: Add an observer to collect this error.
+	thr := closer.Close()
+	_ = thr
 }
