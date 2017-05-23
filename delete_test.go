@@ -53,7 +53,7 @@ func TestDelete_Archive(t *testing.T) {
 	err := sqlxx.Save(env.driver, user)
 	is.NoError(err)
 
-	queries, err := sqlxx.ArchiveWithQueries(env.driver, &user, "DeletedAt")
+	queries, err := sqlxx.ArchiveWithQueries(env.driver, user, "DeletedAt")
 	is.NoError(err)
 	is.NotNil(queries)
 	is.Len(queries, 1)
