@@ -80,3 +80,94 @@ func FindInParamsWithQueries(driver Driver, out interface{}, query string, data 
 
 	return queries, nil
 }
+
+// Exec will execute given query.
+func Exec(driver Driver, query string, out interface{}) error {
+	start := time.Now()
+
+	stmt, err := driver.PrepareNamed(query)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot prepare statement")
+	}
+	defer driver.close(stmt)
+
+	params, err := GetValues(stmt.Params, out, stmt.Stmt.Mapper)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot prepare statement")
+	}
+
+	queries := Queries{{
+		Query:  query,
+		Params: params,
+	}}
+
+	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	defer func() {
+		Log(driver, queries, time.Since(start))
+	}()
+
+	_, err = stmt.Exec(out)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute query")
+	}
+
+	return nil
+}
+
+// NamedExec will execute given query.
+func NamedExec(driver Driver, query string, params map[string]interface{}) error {
+	start := time.Now()
+
+	queries := Queries{{
+		Query:  query,
+		Params: params,
+	}}
+
+	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	defer func() {
+		Log(driver, queries, time.Since(start))
+	}()
+
+	_, err := driver.NamedExec(query, params)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute query")
+	}
+
+	return nil
+}
+
+// Sync will create or update a row from given query.
+// It will also mutate the given object to match the row values.
+func Sync(driver Driver, query string, out interface{}) error {
+	start := time.Now()
+
+	stmt, err := driver.PrepareNamed(query)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot prepare statement")
+	}
+	defer driver.close(stmt)
+
+	params, err := GetValues(stmt.Params, out, stmt.Stmt.Mapper)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot prepare statement")
+	}
+
+	queries := Queries{{
+		Query:  query,
+		Params: params,
+	}}
+
+	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	defer func() {
+		Log(driver, queries, time.Since(start))
+	}()
+
+	// run query with out values
+	// then override out with returned value
+	err = stmt.Get(out, out)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute query")
+	}
+
+	return nil
+}

@@ -2,6 +2,7 @@ package sqlxx_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -77,4 +78,87 @@ func TestFind_InParams(t *testing.T) {
 	is.True(hasBatman)
 	is.True(hasRobin)
 	is.True(hasCatwoman)
+}
+
+func TestExec_Simple(t *testing.T) {
+	env := setup(t)
+	defer env.teardown()
+
+	is := require.New(t)
+
+	batman := env.createUser("batman")
+	payload := struct {
+		Username string
+	}{
+		Username: batman.Username,
+	}
+
+	query := "UPDATE users SET is_active = false WHERE username = :username;"
+	err := sqlxx.Exec(env.driver, query, payload)
+	is.NoError(err)
+
+	user := &User{}
+	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
+		"id": batman.ID,
+	})
+	is.NoError(err)
+	is.False(user.IsActive)
+	is.Equal("batman", user.Username)
+
+}
+
+func TestExec_Named(t *testing.T) {
+	env := setup(t)
+	defer env.teardown()
+
+	is := require.New(t)
+
+	batman := env.createUser("batman")
+
+	query := "UPDATE users SET is_active = false WHERE username = :username;"
+	err := sqlxx.NamedExec(env.driver, query, map[string]interface{}{
+		"username": batman.Username,
+	})
+	is.NoError(err)
+
+	user := &User{}
+	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
+		"id": batman.ID,
+	})
+	is.NoError(err)
+	is.False(user.IsActive)
+	is.Equal("batman", user.Username)
+}
+
+func TestExec_Sync(t *testing.T) {
+	env := setup(t)
+	defer env.teardown()
+
+	is := require.New(t)
+
+	batman := env.createUser("baman")
+	batman.IsActive = false
+	batman.Username = "batman"
+
+	t0 := time.Now()
+
+	query := `
+		UPDATE users
+		SET is_active = :is_active,
+		    username = :username,
+		    updated_at = NOW()
+	 	WHERE id = :id
+		RETURNING updated_at;
+	`
+	err := sqlxx.Sync(env.driver, query, &batman)
+	is.NoError(err)
+	is.True(t0.Before(batman.UpdatedAt))
+
+	user := &User{}
+	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
+		"id": batman.ID,
+	})
+	is.NoError(err)
+	is.False(user.IsActive)
+	is.Equal("batman", user.Username)
 }
