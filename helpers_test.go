@@ -149,7 +149,7 @@ func TestExec_Sync(t *testing.T) {
 	 	WHERE id = :id
 		RETURNING updated_at;
 	`
-	err := sqlxx.Sync(env.driver, query, &batman)
+	err := sqlxx.Sync(env.driver, query, batman)
 	is.NoError(err)
 	is.True(t0.Before(batman.UpdatedAt))
 

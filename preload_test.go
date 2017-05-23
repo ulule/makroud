@@ -53,14 +53,14 @@ func TestPreload_PrimaryKey_Null(t *testing.T) {
 
 	category := env.createCategory("cat1", nil)
 
-	queries, err := sqlxx.PreloadWithQueries(env.driver, &category, "User")
+	queries, err := sqlxx.PreloadWithQueries(env.driver, category, "User")
 	is.NoError(err)
 	is.Nil(queries)
 	is.Zero(category.User)
 
-	category = env.createCategory("cat1", &env.Users[0].ID)
+	category = env.createCategory("cat1", &(env.Users[0].ID))
 
-	queries, err = sqlxx.PreloadWithQueries(env.driver, &category, "User")
+	queries, err = sqlxx.PreloadWithQueries(env.driver, category, "User")
 	is.NoError(err)
 	is.NotNil(queries)
 	is.Len(queries, 1)
@@ -83,7 +83,7 @@ func TestPreload_Single_One(t *testing.T) {
 
 	var (
 		user    = env.createUser("batman")
-		article = env.createArticle(&user)
+		article = env.createArticle(user)
 	)
 
 	// level 1
@@ -92,7 +92,7 @@ func TestPreload_Single_One(t *testing.T) {
 
 		is.Zero(article.Author)
 
-		queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author")
+		queries, err := sqlxx.PreloadWithQueries(env.driver, article, "Author")
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)
@@ -110,7 +110,7 @@ func TestPreload_Single_One(t *testing.T) {
 
 		is.Nil(article.Reviewer)
 
-		queries, err = sqlxx.PreloadWithQueries(env.driver, &article, "Reviewer")
+		queries, err = sqlxx.PreloadWithQueries(env.driver, article, "Reviewer")
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)
@@ -131,7 +131,7 @@ func TestPreload_Single_One(t *testing.T) {
 
 		article.Author = User{}
 
-		queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKey")
+		queries, err := sqlxx.PreloadWithQueries(env.driver, article, "Author", "Author.APIKey")
 		is.NoError(err)
 		is.NotNil(queries)
 
@@ -157,7 +157,7 @@ func TestPreload_Single_One(t *testing.T) {
 
 		article.Author = User{}
 
-		queries, err = sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKeyPtr")
+		queries, err = sqlxx.PreloadWithQueries(env.driver, article, "Author", "Author.APIKeyPtr")
 		is.NoError(err)
 		is.NotNil(queries)
 
@@ -186,7 +186,7 @@ func TestPreload_Single_One(t *testing.T) {
 
 		article.Author = User{}
 
-		queries, err := sqlxx.PreloadWithQueries(env.driver, &article, "Author", "Author.APIKey", "Author.APIKey.Partner")
+		queries, err := sqlxx.PreloadWithQueries(env.driver, article, "Author", "Author.APIKey", "Author.APIKey.Partner")
 		is.NoError(err)
 		is.NotNil(queries)
 
@@ -228,7 +228,7 @@ func TestPreload_Single_Many(t *testing.T) {
 
 	// Level 1
 	{
-		queries, err := sqlxx.PreloadWithQueries(env.driver, &user, "Avatars")
+		queries, err := sqlxx.PreloadWithQueries(env.driver, user, "Avatars")
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)
@@ -253,7 +253,7 @@ func TestPreload_Single_Many(t *testing.T) {
 
 		// Values
 
-		queries, err := sqlxx.PreloadWithQueries(env.driver, &user, "Avatars", "Avatars.Filter")
+		queries, err := sqlxx.PreloadWithQueries(env.driver, user, "Avatars", "Avatars.Filter")
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 2)
@@ -282,7 +282,7 @@ func TestPreload_Single_Many(t *testing.T) {
 
 		user.Avatars = []Avatar{}
 
-		queries, err = sqlxx.PreloadWithQueries(env.driver, &user, "Avatars", "Avatars.FilterPtr")
+		queries, err = sqlxx.PreloadWithQueries(env.driver, user, "Avatars", "Avatars.FilterPtr")
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 2)
@@ -315,14 +315,11 @@ func TestPreload_Slice_One(t *testing.T) {
 
 	is := require.New(t)
 
-	var (
-		user     User
-		articles []Article
-	)
-
-	user = env.createUser("batman")
+	user := env.createUser("batman")
+	articles := []Article{}
 	for i := 0; i < 5; i++ {
-		articles = append(articles, env.createArticle(&user))
+		article := env.createArticle(user)
+		articles = append(articles, *article)
 	}
 
 	// Level 1
@@ -340,10 +337,10 @@ func TestPreload_Slice_One(t *testing.T) {
 		is.Contains(queries[0].Query, "FROM users WHERE users.id IN (?)")
 		is.Len(queries[0].Args, 1)
 
-		for _, a := range articles {
-			is.Equal(user.ID, a.AuthorID)
-			is.Equal(user.Username, a.Author.Username)
-			is.EqualValues(a.AuthorID, queries[0].Args[0])
+		for _, article := range articles {
+			is.Equal(user.ID, article.AuthorID)
+			is.Equal(user.Username, article.Author.Username)
+			is.EqualValues(article.AuthorID, queries[0].Args[0])
 		}
 
 		// Pointer
@@ -375,9 +372,9 @@ func TestPreload_Slice_One(t *testing.T) {
 		)
 
 		users := []User{
-			batman,
-			robin,
-			catwoman,
+			*batman,
+			*robin,
+			*catwoman,
 		}
 
 		// user_id => media_id
@@ -410,15 +407,15 @@ func TestPreload_Slice_One(t *testing.T) {
 			batman   = env.createUser("batman")
 			robin    = env.createUser("robin")
 			catwoman = env.createUser("catwoman")
-			article1 = env.createArticle(&batman)
-			article2 = env.createArticle(&robin)
-			article3 = env.createArticle(&catwoman)
+			article1 = env.createArticle(batman)
+			article2 = env.createArticle(robin)
+			article3 = env.createArticle(catwoman)
 		)
 
-		articles := []*Article{
-			&article1,
-			&article2,
-			&article3,
+		articles := []Article{
+			*article1,
+			*article2,
+			*article3,
 		}
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &articles, "Author", "Reviewer")
@@ -435,15 +432,15 @@ func TestPreload_Slice_One(t *testing.T) {
 			user    User
 			article Article
 		}{
-			{batman, article1},
-			{robin, article2},
-			{catwoman, article3},
+			{*batman, articles[0]},
+			{*robin, articles[1]},
+			{*catwoman, articles[2]},
 		}
 
 		for _, tt := range table {
-			is.Equal(tt.article.AuthorID, tt.user.ID)
-			is.Equal(tt.article.Author, tt.user)
-			is.Equal(tt.article.ReviewerID, tt.user.ID)
+			is.Equal(tt.user.ID, tt.article.AuthorID)
+			is.Equal(tt.user, tt.article.Author)
+			is.Equal(tt.user.ID, tt.article.ReviewerID)
 			is.Equal(tt.article.Reviewer, &tt.user)
 		}
 	}
@@ -504,7 +501,8 @@ func TestPreload_Slice_Many(t *testing.T) {
 
 	users := []User{}
 	for i := 1; i < 6; i++ {
-		users = append(users, env.createUser(fmt.Sprintf("user%d", i)))
+		user := env.createUser(fmt.Sprintf("user%d", i))
+		users = append(users, *user)
 	}
 
 	// Level 1
@@ -539,11 +537,11 @@ func TestPreload_Slice_Many(t *testing.T) {
 	// Level 2
 	{
 		var (
-			user     = env.createUser("spiderman")
-			deadpool = env.createUser("deadpool")
-			article1 = env.createArticle(&user)
-			article2 = env.createArticle(&deadpool)
-			articles = []Article{article1, article2}
+			spiderman = env.createUser("spiderman")
+			deadpool  = env.createUser("deadpool")
+			article1  = env.createArticle(spiderman)
+			article2  = env.createArticle(deadpool)
+			articles  = []Article{*article1, *article2}
 		)
 
 		queries, err := sqlxx.PreloadWithQueries(env.driver, &articles, "Author", "Author.APIKey")
@@ -559,10 +557,10 @@ func TestPreload_Slice_Many(t *testing.T) {
 		is.True(ok)
 		is.Contains(apikeyQuery.Query, "WHERE api_keys.id IN (?, ?)")
 
-		is.Equal(user.ID, articles[0].Author.ID)
-		is.Equal(user.ID, articles[0].AuthorID)
+		is.Equal(spiderman.ID, articles[0].Author.ID)
+		is.Equal(spiderman.ID, articles[0].AuthorID)
 
-		is.Equal(user.Username, articles[0].Author.Username)
+		is.Equal(spiderman.Username, articles[0].Author.Username)
 		is.NotZero(articles[0].Author.APIKeyID)
 		is.Equal("spiderman-apikey", articles[0].Author.APIKey.Key)
 
