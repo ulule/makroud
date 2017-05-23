@@ -3,26 +3,54 @@ package sqlxx_test
 import (
 	"testing"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
 
 func TestSchema_GetSchema_InfiniteLoop(t *testing.T) {
-	schema, err := sqlxx.GetSchema(User{})
-	assert.Nil(t, err)
-	assert.NotNil(t, schema)
+	env := setup(t)
+	defer env.teardown()
+
+	is := require.New(t)
+
+	schema, err := sqlxx.GetSchema(env.driver, User{})
+	is.NoError(err)
+	is.NotNil(schema)
 }
 
 func TestSchema_FieldNames(t *testing.T) {
-	schema, err := sqlxx.GetSchema(Untagged{})
-	assert.Nil(t, err)
+	env := setup(t)
+	defer env.teardown()
 
-	assert.NotContains(t, schema.FieldNames(), "unexportedField")
-	assert.NotContains(t, schema.FieldNames(), "DBExcludedField")
+	is := require.New(t)
+
+	schema, err := sqlxx.GetSchema(env.driver, Untagged{})
+	is.NoError(err)
+	is.NotNil(schema)
+	is.NotContains(schema.FieldNames(), "unexportedField")
+	is.NotContains(schema.FieldNames(), "DBExcludedField")
+}
+
+func TestSchema_GetColumns(t *testing.T) {
+	env := setup(t)
+	defer env.teardown()
+
+	is := require.New(t)
+
+	expected := "untagged.first_name, untagged.id, untagged.last_name, untagged.this_is_a_very_long_field_name123"
+	columns, err := sqlxx.GetColumns(env.driver, Untagged{})
+	is.NoError(err)
+	is.NotNil(columns)
+	is.Equal(expected, columns)
 }
 
 func TestSchema_Fields(t *testing.T) {
+	env := setup(t)
+	defer env.teardown()
+
+	is := require.New(t)
+
 	type Results struct {
 		name       string
 		model      string
@@ -57,24 +85,30 @@ func TestSchema_Fields(t *testing.T) {
 	}
 
 	for _, modelResults := range []ModelResults{untaggedModelResults, taggedModelResults} {
-		schema, err := sqlxx.GetSchema(modelResults.model)
-		assert.Nil(t, err)
+		schema, err := sqlxx.GetSchema(env.driver, modelResults.model)
+		is.NoError(err)
 
 		for _, tt := range modelResults.results {
 			f, ok := schema.Fields[tt.name]
-			assert.True(t, ok)
-			assert.Equal(t, tt.model, f.ModelName)
-			assert.Equal(t, tt.table, f.TableName)
-			assert.Equal(t, tt.name, f.FieldName)
-			assert.Equal(t, tt.column, f.ColumnName)
-			assert.Equal(t, tt.columnPath, f.ColumnPath())
+			is.True(ok)
+			is.Equal(tt.model, f.ModelName)
+			is.Equal(tt.table, f.TableName)
+			is.Equal(tt.name, f.FieldName)
+			is.Equal(tt.column, f.ColumnName)
+			is.Equal(tt.columnPath, f.ColumnPath())
 		}
 	}
 }
 
 func TestSchema_Associations(t *testing.T) {
-	schema, err := sqlxx.GetSchema(Article{})
-	assert.Nil(t, err)
+	env := setup(t)
+	defer env.teardown()
+
+	is := require.New(t)
+
+	schema, err := sqlxx.GetSchema(env.driver, Article{})
+	is.NoError(err)
+	is.NotNil(schema)
 
 	results := []struct {
 		path string
@@ -149,31 +183,36 @@ func TestSchema_Associations(t *testing.T) {
 
 	for _, tt := range results {
 		f, ok := schema.Associations[tt.path]
-		assert.True(t, ok, tt.path)
-		assert.Equal(t, tt.fk.ModelName, f.ForeignKey.ModelName)
-		assert.Equal(t, tt.fk.TableName, f.ForeignKey.TableName)
-		assert.Equal(t, tt.fk.FieldName, f.ForeignKey.FieldName)
-		assert.Equal(t, tt.fk.ColumnName, f.ForeignKey.ColumnName)
-		assert.Equal(t, tt.fk.AssociationFieldName, f.ForeignKey.AssociationFieldName)
-		assert.Equal(t, tt.fk.Reference.ModelName, f.ForeignKey.Reference.ModelName)
-		assert.Equal(t, tt.fk.Reference.TableName, f.ForeignKey.Reference.TableName)
-		assert.Equal(t, tt.fk.Reference.FieldName, f.ForeignKey.Reference.FieldName)
-		assert.Equal(t, tt.fk.Reference.ColumnName, f.ForeignKey.Reference.ColumnName)
+		is.True(ok, tt.path)
+		is.Equal(tt.fk.ModelName, f.ForeignKey.ModelName)
+		is.Equal(tt.fk.TableName, f.ForeignKey.TableName)
+		is.Equal(tt.fk.FieldName, f.ForeignKey.FieldName)
+		is.Equal(tt.fk.ColumnName, f.ForeignKey.ColumnName)
+		is.Equal(tt.fk.AssociationFieldName, f.ForeignKey.AssociationFieldName)
+		is.Equal(tt.fk.Reference.ModelName, f.ForeignKey.Reference.ModelName)
+		is.Equal(tt.fk.Reference.TableName, f.ForeignKey.Reference.TableName)
+		is.Equal(tt.fk.Reference.FieldName, f.ForeignKey.Reference.FieldName)
+		is.Equal(tt.fk.Reference.ColumnName, f.ForeignKey.Reference.ColumnName)
 	}
 }
 
 func TestSchema_PrimaryKeyField(t *testing.T) {
+	env := setup(t)
+	defer env.teardown()
+
+	is := require.New(t)
+
 	// Implicit
-	schema, err := sqlxx.GetSchema(ImplicitPrimaryKey{})
-	assert.Nil(t, err)
-	assert.Equal(t, schema.PrimaryKeyField.FieldName, "ID")
-	assert.Equal(t, schema.PrimaryKeyField.ColumnName, "id")
+	schema, err := sqlxx.GetSchema(env.driver, ImplicitPrimaryKey{})
+	is.NoError(err)
+	is.Equal(schema.PrimaryKeyField.FieldName, "ID")
+	is.Equal(schema.PrimaryKeyField.ColumnName, "id")
 
 	// Explicit
-	schema, err = sqlxx.GetSchema(ExplicitPrimaryKey{})
-	assert.Nil(t, err)
-	assert.Equal(t, schema.PrimaryKeyField.FieldName, "TadaID")
-	assert.Equal(t, schema.PrimaryKeyField.ColumnName, "tada_id")
+	schema, err = sqlxx.GetSchema(env.driver, ExplicitPrimaryKey{})
+	is.NoError(err)
+	is.Equal(schema.PrimaryKeyField.FieldName, "TadaID")
+	is.Equal(schema.PrimaryKeyField.ColumnName, "tada_id")
 }
 
 // ----------------------------------------------------------------------------

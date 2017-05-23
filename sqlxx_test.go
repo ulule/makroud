@@ -596,6 +596,7 @@ func setup(t *testing.T) *environment {
 		dbParamString(sqlxx.User, "user", "PGUSER"),
 		dbParamString(sqlxx.Password, "password", "PGPASSWORD"),
 		dbParamString(sqlxx.Database, "name", "PGDATABASE"),
+		sqlxx.Cache(false),
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, db)

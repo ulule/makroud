@@ -2,6 +2,7 @@ package sqlxx
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
@@ -14,6 +15,8 @@ const ClientDriver = "postgres"
 // Client is a wrapper that can interact with the database.
 type Client struct {
 	sqalx.Node
+	store *cache
+	log   Logger
 }
 
 // clientOptions configure a Client instance. clientOptions are set by the Option
@@ -28,6 +31,8 @@ type clientOptions struct {
 	timezone           string
 	maxOpenConnections int
 	maxIdleConnections int
+	withCache          bool
+	logger             Logger
 }
 
 func (e clientOptions) String() string {
@@ -55,6 +60,7 @@ func New(options ...Option) (*Client, error) {
 		timezone:           "UTC",
 		maxOpenConnections: 5,
 		maxIdleConnections: 2,
+		withCache:          true,
 	}
 
 	for _, option := range options {
@@ -79,6 +85,15 @@ func New(options ...Option) (*Client, error) {
 
 	client := &Client{
 		Node: connection,
+		log:  &EmptyLogger{},
+	}
+
+	if opts.withCache {
+		client.store = newCache()
+	}
+
+	if opts.logger != nil {
+		client.log = opts.logger
 	}
 
 	return client, nil
@@ -88,14 +103,28 @@ func New(options ...Option) (*Client, error) {
 func (e *Client) Ping() error {
 	row, err := e.Query("SELECT true")
 	if row != nil {
-		defer func() {
-			// TODO: Add an observer to collect this error.
-			thr := row.Close()
-			_ = thr
-		}()
+		defer e.close(row)
 	}
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot ping database")
 	}
 	return nil
+}
+
+func (e *Client) hasCache() bool {
+	return e.store != nil
+}
+
+func (e *Client) cache() *cache {
+	return e.store
+}
+
+func (e *Client) logger() Logger {
+	return e.log
+}
+
+func (e *Client) close(closer io.Closer) {
+	// TODO: Add an observer to collect this error.
+	thr := closer.Close()
+	_ = thr
 }
