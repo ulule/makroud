@@ -1,10 +1,9 @@
 package sqlxx_test
 
 import (
-	"fmt"
 	"testing"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -13,63 +12,69 @@ func TestDelete_Delete(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
-	user := User{Username: "thoas"}
+	is := require.New(t)
 
-	_, err := sqlxx.SaveWithQueries(env.driver, &user)
-	assert.NoError(t, err)
+	user := &User{Username: "thoas"}
+	err := sqlxx.Save(env.driver, user)
+	is.NoError(err)
 
-	queries, err := sqlxx.DeleteWithQueries(env.driver, &user)
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "DELETE FROM users WHERE users.id = :id")
-
-	m := map[string]interface{}{"username": "thoas"}
+	queries, err := sqlxx.DeleteWithQueries(env.driver, user)
+	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
+	is.Contains(queries[0].Query, "DELETE FROM users WHERE users.id = :id")
 
 	query := `
-	SELECT count(*)
-	FROM %s
-	WHERE username = :username
+		SELECT COUNT(*)
+		FROM users
+		WHERE username = :username
 	`
+	params := map[string]interface{}{
+		"username": "thoas",
+	}
 
-	stmt, err := env.driver.PrepareNamed(fmt.Sprintf(query, user.TableName()))
-	assert.NoError(t, err)
+	stmt, err := env.driver.PrepareNamed(query)
+	is.NoError(err)
+	is.NotNil(stmt)
 
-	var count int
-	err = stmt.Get(&count, m)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, count)
+	count := -1
+	err = stmt.Get(&count, params)
+	is.NoError(err)
+	is.Equal(0, count)
 }
 
 func TestDelete_SoftDelete(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
 
-	user := User{Username: "thoas"}
+	is := require.New(t)
 
-	_, err := sqlxx.SaveWithQueries(env.driver, &user)
-	assert.NoError(t, err)
+	user := &User{Username: "thoas"}
+	err := sqlxx.Save(env.driver, user)
+	is.NoError(err)
 
 	queries, err := sqlxx.SoftDeleteWithQueries(env.driver, &user, "DeletedAt")
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "UPDATE users SET deleted_at = :deleted_at WHERE users.id = :id")
-
-	m := map[string]interface{}{"username": "thoas"}
+	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
+	is.Contains(queries[0].Query, "UPDATE users SET deleted_at = :deleted_at WHERE users.id = :id")
 
 	query := `
-	SELECT count(*)
-	FROM %s
-	WHERE username = :username
-	AND deleted_at IS NULL
+		SELECT COUNT(*)
+		FROM users
+		WHERE username = :username
+		AND deleted_at IS NULL
 	`
+	params := map[string]interface{}{
+		"username": "thoas",
+	}
 
-	stmt, err := env.driver.PrepareNamed(fmt.Sprintf(query, user.TableName()))
-	assert.Nil(t, err)
+	stmt, err := env.driver.PrepareNamed(query)
+	is.NoError(err)
+	is.NotNil(stmt)
 
-	var count int
-	err = stmt.Get(&count, m)
-	assert.Nil(t, err)
-	assert.Equal(t, 0, count)
+	count := -1
+	err = stmt.Get(&count, params)
+	is.NoError(err)
+	is.Equal(0, count)
 }
