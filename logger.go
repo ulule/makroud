@@ -24,7 +24,13 @@ func Log(driver Driver, queries Queries, duration time.Duration) {
 		buffer := &bytes.Buffer{}
 
 		for i, query := range queries {
-			statement := query.Query
+
+			// Trim whitespace, etc...
+			replacer := strings.NewReplacer("\n", "", "\t", " ", "  ", " ")
+			statement := strings.TrimSpace(replacer.Replace(query.Query))
+			for strings.Contains(statement, "  ") {
+				statement = replacer.Replace(statement)
+			}
 
 			if i != 0 {
 				buffer.WriteString("\n")
