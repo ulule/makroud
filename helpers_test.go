@@ -104,7 +104,6 @@ func TestExec_Simple(t *testing.T) {
 	is.NoError(err)
 	is.False(user.IsActive)
 	is.Equal("batman", user.Username)
-
 }
 
 func TestExec_Named(t *testing.T) {
