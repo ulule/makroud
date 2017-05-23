@@ -35,7 +35,7 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 		return nil, errors.New("model instance must be addressable (pointer required)")
 	}
 
-	schema, err := GetSchema(out)
+	schema, err := GetSchema(driver, out)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func preloadSingleOne(driver Driver, out interface{}, field Field) (Queries, err
 
 	params := map[string]interface{}{field.ForeignKey.Reference.ColumnName: fk}
 
-	query, args, err := whereQuery(field.ForeignKey.Reference.Model, params, field.IsAssociationTypeOne())
+	query, args, err := whereQuery(driver, field.ForeignKey.Reference.Model, params, field.IsAssociationTypeOne())
 	if err != nil {
 		return nil, err
 	}
