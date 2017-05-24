@@ -564,17 +564,20 @@ func dbParamInt(option func(int) sqlxx.Option, param string, env ...string) sqlx
 	return dbDefaultOptions[param]
 }
 
-func setup(t *testing.T) *environment {
+func setup(t *testing.T, options ...sqlxx.Option) *environment {
 	is := require.New(t)
 
-	db, err := sqlxx.New(
+	opts := []sqlxx.Option{
 		dbParamString(sqlxx.Host, "host", "PGHOST"),
 		dbParamInt(sqlxx.Port, "port", "PGPORT"),
 		dbParamString(sqlxx.User, "user", "PGUSER"),
 		dbParamString(sqlxx.Password, "password", "PGPASSWORD"),
 		dbParamString(sqlxx.Database, "name", "PGDATABASE"),
 		sqlxx.Cache(false),
-	)
+	}
+	opts = append(opts, options...)
+
+	db, err := sqlxx.New(opts...)
 	is.NoError(err)
 	is.NotNil(db)
 
