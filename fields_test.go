@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -12,6 +12,8 @@ import (
 func TestFields_IsForeignKey(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
+
+	is := require.New(t)
 
 	testers := []struct {
 		model  sqlxx.Model
@@ -26,14 +28,16 @@ func TestFields_IsForeignKey(t *testing.T) {
 	for i, tt := range testers {
 		schema, err := sqlxx.GetSchema(env.driver, tt.model)
 		field, err := sqlxx.NewField(env.driver, &schema, tt.model, tt.field)
-		assert.Nil(t, err)
-		assert.Equal(t, tt.result, field.IsForeignKey, fmt.Sprintf("index: %d", i))
+		is.NoError(err)
+		is.Equal(tt.result, field.IsForeignKey, fmt.Sprintf("index: %d", i))
 	}
 }
 
 func TestFields_IsExcludedField(t *testing.T) {
 	env := setup(t)
 	defer env.teardown()
+
+	is := require.New(t)
 
 	testers := []struct {
 		model  sqlxx.Model
@@ -48,8 +52,8 @@ func TestFields_IsExcludedField(t *testing.T) {
 	for i, tt := range testers {
 		schema, err := sqlxx.GetSchema(env.driver, tt.model)
 		field, err := sqlxx.NewField(env.driver, &schema, tt.model, tt.field)
-		assert.Nil(t, err)
-		assert.Equal(t, tt.result, field.IsExcluded, fmt.Sprintf("index: %d", i))
+		is.NoError(err)
+		is.Equal(tt.result, field.IsExcluded, fmt.Sprintf("index: %d", i))
 	}
 }
 

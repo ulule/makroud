@@ -104,7 +104,7 @@ func TestLogger(t *testing.T) {
 	is.Contains(log, "FROM users WHERE users.is_active = true;")
 
 	batman := env.createUser("batman")
-	err = sqlxx.Preload(driver, &batman, "Avatars", "APIKey")
+	err = sqlxx.Preload(driver, batman, "Avatars", "APIKey")
 	is.NoError(err)
 	log, err = logger.read()
 	is.NoError(err)

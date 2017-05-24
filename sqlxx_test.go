@@ -10,7 +10,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
@@ -297,7 +297,7 @@ func (ArticleCategory) TableName() string { return "articles_categories" }
 
 type environment struct {
 	driver             *sqlxx.Client
-	t                  *testing.T
+	is                 *require.Assertions
 	Users              []User
 	APIKeys            []APIKey
 	Profiles           []Profile
@@ -329,220 +329,196 @@ func (e *environment) load() {
 }
 
 func (e *environment) insertPartners() {
-	e.driver.MustExec("INSERT INTO partners (name) VALUES ($1)", "Ulule")
-	assert.NoError(e.t, e.driver.Select(&e.Partners, "SELECT * FROM partners"))
+	e.driver.MustExec(`INSERT INTO partners (name) VALUES ($1)`, "Ulule")
+	e.is.NoError(e.driver.Select(&e.Partners, `SELECT * FROM partners`))
 }
 
 func (e *environment) insertAPIKeys() {
-	e.driver.MustExec(
-		"INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)",
+	e.driver.MustExec(`INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)`,
 		"this-is-my-scret-api-key",
-		e.Partners[0].ID)
-
-	assert.NoError(e.t, e.driver.Select(&e.APIKeys, "SELECT * FROM api_keys"))
+		e.Partners[0].ID,
+	)
+	e.is.NoError(e.driver.Select(&e.APIKeys, `SELECT * FROM api_keys`))
 }
 
 func (e *environment) insertMedias() {
-	e.driver.MustExec(
-		"INSERT INTO media (path) VALUES ($1)",
-		"media/avatar.png")
-
-	assert.NoError(e.t, e.driver.Select(&e.Medias, "SELECT * FROM media"))
+	e.driver.MustExec(`INSERT INTO media (path) VALUES ($1)`,
+		"media/avatar.png",
+	)
+	e.is.NoError(e.driver.Select(&e.Medias, `SELECT * FROM media`))
 }
 func (e *environment) insertUsers() {
-	e.driver.MustExec(
-		"INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)",
+	e.driver.MustExec(`INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)`,
 		"jdoe",
 		e.APIKeys[0].ID,
-		e.Medias[0].ID)
-
-	assert.NoError(e.t, e.driver.Select(&e.Users, "SELECT * FROM users WHERE username=$1", "jdoe"))
+		e.Medias[0].ID,
+	)
+	e.is.NoError(e.driver.Select(&e.Users, `SELECT * FROM users WHERE username=$1`, "jdoe"))
 }
 
 func (e *environment) insertManagers() {
-	e.driver.MustExec(
-		"INSERT INTO managers (name, user_id) VALUES ($1, $2)",
+	e.driver.MustExec(`INSERT INTO managers (name, user_id) VALUES ($1, $2)`,
 		"Super Owl",
-		e.Users[0].ID)
-
-	assert.NoError(e.t, e.driver.Select(&e.Managers, "SELECT * FROM managers"))
+		e.Users[0].ID,
+	)
+	e.is.NoError(e.driver.Select(&e.Managers, `SELECT * FROM managers`))
 }
 
 func (e *environment) insertProjects() {
-	e.driver.MustExec(
-		"INSERT INTO projects (name, manager_id, user_id) VALUES ($1, $2, $3)",
+	e.driver.MustExec(`INSERT INTO projects (name, manager_id, user_id) VALUES ($1, $2, $3)`,
 		"Super Project",
 		e.Managers[0].ID,
-		e.Users[0].ID)
-
-	assert.NoError(e.t, e.driver.Select(&e.Projects, "SELECT * FROM projects"))
+		e.Users[0].ID,
+	)
+	e.is.NoError(e.driver.Select(&e.Projects, `SELECT * FROM projects`))
 }
 
 func (e *environment) insertAvatarFilters() {
 	names := []string{"normal", "clarendon", "juno", "lark", "ludwig", "gingham", "valencia"}
 	for _, name := range names {
-		e.driver.MustExec("INSERT INTO avatar_filters (name) VALUES ($1)", name)
+		e.driver.MustExec(`INSERT INTO avatar_filters (name) VALUES ($1)`, name)
 	}
-
-	assert.NoError(e.t, e.driver.Select(&e.AvatarFilters, "SELECT * FROM avatar_filters"))
+	e.is.NoError(e.driver.Select(&e.AvatarFilters, `SELECT * FROM avatar_filters`))
 }
 
 func (e *environment) insertAvatars() {
 	for i := 0; i < 5; i++ {
-		e.driver.MustExec(
-			"INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)",
+		e.driver.MustExec(`INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)`,
 			fmt.Sprintf("/avatars/%s-%d.png", e.Users[0].Username, i),
 			e.Users[0].ID,
-			e.AvatarFilters[0].ID)
+			e.AvatarFilters[0].ID,
+		)
 	}
-
-	assert.NoError(e.t, e.driver.Select(&e.Avatars, "SELECT * FROM avatars"))
+	e.is.NoError(e.driver.Select(&e.Avatars, `SELECT * FROM avatars`))
 }
 
 func (e *environment) insertProfiles() {
-	e.driver.MustExec(
-		"INSERT INTO profiles (user_id, first_name, last_name) VALUES ($1, $2, $3)",
+	e.driver.MustExec(`INSERT INTO profiles (user_id, first_name, last_name) VALUES ($1, $2, $3)`,
 		e.Users[0].ID,
 		"John",
-		"Doe")
-
-	assert.NoError(e.t, e.driver.Select(&e.Profiles, "SELECT * FROM profiles"))
+		"Doe",
+	)
+	e.is.NoError(e.driver.Select(&e.Profiles, `SELECT * FROM profiles`))
 }
 
 func (e *environment) insertCategories() {
 	for i := 0; i < 5; i++ {
-		e.driver.MustExec(
-			"INSERT INTO categories (name, user_id) VALUES ($1, $2)",
+		e.driver.MustExec(`INSERT INTO categories (name, user_id) VALUES ($1, $2)`,
 			fmt.Sprintf("Category #%d", i),
-			e.Users[0].ID)
+			e.Users[0].ID,
+		)
 	}
-
-	assert.NoError(e.t, e.driver.Select(&e.Categories, "SELECT * FROM categories"))
+	e.is.NoError(e.driver.Select(&e.Categories, `SELECT * FROM categories`))
 }
 
 func (e *environment) insertTags() {
-	e.driver.MustExec("INSERT INTO tags (name) VALUES ($1)", "Tag")
-	assert.NoError(e.t, e.driver.Select(&e.Tags, "SELECT * FROM tags"))
+	e.driver.MustExec(`INSERT INTO tags (name) VALUES ($1)`, "Tag")
+	e.driver.MustExec(`INSERT INTO tags (name) VALUES ($1)`, "Foobar")
+	e.is.NoError(e.driver.Select(&e.Tags, "SELECT * FROM tags"))
 }
 
 func (e *environment) insertArticles() {
 	for i := 0; i < 5; i++ {
-		e.driver.MustExec(
-			"INSERT INTO articles (title, author_id, reviewer_id, main_tag_id) VALUES ($1, $2, $3, $4)",
+		e.driver.MustExec(`INSERT INTO articles (title, author_id, reviewer_id, main_tag_id) VALUES ($1, $2, $3, $4)`,
 			fmt.Sprintf("Title #%d", i),
 			e.Users[0].ID,
 			e.Users[0].ID,
-			e.Tags[0].ID)
+			e.Tags[0].ID,
+		)
 	}
 
-	assert.NoError(e.t, e.driver.Select(&e.Articles, "SELECT * FROM articles"))
+	e.is.NoError(e.driver.Select(&e.Articles, `SELECT * FROM articles`))
 
 	for _, article := range e.Articles {
 		for _, category := range e.Categories {
-			e.driver.MustExec(
-				"INSERT INTO articles_categories (article_id, category_id) VALUES ($1, $2)",
+			e.driver.MustExec(`INSERT INTO articles_categories (article_id, category_id) VALUES ($1, $2)`,
 				article.ID,
-				category.ID)
+				category.ID,
+			)
 		}
 	}
 
-	assert.NoError(e.t, e.driver.Select(&e.ArticlesCategories, "SELECT * FROM articles_categories"))
+	e.is.NoError(e.driver.Select(&e.ArticlesCategories, `SELECT * FROM articles_categories`))
 }
 
-func (e *environment) createComment(user *User, article *Article) Comment {
-	var id int
-
-	err := e.driver.QueryRowx(
-		"INSERT INTO comments (content, user_id, article_id) VALUES ($1, $2, $3) RETURNING id",
+func (e *environment) createComment(user *User, article *Article) *Comment {
+	id := 0
+	query := e.driver.QueryRowx(`INSERT INTO comments (content, user_id, article_id) VALUES ($1, $2, $3) RETURNING id`,
 		"Lorem Ipsum",
 		user.ID,
-		article.ID).Scan(&id)
+		article.ID,
+	)
+	e.is.NoError(query.Scan(&id))
 
-	assert.Nil(e.t, err)
-
-	comment := Comment{}
-	assert.NoError(e.t, e.driver.Get(&comment, "SELECT * FROM comments WHERE id = $1", id))
+	comment := &Comment{}
+	e.is.NoError(e.driver.Get(comment, `SELECT * FROM comments WHERE id = $1`, id))
+	e.is.NotNil(comment)
 
 	return comment
 }
 
-func (e *environment) createArticle(user *User) Article {
-	var id int
-
-	err := e.driver.QueryRowx(
-		"INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3) RETURNING id",
+func (e *environment) createArticle(user *User) *Article {
+	id := 0
+	query := e.driver.QueryRowx(`INSERT INTO articles (title, author_id, reviewer_id) VALUES ($1, $2, $3) RETURNING id`,
 		"Title",
 		user.ID,
-		user.ID).Scan(&id)
+		user.ID,
+	)
+	e.is.NoError(query.Scan(&id))
 
-	assert.Nil(e.t, err)
-
-	article := Article{}
-	assert.NoError(e.t, e.driver.Get(&article, "SELECT * FROM articles WHERE id = $1", id))
+	article := &Article{}
+	e.is.NoError(e.driver.Get(article, `SELECT * FROM articles WHERE id = $1`, id))
+	e.is.NotNil(article)
 
 	return article
 }
 
-func (e *environment) createUser(username string) User {
-	var (
-		key  = fmt.Sprintf("%s-apikey", username)
-		name = fmt.Sprintf("%s-partner", username)
-	)
+func (e *environment) createUser(username string) *User {
+	key := fmt.Sprintf("%s-apikey", username)
+	name := fmt.Sprintf("%s-partner", username)
 
-	partner := Partner{}
+	partner := &Partner{}
+	e.driver.MustExec(`INSERT INTO partners (name) VALUES ($1)`, name)
+	e.is.NoError(e.driver.Get(partner, `SELECT * FROM partners WHERE name = $1`, name))
 
-	e.driver.MustExec(
-		"INSERT INTO partners (name) VALUES ($1)",
-		name)
+	media := &Media{}
+	e.driver.MustExec(`INSERT INTO media (path) VALUES ($1)`, fmt.Sprintf("media/media-%s.png", username))
+	e.is.NoError(e.driver.Get(media, `SELECT * FROM media ORDER BY id DESC LIMIT 1`))
 
-	assert.NoError(e.t, e.driver.Get(&partner, "SELECT * FROM partners WHERE name = $1", name))
+	apiKey := &APIKey{}
+	e.driver.MustExec(`INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)`, key, partner.ID)
+	e.is.NoError(e.driver.Get(apiKey, `SELECT * FROM api_keys WHERE key = $1`, key))
 
-	media := Media{}
-
-	e.driver.MustExec(
-		"INSERT INTO media (path) VALUES ($1)",
-		fmt.Sprintf("media/media-%s.png", username))
-
-	assert.NoError(e.t, e.driver.Get(&media, "SELECT * FROM media ORDER BY id DESC LIMIT 1"))
-
-	apiKey := APIKey{}
-
-	e.driver.MustExec(
-		"INSERT INTO api_keys (key, partner_id) VALUES ($1, $2)",
-		key,
-		partner.ID)
-
-	assert.NoError(e.t, e.driver.Get(&apiKey, "SELECT * FROM api_keys WHERE key = $1", key))
-
-	user := User{}
-
-	e.driver.MustExec(
-		"INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)",
+	user := &User{}
+	e.driver.MustExec(`INSERT INTO users (username, api_key_id, avatar_id) VALUES ($1, $2, $3)`,
 		username,
 		apiKey.ID,
-		media.ID)
+		media.ID,
+	)
 
-	assert.NoError(e.t, e.driver.Get(&user, "SELECT * FROM users WHERE username=$1", username))
+	e.is.NoError(e.driver.Get(user, `SELECT * FROM users WHERE username=$1`, username))
+	e.is.NotNil(user)
 
-	for i := 1; i < 6; i++ {
-		e.driver.MustExec(
-			"INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)",
-			fmt.Sprintf("/avatars/%s-%d.png", username, i),
+	for filterID := 1; filterID < 6; filterID++ {
+		e.driver.MustExec(`INSERT INTO avatars (path, user_id, filter_id) VALUES ($1, $2, $3)`,
+			fmt.Sprintf("/avatars/%s-%d.png", username, filterID),
 			user.ID,
-			i)
+			filterID,
+		)
 	}
 
 	return user
 }
 
-func (e *environment) createCategory(name string, userID *int) Category {
-	e.driver.MustExec("INSERT INTO categories (name) VALUES ($1)", name)
+func (e *environment) createCategory(name string, userID *int) *Category {
+	e.driver.MustExec(`INSERT INTO categories (name) VALUES ($1)`, name)
 	if userID != nil {
-		e.driver.MustExec("UPDATE categories SET user_id=$1 WHERE name=$2", *userID, name)
+		e.driver.MustExec(`UPDATE categories SET user_id=$1 WHERE name=$2`, *userID, name)
 	}
 
-	category := Category{}
-	assert.NoError(e.t, e.driver.Get(&category, "SELECT * FROM categories WHERE name=$1", name))
+	category := &Category{}
+	e.is.NoError(e.driver.Get(category, `SELECT * FROM categories WHERE name=$1`, name))
+	e.is.NotNil(category)
 
 	return category
 }
@@ -553,7 +529,7 @@ func (e *environment) teardown() {
 		e.driver.MustExec(dropTables)
 	}
 
-	assert.NoError(e.t, e.driver.Close())
+	e.is.NoError(e.driver.Close())
 }
 
 func dbParamString(option func(string) sqlxx.Option, param string, env ...string) sqlxx.Option {
@@ -589,6 +565,7 @@ func dbParamInt(option func(int) sqlxx.Option, param string, env ...string) sqlx
 }
 
 func setup(t *testing.T) *environment {
+	is := require.New(t)
 
 	db, err := sqlxx.New(
 		dbParamString(sqlxx.Host, "host", "PGHOST"),
@@ -598,13 +575,13 @@ func setup(t *testing.T) *environment {
 		dbParamString(sqlxx.Database, "name", "PGDATABASE"),
 		sqlxx.Cache(false),
 	)
-	assert.NoError(t, err)
-	assert.NotNil(t, db)
+	is.NoError(err)
+	is.NotNil(db)
 
 	db.MustExec(dropTables)
 	db.MustExec(dbSchema)
 
-	env := &environment{t: t, driver: db}
+	env := &environment{is: is, driver: db}
 	env.load()
 
 	return env

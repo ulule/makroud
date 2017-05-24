@@ -3,6 +3,7 @@ package sqlxx
 import (
 	"database/sql"
 	"fmt"
+	"io"
 
 	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
@@ -76,6 +77,7 @@ type Driver interface {
 	Beginx() (sqalx.Node, error)
 	Rollback() error
 	Commit() error
+	close(closer io.Closer)
 	hasCache() bool
 	cache() *cache
 	logger() Logger

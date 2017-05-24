@@ -1,7 +1,6 @@
 package sqlxx_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -44,23 +43,27 @@ func TestSave_Save(t *testing.T) {
 
 	queries, err = sqlxx.SaveWithQueries(env.driver, user)
 	is.NoError(err)
+	is.NotNil(queries)
+	is.Len(queries, 1)
 	is.Contains(queries[0].Query, "UPDATE users SET")
 	is.Contains(queries[0].Query, "username = :username")
 	is.Equal("gilles", queries[0].Params["username"])
 
-	m := map[string]interface{}{"username": "gilles"}
-
 	query := `
-	SELECT count(*)
-	FROM %s
-	WHERE username = :username
+		SELECT count(*)
+		FROM users
+		WHERE username = :username
 	`
+	params := map[string]interface{}{
+		"username": "gilles",
+	}
 
-	stmt, err := env.driver.PrepareNamed(fmt.Sprintf(query, user.TableName()))
+	stmt, err := env.driver.PrepareNamed(query)
 	is.NoError(err)
+	is.NotNil(stmt)
 
-	var count int
-	err = stmt.Get(&count, m)
+	count := -1
+	err = stmt.Get(&count, params)
 	is.NoError(err)
 	is.Equal(1, count)
 }

@@ -188,6 +188,17 @@ func (c Columns) String() string {
 	return strings.Join(c, ", ")
 }
 
+// GetColumns returns a comma-separated string representation of a model's table columns.
+func GetColumns(driver Driver, model Model) (string, error) {
+	schema, err := GetSchema(driver, model)
+	if err != nil {
+		return "", errors.Wrap(err, "sqlxx: cannot fetch schema informations")
+	}
+
+	columns := schema.ColumnPaths().String()
+	return columns, nil
+}
+
 // ----------------------------------------------------------------------------
 // Where clauses
 // ----------------------------------------------------------------------------
