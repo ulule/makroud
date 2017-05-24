@@ -191,7 +191,7 @@ type User struct {
 	Username string `db:"username"`
 	IsActive bool   `db:"is_active" sqlxx:"default:true"`
 
-	CreatedAt time.Time  `db:"created_at" sqlxx:"auto_now_add:true"`
+	CreatedAt time.Time  `db:"created_at" sqlxx:"default:now()"`
 	UpdatedAt time.Time  `db:"updated_at" sqlxx:"default:now()"`
 	DeletedAt *time.Time `db:"deleted_at"`
 
@@ -215,7 +215,7 @@ type Comment struct {
 	ArticleID int `db:"article_id"`
 	Article   Article
 	Content   string    `db:"content"`
-	CreatedAt time.Time `db:"created_at" sqlxx:"auto_now_add:true"`
+	CreatedAt time.Time `db:"created_at" sqlxx:"default:now()"`
 	UpdatedAt time.Time `db:"updated_at" sqlxx:"default:now()"`
 }
 
@@ -564,17 +564,20 @@ func dbParamInt(option func(int) sqlxx.Option, param string, env ...string) sqlx
 	return dbDefaultOptions[param]
 }
 
-func setup(t *testing.T) *environment {
+func setup(t *testing.T, options ...sqlxx.Option) *environment {
 	is := require.New(t)
 
-	db, err := sqlxx.New(
+	opts := []sqlxx.Option{
 		dbParamString(sqlxx.Host, "host", "PGHOST"),
 		dbParamInt(sqlxx.Port, "port", "PGPORT"),
 		dbParamString(sqlxx.User, "user", "PGUSER"),
 		dbParamString(sqlxx.Password, "password", "PGPASSWORD"),
 		dbParamString(sqlxx.Database, "name", "PGDATABASE"),
 		sqlxx.Cache(false),
-	)
+	}
+	opts = append(opts, options...)
+
+	db, err := sqlxx.New(opts...)
 	is.NoError(err)
 	is.NotNil(db)
 
