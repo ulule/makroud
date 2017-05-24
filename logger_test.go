@@ -67,8 +67,7 @@ func TestLogger(t *testing.T) {
 	log, err = logger.read()
 	is.NoError(err)
 	t.Log(log)
-	is.Equal(fmt.Sprintf("DELETE FROM users WHERE users.id = %d;", user.ID),
-		log)
+	is.Equal(fmt.Sprintf("DELETE FROM users WHERE users.id = %d;", user.ID), log)
 
 	user = &User{}
 	params := map[string]interface{}{"username": "thoas"}
@@ -105,10 +104,67 @@ func TestLogger(t *testing.T) {
 	is.Equal(ErrLogTimeout, err)
 	is.Equal("", log)
 
-	// TODO 	queries, err := sqlxx.FindByParamsWithQueries(env.env.driver, &users, map[string]interface{}{
-	//		"is_active": true,
-	//	})
-	// And helpers
+	query := `
+		UPDATE users
+		   SET is_active = true
+		   WHERE username IN (?);
+	`
+	list := []string{"batman", "robin", "catwoman"}
+	err = sqlxx.ExecInParams(env.driver, query, list)
+	is.NoError(err)
+	log, err = logger.read()
+	is.NoError(err)
+	t.Log(log)
+	is.Equal("UPDATE users SET is_active = true WHERE username IN ('batman', 'robin', 'catwoman');", log)
+
+	query = `SELECT * FROM users WHERE is_active = true AND username IN (?);`
+	list = []string{"batman", "robin", "catwoman", "joker"}
+	users = &[]User{}
+	err = sqlxx.FindInParams(env.driver, users, query, list)
+	is.NoError(err)
+	log, err = logger.read()
+	is.NoError(err)
+	t.Log(log)
+	is.Equal(fmt.Sprint("SELECT * FROM users WHERE is_active = true AND ",
+		"username IN ('batman', 'robin', 'catwoman', 'joker');"), log)
+
+	query = `UPDATE users SET is_active = false WHERE username = :username;`
+	user = &User{Username: "novln"}
+	err = sqlxx.Exec(env.driver, query, user)
+	is.NoError(err)
+	log, err = logger.read()
+	is.NoError(err)
+	t.Log(log)
+	is.Equal("UPDATE users SET is_active = false WHERE username = 'novln';", log)
+
+	query = `UPDATE users SET is_active = true WHERE username = :username;`
+	params = map[string]interface{}{
+		"username": "novln",
+	}
+	err = sqlxx.NamedExec(env.driver, query, params)
+	is.NoError(err)
+	log, err = logger.read()
+	is.NoError(err)
+	t.Log(log)
+	is.Equal("UPDATE users SET is_active = true WHERE username = 'novln';", log)
+
+	query = `
+		UPDATE users
+		SET username = :username,
+		    is_active = :is_active,
+		    updated_at = NOW()
+		WHERE id = :id
+		RETURNING updated_at;
+	`
+	catwoman := env.createUser("catwman")
+	catwoman.Username = "catwoman"
+	err = sqlxx.Sync(env.driver, query, catwoman)
+	is.NoError(err)
+	log, err = logger.read()
+	is.NoError(err)
+	t.Log(log)
+	is.Equal(fmt.Sprint("UPDATE users SET username = 'catwoman', is_active = true, updated_at = NOW() WHERE id = ",
+		catwoman.ID, " RETURNING updated_at;"), log)
 }
 
 type logger struct {
