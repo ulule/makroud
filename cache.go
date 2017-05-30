@@ -10,14 +10,14 @@ type cache struct {
 	mutex   sync.RWMutex
 	schemas map[string]Schema
 	// V2
-	xschemas map[string]XSchema
+	xschemas map[string]*XSchema
 }
 
 // newCache returns new cache instance.
 func newCache() *cache {
 	return &cache{
 		schemas:  map[string]Schema{},
-		xschemas: make(map[string]XSchema),
+		xschemas: make(map[string]*XSchema),
 	}
 }
 
@@ -54,7 +54,7 @@ func (c *cache) GetSchema(model Model) (Schema, bool) {
 // V2
 
 // SetSchema caches the given schema.
-func (c *cache) XSetSchema(schema XSchema) {
+func (c *cache) XSetSchema(schema *XSchema) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -63,7 +63,7 @@ func (c *cache) XSetSchema(schema XSchema) {
 
 // GetSchema returns the given schema from cache.
 // If the given schema does not exists, returns false as bool.
-func (c *cache) XGetSchema(model XModel) (XSchema, bool) {
+func (c *cache) XGetSchema(model XModel) (*XSchema, bool) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
@@ -72,7 +72,7 @@ func (c *cache) XGetSchema(model XModel) (XSchema, bool) {
 
 	schema, ok := c.xschemas[key]
 	if !ok {
-		return XSchema{}, false
+		return nil, false
 	}
 
 	return schema, true

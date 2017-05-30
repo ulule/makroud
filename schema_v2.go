@@ -183,17 +183,39 @@ func (e *schemaBuilder) Create(driver Driver, model XModel) (*XSchema, error) {
 }
 
 // getReferenceSchema return Schema from given reference's type.
-func getReferenceSchema(driver Driver, name string, element reflect.Type) (XSchema, error) {
-	zero := XSchema{}
-
-	model, ok := GetZero(element).Interface().(XModel)
+func getReferenceSchema(driver Driver, model XModel, name string, association AssociationType) (*XSchema, error) {
+	field, ok := GetFieldByName(model, name)
 	if !ok {
-		return zero, errors.Errorf("sqlxx: field '%s' require a valid sqlxx model as reference", name)
+		return nil, errors.Errorf("sqlxx: field '%s' not found in given model", name)
 	}
 
-	schema, err := XGetSchema(driver, model)
+	rtype := GetIndirectType(field.Type)
+	kind := rtype.Kind()
+	var zero interface{}
+
+	switch association {
+	case AssociationTypeOne:
+		if kind != reflect.Struct {
+			return nil, errors.Errorf("sqlxx: field '%s' should be a struct", name)
+		}
+		zero = GetZero(rtype).Interface()
+	case AssociationTypeMany:
+		if kind != reflect.Slice {
+			return nil, errors.Errorf("sqlxx: field '%s' should be a slice", name)
+		}
+		zero = GetZero(rtype.Elem()).Interface()
+	default:
+		return nil, errors.Errorf("sqlxx: association '%s' not supported", association)
+	}
+
+	target, ok := zero.(XModel)
+	if !ok {
+		return nil, errors.Errorf("sqlxx: field '%s' require a valid sqlxx model as reference", name)
+	}
+
+	schema, err := XGetSchema(driver, target)
 	if err != nil {
-		return zero, errors.Wrapf(err, "sqlxx: field '%s' require a valid sqlxx model as reference", name)
+		return nil, errors.Wrapf(err, "sqlxx: field '%s' require a valid sqlxx model as reference", name)
 	}
 
 	return schema, nil
@@ -203,16 +225,7 @@ func (e *schemaBuilder) createHasOneAssociations(driver Driver, model XModel,
 	association associationOp, schema *XSchema) error {
 
 	name := association.FieldName
-	element, ok := GetFieldByName(model, name)
-	if !ok {
-		return errors.Errorf("sqlxx: field '%s' not found in given model", name)
-	}
-
-	if element.Type.Kind() != reflect.Struct {
-		return errors.Errorf("sqlxx: field '%s' should be a struct", name)
-	}
-
-	target, err := getReferenceSchema(driver, name, element.Type)
+	target, err := getReferenceSchema(driver, model, name, association.Type)
 	if err != nil {
 		return err
 	}
@@ -279,16 +292,7 @@ func (e *schemaBuilder) createHasManyAssociations(driver Driver, model XModel,
 	association associationOp, schema *XSchema) error {
 
 	name := association.FieldName
-	element, ok := GetFieldByName(model, name)
-	if !ok {
-		return errors.Errorf("sqlxx: field '%s' not found in given model", name)
-	}
-
-	if element.Type.Kind() != reflect.Slice {
-		return errors.Errorf("sqlxx: field '%s' should be a slice", name)
-	}
-
-	target, err := getReferenceSchema(driver, name, element.Type.Elem())
+	target, err := getReferenceSchema(driver, model, name, association.Type)
 	if err != nil {
 		return err
 	}
@@ -340,9 +344,8 @@ type fieldOp struct {
 	ReferenceName string
 }
 
-// GetSchema returns the given schema from global cache
-// If the given schema does not exists, returns false as bool.
-func XGetSchema(driver Driver, model XModel) (XSchema, error) {
+// GetSchema returns the given schema from driver's cache.
+func XGetSchema(driver Driver, model XModel) (*XSchema, error) {
 	if !driver.hasCache() {
 		return XnewSchema(driver, model)
 	}
@@ -362,14 +365,8 @@ func XGetSchema(driver Driver, model XModel) (XSchema, error) {
 	return schema, nil
 }
 
-func XnewSchema(driver Driver, model XModel) (XSchema, error) {
+func XnewSchema(driver Driver, model XModel) (*XSchema, error) {
 	builder := NewSchemaBuilder()
 	model.CreateSchema(builder)
-
-	schema, err := builder.Create(driver, model)
-	if schema == nil {
-		schema = &XSchema{}
-	}
-
-	return *schema, err
+	return builder.Create(driver, model)
 }

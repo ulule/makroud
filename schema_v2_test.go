@@ -34,7 +34,7 @@ type UserV2 struct {
 	UpdatedAt time.Time
 	DeletedAt *time.Time
 	Profile   ProfileV2
-	Avatars   []AvatarV2
+	Avatars   *[]AvatarV2
 	KeyID     int64
 	Key       UserKeyV2
 }
@@ -108,14 +108,14 @@ func TestSchema_v2(t *testing.T) {
 
 	user := &UserV2{}
 	_ = user
-	// comment := &CommentV2{}
-	// builder := sqlxx.NewSchemaBuilder()
-	// comment.CreateSchema(builder)
-	// schema, err := builder.Create(env.driver, comment)
-	//
-	// is.NoError(err)
-	// is.NotNil(schema)
-	// spew.Dump(schema)
+	comment := &CommentV2{}
+	builder := sqlxx.NewSchemaBuilder()
+	comment.CreateSchema(builder)
+	schema, err := builder.Create(env.driver, comment)
+
+	is.NoError(err)
+	is.NotNil(schema)
+	spew.Dump(schema)
 
 	s1, err := sqlxx.XGetSchema(env.driver, user)
 	is.NoError(err)
