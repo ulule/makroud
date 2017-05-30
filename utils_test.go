@@ -9,50 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
+	"github.com/ulule/sqlxx/reflectx"
 )
-
-func TestUtils_IntToInt64(t *testing.T) {
-	is := require.New(t)
-
-	valids := []interface{}{
-		int8(1),
-		int16(1),
-		int32(1),
-		int64(1),
-		uint(1),
-		uint8(1),
-		uint16(1),
-		uint32(1),
-		uint64(1),
-		float32(1),
-		float64(1),
-		sql.NullInt64{Valid: true, Int64: 1},
-	}
-
-	for _, valid := range valids {
-		v, err := sqlxx.IntToInt64(valid)
-		is.NoError(err)
-		is.Equal(v, int64(1))
-	}
-
-	str := "hello"
-	type A struct{}
-
-	invalids := []interface{}{
-		nil,
-		str,
-		&str,
-		reflect.ValueOf(1),
-		A{},
-		&A{},
-	}
-
-	for _, invalid := range invalids {
-		v, err := sqlxx.IntToInt64(invalid)
-		is.Error(err)
-		is.Equal(int64(0), v)
-	}
-}
 
 func TestUtils_MakePointer(t *testing.T) {
 	is := require.New(t)
@@ -173,10 +131,10 @@ func TestUtils_IsZero(t *testing.T) {
 	for i, scenario := range scenarios {
 		message := fmt.Sprintf("scenario #%d", (i + 1))
 
-		field, err := sqlxx.GetFieldValue(scenario.value, scenario.field)
+		field, err := reflectx.GetFieldValue(scenario.value, scenario.field)
 		is.NoError(err)
 
-		isZero := sqlxx.IsZero(field)
+		isZero := reflectx.IsZero(field)
 		is.Equal(scenario.expected, isZero, message)
 	}
 

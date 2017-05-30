@@ -9,51 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// AssociationType is an association type.
-type AssociationType uint8
-
-func (a AssociationType) String() string {
-	return map[AssociationType]string{
-		AssociationTypeUndefined:  "undefined",
-		AssociationTypeOne:        "one",
-		AssociationTypeMany:       "many",
-		AssociationTypeManyToMany: "many-to-many",
-	}[a]
-}
-
-// Association types
-const (
-	AssociationTypeUndefined = AssociationType(iota)
-	AssociationTypeOne
-	AssociationTypeMany
-	AssociationTypeManyToMany
-)
-
-// Constants
-const (
-	StructTagName       = "sqlxx"
-	SQLXStructTagName   = "db"
-	StructTagPrimaryKey = "primary_key"
-	StructTagIgnored    = "ignored"
-	StructTagDefault    = "default"
-	StructTagForeignKey = "fk"
-	StructTagSQLXField  = "field"
-)
-
-// PrimaryKeyFieldName is the default field name for primary keys
-const PrimaryKeyFieldName = "ID"
-
-// SupportedTags are supported tags.
-var SupportedTags = []string{
-	StructTagName,
-	SQLXStructTagName,
-}
-
-// TagsMapping is the reflekt.Tags mapping to handle struct tag without key:value format
-var TagsMapping = map[string]string{
-	"db": "field",
-}
-
 // ErrInvalidDriver is returned when given driver is undefined.
 var ErrInvalidDriver = fmt.Errorf("a sqlxx driver is required")
 
@@ -77,13 +32,8 @@ type Driver interface {
 	Beginx() (sqalx.Node, error)
 	Rollback() error
 	Commit() error
-	close(closer io.Closer)
+	close(closer io.Closer, flags map[string]string)
 	hasCache() bool
 	cache() *cache
 	logger() Logger
-}
-
-// Model represents a database table.
-type Model interface {
-	TableName() string
 }

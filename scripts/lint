@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -eo pipefail
+
+SOURCE_DIRECTORY=$(dirname "${BASH_SOURCE[0]}")
+cd "${SOURCE_DIRECTORY}/.."
+
+gometalinter --config gometalinter.json --disable=dupl .

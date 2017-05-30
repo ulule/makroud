@@ -1,69 +1,79 @@
 package sqlxx_test
 
 import (
+	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/ulule/loukoum"
 
 	"github.com/ulule/sqlxx"
 )
 
-func TestSave_Save(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
+func TestSave_Owl(t *testing.T) {
+	Setup(t, sqlxx.Cache(true))(func(driver sqlxx.Driver) {
+		is := require.New(t)
 
-	is := require.New(t)
+		name := "Kika"
+		featherColor := "white"
+		favoriteFood := "Tomato"
+		owl := &Owl{
+			Name:         name,
+			FeatherColor: featherColor,
+			FavoriteFood: favoriteFood,
+		}
 
-	username := "thoas"
-	createdAt := time.Date(2016, 17, 6, 23, 10, 02, 0, time.UTC)
-	isActive := false
-	user := &User{Username: username, IsActive: isActive, CreatedAt: createdAt}
+		queries, err := sqlxx.SaveWithQueries(driver, owl)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
+		query := queries[0]
+		expected := fmt.Sprint(
+			"INSERT INTO wp_owl (favorite_food, feather_color, name) ",
+			"VALUES ('Tomato', 'white', 'Kika') RETURNING id",
+		)
+		is.Equal(expected, query.Raw)
+		expected = fmt.Sprint(
+			"INSERT INTO wp_owl (favorite_food, feather_color, name) ",
+			"VALUES (:arg_1, :arg_2, :arg_3) RETURNING id",
+		)
+		is.Equal(expected, query.Query)
+		is.Len(query.Args, 3)
+		is.Equal(favoriteFood, query.Args["arg_1"])
+		is.Equal(featherColor, query.Args["arg_2"])
+		is.Equal(name, query.Args["arg_3"])
 
-	queries, err := sqlxx.SaveWithQueries(env.driver, user)
-	is.NoError(err)
-	is.NotNil(queries)
-	is.Len(queries, 1)
-	is.Contains(queries[0].Query, "INSERT INTO users")
-	is.Contains(queries[0].Query, ":created_at")
-	is.Equal(createdAt, queries[0].Params["created_at"])
-	is.Contains(queries[0].Query, ":username")
-	is.Equal(username, queries[0].Params["username"])
-	_, ok := queries[0].Params["is_active"]
-	is.False(ok)
-	is.NotContains(queries[0].Query, ":is_active")
-	_, ok = queries[0].Params["updated_at"]
-	is.False(ok)
-	is.NotContains(queries[0].Query, ":updated_at")
-	is.NotZero(user.ID)
-	is.Equal(true, user.IsActive)
-	is.NotZero(user.UpdatedAt)
+		favoriteFood = "Chocolate Cake"
+		owl.FavoriteFood = favoriteFood
+		id := owl.ID
 
-	user.Username = "gilles"
+		queries, err = sqlxx.SaveWithQueries(driver, owl)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
+		query = queries[0]
+		expected = fmt.Sprint(
+			"UPDATE wp_owl SET favorite_food = 'Chocolate Cake', feather_color = 'white', ",
+			"name = 'Kika' WHERE (id = 1)",
+		)
+		is.Equal(expected, query.Raw)
+		expected = fmt.Sprint(
+			"UPDATE wp_owl SET favorite_food = :arg_1, feather_color = :arg_2, ",
+			"name = :arg_3 WHERE (id = :arg_4)",
+		)
+		is.Equal(expected, query.Query)
+		is.Len(query.Args, 4)
+		is.Equal(favoriteFood, query.Args["arg_1"])
+		is.Equal(featherColor, query.Args["arg_2"])
+		is.Equal(name, query.Args["arg_3"])
+		is.Equal(id, query.Args["arg_4"])
 
-	queries, err = sqlxx.SaveWithQueries(env.driver, user)
-	is.NoError(err)
-	is.NotNil(queries)
-	is.Len(queries, 1)
-	is.Contains(queries[0].Query, "UPDATE users SET")
-	is.Contains(queries[0].Query, "username = :username")
-	is.Equal("gilles", queries[0].Params["username"])
+		check := loukoum.Select("COUNT(*)").From("wp_owl").Where(loukoum.Condition("name").Equal("Kika"))
+		count := -1
+		err = sqlxx.Fetch(driver, check, &count)
+		is.NoError(err)
+		is.NoError(err)
+		is.Equal(1, count)
 
-	query := `
-		SELECT count(*)
-		FROM users
-		WHERE username = :username
-	`
-	params := map[string]interface{}{
-		"username": "gilles",
-	}
-
-	stmt, err := env.driver.PrepareNamed(query)
-	is.NoError(err)
-	is.NotNil(stmt)
-
-	count := -1
-	err = stmt.Get(&count, params)
-	is.NoError(err)
-	is.Equal(1, count)
+	})
 }
