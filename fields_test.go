@@ -57,39 +57,75 @@ func TestFields_IsExcludedField(t *testing.T) {
 	}
 }
 
-type StructValidField struct{ ID int }
+type StructValidField struct {
+	ID int
+}
 
-func (s StructValidField) TableName() string { return "structvalidfield" }
+func (StructValidField) TableName() string {
+	return "structvalidfield"
+}
 
-type StructUnexportedField struct{ unexported int }
+func (StructValidField) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
-func (s StructUnexportedField) TableName() string { return "structunexportedfield" }
+type StructUnexportedField struct {
+	unexported int
+}
+
+func (StructUnexportedField) TableName() string {
+	return "structunexportedfield"
+}
+
+func (StructUnexportedField) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type StructDBExcludedField struct {
 	ID int `db:"-"`
 }
 
-func (s StructDBExcludedField) TableName() string { return "structdbexcludedfield" }
+func (StructDBExcludedField) TableName() string {
+	return "structdbexcludedfield"
+}
+
+func (StructDBExcludedField) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type FKTest1 struct {
 	excluded int
 	ID       int
 }
 
-func (f FKTest1) TableName() string {
+func (FKTest1) TableName() string {
 	return "fktest1"
+}
+
+func (FKTest1) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
 }
 
 type FKTest2 struct {
 	MyFieldID int
 }
 
-func (f FKTest2) TableName() string {
+func (FKTest2) TableName() string {
 	return "fktest2"
+}
+
+func (FKTest2) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
 }
 
 type FKTest3 struct {
 	CustomField int `sqlxx:"fk"`
 }
 
-func (f FKTest3) TableName() string { return "fktest3" }
+func (FKTest3) TableName() string {
+	return "fktest3"
+}
+
+func (FKTest3) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}

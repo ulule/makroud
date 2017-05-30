@@ -146,7 +146,13 @@ type Partner struct {
 	Name string `db:"name"`
 }
 
-func (Partner) TableName() string { return "partners" }
+func (Partner) TableName() string {
+	return "partners"
+}
+
+func (Partner) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type Manager struct {
 	ID     int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
@@ -155,7 +161,13 @@ type Manager struct {
 	User   *User
 }
 
-func (Manager) TableName() string { return "managers" }
+func (Manager) TableName() string {
+	return "managers"
+}
+
+func (Manager) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type Project struct {
 	ID        int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
@@ -166,7 +178,9 @@ type Project struct {
 	User      *User
 }
 
-func (Project) TableName() string { return "projects" }
+func (Project) TableName() string {
+	return "projects"
+}
 
 type APIKey struct {
 	ID        int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
@@ -175,7 +189,13 @@ type APIKey struct {
 	PartnerID int `db:"partner_id"`
 }
 
-func (APIKey) TableName() string { return "api_keys" }
+func (APIKey) TableName() string {
+	return "api_keys"
+}
+
+func (APIKey) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type Media struct {
 	ID        int       `db:"id" sqlxx:"primary_key:true"`
@@ -184,7 +204,13 @@ type Media struct {
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
-func (Media) TableName() string { return "media" }
+func (Media) TableName() string {
+	return "media"
+}
+
+func (Media) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type User struct {
 	ID       int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
@@ -206,7 +232,13 @@ type User struct {
 	Profile Profile
 }
 
-func (User) TableName() string { return "users" }
+func (User) TableName() string {
+	return "users"
+}
+
+func (User) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type Comment struct {
 	ID        int `db:"id" sqlxx:"primary_key:true; ignored:true"`
@@ -219,7 +251,13 @@ type Comment struct {
 	UpdatedAt time.Time `db:"updated_at" sqlxx:"default:now()"`
 }
 
-func (Comment) TableName() string { return "comments" }
+func (Comment) TableName() string {
+	return "comments"
+}
+
+func (Comment) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type Profile struct {
 	ID        int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
@@ -228,14 +266,26 @@ type Profile struct {
 	LastName  string `db:"last_name"`
 }
 
-func (Profile) TableName() string { return "profiles" }
+func (Profile) TableName() string {
+	return "profiles"
+}
+
+func (Profile) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type AvatarFilter struct {
 	ID   int    `db:"id" sqlxx:"primary_key:true"`
 	Name string `db:"name"`
 }
 
-func (AvatarFilter) TableName() string { return "avatar_filters" }
+func (AvatarFilter) TableName() string {
+	return "avatar_filters"
+}
+
+func (AvatarFilter) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type Avatar struct {
 	ID        int       `db:"id" sqlxx:"primary_key:true"`
@@ -248,7 +298,13 @@ type Avatar struct {
 	FilterPtr *AvatarFilter `sqlxx:"fk:FilterID"`
 }
 
-func (Avatar) TableName() string { return "avatars" }
+func (Avatar) TableName() string {
+	return "avatars"
+}
+
+func (Avatar) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type Category struct {
 	ID     int           `db:"id" sqlxx:"primary_key:true"`
@@ -257,7 +313,13 @@ type Category struct {
 	User   User
 }
 
-func (Category) TableName() string { return "categories" }
+func (Category) TableName() string {
+	return "categories"
+}
+
+func (Category) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 // This model has a different ID type.
 type Tag struct {
@@ -265,7 +327,13 @@ type Tag struct {
 	Name string `db:"name"`
 }
 
-func (Tag) TableName() string { return "tags" }
+func (Tag) TableName() string {
+	return "tags"
+}
+
+func (Tag) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type Article struct {
 	ID          int       `db:"id" sqlxx:"primary_key:true"`
@@ -281,7 +349,13 @@ type Article struct {
 	MainTag     *Tag
 }
 
-func (Article) TableName() string { return "articles" }
+func (Article) TableName() string {
+	return "articles"
+}
+
+func (Article) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type ArticleCategory struct {
 	ID         int `db:"id" sqlxx:"primary_key:true"`
@@ -289,7 +363,13 @@ type ArticleCategory struct {
 	CategoryID int `db:"category_id"`
 }
 
-func (ArticleCategory) TableName() string { return "articles_categories" }
+func (ArticleCategory) TableName() string {
+	return "articles_categories"
+}
+
+func (ArticleCategory) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 // ----------------------------------------------------------------------------
 // Loader

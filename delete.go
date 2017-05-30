@@ -8,13 +8,13 @@ import (
 )
 
 // Delete deletes the given instance.
-func Delete(driver Driver, out interface{}) error {
+func Delete(driver Driver, out Model) error {
 	_, err := DeleteWithQueries(driver, out)
 	return err
 }
 
 // DeleteWithQueries deletes the given instance and returns performed queries.
-func DeleteWithQueries(driver Driver, out interface{}) (Queries, error) {
+func DeleteWithQueries(driver Driver, out Model) (Queries, error) {
 	queries, err := remove(driver, out)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute delete")
@@ -23,23 +23,23 @@ func DeleteWithQueries(driver Driver, out interface{}) (Queries, error) {
 }
 
 // SoftDelete is an alias for Archive.
-func SoftDelete(driver Driver, out interface{}, fieldName string) error {
+func SoftDelete(driver Driver, out Model, fieldName string) error {
 	return Archive(driver, out, fieldName)
 }
 
 // SoftDeleteWithQueries is an alias for Archive.
-func SoftDeleteWithQueries(driver Driver, out interface{}, fieldName string) (Queries, error) {
+func SoftDeleteWithQueries(driver Driver, out Model, fieldName string) (Queries, error) {
 	return ArchiveWithQueries(driver, out, fieldName)
 }
 
 // Archive archives the given instance.
-func Archive(driver Driver, out interface{}, fieldName string) error {
+func Archive(driver Driver, out Model, fieldName string) error {
 	_, err := ArchiveWithQueries(driver, out, fieldName)
 	return err
 }
 
 // ArchiveWithQueries archives the given instance and returns performed queries.
-func ArchiveWithQueries(driver Driver, out interface{}, fieldName string) (Queries, error) {
+func ArchiveWithQueries(driver Driver, out Model, fieldName string) (Queries, error) {
 	queries, err := archive(driver, out, fieldName)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute archive")
@@ -47,7 +47,7 @@ func ArchiveWithQueries(driver Driver, out interface{}, fieldName string) (Queri
 	return queries, nil
 }
 
-func remove(driver Driver, out interface{}) (Queries, error) {
+func remove(driver Driver, out Model) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
@@ -94,7 +94,7 @@ func remove(driver Driver, out interface{}) (Queries, error) {
 	return queries, err
 }
 
-func archive(driver Driver, out interface{}, fieldName string) (Queries, error) {
+func archive(driver Driver, out Model, fieldName string) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}

@@ -253,7 +253,13 @@ type Untagged struct {
 	ManyModelPtrs []*ManyModel
 }
 
-func (Untagged) TableName() string { return "untagged" }
+func (Untagged) TableName() string {
+	return "untagged"
+}
+
+func (Untagged) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type Tagged struct {
 	ID                          int    `db:"public_id"`
@@ -274,16 +280,34 @@ type Tagged struct {
 	ManyModelPtrs []*ManyModel
 }
 
-func (Tagged) TableName() string { return "tagged" }
+func (Tagged) TableName() string {
+	return "tagged"
+}
+
+func (Tagged) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type ImplicitPrimaryKey struct {
 	ID int
 }
 
-func (ImplicitPrimaryKey) TableName() string { return "implicitprimarykey" }
+func (ImplicitPrimaryKey) TableName() string {
+	return "implicitprimarykey"
+}
+
+func (ImplicitPrimaryKey) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}
 
 type ExplicitPrimaryKey struct {
 	TadaID int `sqlxx:"primary_key"`
 }
 
-func (ExplicitPrimaryKey) TableName() string { return "explicitprimarykey" }
+func (ExplicitPrimaryKey) TableName() string {
+	return "explicitprimarykey"
+}
+
+func (ExplicitPrimaryKey) PrimaryKeyType() sqlxx.PrimaryKeyType {
+	return sqlxx.PrimaryKeyInteger
+}

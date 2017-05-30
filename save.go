@@ -9,13 +9,13 @@ import (
 )
 
 // Save saves the model and populate it to the database
-func Save(driver Driver, out interface{}) error {
+func Save(driver Driver, out Model) error {
 	_, err := SaveWithQueries(driver, out)
 	return err
 }
 
 // SaveWithQueries saves the given instance and returns performed queries.
-func SaveWithQueries(driver Driver, out interface{}) (Queries, error) {
+func SaveWithQueries(driver Driver, out Model) (Queries, error) {
 	queries, err := save(driver, out)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute save")
@@ -23,7 +23,7 @@ func SaveWithQueries(driver Driver, out interface{}) (Queries, error) {
 	return queries, nil
 }
 
-func save(driver Driver, out interface{}) (Queries, error) {
+func save(driver Driver, out Model) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
@@ -43,6 +43,7 @@ func save(driver Driver, out interface{}) (Queries, error) {
 		query          string
 	)
 
+	// TODO Bug with PK
 	for name, column := range schema.Fields {
 		var (
 			isIgnored    bool

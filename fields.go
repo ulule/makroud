@@ -7,6 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/serenize/snaker"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 // Field is a field.
@@ -47,13 +49,18 @@ type Field struct {
 
 // String returns struct instance string representation.
 func (f Field) String() string {
-	return fmt.Sprintf("Field{model:%s pk:%s table:%s name:%s column:%s, association:%s}",
+	return fmt.Sprintf("Field{model:%s pk:%s table:%s name:%s column:%s, association:%s, fk:%v, is_pk:%v, is_fk:%v, is_assoc: %v}",
 		f.ModelName,
 		f.Schema.PrimaryKeyField.FieldName,
 		f.TableName,
 		f.FieldName,
 		f.ColumnName,
-		f.AssociationType)
+		f.AssociationType,
+		f.ForeignKey,
+		f.IsPrimaryKey,
+		f.IsForeignKey,
+		f.IsAssociation,
+	)
 }
 
 // IsValidAssociation returns true if the association is a valid one.
@@ -181,9 +188,13 @@ type ForeignKey struct {
 	Reference            *ForeignKey
 }
 
-func (fk ForeignKey) String() string {
-	return fmt.Sprintf("model:%s field:%s assoc:%s -- reference: %s", fk.ModelName, fk.FieldName, fk.AssociationFieldName, fk.Reference)
-}
+// func (fk ForeignKey) String() string {
+// 	return fmt.Sprintf("{{ model:%s tb:%s field:%s col:%s assoc:%s -- reference: %s }}",
+// 		fk.ModelName, fk.TableName,
+// 		fk.FieldName, fk.ColumnName,
+// 		fk.AssociationFieldName, fk.Reference,
+// 	)
+// }
 
 // ColumnPath is the foreign key column path.
 func (fk ForeignKey) ColumnPath() string {
@@ -192,6 +203,9 @@ func (fk ForeignKey) ColumnPath() string {
 
 // NewForeignKey returns a new ForeignKey instance from the given field instance.
 func NewForeignKey(driver Driver, field Field) (*ForeignKey, error) {
+
+	fmt.Printf("::4 %+v\n", field)
+
 	var (
 		referenceModel     = ToModel(field.Type)
 		referenceModelName = reflect.Indirect(reflect.ValueOf(referenceModel)).Type().Name()
@@ -203,14 +217,19 @@ func NewForeignKey(driver Driver, field Field) (*ForeignKey, error) {
 		return nil, err
 	}
 
+	fmt.Printf("::5 %+v\n", referenceSchema)
+
 	fieldName := field.Tags.GetByKey(StructTagName, StructTagForeignKey)
 	if fieldName == "" {
 		fieldName = fmt.Sprintf("%s%s", field.FieldName, PrimaryKeyFieldName)
 	}
 
+	fmt.Printf("::6 %+v\n", fieldName)
+
 	// Article.Author(User)
 	if field.AssociationType == AssociationTypeOne {
-		return &ForeignKey{
+		fmt.Printf("::7 has_once\n")
+		fk := &ForeignKey{
 			Schema:               &referenceSchema,
 			Model:                field.Model,      // Article model
 			ModelName:            field.ModelName,  // Article
@@ -226,12 +245,15 @@ func NewForeignKey(driver Driver, field Field) (*ForeignKey, error) {
 				FieldName:  PrimaryKeyFieldName,                  // ID
 				ColumnName: strings.ToLower(PrimaryKeyFieldName), // id
 			},
-		}, nil
+		}
+		spew.Dump(fk)
+		return fk, nil
 	}
 
 	// User.Avatars(Avatar) -- Avatar.UserID
 	if field.AssociationType == AssociationTypeMany {
-		return &ForeignKey{
+		fmt.Printf("::7 has_many\n")
+		fk := &ForeignKey{
 			Model:                referenceModel,                                                                                   // Avatar model
 			ModelName:            referenceModelName,                                                                               // Avatar
 			TableName:            referenceTableName,                                                                               // avatars
@@ -247,8 +269,10 @@ func NewForeignKey(driver Driver, field Field) (*ForeignKey, error) {
 				ColumnName:           strings.ToLower(PrimaryKeyFieldName), // id
 				AssociationFieldName: field.FieldName,                      // Avatars
 			},
-		}, nil
+		}
+		spew.Dump(fk)
+		return fk, nil
 	}
-
+	fmt.Printf("::7 has_none ?\n")
 	return nil, nil
 }

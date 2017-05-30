@@ -10,7 +10,7 @@ import (
 )
 
 func TestSave_Save(t *testing.T) {
-	env := setup(t)
+	env := setup(t, sqlxx.Cache(true))
 	defer env.teardown()
 
 	is := require.New(t)
@@ -66,4 +66,27 @@ func TestSave_Save(t *testing.T) {
 	err = stmt.Get(&count, params)
 	is.NoError(err)
 	is.Equal(1, count)
+}
+
+func TestSave_Comment(t *testing.T) {
+	env := setup(t, sqlxx.Cache(true))
+	defer env.teardown()
+
+	is := require.New(t)
+
+	author := env.createUser("thoas")
+	article := env.createArticle(author)
+	reader := env.createUser("gilles")
+
+	comment := &Comment{
+		ArticleID: article.ID,
+		UserID:    reader.ID,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Content:   "Lorem Ipsum",
+	}
+
+	err := sqlxx.Save(env.driver, comment)
+	is.NoError(err)
+
 }
