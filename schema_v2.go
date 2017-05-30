@@ -1,9 +1,8 @@
 package sqlxx
 
 import (
+	"fmt"
 	"reflect"
-
-	//"github.com/davecgh/go-spew/spew"
 
 	"github.com/pkg/errors"
 )
@@ -175,7 +174,7 @@ func (e *schemaBuilder) Create(driver Driver, model XModel) (*XSchema, error) {
 				return nil, err
 			}
 		default:
-			panic("unsupported")
+			return nil, errors.Errorf("sqlxx: unsupported association '%s'", association.Type)
 		}
 	}
 
@@ -189,26 +188,25 @@ func getReferenceSchema(driver Driver, model XModel, name string, association As
 		return nil, errors.Errorf("sqlxx: field '%s' not found in given model", name)
 	}
 
-	rtype := GetIndirectType(field.Type)
-	kind := rtype.Kind()
-	var zero interface{}
+	what := GetIndirectType(field.Type)
+	zero := reflect.Value{}
 
 	switch association {
 	case AssociationTypeOne:
-		if kind != reflect.Struct {
+		if what.Kind() != reflect.Struct {
 			return nil, errors.Errorf("sqlxx: field '%s' should be a struct", name)
 		}
-		zero = GetZero(rtype).Interface()
+		zero = GetZero(what)
 	case AssociationTypeMany:
-		if kind != reflect.Slice {
+		if what.Kind() != reflect.Slice {
 			return nil, errors.Errorf("sqlxx: field '%s' should be a slice", name)
 		}
-		zero = GetZero(rtype.Elem()).Interface()
+		zero = GetZero(what.Elem())
 	default:
 		return nil, errors.Errorf("sqlxx: association '%s' not supported", association)
 	}
 
-	target, ok := zero.(XModel)
+	target, ok := zero.Interface().(XModel)
 	if !ok {
 		return nil, errors.Errorf("sqlxx: field '%s' require a valid sqlxx model as reference", name)
 	}
@@ -285,6 +283,14 @@ func (e *schemaBuilder) createHasOneAssociations(driver Driver, model XModel,
 		Reference: reference,
 	}
 
+	for k, v := range target.Associations {
+		key := fmt.Sprintf("%s.%s", association.FieldName, k)
+		_, ok := schema.Associations[key]
+		if !ok {
+			schema.Associations[key] = v
+		}
+	}
+
 	return nil
 }
 
@@ -318,6 +324,14 @@ func (e *schemaBuilder) createHasManyAssociations(driver Driver, model XModel,
 		Type:      association.Type,
 		Source:    source,
 		Reference: reference,
+	}
+
+	for k, v := range target.Associations {
+		key := fmt.Sprintf("%s.%s", association.FieldName, k)
+		_, ok := schema.Associations[key]
+		if !ok {
+			schema.Associations[key] = v
+		}
 	}
 
 	return nil
