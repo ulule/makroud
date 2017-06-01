@@ -28,7 +28,7 @@ func TestLogger(t *testing.T) {
 	t.Log(log)
 	is.Contains(log, "INSERT INTO users")
 	is.Contains(log, "'thoas'")
-	is.Contains(log, "now()")
+	is.Contains(log, "NOW()")
 
 	deletedAt := time.Date(2016, 06, 07, 21, 30, 28, 0, time.UTC)
 	user = &UserV2{Username: "novln", DeletedAt: &deletedAt}
@@ -39,7 +39,7 @@ func TestLogger(t *testing.T) {
 	t.Log(log)
 	is.Contains(log, "INSERT INTO users")
 	is.Contains(log, "'novln'")
-	is.Contains(log, "now()")
+	is.Contains(log, "NOW()")
 	is.Contains(log, "'2016-06-07T21:30:28Z'")
 
 	user.CreatedAt = time.Date(2016, 02, 25, 07, 36, 17, 0, time.UTC)
