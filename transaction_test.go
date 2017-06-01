@@ -15,7 +15,7 @@ func TestTransaction_Commit(t *testing.T) {
 
 	is := require.New(t)
 
-	user := &User{Username: "thaos"}
+	user := &UserV2{Username: "thaos"}
 
 	queries, err := sqlxx.SaveWithQueries(env.driver, user)
 	is.NoError(err)
@@ -45,7 +45,7 @@ func TestTransaction_Rollback(t *testing.T) {
 
 	is := require.New(t)
 
-	user := &User{Username: "thaos"}
+	user := &UserV2{Username: "thaos"}
 	timeout := errors.New("tcp: read timeout on 10.0.3.11:7000")
 
 	queries, err := sqlxx.SaveWithQueries(env.driver, user)

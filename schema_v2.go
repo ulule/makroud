@@ -15,10 +15,11 @@ import (
 type XSchema struct {
 	Name         string
 	Table        string
-	PrimaryKey   XPrimaryKey
+	pk           XPrimaryKey
 	Fields       map[string]XField
 	Associations map[string]XAssociationReference
 	ForeignKeys  map[string]XForeignKey
+	archiveKey   *XField
 }
 
 func (e XSchema) FindForeignKeyWithReference(reference string) (XForeignKey, bool) {
@@ -28,6 +29,29 @@ func (e XSchema) FindForeignKeyWithReference(reference string) (XForeignKey, boo
 		}
 	}
 	return XForeignKey{}, false
+}
+
+// TableName returns the schema table name.
+func (e XSchema) TableName() string {
+	return e.Table
+}
+
+// PrimaryKey returns the schema primary key.
+func (e XSchema) PrimaryKey() XPrimaryKey {
+	return e.pk
+}
+
+// HasArchiveKey returns if an archive key is defined for current schema.
+func (e XSchema) HasArchiveKey() bool {
+	return e.archiveKey != nil
+}
+
+// ArchiveKey returns schema archive key column's name and value of current schema.
+func (e XSchema) ArchiveKey() (string, interface{}) {
+	if !e.HasArchiveKey() {
+		return "", 0
+	}
+	return e.archiveKey.ColumnName, e.archiveKey.ArchiveValue()
 }
 
 type SchemaBuilder interface {
@@ -131,15 +155,31 @@ func (e *schemaBuilder) Create(driver Driver, model XModel) (*XSchema, error) {
 		IsPrimaryKey: true,
 	}
 
-	schema.PrimaryKey = XPrimaryKey{
-		ModelName:  e.modelName,
-		TableName:  e.tableName,
-		FieldName:  e.pkName,
-		ColumnName: e.pkColumn,
-		Type:       e.pkType,
+	schema.pk = XPrimaryKey{
+		modelName: e.modelName,
+		tableName: e.tableName,
+		pkName:    e.pkName,
+		pkColumn:  e.pkColumn,
+		pkType:    e.pkType,
 	}
 
 	for name, field := range e.fields {
+		if field.IsArchiveKey && schema.HasArchiveKey() {
+			return nil, errors.New("sqlxx: please use only one archive key on model")
+		}
+
+		schema.Fields[name] = XField{
+			ModelName:    e.modelName,
+			TableName:    e.tableName,
+			FieldName:    field.FieldName,
+			ColumnName:   field.ColumnName,
+			IsPrimaryKey: false,
+			IsForeignKey: field.IsForeignKey,
+			defValue:     field.Default,
+			IsArchiveKey: field.IsArchiveKey,
+			ArchiveValue: field.ArchiveValue,
+		}
+
 		if field.IsForeignKey {
 			schema.ForeignKeys[name] = XForeignKey{
 				ModelName:     e.modelName,
@@ -149,15 +189,10 @@ func (e *schemaBuilder) Create(driver Driver, model XModel) (*XSchema, error) {
 				ReferenceName: field.ReferenceName,
 			}
 		}
-		schema.Fields[name] = XField{
-			ModelName:    e.modelName,
-			TableName:    e.tableName,
-			FieldName:    field.FieldName,
-			ColumnName:   field.ColumnName,
-			IsPrimaryKey: false,
-			IsArchiveKey: field.IsArchiveKey,
-			IsForeignKey: field.IsForeignKey,
-			Default:      field.Default,
+
+		if field.IsArchiveKey {
+			archiveKey := schema.Fields[name]
+			schema.archiveKey = &archiveKey
 		}
 	}
 
@@ -206,6 +241,11 @@ func getReferenceSchema(driver Driver, model XModel, name string, association As
 		return nil, errors.Errorf("sqlxx: association '%s' not supported", association)
 	}
 
+	// Model has pointer receiver method, so we have to obtain a pointer value so we have a valid type inference.
+	if zero.Kind() != reflect.Ptr {
+		zero = zero.Addr()
+	}
+
 	target, ok := zero.Interface().(XModel)
 	if !ok {
 		return nil, errors.Errorf("sqlxx: field '%s' require a valid sqlxx model as reference", name)
@@ -242,7 +282,7 @@ func (e *schemaBuilder) createHasOneAssociations(driver Driver, model XModel,
 			return errors.Errorf("sqlxx: cannot find foreign key in schema: %s", name)
 		}
 
-		reference, ok = schema.Fields[schema.PrimaryKey.FieldName]
+		reference, ok = schema.Fields[schema.PrimaryKey().FieldName()]
 		if !ok {
 			return errors.Errorf("sqlxx: cannot find foreign key in schema: %s", name)
 		}
@@ -261,7 +301,7 @@ func (e *schemaBuilder) createHasOneAssociations(driver Driver, model XModel,
 			return errors.Errorf("sqlxx: cannot find foreign key in schema: %s", name)
 		}
 
-		reference, ok = target.Fields[target.PrimaryKey.FieldName]
+		reference, ok = target.Fields[target.PrimaryKey().FieldName()]
 		if !ok {
 			return errors.Errorf("sqlxx: cannot find foreign key in schema: %s", name)
 		}
@@ -313,7 +353,7 @@ func (e *schemaBuilder) createHasManyAssociations(driver Driver, model XModel,
 		return errors.Wrapf(err, "sqlxx: cannot find foreign key in schema: %s", name)
 	}
 
-	reference, ok := schema.Fields[schema.PrimaryKey.FieldName]
+	reference, ok := schema.Fields[schema.PrimaryKey().FieldName()]
 	if !ok {
 		return errors.Errorf("sqlxx: cannot find foreign key in schema: %s", name)
 	}
@@ -348,8 +388,10 @@ type fieldOp struct {
 	FieldName string
 	// The database column name
 	ColumnName string
-	// TODO
+	// IsArchiveKey define if field can be used as an archive key.
 	IsArchiveKey bool
+	// ArchiveValue is a generator to create a new value for the archive key.
+	ArchiveValue func() interface{}
 	// Default define the default statement to use if value in model is undefined.
 	Default string
 	// IsForeignKey define if field should behave like a foreign key.

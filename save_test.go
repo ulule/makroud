@@ -18,7 +18,7 @@ func TestSave_Save(t *testing.T) {
 	username := "thoas"
 	createdAt := time.Date(2016, 17, 6, 23, 10, 02, 0, time.UTC)
 	isActive := false
-	user := &User{Username: username, IsActive: isActive, CreatedAt: createdAt}
+	user := &UserV2{Username: username, IsActive: isActive, CreatedAt: createdAt}
 
 	queries, err := sqlxx.SaveWithQueries(env.driver, user)
 	is.NoError(err)
@@ -40,6 +40,7 @@ func TestSave_Save(t *testing.T) {
 	is.NotZero(user.UpdatedAt)
 
 	user.Username = "gilles"
+	user.IsActive = false
 
 	queries, err = sqlxx.SaveWithQueries(env.driver, user)
 	is.NoError(err)
@@ -47,7 +48,9 @@ func TestSave_Save(t *testing.T) {
 	is.Len(queries, 1)
 	is.Contains(queries[0].Query, "UPDATE users SET")
 	is.Contains(queries[0].Query, "username = :username")
+	is.Contains(queries[0].Query, "is_active = :is_active")
 	is.Equal("gilles", queries[0].Params["username"])
+	is.Equal(false, queries[0].Params["is_active"])
 
 	query := `
 		SELECT count(*)

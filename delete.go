@@ -8,14 +8,14 @@ import (
 )
 
 // Delete deletes the given instance.
-func Delete(driver Driver, out Model) error {
-	_, err := DeleteWithQueries(driver, out)
+func Delete(driver Driver, model XModel) error {
+	_, err := DeleteWithQueries(driver, model)
 	return err
 }
 
 // DeleteWithQueries deletes the given instance and returns performed queries.
-func DeleteWithQueries(driver Driver, out Model) (Queries, error) {
-	queries, err := remove(driver, out)
+func DeleteWithQueries(driver Driver, model XModel) (Queries, error) {
+	queries, err := remove(driver, model)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute delete")
 	}
@@ -23,61 +23,56 @@ func DeleteWithQueries(driver Driver, out Model) (Queries, error) {
 }
 
 // SoftDelete is an alias for Archive.
-func SoftDelete(driver Driver, out Model, fieldName string) error {
-	return Archive(driver, out, fieldName)
+func SoftDelete(driver Driver, model XModel) error {
+	return Archive(driver, model)
 }
 
 // SoftDeleteWithQueries is an alias for Archive.
-func SoftDeleteWithQueries(driver Driver, out Model, fieldName string) (Queries, error) {
-	return ArchiveWithQueries(driver, out, fieldName)
+func SoftDeleteWithQueries(driver Driver, model XModel) (Queries, error) {
+	return ArchiveWithQueries(driver, model)
 }
 
 // Archive archives the given instance.
-func Archive(driver Driver, out Model, fieldName string) error {
-	_, err := ArchiveWithQueries(driver, out, fieldName)
+func Archive(driver Driver, model XModel) error {
+	_, err := ArchiveWithQueries(driver, model)
 	return err
 }
 
 // ArchiveWithQueries archives the given instance and returns performed queries.
-func ArchiveWithQueries(driver Driver, out Model, fieldName string) (Queries, error) {
-	queries, err := archive(driver, out, fieldName)
+func ArchiveWithQueries(driver Driver, model XModel) (Queries, error) {
+	queries, err := archive(driver, model)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute archive")
 	}
 	return queries, nil
 }
 
-func remove(driver Driver, out Model) (Queries, error) {
+func remove(driver Driver, model XModel) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
 
 	start := time.Now()
 
-	schema, err := GetSchema(driver, out)
+	schema, err := XGetSchema(driver, model)
 	if err != nil {
 		return nil, err
 	}
 
-	pkField := schema.PrimaryKeyField
-
-	pk, err := GetFieldValueInt64(out, pkField.FieldName)
+	pk := schema.PrimaryKey()
+	id, err := pk.Value(model)
 	if err != nil {
-		return nil, err
-	}
-
-	if pk == int64(0) {
-		return nil, errors.Errorf("%v cannot be deleted (no primary key)", out)
+		return nil, errors.Wrapf(err, "%T cannot be deleted", model)
 	}
 
 	query := fmt.Sprintf(`DELETE FROM %s WHERE %s = :%s`,
-		schema.TableName,
-		pkField.ColumnPath(),
-		pkField.ColumnName,
+		schema.TableName(),
+		pk.ColumnPath(),
+		pk.ColumnName(),
 	)
 
 	params := map[string]interface{}{
-		pkField.ColumnName: pk,
+		pk.ColumnName(): id,
 	}
 
 	queries := Queries{{
@@ -94,44 +89,41 @@ func remove(driver Driver, out Model) (Queries, error) {
 	return queries, err
 }
 
-func archive(driver Driver, out Model, fieldName string) (Queries, error) {
+func archive(driver Driver, model XModel) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
 
 	start := time.Now()
 
-	schema, err := GetSchema(driver, out)
+	schema, err := XGetSchema(driver, model)
 	if err != nil {
 		return nil, err
 	}
 
-	var (
-		pkField        = schema.PrimaryKeyField
-		deletedAtField = schema.Fields[fieldName]
-		now            = time.Now().UTC()
-	)
+	if !schema.HasArchiveKey() {
+		return nil, errors.New("model doesn't support archive operation")
+	}
 
-	pk, err := GetFieldValueInt64(out, pkField.FieldName)
+	pk := schema.PrimaryKey()
+	id, err := pk.Value(model)
 	if err != nil {
 		return nil, err
 	}
 
-	if pk == int64(0) {
-		return nil, errors.Errorf("%v cannot be archived (no primary key)", out)
-	}
+	archiveKey, archiveValue := schema.ArchiveKey()
 
 	query := fmt.Sprintf(`UPDATE %s SET %s = :%s WHERE %s = :%s`,
-		schema.TableName,
-		deletedAtField.ColumnName,
-		deletedAtField.ColumnName,
-		pkField.ColumnPath(),
-		pkField.ColumnName,
+		schema.TableName(),
+		archiveKey,
+		archiveKey,
+		pk.ColumnPath(),
+		pk.ColumnName(),
 	)
 
 	params := map[string]interface{}{
-		deletedAtField.ColumnName: now,
-		pkField.ColumnName:        pk,
+		archiveKey:      archiveValue,
+		pk.ColumnName(): id,
 	}
 
 	queries := Queries{{

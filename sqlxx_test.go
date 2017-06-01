@@ -38,9 +38,15 @@ var dropTables = `
 	DROP TABLE IF EXISTS media CASCADE;
 	DROP TABLE IF EXISTS projects CASCADE;
 	DROP TABLE IF EXISTS managers CASCADE;
+	DROP TABLE IF EXISTS notifications CASCADE;
 `
 
 var dbSchema = `
+CREATE TABLE notifications (
+	id       serial primary key not null,
+	enabled  boolean default true
+);
+
 CREATE TABLE api_keys (
 	id 		serial primary key not null,
 	partner_id 	integer,
@@ -66,14 +72,15 @@ CREATE TABLE projects (
 );
 
 CREATE TABLE users (
-	id          serial primary key not null,
-	username    varchar(30) not null,
-	is_active   boolean default true,
-	api_key_id  integer,
-	avatar_id   integer,
-	created_at  timestamp with time zone default current_timestamp,
-	updated_at  timestamp with time zone default current_timestamp,
-	deleted_at  timestamp with time zone
+	id               serial primary key not null,
+	username         varchar(30) not null,
+	is_active        boolean default true,
+	api_key_id       integer,
+	avatar_id        integer,
+	notification_id  integer references notifications(id) default null,
+	created_at       timestamp with time zone default current_timestamp,
+	updated_at       timestamp with time zone default current_timestamp,
+	deleted_at       timestamp with time zone
 );
 
 CREATE TABLE profiles (
@@ -136,10 +143,11 @@ CREATE TABLE categories (
 );
 
 CREATE TABLE articles_categories (
-	id 		serial primary key not null,
-	article_id 	integer references articles(id),
-	category_id 	integer references categories(id)
-);`
+	id          serial primary key not null,
+	article_id  integer references articles(id),
+	category_id integer references categories(id)
+);
+`
 
 type Partner struct {
 	ID   int    `db:"id" sqlxx:"primary_key:true; ignored:true"`
@@ -208,8 +216,23 @@ func (Media) TableName() string {
 	return "media"
 }
 
-func (Media) PrimaryKeyType() sqlxx.PrimaryKeyType {
-	return sqlxx.PrimaryKeyInteger
+type MediaV2 struct {
+	ID        int       `db:"id" sqlxx:"primary_key:true"`
+	Path      string    `db:"path"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+}
+
+func (MediaV2) CreateSchema(builder sqlxx.SchemaBuilder) {
+	builder.SetTableName("Media", "media").
+		SetPrimaryKey("ID", "id", sqlxx.PrimaryKeyInteger).
+		AddField("Path", "path").
+		AddField("CreatedAt", "created_at", sqlxx.HasDefault("NOW()")).
+		AddField("UpdatedAt", "updated_at", sqlxx.HasDefault("NOW()"))
+}
+
+func (media *MediaV2) WriteModel(mapper sqlxx.Mapper) error {
+	return nil
 }
 
 type User struct {
@@ -230,14 +253,90 @@ type User struct {
 
 	Avatars []Avatar
 	Profile Profile
+
+	NotificationID sql.NullInt64 `db:"notification_id"`
 }
 
 func (User) TableName() string {
 	return "users"
 }
 
-func (User) PrimaryKeyType() sqlxx.PrimaryKeyType {
-	return sqlxx.PrimaryKeyInteger
+// TODO Finish me
+type UserV2 struct {
+	ID        int
+	Username  string
+	IsActive  bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt *time.Time
+	Profile   ProfileV2
+	Avatars   []AvatarV2
+
+	NotificationID sql.NullInt64 `db:"notification_id"`
+	Notification   *Notification
+
+	AvatarID sql.NullInt64 `db:"avatar_id"`
+	Avatar   *MediaV2
+}
+
+func (UserV2) CreateSchema(builder sqlxx.SchemaBuilder) {
+	builder.SetTableName("User", "users").
+		SetPrimaryKey("ID", "id", sqlxx.PrimaryKeyInteger).
+		AddField("Username", "username").
+		AddField("IsActive", "is_active", sqlxx.HasDefault("true")).
+		AddField("CreatedAt", "created_at", sqlxx.HasDefault("NOW()")).
+		AddField("UpdatedAt", "updated_at", sqlxx.HasDefault("NOW()")).
+		AddField("DeletedAt", "deleted_at", sqlxx.IsArchiveKey()).
+		AddField("NotificationID", "notification_id", sqlxx.IsForeignKey("Notification")).
+		AddField("AvatarID", "avatar_id", sqlxx.IsForeignKey("Media")).
+		AddAssociation("Avatars", "Avatar", sqlxx.AssociationTypeMany).
+		AddAssociation("Profile", "Profile", sqlxx.AssociationTypeOne).
+		AddAssociation("Notification", "Notification", sqlxx.AssociationTypeOne).
+		AddAssociation("Avatar", "Media", sqlxx.AssociationTypeOne)
+}
+
+func (user *UserV2) WriteModel(mapper sqlxx.Mapper) error {
+	return sqlxx.Map(mapper,
+		sqlxx.MapInt64("id", func(value int64) {
+			user.ID = int(value)
+		}),
+		sqlxx.MapString("username", func(value string) {
+			user.Username = value
+		}),
+		sqlxx.MapBool("is_active", func(value bool) {
+			user.IsActive = value
+		}),
+		sqlxx.MapTime("created_at", func(value time.Time) {
+			user.CreatedAt = value
+		}),
+		sqlxx.MapTime("updated_at", func(value time.Time) {
+			user.UpdatedAt = value
+		}),
+		sqlxx.MapTime("deleted_at", func(value time.Time) {
+			user.DeletedAt = &value
+		}),
+		sqlxx.MapNullInt64("notification_id", func(value sql.NullInt64) {
+			user.NotificationID = value
+		}),
+		sqlxx.MapNullInt64("avatar_id", func(value sql.NullInt64) {
+			user.AvatarID = value
+		}),
+	)
+}
+
+type Notification struct {
+	ID      int
+	Enabled bool
+}
+
+func (Notification) CreateSchema(builder sqlxx.SchemaBuilder) {
+	builder.SetTableName("Notification", "notifications").
+		SetPrimaryKey("ID", "id", sqlxx.PrimaryKeyInteger).
+		AddField("Enabled", "enabled", sqlxx.HasDefault("true"))
+}
+
+func (notification *Notification) WriteModel(mapper sqlxx.Mapper) error {
+	return nil
 }
 
 type Comment struct {
@@ -270,8 +369,23 @@ func (Profile) TableName() string {
 	return "profiles"
 }
 
-func (Profile) PrimaryKeyType() sqlxx.PrimaryKeyType {
-	return sqlxx.PrimaryKeyInteger
+type ProfileV2 struct {
+	ID        int64
+	UserID    int
+	FirstName string
+	LastName  string
+}
+
+func (ProfileV2) CreateSchema(builder sqlxx.SchemaBuilder) {
+	builder.SetTableName("Profile", "profiles").
+		SetPrimaryKey("ID", "id", sqlxx.PrimaryKeyInteger).
+		AddField("FirstName", "first_name").
+		AddField("LastName", "last_name").
+		AddField("UserID", "user_id", sqlxx.IsForeignKey("User"))
+}
+
+func (profile *ProfileV2) WriteModel(mapper sqlxx.Mapper) error {
+	return nil
 }
 
 type AvatarFilter struct {

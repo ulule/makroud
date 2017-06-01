@@ -53,4 +53,6 @@ type Model interface {
 type XModel interface {
 	// CreateSchema will define table schema using a builder.
 	CreateSchema(builder SchemaBuilder)
+	// WriteModel will update model with given values.
+	WriteModel(mapper Mapper) error
 }

@@ -20,7 +20,7 @@ func TestLogger(t *testing.T) {
 
 	is := require.New(t)
 
-	user := &User{Username: "thoas", IsActive: false}
+	user := &UserV2{Username: "thoas", IsActive: false}
 	err := sqlxx.Save(env.driver, user)
 	is.NoError(err)
 	log, err := logger.read()
@@ -31,7 +31,7 @@ func TestLogger(t *testing.T) {
 	is.Contains(log, "now()")
 
 	deletedAt := time.Date(2016, 06, 07, 21, 30, 28, 0, time.UTC)
-	user = &User{Username: "novln", DeletedAt: &deletedAt}
+	user = &UserV2{Username: "novln", DeletedAt: &deletedAt}
 	err = sqlxx.Save(env.driver, user)
 	is.NoError(err)
 	log, err = logger.read()
@@ -54,7 +54,7 @@ func TestLogger(t *testing.T) {
 	is.Contains(log, "username = 'novln'")
 	is.Contains(log, fmt.Sprintf("WHERE users.id = %d", user.ID))
 
-	err = sqlxx.Archive(env.driver, user, "DeletedAt")
+	err = sqlxx.Archive(env.driver, user)
 	is.NoError(err)
 	log, err = logger.read()
 	is.NoError(err)
@@ -69,9 +69,9 @@ func TestLogger(t *testing.T) {
 	t.Log(log)
 	is.Equal(fmt.Sprintf("DELETE FROM users WHERE users.id = %d;", user.ID), log)
 
-	user = &User{}
+	userx := &User{}
 	params := map[string]interface{}{"username": "thoas"}
-	err = sqlxx.GetByParams(env.driver, user, params)
+	err = sqlxx.GetByParams(env.driver, userx, params)
 	is.NoError(err)
 	log, err = logger.read()
 	is.NoError(err)
@@ -129,8 +129,8 @@ func TestLogger(t *testing.T) {
 		"username IN ('batman', 'robin', 'catwoman', 'joker');"), log)
 
 	query = `UPDATE users SET is_active = false WHERE username = :username;`
-	user = &User{Username: "novln"}
-	err = sqlxx.Exec(env.driver, query, user)
+	userx = &User{Username: "novln"}
+	err = sqlxx.Exec(env.driver, query, userx)
 	is.NoError(err)
 	log, err = logger.read()
 	is.NoError(err)
