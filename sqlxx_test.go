@@ -48,27 +48,27 @@ CREATE TABLE notifications (
 );
 
 CREATE TABLE api_keys (
-	id 		serial primary key not null,
-	partner_id 	integer,
-	key 		varchar(255) not null
+	id          serial primary key not null,
+	partner_id  integer,
+	key         varchar(255) not null
 );
 
 CREATE TABLE partners (
-	id 		serial primary key not null,
-	name		varchar(255) not null
+	id    serial primary key not null,
+	name  varchar(255) not null
 );
 
 CREATE TABLE managers (
-	id 		serial primary key not null,
-	name		varchar(255) not null,
-	user_id 	integer
+	id       serial primary key not null,
+	name     varchar(255) not null,
+	user_id  integer
 );
 
 CREATE TABLE projects (
-	id 		serial primary key not null,
-	name		varchar(255) not null,
-	manager_id 	integer,
-	user_id 	integer
+	id          serial primary key not null,
+	name        varchar(255) not null,
+	manager_id  integer,
+	user_id     integer
 );
 
 CREATE TABLE users (
@@ -84,68 +84,68 @@ CREATE TABLE users (
 );
 
 CREATE TABLE profiles (
-	id 		serial primary key not null,
-	user_id		integer references users(id),
-	first_name 	varchar(255) not null,
-	last_name 	varchar(255) not null
+	id          serial primary key not null,
+	user_id     integer references users(id),
+	first_name  varchar(255) not null,
+	last_name   varchar(255) not null
 );
 
 CREATE TABLE media (
-	id		serial primary key not null,
-	path 		varchar(255) not null,
-	created_at	timestamp with time zone default current_timestamp,
-	updated_at	timestamp with time zone default current_timestamp
+	id          serial primary key not null,
+	path        varchar(255) not null,
+	created_at  timestamp with time zone default current_timestamp,
+	updated_at  timestamp with time zone default current_timestamp
 );
 
 CREATE TABLE tags (
-	id 		serial primary key not null,
-	name 		varchar(255) not null
+	id    serial primary key not null,
+	name  varchar(255) not null
 );
 
 CREATE TABLE avatar_filters (
-	id 		serial primary key not null,
-	name 		varchar(255) not null
+	id    serial primary key not null,
+	name  varchar(255) not null
 );
 
 CREATE TABLE avatars (
-	id 		serial primary key not null,
-	path 		varchar(255) not null,
-	user_id 	integer references users(id),
-	filter_id	integer references avatar_filters(id),
-	created_at 	timestamp with time zone default current_timestamp,
-	updated_at 	timestamp with time zone default current_timestamp
+	id          serial primary key not null,
+	path        varchar(255) not null,
+	user_id     integer references users(id),
+	filter_id   integer references avatar_filters(id),
+	created_at  timestamp with time zone default current_timestamp,
+	updated_at  timestamp with time zone default current_timestamp
 );
 
 CREATE TABLE articles (
-	id 		serial primary key not null,
-	title 		varchar(255) not null,
-	author_id 	integer references users(id),
-	reviewer_id 	integer references users(id),
-	main_tag_id 	integer references tags(id),
-	is_published 	boolean default true,
-	created_at 	timestamp with time zone default current_timestamp,
-	updated_at 	timestamp with time zone default current_timestamp
+	id            serial primary key not null,
+	title         varchar(255) not null,
+	author_id     integer references users(id),
+	reviewer_id   integer references users(id),
+	main_tag_id   integer references tags(id),
+	is_published  boolean default true,
+	created_at    timestamp with time zone default current_timestamp,
+	updated_at    timestamp with time zone default current_timestamp
 );
 
 CREATE TABLE comments (
-	id 		serial primary key not null,
-	user_id		integer references users(id),
-	article_id	integer references articles(id),
-	content		text,
-	created_at 	timestamp with time zone default current_timestamp,
-	updated_at 	timestamp with time zone default current_timestamp
+	id          serial primary key not null,
+	user_id     integer references users(id),
+	article_id  integer references articles(id),
+	content     text,
+	created_at  timestamp with time zone default current_timestamp,
+	updated_at  timestamp with time zone default current_timestamp
 );
 
 CREATE TABLE categories (
-	id 		serial primary key not null,
-	name 		varchar(255) not null,
-	user_id 	integer references users(id)
+	id       serial primary key not null,
+	name     varchar(255) not null,
+	user_id  integer references users(id)
 );
 
 CREATE TABLE articles_categories (
-	id          serial primary key not null,
-	article_id  integer references articles(id),
-	category_id integer references categories(id)
+	id           serial primary key not null,
+	article_id   integer references articles(id),
+	category_id  integer references categories(id)
 );
 `
 
