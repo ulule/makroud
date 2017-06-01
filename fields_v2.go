@@ -72,9 +72,6 @@ func HasDefault(value string) FieldOption {
 	})
 }
 
-// NOTE
-// ArchiveKey -> define a generator so we can use boolean or time.Time, for example...
-
 // PrimaryKey is a composite object that define a primary key for a model.
 //
 // For example: If we have an User, we could have this primary key defined in User's schema.
@@ -126,6 +123,7 @@ func (e XPrimaryKey) Type() PrimaryKeyType {
 	return e.pkType
 }
 
+// Value returns the primary key's value, or an error if undefined.
 func (e XPrimaryKey) Value(model XModel) (interface{}, error) {
 	id, ok := e.ValueOpt(model)
 	if !ok {
@@ -134,6 +132,7 @@ func (e XPrimaryKey) Value(model XModel) (interface{}, error) {
 	return id, nil
 }
 
+// ValueOpt may returns the primary key's value, if defined.
 func (e XPrimaryKey) ValueOpt(model XModel) (interface{}, bool) {
 	switch e.pkType {
 	case PrimaryKeyInteger:
