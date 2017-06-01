@@ -8,14 +8,12 @@ import (
 )
 
 type XField struct {
-	// Model name that contains this field
-	ModelName string
-	// Table name of the model that contains this field
-	TableName string
-	// The field name
-	FieldName string
-	// The database column name
-	ColumnName string
+	modelName  string
+	tableName  string
+	fieldName  string
+	columnName string
+
+	// TODO REFACTOR
 	// Does this field is a primary key?
 	IsPrimaryKey bool
 	// IsForeignKey define if field should behave like a foreign key
@@ -25,6 +23,31 @@ type XField struct {
 	IsArchiveKey bool
 	// ArchiveValue is a generator to create a new value for the archive key.
 	ArchiveValue func() interface{}
+}
+
+// ModelName define the model name of this field.
+func (e XField) ModelName() string {
+	return e.modelName
+}
+
+// FieldName define the struct field name used for this field.
+func (e XField) FieldName() string {
+	return e.fieldName
+}
+
+// TableName returns the model name's table name of this field.
+func (e XField) TableName() string {
+	return e.tableName
+}
+
+// ColumnPath returns the field's full column path.
+func (e XField) ColumnPath() string {
+	return fmt.Sprintf("%s.%s", e.tableName, e.columnName)
+}
+
+// ColumnName returns the field's column name.
+func (e XField) ColumnName() string {
+	return e.columnName
 }
 
 // HasDefault define if a default statement is defined in model.
@@ -113,7 +136,7 @@ func (e XPrimaryKey) ColumnPath() string {
 	return fmt.Sprintf("%s.%s", e.tableName, e.pkColumn)
 }
 
-// ColumnName returns the primary key's column path.
+// ColumnName returns the primary key's column name.
 func (e XPrimaryKey) ColumnName() string {
 	return e.pkColumn
 }

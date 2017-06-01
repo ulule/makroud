@@ -75,4 +75,7 @@ func TestSchema_v2(t *testing.T) {
 	s1, err := sqlxx.XGetSchema(env.driver, user)
 	is.NoError(err)
 	spew.Dump(s1)
+
+	sqlxx.XGetSchema(env.driver, &AvatarV2{})
+
 }

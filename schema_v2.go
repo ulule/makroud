@@ -51,7 +51,60 @@ func (e XSchema) ArchiveKey() (string, interface{}) {
 	if !e.HasArchiveKey() {
 		return "", 0
 	}
-	return e.archiveKey.ColumnName, e.archiveKey.ArchiveValue()
+	return e.archiveKey.ColumnName(), e.archiveKey.ArchiveValue()
+}
+
+// Columns returns schema columns without table prefix.
+func (e XSchema) Columns() Columns {
+	return e.columns(false)
+}
+
+// ColumnPaths returns schema column with table prefix.
+func (e XSchema) ColumnPaths() Columns {
+	return e.columns(true)
+}
+
+// columns generates column slice.
+func (e XSchema) columns(withTable bool) Columns {
+	columns := Columns{}
+	for _, field := range e.Fields {
+		if withTable {
+			columns = append(columns, field.ColumnPath())
+		} else {
+			columns = append(columns, field.ColumnName())
+		}
+	}
+	return columns
+}
+
+// WhereColumns returns where clause with the given params without table prefix.
+func (e XSchema) WhereColumns(params map[string]interface{}) Conditions {
+	return e.whereColumns(params, false)
+}
+
+// WhereColumnPaths returns where clause with the given params with table prefix.
+func (e XSchema) WhereColumnPaths(params map[string]interface{}) Conditions {
+	return e.whereColumns(params, true)
+}
+
+// whereColumns generates where clause for the given params.
+func (e XSchema) whereColumns(params map[string]interface{}, withTable bool) Conditions {
+	wheres := Conditions{}
+	for key, value := range params {
+
+		column := key
+		if withTable {
+			column = fmt.Sprintf("%s.%s", e.TableName(), key)
+		}
+
+		// TODO Try to remove this reflect call
+		if reflect.Indirect(reflect.ValueOf(value)).Kind() == reflect.Slice {
+			wheres = append(wheres, fmt.Sprintf("%s IN (:%s)", column, key))
+		} else {
+			wheres = append(wheres, fmt.Sprintf("%s = :%s", column, key))
+		}
+	}
+	return wheres
 }
 
 type SchemaBuilder interface {
@@ -148,10 +201,10 @@ func (e *schemaBuilder) Create(driver Driver, model XModel) (*XSchema, error) {
 	}
 
 	schema.Fields[e.pkName] = XField{
-		ModelName:    e.modelName,
-		TableName:    e.tableName,
-		FieldName:    e.pkName,
-		ColumnName:   e.pkColumn,
+		modelName:    e.modelName,
+		tableName:    e.tableName,
+		fieldName:    e.pkName,
+		columnName:   e.pkColumn,
 		IsPrimaryKey: true,
 	}
 
@@ -169,10 +222,10 @@ func (e *schemaBuilder) Create(driver Driver, model XModel) (*XSchema, error) {
 		}
 
 		schema.Fields[name] = XField{
-			ModelName:    e.modelName,
-			TableName:    e.tableName,
-			FieldName:    field.FieldName,
-			ColumnName:   field.ColumnName,
+			modelName:    e.modelName,
+			tableName:    e.tableName,
+			fieldName:    field.FieldName,
+			columnName:   field.ColumnName,
 			IsPrimaryKey: false,
 			IsForeignKey: field.IsForeignKey,
 			defValue:     field.Default,

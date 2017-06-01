@@ -14,7 +14,7 @@ func TestFind_GetByParams(t *testing.T) {
 
 	is := require.New(t)
 
-	user := &User{}
+	user := &UserV2{}
 	queries, err := sqlxx.GetByParamsWithQueries(env.driver, user, map[string]interface{}{
 		"username": "jdoe", "is_active": true,
 	})
@@ -39,8 +39,10 @@ func TestFind_FindByParams(t *testing.T) {
 
 	is := require.New(t)
 
-	users := []User{}
-	queries, err := sqlxx.FindByParamsWithQueries(env.driver, &users, map[string]interface{}{
+	// Execute select WITHOUT clause 'IN'
+
+	users := &UsersV2{}
+	queries, err := sqlxx.FindByParamsWithQueries(env.driver, users, map[string]interface{}{
 		"is_active": true,
 	})
 	is.NoError(err)
@@ -48,18 +50,19 @@ func TestFind_FindByParams(t *testing.T) {
 	is.Len(queries, 1)
 	is.Contains(queries[0].Query, "users.is_active = ?")
 	is.Contains(queries[0].Args, true)
-	is.Len(users, 1)
 
-	user := users[0]
+	is.Len(users.users, 1)
+	user := users.users[0]
 	is.Equal(1, user.ID)
 	is.Equal("jdoe", user.Username)
 	is.True(user.IsActive)
 	is.NotZero(user.CreatedAt)
 	is.NotZero(user.UpdatedAt)
 
-	// SELEC IN
-	users = []User{}
-	queries, err = sqlxx.FindByParamsWithQueries(env.driver, &users, map[string]interface{}{
+	// Execute select WITH clause 'IN'
+
+	users = &UsersV2{}
+	queries, err = sqlxx.FindByParamsWithQueries(env.driver, users, map[string]interface{}{
 		"is_active": true, "id": []int{1, 2, 3},
 	})
 	is.NoError(err)
@@ -72,6 +75,12 @@ func TestFind_FindByParams(t *testing.T) {
 	is.Contains(queries[0].Args, 2)
 	is.Contains(queries[0].Args, 3)
 
-	is.Equal(1, users[0].ID)
+	is.Len(users.users, 1)
+	user = users.users[0]
+	is.Equal(1, user.ID)
 	is.Equal("jdoe", user.Username)
+	is.True(user.IsActive)
+	is.NotZero(user.CreatedAt)
+	is.NotZero(user.UpdatedAt)
+
 }

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
@@ -322,4 +323,18 @@ func Map(mapper Mapper, handlers ...MapHandler) error {
 		}
 	}
 	return nil
+}
+
+// ScanRow will scan given sqlx.Row to created its Mapper.
+func ScanRow(row *sqlx.Row) (Mapper, error) {
+	mapper := map[string]interface{}{}
+	err := row.MapScan(mapper)
+	return mapper, err
+}
+
+// ScanRows will scan given sqlx.Rows to created its Mapper.
+func ScanRows(rows *sqlx.Rows) (Mapper, error) {
+	mapper := map[string]interface{}{}
+	err := rows.MapScan(mapper)
+	return mapper, err
 }

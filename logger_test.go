@@ -69,9 +69,9 @@ func TestLogger(t *testing.T) {
 	t.Log(log)
 	is.Equal(fmt.Sprintf("DELETE FROM users WHERE users.id = %d;", user.ID), log)
 
-	userx := &User{}
+	user = &UserV2{}
 	params := map[string]interface{}{"username": "thoas"}
-	err = sqlxx.GetByParams(env.driver, userx, params)
+	err = sqlxx.GetByParams(env.driver, user, params)
 	is.NoError(err)
 	log, err = logger.read()
 	is.NoError(err)
@@ -79,7 +79,7 @@ func TestLogger(t *testing.T) {
 	is.Contains(log, "SELECT users.")
 	is.Contains(log, "FROM users WHERE users.username = 'thoas' LIMIT 1;")
 
-	users := &[]User{}
+	users := &UsersV2{}
 	params = map[string]interface{}{"is_active": true}
 	err = sqlxx.FindByParams(env.driver, users, params)
 	is.NoError(err)
@@ -119,7 +119,7 @@ func TestLogger(t *testing.T) {
 
 	query = `SELECT * FROM users WHERE is_active = true AND username IN (?);`
 	list = []string{"batman", "robin", "catwoman", "joker"}
-	users = &[]User{}
+	users = &UsersV2{}
 	err = sqlxx.FindInParams(env.driver, users, query, list)
 	is.NoError(err)
 	log, err = logger.read()
@@ -129,8 +129,8 @@ func TestLogger(t *testing.T) {
 		"username IN ('batman', 'robin', 'catwoman', 'joker');"), log)
 
 	query = `UPDATE users SET is_active = false WHERE username = :username;`
-	userx = &User{Username: "novln"}
-	err = sqlxx.Exec(env.driver, query, userx)
+	user = &UserV2{Username: "novln"}
+	err = sqlxx.Exec(env.driver, query, user)
 	is.NoError(err)
 	log, err = logger.read()
 	is.NoError(err)

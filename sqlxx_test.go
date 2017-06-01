@@ -324,6 +324,24 @@ func (user *UserV2) WriteModel(mapper sqlxx.Mapper) error {
 	)
 }
 
+type UsersV2 struct {
+	users []UserV2
+}
+
+func (e *UsersV2) Append(mapper sqlxx.Mapper) error {
+	user := &UserV2{}
+	err := user.WriteModel(mapper)
+	if err != nil {
+		return err
+	}
+	e.users = append(e.users, *user)
+	return nil
+}
+
+func (UsersV2) Model() sqlxx.XModel {
+	return &UserV2{}
+}
+
 type Notification struct {
 	ID      int
 	Enabled bool

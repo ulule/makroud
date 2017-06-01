@@ -56,3 +56,11 @@ type XModel interface {
 	// WriteModel will update model with given values.
 	WriteModel(mapper Mapper) error
 }
+
+// Models represents a list of Model.
+type XModels interface {
+	// Append will create a new Model in list using given mapper.
+	Append(mapper Mapper) error
+	// Model returns a empty Model instance.
+	Model() XModel
+}

@@ -51,7 +51,7 @@ func save(driver Driver, model XModel) (Queries, error) {
 			continue
 		}
 
-		columns = append(columns, column.ColumnName)
+		columns = append(columns, column.ColumnName())
 		fv, err := GetFieldValue(model, name)
 		if err != nil {
 			return nil, err
@@ -60,10 +60,10 @@ func save(driver Driver, model XModel) (Queries, error) {
 		value := ""
 		if column.HasDefault() && IsZero(fv) && !hasPK {
 			value = column.Default()
-			returning = append(returning, column.ColumnName)
+			returning = append(returning, column.ColumnName())
 		} else {
-			value = fmt.Sprintf(":%s", column.ColumnName)
-			params[column.ColumnName] = fv
+			value = fmt.Sprintf(":%s", column.ColumnName())
+			params[column.ColumnName()] = fv
 		}
 
 		values = append(values, value)

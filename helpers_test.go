@@ -97,11 +97,12 @@ func TestExec_Simple(t *testing.T) {
 	err := sqlxx.Exec(env.driver, query, payload)
 	is.NoError(err)
 
-	user := &User{}
+	user := &UserV2{}
 	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
 		"id": batman.ID,
 	})
 	is.NoError(err)
+	is.Equal(batman.ID, user.ID)
 	is.False(user.IsActive)
 	is.Equal("batman", user.Username)
 }
@@ -120,11 +121,12 @@ func TestExec_Named(t *testing.T) {
 	})
 	is.NoError(err)
 
-	user := &User{}
+	user := &UserV2{}
 	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
 		"id": batman.ID,
 	})
 	is.NoError(err)
+	is.Equal(batman.ID, user.ID)
 	is.False(user.IsActive)
 	is.Equal("batman", user.Username)
 }
@@ -153,11 +155,12 @@ func TestExec_Sync(t *testing.T) {
 	is.NoError(err)
 	is.True(t0.Before(batman.UpdatedAt))
 
-	user := &User{}
+	user := &UserV2{}
 	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
 		"id": batman.ID,
 	})
 	is.NoError(err)
+	is.Equal(batman.ID, user.ID)
 	is.False(user.IsActive)
 	is.Equal("batman", user.Username)
 }

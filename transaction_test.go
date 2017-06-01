@@ -32,7 +32,7 @@ func TestTransaction_Commit(t *testing.T) {
 	})
 	is.NoError(err)
 
-	record := &User{}
+	record := &UserV2{}
 	queries, err = sqlxx.GetByParamsWithQueries(env.driver, record, map[string]interface{}{"id": user.ID})
 	is.NoError(err)
 	is.NotNil(queries)
@@ -64,7 +64,7 @@ func TestTransaction_Rollback(t *testing.T) {
 	is.Error(err)
 	is.Equal(timeout, err)
 
-	record := &User{}
+	record := &UserV2{}
 	queries, err = sqlxx.GetByParamsWithQueries(env.driver, record, map[string]interface{}{"id": user.ID})
 	is.NoError(err)
 	is.NotNil(queries)
