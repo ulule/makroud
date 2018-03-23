@@ -99,3 +99,10 @@ func (e *Client) Ping() error {
 	}
 	return nil
 }
+
+// Wrap creates a new Client using given database connection.
+func Wrap(connection sqalx.Node) *Client {
+	return &Client{
+		Node: connection,
+	}
+}
