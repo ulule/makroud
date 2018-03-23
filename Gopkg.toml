@@ -35,3 +35,7 @@ ignored = [
 [[constraint]]
   name = "github.com/thoas/go-funk"
   revision = "54489e5ff3900f4618607d32d680f8cf112bcb18"
+
+[[override]]
+  name = "github.com/satori/go.uuid"
+  revision = "36e9d2ebbde5e3f13ab2e25625fd453271d6522e"
