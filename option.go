@@ -68,6 +68,14 @@ func DisableSSL() Option {
 	})
 }
 
+// SSLMode will configure the Client with given SSL mode.
+func SSLMode(mode string) Option {
+	return option(func(options *clientOptions) error {
+		options.sslMode = mode
+		return nil
+	})
+}
+
 // Timezone will configure the Client to use given timezone.
 func Timezone(timezone string) Option {
 	return option(func(options *clientOptions) error {
