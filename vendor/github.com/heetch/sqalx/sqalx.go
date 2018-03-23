@@ -31,6 +31,8 @@ type Node interface {
 	Rollback() error
 	// Commit the assiociated transaction.
 	Commit() error
+	// Tx returns the underlying transaction.
+	Tx() *sqlx.Tx
 }
 
 // A Driver can query the database. It can either be a *sqlx.DB or a *sqlx.Tx
@@ -128,7 +130,7 @@ func (n node) Beginx() (Node, error) {
 		// already in a transaction: using savepoints
 		n.nested = true
 		// savepoints name must start with a char and cannot contain dashes (-)
-		n.savePointID = "sp_" + strings.Replace(uuid.NewV1().String(), "-", "_", -1)
+		n.savePointID = "sp_" + strings.Replace(uuid.Must(uuid.NewV1()).String(), "-", "_", -1)
 		_, err = n.tx.Exec("SAVEPOINT " + n.savePointID)
 	default:
 		// already in a transaction: reusing current transaction

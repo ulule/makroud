@@ -27,6 +27,156 @@ func InFloat64s(s []float64, v float64) bool {
 	return ContainsFloat64(s, v)
 }
 
+// FindFloat64 iterates over a collection of float64, returning an array of
+// all float64 elements predicate returns truthy for.
+func FindFloat64(s []float64, cb func(s float64) bool) (float64, bool) {
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			return i, true
+		}
+	}
+
+	return 0.0, false
+}
+
+// FindFloat32 iterates over a collection of float32, returning the first
+// float32 element predicate returns truthy for.
+func FindFloat32(s []float32, cb func(s float32) bool) (float32, bool) {
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			return i, true
+		}
+	}
+
+	return 0.0, false
+}
+
+// FindInt iterates over a collection of int, returning the first
+// int element predicate returns truthy for.
+func FindInt(s []int, cb func(s int) bool) (int, bool) {
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			return i, true
+		}
+	}
+
+	return 0, false
+}
+
+// FindInt64 iterates over a collection of int64, returning the first
+// int64 element predicate returns truthy for.
+func FindInt64(s []int64, cb func(s int64) bool) (int64, bool) {
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			return i, true
+		}
+	}
+
+	return 0, false
+}
+
+// FindString iterates over a collection of string, returning the first
+// string element predicate returns truthy for.
+func FindString(s []string, cb func(s string) bool) (string, bool) {
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			return i, true
+		}
+	}
+
+	return "", false
+}
+
+// FilterFloat64 iterates over a collection of float64, returning an array of
+// all float64 elements predicate returns truthy for.
+func FilterFloat64(s []float64, cb func(s float64) bool) []float64 {
+	results := []float64{}
+
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			results = append(results, i)
+		}
+	}
+
+	return results
+}
+
+// FilterFloat32 iterates over a collection of float32, returning an array of
+// all float32 elements predicate returns truthy for.
+func FilterFloat32(s []float32, cb func(s float32) bool) []float32 {
+	results := []float32{}
+
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			results = append(results, i)
+		}
+	}
+
+	return results
+}
+
+// FilterInt iterates over a collection of int, returning an array of
+// all int elements predicate returns truthy for.
+func FilterInt(s []int, cb func(s int) bool) []int {
+	results := []int{}
+
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			results = append(results, i)
+		}
+	}
+
+	return results
+}
+
+// FilterInt64 iterates over a collection of int64, returning an array of
+// all int64 elements predicate returns truthy for.
+func FilterInt64(s []int64, cb func(s int64) bool) []int64 {
+	results := []int64{}
+
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			results = append(results, i)
+		}
+	}
+
+	return results
+}
+
+// FilterString iterates over a collection of string, returning an array of
+// all string elements predicate returns truthy for.
+func FilterString(s []string, cb func(s string) bool) []string {
+	results := []string{}
+
+	for _, i := range s {
+		result := cb(i)
+
+		if result {
+			results = append(results, i)
+		}
+	}
+
+	return results
+}
+
 // ContainsInt returns true if an int is present in a iteratee.
 func ContainsInt(s []int, v int) bool {
 	for _, vv := range s {
@@ -109,8 +259,8 @@ func SumFloat32(s []float32) (sum float32) {
 	return
 }
 
-// ReverseString reverses an array of string
-func ReverseString(s []string) []string {
+// ReverseStrings reverses an array of string
+func ReverseStrings(s []string) []string {
 	for i, j := 0, len(s)-1; i < len(s)/2; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
 	}
@@ -147,6 +297,15 @@ func ReverseFloat32(s []float32) []float32 {
 		s[i], s[j] = s[j], s[i]
 	}
 	return s
+}
+
+// ReverseString reverses a string
+func ReverseString(s string) string {
+	r := []rune(s)
+	for i, j := 0, len(r)-1; i < len(r)/2; i, j = i+1, j-1 {
+		r[i], r[j] = r[j], r[i]
+	}
+	return string(r)
 }
 
 func indexOf(n int, f func(int) bool) int {
@@ -206,6 +365,12 @@ func LastIndexOfInt64(a []int64, x int64) int {
 // LastIndexOfFloat64 gets the index at which the first occurrence of an float64 value is found in array or return -1
 // if the value cannot be found
 func LastIndexOfFloat64(a []float64, x float64) int {
+	return lastIndexOf(len(a), func(i int) bool { return a[i] == x })
+}
+
+// LastIndexOfFloat32 gets the index at which the first occurrence of an float32 value is found in array or return -1
+// if the value cannot be found
+func LastIndexOfFloat32(a []float32, x float32) int {
 	return lastIndexOf(len(a), func(i int) bool { return a[i] == x })
 }
 
