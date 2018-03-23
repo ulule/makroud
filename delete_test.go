@@ -14,7 +14,7 @@ func TestDelete_Delete(t *testing.T) {
 
 	is := require.New(t)
 
-	user := &UserV2{Username: "thoas"}
+	user := &User{Username: "thoas"}
 	err := sqlxx.Save(env.driver, user)
 	is.NoError(err)
 
@@ -49,7 +49,7 @@ func TestDelete_Archive(t *testing.T) {
 
 	is := require.New(t)
 
-	user := &UserV2{Username: "thoas"}
+	user := &User{Username: "thoas"}
 	err := sqlxx.Save(env.driver, user)
 	is.NoError(err)
 

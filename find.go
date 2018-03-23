@@ -71,7 +71,6 @@ func FindByParamsWithQueries(driver Driver, models XModels, params map[string]in
 // findByParams is a private wrapper which doesn't log statement.
 func findByParams(driver Driver, models XModels, params map[string]interface{}) (Queries, error) {
 	return where(driver, models.Model(), params, false, func(query string, args []interface{}) error {
-
 		rows, err := driver.Queryx(driver.Rebind(query), args...)
 		if rows == nil {
 			return errors.New("cannot obtain results from driver")

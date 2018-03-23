@@ -45,13 +45,13 @@ func ExecInParamsWithQueries(driver Driver, query string, data interface{}) (Que
 }
 
 // FindInParams will find every rows that matches given array of parameters.
-func FindInParams(driver Driver, out interface{}, query string, data interface{}) error {
-	_, err := FindInParamsWithQueries(driver, out, query, data)
+func FindInParams(driver Driver, model XModels, query string, data interface{}) error {
+	_, err := FindInParamsWithQueries(driver, model, query, data)
 	return err
 }
 
 // FindInParamsWithQueries will find every rows that matches given array of parameters and returns performed queries.
-func FindInParamsWithQueries(driver Driver, out interface{}, query string, data interface{}) (Queries, error) {
+func FindInParamsWithQueries(driver Driver, models XModels, query string, data interface{}) (Queries, error) {
 	start := time.Now()
 
 	queries := Queries{{
@@ -72,13 +72,43 @@ func FindInParamsWithQueries(driver Driver, out interface{}, query string, data 
 	queries[0].Query = fullquery
 	queries[0].Args = fulldata
 
-	fullquery = driver.Rebind(fullquery)
-	err = driver.Select(out, fullquery, fulldata...)
+	err = findInParams(driver, models, driver.Rebind(fullquery), fulldata)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute query")
 	}
 
 	return queries, nil
+}
+
+func findInParams(driver Driver, models XModels, query string, data []interface{}) error {
+	rows, err := driver.Queryx(query, data...)
+	if rows == nil {
+		return errors.New("cannot obtain results from driver")
+	}
+	if err != nil {
+		return err
+	}
+	defer driver.close(rows)
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+
+		mapper, err := ScanRows(rows)
+		if err != nil {
+			return err
+		}
+
+		err = models.Append(mapper)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return rows.Err()
 }
 
 // Exec will execute given query.

@@ -51,19 +51,19 @@ func TestFind_InParams(t *testing.T) {
 	env.createUser("catwoman")
 
 	query := "SELECT * FROM users WHERE is_active = true AND username IN (?);"
-	users := &[]User{}
+	list := &UserList{}
 	params := []string{"batman", "robin", "catwoman"}
-	queries, err := sqlxx.FindInParamsWithQueries(env.driver, users, query, params)
+	queries, err := sqlxx.FindInParamsWithQueries(env.driver, list, query, params)
 	is.NoError(err)
 	is.Len(queries, 1)
 	is.Equal("SELECT * FROM users WHERE is_active = true AND username IN (?, ?, ?);", queries[0].Query)
 	is.Equal([]interface{}{"batman", "robin", "catwoman"}, queries[0].Args)
 
-	is.Len(*users, 3)
+	is.Len(list.users, 3)
 	hasBatman := false
 	hasRobin := false
 	hasCatwoman := false
-	for _, user := range *users {
+	for _, user := range list.users {
 		switch user.Username {
 		case "batman":
 			hasBatman = true
@@ -97,7 +97,7 @@ func TestExec_Simple(t *testing.T) {
 	err := sqlxx.Exec(env.driver, query, payload)
 	is.NoError(err)
 
-	user := &UserV2{}
+	user := &User{}
 	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
 		"id": batman.ID,
 	})
@@ -121,7 +121,7 @@ func TestExec_Named(t *testing.T) {
 	})
 	is.NoError(err)
 
-	user := &UserV2{}
+	user := &User{}
 	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
 		"id": batman.ID,
 	})
@@ -155,7 +155,7 @@ func TestExec_Sync(t *testing.T) {
 	is.NoError(err)
 	is.True(t0.Before(batman.UpdatedAt))
 
-	user := &UserV2{}
+	user := &User{}
 	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
 		"id": batman.ID,
 	})

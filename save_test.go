@@ -18,7 +18,7 @@ func TestSave_Save(t *testing.T) {
 	username := "thoas"
 	createdAt := time.Date(2016, 17, 6, 23, 10, 02, 0, time.UTC)
 	isActive := false
-	user := &UserV2{Username: username, IsActive: isActive, CreatedAt: createdAt}
+	user := &User{Username: username, IsActive: isActive, CreatedAt: createdAt}
 
 	queries, err := sqlxx.SaveWithQueries(env.driver, user)
 	is.NoError(err)

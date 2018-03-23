@@ -14,7 +14,7 @@ func TestSchema_GetSchema_InfiniteLoop(t *testing.T) {
 
 	is := require.New(t)
 
-	schema, err := sqlxx.GetSchema(env.driver, User{})
+	schema, err := sqlxx.XGetSchema(env.driver, &User{})
 	is.NoError(err)
 	is.NotNil(schema)
 }
