@@ -9,26 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// AssociationType is an association type.
-type AssociationType uint8
-
-func (a AssociationType) String() string {
-	return map[AssociationType]string{
-		AssociationTypeUndefined:  "undefined",
-		AssociationTypeOne:        "one",
-		AssociationTypeMany:       "many",
-		AssociationTypeManyToMany: "many-to-many",
-	}[a]
-}
-
-// Association types
-const (
-	AssociationTypeUndefined = AssociationType(iota)
-	AssociationTypeOne
-	AssociationTypeMany
-	AssociationTypeManyToMany
-)
-
 // Constants
 const (
 	StructTagName       = "sqlxx"
@@ -77,13 +57,8 @@ type Driver interface {
 	Beginx() (sqalx.Node, error)
 	Rollback() error
 	Commit() error
-	close(closer io.Closer)
+	close(closer io.Closer, flags map[string]string)
 	hasCache() bool
 	cache() *cache
 	logger() Logger
-}
-
-// Model represents a database table.
-type Model interface {
-	TableName() string
 }

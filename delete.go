@@ -1,21 +1,21 @@
 package sqlxx
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/ulule/loukoum"
 )
 
 // Delete deletes the given instance.
-func Delete(driver Driver, out interface{}) error {
-	_, err := DeleteWithQueries(driver, out)
+func Delete(driver Driver, model XModel) error {
+	_, err := DeleteWithQueries(driver, model)
 	return err
 }
 
 // DeleteWithQueries deletes the given instance and returns performed queries.
-func DeleteWithQueries(driver Driver, out interface{}) (Queries, error) {
-	queries, err := remove(driver, out)
+func DeleteWithQueries(driver Driver, model XModel) (Queries, error) {
+	queries, err := remove(driver, model)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute delete")
 	}
@@ -23,127 +23,95 @@ func DeleteWithQueries(driver Driver, out interface{}) (Queries, error) {
 }
 
 // SoftDelete is an alias for Archive.
-func SoftDelete(driver Driver, out interface{}, fieldName string) error {
-	return Archive(driver, out, fieldName)
+func SoftDelete(driver Driver, model XModel) error {
+	return Archive(driver, model)
 }
 
-// SoftDeleteWithQueries is an alias for Archive.
-func SoftDeleteWithQueries(driver Driver, out interface{}, fieldName string) (Queries, error) {
-	return ArchiveWithQueries(driver, out, fieldName)
+// SoftDeleteWithQueries is an alias for ArchiveWithQueries.
+func SoftDeleteWithQueries(driver Driver, model XModel) (Queries, error) {
+	return ArchiveWithQueries(driver, model)
 }
 
 // Archive archives the given instance.
-func Archive(driver Driver, out interface{}, fieldName string) error {
-	_, err := ArchiveWithQueries(driver, out, fieldName)
+func Archive(driver Driver, model XModel) error {
+	_, err := ArchiveWithQueries(driver, model)
 	return err
 }
 
 // ArchiveWithQueries archives the given instance and returns performed queries.
-func ArchiveWithQueries(driver Driver, out interface{}, fieldName string) (Queries, error) {
-	queries, err := archive(driver, out, fieldName)
+func ArchiveWithQueries(driver Driver, model XModel) (Queries, error) {
+	queries, err := archive(driver, model)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute archive")
 	}
 	return queries, nil
 }
 
-func remove(driver Driver, out interface{}) (Queries, error) {
+// TODO Queries ???
+func remove(driver Driver, model XModel) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
 
 	start := time.Now()
+	queries := Queries{}
 
-	schema, err := GetSchema(driver, out)
+	schema, err := XGetSchema(driver, model)
 	if err != nil {
 		return nil, err
 	}
 
-	pkField := schema.PrimaryKeyField
-
-	pk, err := GetFieldValueInt64(out, pkField.FieldName)
+	pk := schema.PrimaryKey()
+	id, err := pk.Value(model)
 	if err != nil {
-		return nil, err
+		return queries, errors.Wrapf(err, "sqlxx: %T cannot be deleted", model)
 	}
 
-	if pk == int64(0) {
-		return nil, errors.Errorf("%v cannot be deleted (no primary key)", out)
-	}
+	builder := loukoum.Delete(schema.TableName()).
+		Where(loukoum.Condition(pk.ColumnPath()).Equal(id))
 
-	query := fmt.Sprintf(`DELETE FROM %s WHERE %s = :%s`,
-		schema.TableName,
-		pkField.ColumnPath(),
-		pkField.ColumnName,
-	)
-
-	params := map[string]interface{}{
-		pkField.ColumnName: pk,
-	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	queries = append(queries, NewQuery(builder))
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	_, err = driver.NamedExec(query, params)
+	err = Exec(driver, builder)
 	return queries, err
 }
 
-func archive(driver Driver, out interface{}, fieldName string) (Queries, error) {
+// TODO Queries ???
+func archive(driver Driver, model XModel) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
 
 	start := time.Now()
+	queries := Queries{}
 
-	schema, err := GetSchema(driver, out)
+	schema, err := XGetSchema(driver, model)
 	if err != nil {
 		return nil, err
 	}
 
-	var (
-		pkField        = schema.PrimaryKeyField
-		deletedAtField = schema.Fields[fieldName]
-		now            = time.Now().UTC()
-	)
+	if !schema.HasArchiveKey() {
+		return nil, errors.Wrapf(err, "sqlxx: %T doesn't support archive operation", model)
+	}
 
-	pk, err := GetFieldValueInt64(out, pkField.FieldName)
+	pk := schema.PrimaryKey()
+	id, err := pk.Value(model)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "sqlxx: %T cannot be archived", model)
 	}
 
-	if pk == int64(0) {
-		return nil, errors.Errorf("%v cannot be archived (no primary key)", out)
-	}
+	builder := loukoum.Update(schema.TableName()).
+		Set(loukoum.Pair(schema.ArchiveKeyPath(), schema.ArchiveKeyValue())).
+		Where(loukoum.Condition(pk.ColumnPath()).Equal(id))
 
-	query := fmt.Sprintf(`UPDATE %s SET %s = :%s WHERE %s = :%s`,
-		schema.TableName,
-		deletedAtField.ColumnName,
-		deletedAtField.ColumnName,
-		pkField.ColumnPath(),
-		pkField.ColumnName,
-	)
-
-	params := map[string]interface{}{
-		deletedAtField.ColumnName: now,
-		pkField.ColumnName:        pk,
-	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	queries = append(queries, NewQuery(builder))
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	_, err = driver.NamedExec(query, params)
+	err = Exec(driver, builder, model)
 	return queries, err
 }

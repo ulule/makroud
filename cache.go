@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -8,12 +9,15 @@ import (
 type cache struct {
 	mutex   sync.RWMutex
 	schemas map[string]Schema
+	// V2
+	xschemas map[string]*XSchema
 }
 
 // newCache returns new cache instance.
 func newCache() *cache {
 	return &cache{
-		schemas: map[string]Schema{},
+		schemas:  map[string]Schema{},
+		xschemas: map[string]*XSchema{},
 	}
 }
 
@@ -42,6 +46,33 @@ func (c *cache) GetSchema(model Model) (Schema, bool) {
 	schema, ok := c.schemas[model.TableName()]
 	if !ok {
 		return Schema{}, false
+	}
+
+	return schema, true
+}
+
+// V2
+
+// SetSchema caches the given schema.
+func (c *cache) XSetSchema(schema *XSchema) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	c.xschemas[schema.Name] = schema
+}
+
+// GetSchema returns the given schema from cache.
+// If the given schema does not exists, returns false as bool.
+func (c *cache) XGetSchema(model XModel) (*XSchema, bool) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	element := GetIndirectType(model)
+	key := fmt.Sprint(element.PkgPath(), ".", element.Name())
+
+	schema, ok := c.xschemas[key]
+	if !ok {
+		return nil, false
 	}
 
 	return schema, true

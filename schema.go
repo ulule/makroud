@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/oleiade/reflections"
 	"github.com/pkg/errors"
 )
@@ -85,12 +87,8 @@ func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Cond
 
 // GetSchema returns the given schema from global cache
 // If the given schema does not exists, returns false as bool.
-func GetSchema(driver Driver, itf interface{}) (Schema, error) {
-	var (
-		err    error
-		schema Schema
-		model  = ToModel(itf)
-	)
+func GetSchema(driver Driver, out interface{}) (Schema, error) {
+	model := ToModel(out)
 
 	if !driver.hasCache() {
 		return newSchema(driver, model)
@@ -101,7 +99,7 @@ func GetSchema(driver Driver, itf interface{}) (Schema, error) {
 		return schema, nil
 	}
 
-	schema, err = newSchema(driver, model)
+	schema, err := newSchema(driver, model)
 	if err != nil {
 		return schema, err
 	}
@@ -114,6 +112,8 @@ func GetSchema(driver Driver, itf interface{}) (Schema, error) {
 // newSchema returns model's table columns, extracted by reflection.
 // The returned map is modelFieldName -> table_name.column_name
 func newSchema(driver Driver, model Model) (Schema, error) {
+	fmt.Printf("begin %T\n", model)
+	defer fmt.Printf("end %T\n", model)
 	schema := Schema{
 		Model:        model,
 		ModelName:    GetIndirectType(model).Name(),
@@ -122,6 +122,7 @@ func newSchema(driver Driver, model Model) (Schema, error) {
 		Associations: map[string]Field{},
 	}
 
+	// TODO remove reflect here
 	fields, err := reflections.Fields(model)
 	if err != nil {
 		return Schema{}, errors.Wrapf(err, "cannot use reflections to obtain %T fields", model)
@@ -171,6 +172,8 @@ func newSchema(driver Driver, model Model) (Schema, error) {
 			}
 		}
 	}
+
+	spew.Dump(schema)
 
 	return schema, nil
 }

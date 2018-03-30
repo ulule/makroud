@@ -1,134 +1,108 @@
 package sqlxx
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	lk "github.com/ulule/loukoum"
+	lkb "github.com/ulule/loukoum/builder"
 )
 
-// Save saves the model and populate it to the database
-func Save(driver Driver, out interface{}) error {
-	_, err := SaveWithQueries(driver, out)
+// Save saves the given instance.
+func Save(driver Driver, model XModel) error {
+	_, err := SaveWithQueries(driver, model)
 	return err
 }
 
 // SaveWithQueries saves the given instance and returns performed queries.
-func SaveWithQueries(driver Driver, out interface{}) (Queries, error) {
-	queries, err := save(driver, out)
+func SaveWithQueries(driver Driver, model XModel) (Queries, error) {
+	queries, err := save(driver, model)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute save")
 	}
 	return queries, nil
 }
 
-func save(driver Driver, out interface{}) (Queries, error) {
+func save(driver Driver, model XModel) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
 
 	start := time.Now()
+	queries := Queries{}
 
-	schema, err := GetSchema(driver, out)
+	schema, err := XGetSchema(driver, model)
 	if err != nil {
 		return nil, err
 	}
 
-	var (
-		columns        = []string{}
-		ignoredColumns = []string{}
-		values         = []string{}
-		params         = make(map[string]interface{})
-		query          string
-	)
+	values := lk.Map{}
+	returning := []string{}
+
+	pk := schema.PrimaryKey()
+	id, hasPK := pk.ValueOpt(model)
 
 	for name, column := range schema.Fields {
-		var (
-			isIgnored    bool
-			hasDefault   bool
-			defaultValue string
-			value        string
-		)
-
-		tag := column.Tags.Get(StructTagName)
-		if tag != nil {
-			isIgnored = len(tag.Get(StructTagIgnored)) != 0
-			defaultValue = tag.Get(StructTagDefault)
-			hasDefault = len(defaultValue) != 0
+		if column.IsPrimaryKey {
+			continue
 		}
 
-		if isIgnored || hasDefault {
-			ignoredColumns = append(ignoredColumns, column.ColumnName)
+		value, err := GetFieldValue(model, name)
+		if err != nil {
+			return nil, err
 		}
 
-		if !isIgnored {
-			columns = append(columns, column.ColumnName)
-
-			fv, err := GetFieldValue(out, name)
-			if err != nil {
-				return nil, err
-			}
-
-			if hasDefault && IsZero(fv) {
-				value = defaultValue
-			} else {
-				value = fmt.Sprintf(":%s", column.ColumnName)
-				params[column.ColumnName] = fv
-			}
-
-			values = append(values, value)
+		if column.HasDefault() && IsZero(value) && !hasPK {
+			values[column.ColumnName()] = lk.Raw(column.Default())
+			returning = append(returning, column.ColumnName())
+		} else {
+			values[column.ColumnName()] = value
 		}
 	}
 
-	pkField := schema.PrimaryKeyField
+	var builder lkb.Builder
 
-	pk, err := GetFieldValueInt64(out, pkField.FieldName)
-	if err != nil {
-		return nil, err
-	}
-
-	if pk == int64(0) {
-		query = fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s)`,
-			schema.TableName,
-			strings.Join(columns, ", "),
-			strings.Join(values, ", "),
-		)
+	if !hasPK {
+		returning = append(returning, pk.ColumnName())
+		builder = lk.Insert(schema.TableName()).Set(values).Returning(returning)
 	} else {
-		updates := []string{}
-		for i := range columns {
-			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
-		}
-
-		params[pkField.ColumnName] = pk
-		query = fmt.Sprintf(`UPDATE %s SET %s WHERE %s = :%s`,
-			schema.TableName,
-			strings.Join(updates, ", "),
-			pkField.ColumnPath(),
-			pkField.ColumnName,
-		)
+		builder = lk.Update(schema.TableName()).Set(values).Where(lk.Condition(pk.ColumnName()).Equal(id))
 	}
 
-	if len(ignoredColumns) > 0 {
-		query = fmt.Sprintf(`%s RETURNING %s`, query, strings.Join(ignoredColumns, ", "))
-	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	queries = append(queries, NewQuery(builder))
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
+
+	query, args := builder.NamedQuery()
 
 	stmt, err := driver.PrepareNamed(query)
 	if err != nil {
 		return queries, err
 	}
-	defer driver.close(stmt)
+	defer driver.close(stmt, map[string]string{
+		"query": query,
+	})
 
-	err = stmt.Get(out, out)
-	return queries, err
+	row := stmt.QueryRow(args)
+	if row == nil {
+		return queries, errors.New("sqlxx: cannot obtain result from driver")
+	}
+	err = row.Err()
+	if err != nil {
+		return queries, err
+	}
+
+	mapper := map[string]interface{}{}
+	err = row.MapScan(mapper)
+	if err != nil && !IsErrNoRows(err) {
+		return queries, err
+	}
+
+	err = model.WriteModel(mapper)
+	if err != nil {
+		return queries, err
+	}
+
+	return queries, nil
 }

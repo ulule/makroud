@@ -103,7 +103,9 @@ func New(options ...Option) (*Client, error) {
 func (e *Client) Ping() error {
 	row, err := e.Query("SELECT true")
 	if row != nil {
-		defer e.close(row)
+		defer e.close(row, map[string]string{
+			"query": "SELECT true;",
+		})
 	}
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot ping database")
@@ -123,8 +125,11 @@ func (e *Client) logger() Logger {
 	return e.log
 }
 
-func (e *Client) close(closer io.Closer) {
-	// TODO: Add an observer to collect this error.
+func (e *Client) close(closer io.Closer, flags map[string]string) {
 	thr := closer.Close()
-	_ = thr
+	if thr != nil {
+		thr = errors.Wrapf(thr, "trying to close: %T", closer)
+		// TODO: Add an observer to collect this error.
+		_ = thr
+	}
 }

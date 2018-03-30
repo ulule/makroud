@@ -1,112 +1,39 @@
 package sqlxx
 
 import (
+	"database/sql"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+
+	lkb "github.com/ulule/loukoum/builder"
 )
 
-// ExecInParams will execute query with given array of parameters.
-func ExecInParams(driver Driver, query string, data interface{}) error {
-	_, err := ExecInParamsWithQueries(driver, query, data)
-	return err
-}
-
-// ExecInParams will execute query with given array of parameters and returns performed queries.
-func ExecInParamsWithQueries(driver Driver, query string, data interface{}) (Queries, error) {
+// Exec will execute given query from a Loukoum builder.
+// If an object is given, it will mutate it to match the row values.
+func Exec(driver Driver, builder lkb.Builder, dest ...interface{}) error {
 	start := time.Now()
+	queries := Queries{NewQuery(builder)}
 
-	queries := Queries{{
-		Query: query,
-		Args:  []interface{}{data},
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	fullquery, fulldata, err := sqlx.In(query, data)
-	if err != nil {
-		return queries, errors.Wrap(err, "sqlxx: cannot prepare statement")
-	}
-
-	queries[0].Query = fullquery
-	queries[0].Args = fulldata
-
-	fullquery = driver.Rebind(fullquery)
-	_, err = driver.Exec(fullquery, fulldata...)
-	if err != nil {
-		return queries, errors.Wrap(err, "sqlxx: cannot execute statement")
-	}
-
-	return queries, nil
-}
-
-// FindInParams will find every rows that matches given array of parameters.
-func FindInParams(driver Driver, out interface{}, query string, data interface{}) error {
-	_, err := FindInParamsWithQueries(driver, out, query, data)
-	return err
-}
-
-// FindInParamsWithQueries will find every rows that matches given array of parameters and returns performed queries.
-func FindInParamsWithQueries(driver Driver, out interface{}, query string, data interface{}) (Queries, error) {
-	start := time.Now()
-
-	queries := Queries{{
-		Query: query,
-		Args:  []interface{}{data},
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
-	defer func() {
-		Log(driver, queries, time.Since(start))
-	}()
-
-	fullquery, fulldata, err := sqlx.In(query, data)
-	if err != nil {
-		return queries, errors.Wrap(err, "sqlxx: cannot prepare statement")
-	}
-
-	queries[0].Query = fullquery
-	queries[0].Args = fulldata
-
-	fullquery = driver.Rebind(fullquery)
-	err = driver.Select(out, fullquery, fulldata...)
-	if err != nil {
-		return queries, errors.Wrap(err, "sqlxx: cannot execute query")
-	}
-
-	return queries, nil
-}
-
-// Exec will execute given query.
-func Exec(driver Driver, query string, out interface{}) error {
-	start := time.Now()
+	query, args := builder.NamedQuery()
 
 	stmt, err := driver.PrepareNamed(query)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot prepare statement")
 	}
-	defer driver.close(stmt)
+	defer driver.close(stmt, map[string]string{
+		"query": query,
+	})
 
-	params, err := GetValues(stmt.Params, out, stmt.Stmt.Mapper)
-	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot prepare statement")
+	if len(dest) > 0 {
+		err = stmt.Select(dest[0], args)
+	} else {
+		_, err = stmt.Exec(args)
 	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
-	defer func() {
-		Log(driver, queries, time.Since(start))
-	}()
-
-	_, err = stmt.Exec(out)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot execute query")
 	}
@@ -114,60 +41,104 @@ func Exec(driver Driver, query string, out interface{}) error {
 	return nil
 }
 
-// NamedExec will execute given query.
-func NamedExec(driver Driver, query string, params map[string]interface{}) error {
+// Sync will create or update a row from a Loukoum builder.
+// If an object is given, it will mutate it to match the row values.
+func Sync(driver Driver, builder lkb.Builder, dest interface{}) error {
 	start := time.Now()
+	queries := Queries{NewQuery(builder)}
 
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	_, err := driver.NamedExec(query, params)
-	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute query")
-	}
-
-	return nil
-}
-
-// Sync will create or update a row from given query.
-// It will also mutate the given object to match the row values.
-func Sync(driver Driver, query string, out interface{}) error {
-	start := time.Now()
+	query, args := builder.NamedQuery()
 
 	stmt, err := driver.PrepareNamed(query)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot prepare statement")
 	}
-	defer driver.close(stmt)
+	defer driver.close(stmt, map[string]string{
+		"query": query,
+	})
 
-	params, err := GetValues(stmt.Params, out, stmt.Stmt.Mapper)
-	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot prepare statement")
-	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
-	defer func() {
-		Log(driver, queries, time.Since(start))
-	}()
-
-	// run query with out values
-	// then override out with returned value
-	err = stmt.Get(out, out)
+	err = stmt.Get(dest, args)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot execute query")
 	}
 
 	return nil
+}
+
+// Fetch returns an instance from a Loukoum builder.
+func Fetch(driver Driver, builder lkb.Builder, dest interface{}) error {
+	start := time.Now()
+	queries := Queries{NewQuery(builder)}
+
+	defer func() {
+		Log(driver, queries, time.Since(start))
+	}()
+
+	query, args := builder.NamedQuery()
+
+	stmt, err := driver.PrepareNamed(query)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot prepare statement")
+	}
+	defer driver.close(stmt, map[string]string{
+		"query": query,
+	})
+
+	err = stmt.Get(dest, args)
+	if err != nil {
+		return errors.Wrap(err, "sqlx: cannot execute query")
+	}
+
+	return nil
+}
+
+// List returns a slice of instances from a Loukoum builder.
+func List(driver Driver, builder lkb.Builder, dest interface{}) error {
+	start := time.Now()
+	queries := Queries{NewQuery(builder)}
+
+	defer func() {
+		Log(driver, queries, time.Since(start))
+	}()
+
+	query, args := builder.NamedQuery()
+
+	stmt, err := driver.PrepareNamed(query)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot prepare statement")
+	}
+	defer driver.close(stmt, map[string]string{
+		"query": query,
+	})
+
+	err = stmt.Select(dest, args)
+	if err != nil && !IsErrNoRows(err) {
+		return errors.Wrap(err, "sqlx: cannot execute query")
+	}
+
+	return nil
+}
+
+// Count will execute given query to counts the number of rows.
+func Count(driver Driver, builder lkb.Builder) (int64, error) {
+	count := int64(0)
+
+	err := Fetch(driver, builder, &count)
+	if IsErrNoRows(err) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// IsErrNoRows returns if given error is a "no rows" error.
+func IsErrNoRows(err error) bool {
+	return errors.Cause(err) == sql.ErrNoRows
 }

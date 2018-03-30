@@ -92,6 +92,11 @@ func IntToInt64(value interface{}) (int64, error) {
 // Field values
 // ----------------------------------------------------------------------------
 
+// GetFieldByName returns the field in element with given name.
+func GetFieldByName(element interface{}, name string) (reflect.StructField, bool) {
+	return reflect.Indirect(reflect.ValueOf(element)).Type().FieldByName(name)
+}
+
 // GetFieldValue returns the value
 func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 	value, ok := itf.(reflect.Value)
@@ -113,7 +118,7 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 
 	field := value.FieldByName(name)
 	if !field.IsValid() {
-		return nil, errors.Errorf("no such field %s in %+v", name, itf)
+		return nil, errors.Errorf("sqlxx: no such field %s in %T", name, itf)
 	}
 
 	if field.Kind() == reflect.Ptr && field.IsNil() {
@@ -267,6 +272,16 @@ func GetIndirectValue(element interface{}) reflect.Value {
 		v = v.Elem()
 	}
 	return v
+}
+
+// GetZero returns a zero value for the given element.
+func GetZero(element interface{}) reflect.Value {
+	t, ok := element.(reflect.Type)
+	if !ok {
+		t = reflect.TypeOf(element)
+	}
+
+	return reflect.New(GetIndirectType(t)).Elem()
 }
 
 // MakePointer makes a copy of the given interface and returns a pointer.
