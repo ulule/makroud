@@ -1,10 +1,10 @@
 package sqlxx
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/ulule/loukoum"
 )
 
 // Delete deletes the given instance.
@@ -27,7 +27,7 @@ func SoftDelete(driver Driver, model XModel) error {
 	return Archive(driver, model)
 }
 
-// SoftDeleteWithQueries is an alias for Archive.
+// SoftDeleteWithQueries is an alias for ArchiveWithQueries.
 func SoftDeleteWithQueries(driver Driver, model XModel) (Queries, error) {
 	return ArchiveWithQueries(driver, model)
 }
@@ -47,12 +47,14 @@ func ArchiveWithQueries(driver Driver, model XModel) (Queries, error) {
 	return queries, nil
 }
 
+// TODO Queries ???
 func remove(driver Driver, model XModel) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
 
 	start := time.Now()
+	queries := Queries{}
 
 	schema, err := XGetSchema(driver, model)
 	if err != nil {
@@ -62,39 +64,29 @@ func remove(driver Driver, model XModel) (Queries, error) {
 	pk := schema.PrimaryKey()
 	id, err := pk.Value(model)
 	if err != nil {
-		return nil, errors.Wrapf(err, "%T cannot be deleted", model)
+		return queries, errors.Wrapf(err, "sqlxx: %T cannot be deleted", model)
 	}
 
-	query := fmt.Sprintf(`DELETE FROM %s WHERE %s = :%s`,
-		schema.TableName(),
-		pk.ColumnPath(),
-		pk.ColumnName(),
-	)
+	builder := loukoum.Delete(schema.TableName()).
+		Where(loukoum.Condition(pk.ColumnPath()).Equal(id))
 
-	params := map[string]interface{}{
-		pk.ColumnName(): id,
-	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	queries = append(queries, NewQuery(builder))
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	_, err = driver.NamedExec(query, params)
+	err = Exec(driver, builder)
 	return queries, err
 }
 
+// TODO Queries ???
 func archive(driver Driver, model XModel) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
 
 	start := time.Now()
+	queries := Queries{}
 
 	schema, err := XGetSchema(driver, model)
 	if err != nil {
@@ -102,40 +94,24 @@ func archive(driver Driver, model XModel) (Queries, error) {
 	}
 
 	if !schema.HasArchiveKey() {
-		return nil, errors.New("model doesn't support archive operation")
+		return nil, errors.Wrapf(err, "sqlxx: %T doesn't support archive operation", model)
 	}
 
 	pk := schema.PrimaryKey()
 	id, err := pk.Value(model)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "sqlxx: %T cannot be archived", model)
 	}
 
-	archiveKey, archiveValue := schema.ArchiveKey()
+	builder := loukoum.Update(schema.TableName()).
+		Set(loukoum.Pair(schema.ArchiveKeyPath(), schema.ArchiveKeyValue())).
+		Where(loukoum.Condition(pk.ColumnPath()).Equal(id))
 
-	query := fmt.Sprintf(`UPDATE %s SET %s = :%s WHERE %s = :%s`,
-		schema.TableName(),
-		archiveKey,
-		archiveKey,
-		pk.ColumnPath(),
-		pk.ColumnName(),
-	)
-
-	params := map[string]interface{}{
-		archiveKey:      archiveValue,
-		pk.ColumnName(): id,
-	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	queries = append(queries, NewQuery(builder))
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	_, err = driver.NamedExec(query, params)
+	err = Exec(driver, builder, model)
 	return queries, err
 }

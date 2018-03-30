@@ -1,5 +1,9 @@
 package sqlxx
 
+import (
+	"fmt"
+)
+
 // PrimaryKeyType define a primary key type.
 type PrimaryKeyType uint8
 
@@ -7,16 +11,19 @@ type PrimaryKeyType uint8
 const (
 	// PrimaryKeyInteger define an integer primary key.
 	PrimaryKeyInteger = PrimaryKeyType(iota)
-	// PrimaryKeyUUID is unsupported at the moment.
-	PrimaryKeyUUID
+	// PrimaryKeyULID define an ulid primary key.
+	PrimaryKeyULID
 )
 
 func (e PrimaryKeyType) String() string {
 	switch e {
 	case PrimaryKeyInteger:
-		return "integer"
+		return "int64"
+	case PrimaryKeyULID:
+		return "ulid"
+	default:
+		panic(fmt.Sprintf("sqlxx: unknown type: %d", e))
 	}
-	panic("sqlxx: unknown type")
 }
 
 // AssociationType define an association type.

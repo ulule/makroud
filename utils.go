@@ -118,7 +118,7 @@ func GetFieldValue(itf interface{}, name string) (interface{}, error) {
 
 	field := value.FieldByName(name)
 	if !field.IsValid() {
-		return nil, errors.Errorf("no such field %s in %+v", name, itf)
+		return nil, errors.Errorf("sqlxx: no such field %s in %T", name, itf)
 	}
 
 	if field.Kind() == reflect.Ptr && field.IsNil() {

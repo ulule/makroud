@@ -24,132 +24,6 @@ var dbDefaultOptions = map[string]sqlxx.Option{
 	"NAME":     sqlxx.Database("sqlxx_test"),
 }
 
-var dropTables = `
-	DROP TABLE IF EXISTS users CASCADE;
-	DROP TABLE IF EXISTS api_keys CASCADE;
-	DROP TABLE IF EXISTS profiles CASCADE;
-	DROP TABLE IF EXISTS comments CASCADE;
-	DROP TABLE IF EXISTS avatar_filters CASCADE;
-	DROP TABLE IF EXISTS avatars CASCADE;
-	DROP TABLE IF EXISTS categories CASCADE;
-	DROP TABLE IF EXISTS tags CASCADE;
-	DROP TABLE IF EXISTS articles CASCADE;
-	DROP TABLE IF EXISTS articles_categories CASCADE;
-	DROP TABLE IF EXISTS partners CASCADE;
-	DROP TABLE IF EXISTS media CASCADE;
-	DROP TABLE IF EXISTS projects CASCADE;
-	DROP TABLE IF EXISTS managers CASCADE;
-	DROP TABLE IF EXISTS notifications CASCADE;
-`
-
-var dbSchema = `
-CREATE TABLE notifications (
-	id       serial primary key not null,
-	enabled  boolean default true
-);
-
-CREATE TABLE api_keys (
-	id          serial primary key not null,
-	partner_id  integer,
-	key         varchar(255) not null
-);
-
-CREATE TABLE partners (
-	id    serial primary key not null,
-	name  varchar(255) not null
-);
-
-CREATE TABLE managers (
-	id       serial primary key not null,
-	name     varchar(255) not null,
-	user_id  integer
-);
-
-CREATE TABLE projects (
-	id          serial primary key not null,
-	name        varchar(255) not null,
-	manager_id  integer,
-	user_id     integer
-);
-
-CREATE TABLE users (
-	id               serial primary key not null,
-	username         varchar(30) not null,
-	is_active        boolean default true,
-	api_key_id       integer,
-	avatar_id        integer,
-	notification_id  integer references notifications(id) default null,
-	created_at       timestamp with time zone default current_timestamp,
-	updated_at       timestamp with time zone default current_timestamp,
-	deleted_at       timestamp with time zone
-);
-
-CREATE TABLE profiles (
-	id          serial primary key not null,
-	user_id     integer references users(id),
-	first_name  varchar(255) not null,
-	last_name   varchar(255) not null
-);
-
-CREATE TABLE media (
-	id          serial primary key not null,
-	path        varchar(255) not null,
-	created_at  timestamp with time zone default current_timestamp,
-	updated_at  timestamp with time zone default current_timestamp
-);
-
-CREATE TABLE tags (
-	id    serial primary key not null,
-	name  varchar(255) not null
-);
-
-CREATE TABLE avatar_filters (
-	id    serial primary key not null,
-	name  varchar(255) not null
-);
-
-CREATE TABLE avatars (
-	id          serial primary key not null,
-	path        varchar(255) not null,
-	user_id     integer references users(id),
-	filter_id   integer references avatar_filters(id),
-	created_at  timestamp with time zone default current_timestamp,
-	updated_at  timestamp with time zone default current_timestamp
-);
-
-CREATE TABLE articles (
-	id            serial primary key not null,
-	title         varchar(255) not null,
-	author_id     integer references users(id),
-	reviewer_id   integer references users(id),
-	main_tag_id   integer references tags(id),
-	is_published  boolean default true,
-	created_at    timestamp with time zone default current_timestamp,
-	updated_at    timestamp with time zone default current_timestamp
-);
-
-CREATE TABLE comments (
-	id          serial primary key not null,
-	user_id     integer references users(id),
-	article_id  integer references articles(id),
-	content     text,
-	created_at  timestamp with time zone default current_timestamp,
-	updated_at  timestamp with time zone default current_timestamp
-);
-
-CREATE TABLE categories (
-	id       serial primary key not null,
-	name     varchar(255) not null,
-	user_id  integer references users(id)
-);
-
-CREATE TABLE articles_categories (
-	id           serial primary key not null,
-	article_id   integer references articles(id),
-	category_id  integer references categories(id)
-);
-`
-
 type Partner struct {
 	ID   int
 	Name string
@@ -1072,7 +946,10 @@ type environment struct {
 	Medias             *MediaList
 }
 
-func (e *environment) load() {
+func (e *environment) startup() {
+	DropTables(e.driver)
+	CreateTables(e.driver)
+
 	e.insertPartners()
 	e.insertAPIKeys()
 	e.insertMedias()
@@ -1416,12 +1293,11 @@ func (e *environment) createCategory(name string, userID *int) *Category {
 	return category
 }
 
-func (e *environment) teardown() {
+func (e *environment) shutdown() {
 	value := os.Getenv("KEEP_DB")
 	if len(value) == 0 {
-		e.driver.MustExec(dropTables)
+		DropTables(e.driver)
 	}
-
 	e.is.NoError(e.driver.Close())
 }
 
@@ -1457,9 +1333,12 @@ func dbParamInt(option func(int) sqlxx.Option, param string, env ...string) sqlx
 	return dbDefaultOptions[param]
 }
 
-func setup(t *testing.T, options ...sqlxx.Option) *environment {
-	is := require.New(t)
+type SetupCallback func(handler SetupHandler)
 
+type SetupHandler func(driver sqlxx.Driver)
+
+func Setup(t *testing.T, options ...sqlxx.Option) SetupCallback {
+	is := require.New(t)
 	opts := []sqlxx.Option{
 		dbParamString(sqlxx.Host, "host", "PGHOST"),
 		dbParamInt(sqlxx.Port, "port", "PGPORT"),
@@ -1474,11 +1353,144 @@ func setup(t *testing.T, options ...sqlxx.Option) *environment {
 	is.NoError(err)
 	is.NotNil(db)
 
-	db.MustExec(dropTables)
-	db.MustExec(dbSchema)
+	env := &environment{
+		is:     is,
+		driver: db,
+	}
 
-	env := &environment{is: is, driver: db}
-	env.load()
+	return func(handler SetupHandler) {
+		env.startup()
+		handler(db)
+		env.shutdown()
+	}
+}
 
-	return env
+func DropTables(db *sqlxx.Client) {
+	db.MustExec(`
+		DROP TABLE IF EXISTS users CASCADE;
+		DROP TABLE IF EXISTS api_keys CASCADE;
+		DROP TABLE IF EXISTS profiles CASCADE;
+		DROP TABLE IF EXISTS comments CASCADE;
+		DROP TABLE IF EXISTS avatar_filters CASCADE;
+		DROP TABLE IF EXISTS avatars CASCADE;
+		DROP TABLE IF EXISTS categories CASCADE;
+		DROP TABLE IF EXISTS tags CASCADE;
+		DROP TABLE IF EXISTS articles CASCADE;
+		DROP TABLE IF EXISTS articles_categories CASCADE;
+		DROP TABLE IF EXISTS partners CASCADE;
+		DROP TABLE IF EXISTS media CASCADE;
+		DROP TABLE IF EXISTS projects CASCADE;
+		DROP TABLE IF EXISTS managers CASCADE;
+		DROP TABLE IF EXISTS notifications CASCADE;
+	`)
+}
+
+func CreateTables(db *sqlxx.Client) {
+	db.MustExec(`
+		CREATE TABLE notifications (
+			id       serial primary key not null,
+			enabled  boolean default true
+		);
+
+		CREATE TABLE api_keys (
+			id          serial primary key not null,
+			partner_id  integer,
+			key         varchar(255) not null
+		);
+
+		CREATE TABLE partners (
+			id    serial primary key not null,
+			name  varchar(255) not null
+		);
+
+		CREATE TABLE managers (
+			id       serial primary key not null,
+			name     varchar(255) not null,
+			user_id  integer
+		);
+
+		CREATE TABLE projects (
+			id          serial primary key not null,
+			name        varchar(255) not null,
+			manager_id  integer,
+			user_id     integer
+		);
+
+		CREATE TABLE users (
+			id               serial primary key not null,
+			username         varchar(30) not null,
+			is_active        boolean default true,
+			api_key_id       integer,
+			avatar_id        integer,
+			notification_id  integer references notifications(id) default null,
+			created_at       timestamp with time zone default current_timestamp,
+			updated_at       timestamp with time zone default current_timestamp,
+			deleted_at       timestamp with time zone
+		);
+
+		CREATE TABLE profiles (
+			id          serial primary key not null,
+			user_id     integer references users(id),
+			first_name  varchar(255) not null,
+			last_name   varchar(255) not null
+		);
+
+		CREATE TABLE media (
+			id          serial primary key not null,
+			path        varchar(255) not null,
+			created_at  timestamp with time zone default current_timestamp,
+			updated_at  timestamp with time zone default current_timestamp
+		);
+
+		CREATE TABLE tags (
+			id    serial primary key not null,
+			name  varchar(255) not null
+		);
+
+		CREATE TABLE avatar_filters (
+			id    serial primary key not null,
+			name  varchar(255) not null
+		);
+
+		CREATE TABLE avatars (
+			id          serial primary key not null,
+			path        varchar(255) not null,
+			user_id     integer references users(id),
+			filter_id   integer references avatar_filters(id),
+			created_at  timestamp with time zone default current_timestamp,
+			updated_at  timestamp with time zone default current_timestamp
+		);
+
+		CREATE TABLE articles (
+			id            serial primary key not null,
+			title         varchar(255) not null,
+			author_id     integer references users(id),
+			reviewer_id   integer references users(id),
+			main_tag_id   integer references tags(id),
+			is_published  boolean default true,
+			created_at    timestamp with time zone default current_timestamp,
+			updated_at    timestamp with time zone default current_timestamp
+		);
+
+		CREATE TABLE comments (
+			id          serial primary key not null,
+			user_id     integer references users(id),
+			article_id  integer references articles(id),
+			content     text,
+			created_at  timestamp with time zone default current_timestamp,
+			updated_at  timestamp with time zone default current_timestamp
+		);
+
+		CREATE TABLE categories (
+			id       serial primary key not null,
+			name     varchar(255) not null,
+			user_id  integer references users(id)
+		);
+
+		CREATE TABLE articles_categories (
+			id           serial primary key not null,
+			article_id   integer references articles(id),
+			category_id  integer references categories(id)
+		);
+	`)
 }

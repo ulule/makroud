@@ -4,14 +4,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/ulule/sqlxx"
 )
 
 func TestPing(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
+	Setup(t)(func(driver sqlxx.Driver) {
+		is := require.New(t)
 
-	is := require.New(t)
-
-	err := env.driver.Ping()
-	is.NoError(err)
+		err := driver.Ping()
+		is.NoError(err)
+	})
 }

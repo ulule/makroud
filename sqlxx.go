@@ -57,7 +57,7 @@ type Driver interface {
 	Beginx() (sqalx.Node, error)
 	Rollback() error
 	Commit() error
-	close(closer io.Closer)
+	close(closer io.Closer, flags map[string]string)
 	hasCache() bool
 	cache() *cache
 	logger() Logger

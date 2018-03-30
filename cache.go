@@ -17,7 +17,7 @@ type cache struct {
 func newCache() *cache {
 	return &cache{
 		schemas:  map[string]Schema{},
-		xschemas: make(map[string]*XSchema),
+		xschemas: map[string]*XSchema{},
 	}
 }
 

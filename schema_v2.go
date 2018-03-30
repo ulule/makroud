@@ -46,12 +46,20 @@ func (e XSchema) HasArchiveKey() bool {
 	return e.archiveKey != nil
 }
 
-// ArchiveKey returns schema archive key column's name and value of current schema.
-func (e XSchema) ArchiveKey() (string, interface{}) {
+// ArchiveKeyPath returns schema archive key column's name.
+func (e XSchema) ArchiveKeyPath() string {
 	if !e.HasArchiveKey() {
-		return "", 0
+		return ""
 	}
-	return e.archiveKey.ColumnName(), e.archiveKey.ArchiveValue()
+	return e.archiveKey.ColumnPath()
+}
+
+// ArchiveKeyValue returns schema archive key's value.
+func (e XSchema) ArchiveKeyValue() interface{} {
+	if !e.HasArchiveKey() {
+		return nil
+	}
+	return e.archiveKey.ArchiveValue()
 }
 
 // Columns returns schema columns without table prefix.

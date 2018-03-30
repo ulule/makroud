@@ -1,15 +1,14 @@
 package sqlxx
 
 import (
-	"database/sql"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	lk "github.com/ulule/loukoum"
+	lkb "github.com/ulule/loukoum/builder"
 )
 
-// Save saves the model and populate it to the database
+// Save saves the given instance.
 func Save(driver Driver, model XModel) error {
 	_, err := SaveWithQueries(driver, model)
 	return err
@@ -30,18 +29,15 @@ func save(driver Driver, model XModel) (Queries, error) {
 	}
 
 	start := time.Now()
-
-	query := ""
-	params := make(map[string]interface{})
+	queries := Queries{}
 
 	schema, err := XGetSchema(driver, model)
 	if err != nil {
 		return nil, err
 	}
 
+	values := lk.Map{}
 	returning := []string{}
-	columns := []string{}
-	values := []string{}
 
 	pk := schema.PrimaryKey()
 	id, hasPK := pk.ValueOpt(model)
@@ -51,73 +47,46 @@ func save(driver Driver, model XModel) (Queries, error) {
 			continue
 		}
 
-		columns = append(columns, column.ColumnName())
-		fv, err := GetFieldValue(model, name)
+		value, err := GetFieldValue(model, name)
 		if err != nil {
 			return nil, err
 		}
 
-		value := ""
-		if column.HasDefault() && IsZero(fv) && !hasPK {
-			value = column.Default()
+		if column.HasDefault() && IsZero(value) && !hasPK {
+			values[column.ColumnName()] = lk.Raw(column.Default())
 			returning = append(returning, column.ColumnName())
 		} else {
-			value = fmt.Sprintf(":%s", column.ColumnName())
-			params[column.ColumnName()] = fv
+			values[column.ColumnName()] = value
 		}
-
-		values = append(values, value)
 	}
+
+	var builder lkb.Builder
 
 	if !hasPK {
-
-		query = fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s)`,
-			schema.TableName(),
-			strings.Join(columns, ", "),
-			strings.Join(values, ", "),
-		)
-
 		returning = append(returning, pk.ColumnName())
-
+		builder = lk.Insert(schema.TableName()).Set(values).Returning(returning)
 	} else {
-
-		updates := []string{}
-		for i := range columns {
-			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
-		}
-
-		params[pk.ColumnName()] = id
-		query = fmt.Sprintf(`UPDATE %s SET %s WHERE %s = :%s`,
-			schema.TableName(),
-			strings.Join(updates, ", "),
-			pk.ColumnPath(),
-			pk.ColumnName(),
-		)
+		builder = lk.Update(schema.TableName()).Set(values).Where(lk.Condition(pk.ColumnName()).Equal(id))
 	}
 
-	if len(returning) > 0 {
-		query = fmt.Sprintf(`%s RETURNING %s`, query, strings.Join(returning, ", "))
-	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
+	queries = append(queries, NewQuery(builder))
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
+
+	query, args := builder.NamedQuery()
 
 	stmt, err := driver.PrepareNamed(query)
 	if err != nil {
 		return queries, err
 	}
-	defer driver.close(stmt)
+	defer driver.close(stmt, map[string]string{
+		"query": query,
+	})
 
-	row := stmt.QueryRow(params)
+	row := stmt.QueryRow(args)
 	if row == nil {
-		return queries, errors.New("cannot obtain result from driver")
+		return queries, errors.New("sqlxx: cannot obtain result from driver")
 	}
 	err = row.Err()
 	if err != nil {
@@ -126,7 +95,7 @@ func save(driver Driver, model XModel) (Queries, error) {
 
 	mapper := map[string]interface{}{}
 	err = row.MapScan(mapper)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !IsErrNoRows(err) {
 		return queries, err
 	}
 
