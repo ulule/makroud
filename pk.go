@@ -72,7 +72,6 @@ func (key PrimaryKey) TableName() string {
 // ColumnPath returns the primary key's full column path.
 func (key PrimaryKey) ColumnPath() string {
 	return key.pkColumnPath
-	//return fmt.Sprintf("%s.%s", e.tableName, e.pkColumn)
 }
 
 // ColumnName returns the primary key's column name.
