@@ -4,28 +4,6 @@ import (
 	"fmt"
 )
 
-// PrimaryKeyType define a primary key type.
-type PrimaryKeyType uint8
-
-// PrimaryKey types.
-const (
-	// PrimaryKeyIntegerType uses an integer as primary key.
-	PrimaryKeyIntegerType = PrimaryKeyType(iota)
-	// PrimaryKeyString uses a string as primary key.
-	PrimaryKeyStringType
-)
-
-func (e PrimaryKeyType) String() string {
-	switch e {
-	case PrimaryKeyIntegerType:
-		return "int64"
-	case PrimaryKeyStringType:
-		return "string"
-	default:
-		panic(fmt.Sprintf("sqlxx: unknown primary key type: %d", e))
-	}
-}
-
 // AssociationType define an association type.
 type AssociationType uint8
 
@@ -55,4 +33,12 @@ func (e AssociationType) String() string {
 // Model represents a database table.
 type Model interface {
 	TableName() string
+}
+
+// ModelOpts define a configuration for model.
+type ModelOpts struct {
+	PrimaryKey string
+	CreatedKey string
+	UpdatedKey string
+	DeletedKey string
 }

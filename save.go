@@ -44,12 +44,12 @@ func save(driver Driver, model Model) (Queries, error) {
 	pk := schema.PrimaryKey()
 	id, hasPK := pk.ValueOpt(model)
 
-	for name, column := range schema.fields {
+	for _, column := range schema.fields {
 		if column.IsPrimaryKey() {
 			continue
 		}
 
-		value, err := reflectx.GetFieldValue(model, name)
+		value, err := reflectx.GetFieldValue(model, column.FieldName())
 		if err != nil {
 			return nil, err
 		}
@@ -64,7 +64,19 @@ func save(driver Driver, model Model) (Queries, error) {
 	var builder builder.Builder
 
 	if !hasPK {
-		returning = append(returning, pk.ColumnName())
+		switch pk.Default() {
+		case PrimaryKeyDBDefault:
+			returning = append(returning, pk.ColumnName())
+
+		case PrimaryKeyULIDDefault:
+			ulid := GenerateULID(driver)
+			mapper := map[string]interface{}{
+				pk.ColumnName(): ulid,
+			}
+			values[pk.ColumnName()] = ulid
+			schema.WriteModel(mapper, model)
+		}
+
 		builder = loukoum.Insert(schema.TableName()).Set(values).Returning(returning)
 	} else {
 		builder = loukoum.Update(schema.TableName()).Set(values).Where(loukoum.Condition(pk.ColumnName()).Equal(id))

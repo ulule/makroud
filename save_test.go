@@ -3,7 +3,9 @@ package sqlxx_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 	"github.com/ulule/loukoum"
 
@@ -74,6 +76,43 @@ func TestSave_Owl(t *testing.T) {
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(1, count)
+
+	})
+}
+
+func TestSave_Meow(t *testing.T) {
+	Setup(t, sqlxx.Cache(true))(func(driver sqlxx.Driver) {
+		is := require.New(t)
+
+		body := "meow"
+		now := time.Now()
+		meow := &Meow{
+			Body: body,
+		}
+
+		queries, err := sqlxx.SaveWithQueries(driver, meow)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
+		query := queries[0]
+		expected := fmt.Sprint(
+			"INSERT INTO wp_meow (body, deleted, hash) VALUES ('", body, "', NULL, '",
+			meow.Hash, "') RETURNING created, updated",
+		)
+		is.Equal(expected, query.Raw)
+		expected = fmt.Sprint(
+			"INSERT INTO wp_meow (body, deleted, hash) VALUES (:arg_1, :arg_2, :arg_3) ",
+			"RETURNING created, updated",
+		)
+		is.Equal(expected, query.Query)
+		is.Len(query.Args, 3)
+		is.Equal(body, query.Args["arg_1"])
+		is.Equal(pq.NullTime{}, query.Args["arg_2"])
+		is.Equal(meow.Hash, query.Args["arg_3"])
+		is.False(meow.CreatedAt.IsZero())
+		is.True(meow.CreatedAt.After(now))
+		is.False(meow.UpdatedAt.IsZero())
+		is.True(meow.UpdatedAt.After(now))
 
 	})
 }

@@ -23,6 +23,10 @@ type Field struct {
 	isAssociation bool
 	isExcluded    bool
 	hasDefault    bool
+	hasULID       bool
+	isCreatedKey  bool
+	isUpdatedKey  bool
+	isDeletedKey  bool
 	rtype         reflect.Type
 
 	// // The reflect.StructField instance
@@ -94,6 +98,26 @@ func (field Field) HasDefault() bool {
 	return field.hasDefault
 }
 
+// HasULID returns if the field has a ulid type for it's primary key.
+func (field Field) HasULID() bool {
+	return field.hasULID
+}
+
+// IsCreatedKey returns if the field is a created key.
+func (field Field) IsCreatedKey() bool {
+	return field.isCreatedKey
+}
+
+// IsUpdatedKey returns if the field is a updated key.
+func (field Field) IsUpdatedKey() bool {
+	return field.isUpdatedKey
+}
+
+// IsDeletedKey returns if the field is a deleted key.
+func (field Field) IsDeletedKey() bool {
+	return field.isDeletedKey
+}
+
 // Type returns the reflect's type of the field.
 func (field Field) Type() reflect.Type {
 	return field.rtype
@@ -107,9 +131,14 @@ func (field Field) String() string {
 }
 
 // NewField returns full column name from model, field and tag.
-func NewField(driver Driver, schema *Schema, model Model, name string) (*Field, error) {
+func NewField(driver Driver, schema *Schema, model Model, name string, args ...ModelOpts) (*Field, error) {
 	if schema == nil {
 		return nil, errors.New("schema is required to generate a field instance")
+	}
+
+	opts := defaultModelOpts()
+	if len(args) > 0 {
+		opts = args[0]
 	}
 
 	field, ok := reflectx.GetFieldByName(model, name)
@@ -138,6 +167,13 @@ func NewField(driver Driver, schema *Schema, model Model, name string) (*Field, 
 	isForeignKey := tags.HasKey(TagName, TagKeyForeignKey)
 	isExcluded := tags.HasKey(TagName, TagKeyIgnored) || field.PkgPath != ""
 	hasDefault := tags.HasKey(TagName, TagKeyDefault)
+	hasULID := tags.GetByKey(TagName, TagKeyPrimaryKey) == TagKeyULID
+
+	isCreatedKey := columnName == opts.CreatedKey
+	isUpdatedKey := columnName == opts.UpdatedKey
+	isDeletedKey := columnName == opts.DeletedKey
+
+	hasDefault = hasDefault || isCreatedKey || isUpdatedKey
 
 	instance := &Field{
 		modelName:    modelName,
@@ -148,7 +184,11 @@ func NewField(driver Driver, schema *Schema, model Model, name string) (*Field, 
 		isPrimaryKey: isPrimaryKey,
 		isForeignKey: isForeignKey,
 		isExcluded:   isExcluded,
+		isCreatedKey: isCreatedKey,
+		isUpdatedKey: isUpdatedKey,
+		isDeletedKey: isDeletedKey,
 		hasDefault:   hasDefault,
+		hasULID:      hasULID,
 		rtype:        rtype,
 	}
 

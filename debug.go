@@ -179,6 +179,26 @@ func debugField(field Field) debugWriter {
 			v: strconv.FormatBool(field.IsExcluded()),
 		},
 		debugValue{
+			k: "has_default",
+			v: strconv.FormatBool(field.HasDefault()),
+		},
+		debugValue{
+			k: "has_ulid",
+			v: strconv.FormatBool(field.HasULID()),
+		},
+		debugValue{
+			k: "is_created_key",
+			v: strconv.FormatBool(field.IsCreatedKey()),
+		},
+		debugValue{
+			k: "is_updated_key",
+			v: strconv.FormatBool(field.IsUpdatedKey()),
+		},
+		debugValue{
+			k: "is_deleted_key",
+			v: strconv.FormatBool(field.IsDeletedKey()),
+		},
+		debugValue{
 			k: "reflect_type",
 			v: field.rtype.String(),
 		},

@@ -6,8 +6,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
@@ -29,6 +30,10 @@ type Elements struct {
 	Fifth string
 }
 
+type Chunk struct {
+	Hash string `sqlxx:"column:hash,pk:ulid"`
+}
+
 type Owl struct {
 	ID           int64  `sqlxx:"column:id,pk"`
 	Name         string `sqlxx:"column:name"`
@@ -39,6 +44,42 @@ type Owl struct {
 
 func (Owl) TableName() string {
 	return "wp_owl"
+}
+
+type Cat struct {
+	ID        string      `sqlxx:"column:id"`
+	Name      string      `sqlxx:"column:name"`
+	CreatedAt time.Time   `sqlxx:"column:created_at,default"`
+	UpdatedAt time.Time   `sqlxx:"column:updated_at,default"`
+	DeletedAt pq.NullTime `sqlxx:"column:deleted_at"`
+}
+
+func (Cat) TableName() string {
+	return "wp_cat"
+}
+
+type Meow struct {
+	Hash      string      `sqlxx:"column:hash,pk:ulid"`
+	Body      string      `sqlxx:"column:body"`
+	CreatedAt time.Time   `sqlxx:"column:created"`
+	UpdatedAt time.Time   `sqlxx:"column:updated"`
+	DeletedAt pq.NullTime `sqlxx:"column:deleted"`
+}
+
+func (Meow) TableName() string {
+	return "wp_meow"
+}
+
+func (Meow) CreatedKey() string {
+	return "created"
+}
+
+func (Meow) UpdatedKey() string {
+	return "updated"
+}
+
+func (Meow) DeletedKey() string {
+	return "deleted"
 }
 
 //
@@ -1387,6 +1428,8 @@ func DropTables(db *sqlxx.Client) {
 	db.MustExec(`
 		-- Simple schema
 		DROP TABLE IF EXISTS wp_owl CASCADE;
+		DROP TABLE IF EXISTS wp_cat CASCADE;
+		DROP TABLE IF EXISTS wp_meow CASCADE;
 
 		-- Application schema
 		DROP TABLE IF EXISTS users CASCADE;
@@ -1415,6 +1458,20 @@ func CreateTables(db *sqlxx.Client) {
 			name            VARCHAR(255) NOT NULL,
 			feather_color   VARCHAR(255) NOT NULL,
 			favorite_food   VARCHAR(255) NOT NULL
+		);
+		CREATE TABLE wp_cat (
+			id              VARCHAR(26) PRIMARY KEY NOT NULL,
+			name            VARCHAR(255) NOT NULL,
+			created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+			updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+			deleted_at      TIMESTAMP WITH TIME ZONE
+		);
+		CREATE TABLE wp_meow (
+			hash            VARCHAR(26) PRIMARY KEY NOT NULL,
+			body            VARCHAR(2048) NOT NULL,
+			created         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+			updated         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+			deleted         TIMESTAMP WITH TIME ZONE
 		);
 
 

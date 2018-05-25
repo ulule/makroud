@@ -14,7 +14,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/jmoiron/sqlx"
-  revision = "cf35089a197953c69420c8d0cecda90809764b1d"
+  revision = "2aeb6a910c2b94f2d5eb53d9895d80e27264ec41"
 
 [[constraint]]
   name = "github.com/heetch/sqalx"
@@ -22,7 +22,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/lib/pq"
-  revision = "b2004221932bd6b13167ef654c81cffac36f7537"
+  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
 
 [[constraint]]
   name = "github.com/serenize/snaker"
@@ -30,8 +30,12 @@ ignored = [
 
 [[constraint]]
   name = "github.com/ulule/loukoum"
-  revision = "f32ba9784a6c0c15c9e922a3fdc7937f7c47b92a"
+  revision = "79401924b612bdf526ab9e1b55483103ec4429fc"
 
 [[override]]
   name = "github.com/satori/go.uuid"
   revision = "36e9d2ebbde5e3f13ab2e25625fd453271d6522e"
+
+[[constraint]]
+  name = "github.com/oklog/ulid"
+  revision = "7e1bd8a9a281b5abdf651a430b918bb0ecdbceda"

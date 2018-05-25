@@ -40,7 +40,7 @@ func (schema Schema) HasCreatedKey() bool {
 // CreatedKeyPath returns schema created key column's name.
 func (schema Schema) CreatedKeyPath() string {
 	if schema.HasUpdatedKey() {
-		return schema.updatedKey.ColumnPath()
+		return schema.createdKey.ColumnPath()
 	}
 	return ""
 }
@@ -50,8 +50,8 @@ func (schema Schema) HasUpdatedKey() bool {
 	return schema.updatedKey != nil
 }
 
-// UpdateKeyPath returns schema updated key column's name.
-func (schema Schema) UpdateKeyPath() string {
+// UpdatedKeyPath returns schema updated key column's name.
+func (schema Schema) UpdatedKeyPath() string {
 	if schema.HasUpdatedKey() {
 		return schema.updatedKey.ColumnPath()
 	}
@@ -69,15 +69,6 @@ func (schema Schema) DeletedKeyPath() string {
 		return schema.deletedKey.ColumnPath()
 	}
 	return ""
-}
-
-// DeletedKeyValue returns schema deleted key's value.
-func (schema Schema) DeletedKeyValue() interface{} {
-	if schema.HasDeletedKey() {
-		//return schema.deletedKey.ArchiveValue()
-		return nil
-	}
-	return nil
 }
 
 // Columns returns schema columns without table prefix.
@@ -118,6 +109,9 @@ func (schema Schema) WriteModel(mapper map[string]interface{}, model Model) erro
 			}
 			continue
 		}
+
+		fmt.Printf("%s %+v\n", key, value)
+		fmt.Printf("%+v\n", schema.fields)
 
 		field, ok := schema.fields[key]
 		if ok {
@@ -167,6 +161,51 @@ func GetSchema(driver Driver, model Model) (*Schema, error) {
 	return schema, nil
 }
 
+// defaultModelOpts returns the default model configuration.
+func defaultModelOpts() ModelOpts {
+	return ModelOpts{
+		PrimaryKey: "id",
+		CreatedKey: "created_at",
+		UpdatedKey: "updated_at",
+		DeletedKey: "deleted_at",
+	}
+}
+
+// analyzeModelOpts analyzes given model to extract it's configuration.
+func analyzeModelOpts(model Model) ModelOpts {
+	opts := defaultModelOpts()
+
+	mpk, ok := model.(interface {
+		PrimaryKey() string
+	})
+	if ok {
+		opts.PrimaryKey = mpk.PrimaryKey()
+	}
+
+	cpk, ok := model.(interface {
+		CreatedKey() string
+	})
+	if ok {
+		opts.CreatedKey = cpk.CreatedKey()
+	}
+
+	upk, ok := model.(interface {
+		UpdatedKey() string
+	})
+	if ok {
+		opts.UpdatedKey = upk.UpdatedKey()
+	}
+
+	dpk, ok := model.(interface {
+		DeletedKey() string
+	})
+	if ok {
+		opts.DeletedKey = dpk.DeletedKey()
+	}
+
+	return opts
+}
+
 // newSchema returns model's table columns, extracted by reflection.
 // The returned map is Model.FieldName -> table_name.column_name
 func newSchema(driver Driver, model Model) (*Schema, error) {
@@ -174,6 +213,8 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot use reflections to obtain %T fields", model)
 	}
+
+	modelOpts := analyzeModelOpts(model)
 
 	schema := &Schema{
 		// Model:     model,
@@ -184,15 +225,18 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 	}
 
 	for _, name := range fields {
-		field, err := NewField(driver, schema, model, name)
+		field, err := NewField(driver, schema, model, name, modelOpts)
 		if err != nil {
 			return nil, err
 		}
 
-		fmt.Println(field)
-
 		if field.IsExcluded() {
 			continue
+		}
+
+		err = inferSchemaTimeKey(model, modelOpts, schema, field)
+		if err != nil {
+			return nil, err
 		}
 
 		if field.IsPrimaryKey() {
@@ -208,9 +252,11 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 		}
 
 		if !field.IsAssociation() {
-			schema.fields[field.FieldName()] = *field
+			schema.fields[field.ColumnName()] = *field
 			continue
 		}
+
+		fmt.Println(field)
 
 		//
 		// _, ok := schema.Associations[field.FieldName]
@@ -239,11 +285,55 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 		// }
 	}
 
-	if schema.pk.TableName() == "" {
-		return nil, errors.Errorf("sqlxx: %T must have a primary key", model)
+	err = inferSchemaPrimaryKey(model, modelOpts, schema)
+	if err != nil {
+		return nil, err
 	}
 
 	return schema, nil
+}
+
+func inferSchemaTimeKey(model Model, opts ModelOpts, schema *Schema, field *Field) error {
+	if field.IsCreatedKey() {
+		if schema.createdKey != nil {
+			return errors.Errorf("sqlxx: %T must have only one created_at key", model)
+		}
+		schema.createdKey = field
+	}
+
+	if field.IsUpdatedKey() {
+		if schema.updatedKey != nil {
+			return errors.Errorf("sqlxx: %T must have only one updated_at key", model)
+		}
+		schema.updatedKey = field
+	}
+
+	if field.IsDeletedKey() {
+		if schema.deletedKey != nil {
+			return errors.Errorf("sqlxx: %T must have only one deleted_at key", model)
+		}
+		schema.deletedKey = field
+	}
+
+	return nil
+}
+
+func inferSchemaPrimaryKey(model Model, opts ModelOpts, schema *Schema) error {
+	if schema.pk.TableName() != "" {
+		return nil
+	}
+	for key, field := range schema.fields {
+		if field.ColumnName() == opts.PrimaryKey {
+			pk, err := NewPrimaryKey(&field)
+			if err != nil {
+				return errors.Wrapf(err, "cannot use primary key of %T", model)
+			}
+			schema.pk = *pk
+			delete(schema.fields, key)
+			return nil
+		}
+	}
+	return errors.Errorf("sqlxx: %T must have a primary key", model)
 }
 
 // ----------------------------------------------------------------------------

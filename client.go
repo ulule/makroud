@@ -3,6 +3,8 @@ package sqlxx
 import (
 	"fmt"
 	"io"
+	"math/rand"
+	"time"
 
 	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
@@ -17,6 +19,7 @@ type Client struct {
 	sqalx.Node
 	store *cache
 	log   Logger
+	rnd   io.Reader
 }
 
 // clientOptions configure a Client instance. clientOptions are set by the Option
@@ -83,9 +86,12 @@ func New(options ...Option) (*Client, error) {
 		return nil, errors.Wrapf(err, "sqlxx: cannot instantiate %s client driver", ClientDriver)
 	}
 
+	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	client := &Client{
 		Node: connection,
 		log:  &EmptyLogger{},
+		rnd:  entropy,
 	}
 
 	if opts.withCache {
@@ -123,6 +129,10 @@ func (e *Client) cache() *cache {
 
 func (e *Client) logger() Logger {
 	return e.log
+}
+
+func (e *Client) entropy() io.Reader {
+	return e.rnd
 }
 
 func (e *Client) close(closer io.Closer, flags map[string]string) {

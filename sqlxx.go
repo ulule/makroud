@@ -36,4 +36,5 @@ type Driver interface {
 	hasCache() bool
 	cache() *cache
 	logger() Logger
+	entropy() io.Reader
 }

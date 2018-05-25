@@ -30,6 +30,7 @@ const (
 	TagKeyColumn     = "column"
 	TagKeyForeignKey = "fk"
 	TagKeyPrimaryKey = "pk"
+	TagKeyULID       = "ulid"
 )
 
 // TagProperty is a struct tag property.

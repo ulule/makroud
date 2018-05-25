@@ -1,11 +1,46 @@
 package sqlxx
 
 import (
+	"fmt"
 	"reflect"
 
+	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
 
 	"github.com/ulule/sqlxx/reflectx"
+)
+
+// PrimaryKeyType define a primary key type.
+type PrimaryKeyType uint8
+
+// PrimaryKey types.
+const (
+	// PrimaryKeyIntegerType uses an integer as primary key.
+	PrimaryKeyIntegerType = PrimaryKeyType(iota)
+	// PrimaryKeyString uses a string as primary key.
+	PrimaryKeyStringType
+)
+
+func (e PrimaryKeyType) String() string {
+	switch e {
+	case PrimaryKeyIntegerType:
+		return "int64"
+	case PrimaryKeyStringType:
+		return "string"
+	default:
+		panic(fmt.Sprintf("sqlxx: unknown primary key type: %d", e))
+	}
+}
+
+// PrimaryKeyDefault define how primary key value is generated.
+type PrimaryKeyDefault uint8
+
+// PrimaryKey default types.
+const (
+	// PrimaryKeyDBDefault uses internal db mechanism to define primary key value.
+	PrimaryKeyDBDefault = PrimaryKeyDefault(iota)
+	// PrimaryKeyULIDDefault uses a ulid generator to define primary key value.
+	PrimaryKeyULIDDefault
 )
 
 // TODO Add unit test
@@ -30,6 +65,7 @@ type PrimaryKey struct {
 	pkColumnName string
 	pkColumnPath string
 	pkType       PrimaryKeyType
+	pkDefault    PrimaryKeyDefault
 }
 
 // NewPrimaryKey creates a primary key from a field instance.
@@ -40,6 +76,7 @@ func NewPrimaryKey(field *Field) (*PrimaryKey, error) {
 		pkName:       field.fieldName,
 		pkColumnName: field.columnName,
 		pkColumnPath: field.columnPath,
+		pkDefault:    PrimaryKeyDBDefault,
 	}
 
 	switch field.Type().Kind() {
@@ -49,6 +86,10 @@ func NewPrimaryKey(field *Field) (*PrimaryKey, error) {
 		pk.pkType = PrimaryKeyIntegerType
 	default:
 		return nil, errors.Errorf("cannot use '%s' as primary key type", field.Type().String())
+	}
+
+	if field.HasULID() {
+		pk.pkDefault = PrimaryKeyULIDDefault
 	}
 
 	return pk, nil
@@ -84,6 +125,11 @@ func (key PrimaryKey) Type() PrimaryKeyType {
 	return key.pkType
 }
 
+// Default returns the primary key's default mechanism.
+func (key PrimaryKey) Default() PrimaryKeyDefault {
+	return key.pkDefault
+}
+
 // Value returns the primary key's value, or an error if undefined.
 func (key PrimaryKey) Value(model Model) (interface{}, error) {
 	id, ok := key.ValueOpt(model)
@@ -111,4 +157,9 @@ func (key PrimaryKey) ValueOpt(model Model) (interface{}, bool) {
 	default:
 		return nil, false
 	}
+}
+
+// GenerateULID generates a new ulid.
+func GenerateULID(driver Driver) string {
+	return ulid.MustNew(ulid.Now(), driver.entropy()).String()
 }
