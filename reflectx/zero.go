@@ -22,3 +22,13 @@ func IsZero(itf interface{}) bool {
 	zero := reflect.Zero(value.Type())
 	return value.Interface() == zero.Interface()
 }
+
+// MakeZero returns a zero value for the given element.
+func MakeZero(element interface{}) reflect.Value {
+	t, ok := element.(reflect.Type)
+	if !ok {
+		t = reflect.TypeOf(element)
+	}
+
+	return reflect.New(GetIndirectType(t)).Elem()
+}

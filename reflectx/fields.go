@@ -1,6 +1,7 @@
 package reflectx
 
 import (
+	"database/sql"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -99,8 +100,8 @@ func GetFieldValueString(instance interface{}, field string) (string, error) {
 	return converted, nil
 }
 
-// SetFieldValue updates the field's value with given name.
-func SetFieldValue(instance interface{}, name string, value interface{}) error {
+// UpdateFieldValue updates the field's value with given name.
+func UpdateFieldValue(instance interface{}, name string, value interface{}) error {
 	v, ok := instance.(reflect.Value)
 	if !ok {
 		v = reflect.Indirect(reflect.ValueOf(instance))
@@ -112,17 +113,42 @@ func SetFieldValue(instance interface{}, name string, value interface{}) error {
 
 	dest := v.FieldByName(name)
 	if !dest.IsValid() {
-		return errors.Errorf("sqlxx: no such field %s in %T", name, value)
+		return errors.Errorf("sqlxx: no such field %s in %T", name, instance)
 	}
 	if !dest.CanSet() {
-		// TODO (novln): unit test on private field
-		return errors.Errorf("sqlxx: cannot update field %s in %T", name, value)
+		return errors.Errorf("sqlxx: cannot update field %s in %T", name, instance)
 	}
 
+	// Try scanner interface.
+	scanner := reflect.TypeOf((*sql.Scanner)(nil)).Elem()
+	scan := dest
+	if scan.CanAddr() && scan.Type().Kind() != reflect.Ptr {
+		scan = scan.Addr()
+	}
+	if scan.Type().Implements(scanner) {
+
+		// If scanner pointer is nil, allocate a zero value.
+		if scan.IsNil() {
+			zero := MakeZero(scan.Type().Elem())
+			scan.Set(zero.Addr())
+		}
+
+		// And try to use reflection to call Scan method.
+		args := []reflect.Value{reflect.Indirect(reflect.ValueOf(value))}
+		values := scan.MethodByName("Scan").Call(args)
+		if len(values) == 1 {
+			okType := reflect.TypeOf((*error)(nil)).Elem() == values[0].Type()
+			okValue := values[0].IsNil()
+			if okType && okValue {
+				return nil
+			}
+		}
+	}
+
+	// Otherwise, try to manually update field using reflection.
 	output := reflect.Indirect(reflect.ValueOf(value))
 	if !output.IsValid() {
-		// NOTE (novln): I don't know why we ignore this, let's keep it that way...
-		return nil
+		return errors.Errorf("sqlxx: cannot uses %T as value to update %s in %T", value, name, instance)
 	}
 
 	// If field's type is a pointer, create a pointer of the given value.
@@ -130,9 +156,9 @@ func SetFieldValue(instance interface{}, name string, value interface{}) error {
 		output = reflect.ValueOf(MakePointer(output.Interface()))
 	}
 
-	// Verify that types are equals. Otherwise returns a nice error.
+	// Verify that types are equals. Otherwise, returns a nice error.
 	if dest.Type() != output.Type() {
-		return errors.Errorf("sqlxx: cannot use type %v to update type %v in %T", output.Type(), dest.Type(), value)
+		return errors.Errorf("sqlxx: cannot use type %v to update type %v in %T", output.Type(), dest.Type(), instance)
 	}
 
 	dest.Set(output)
