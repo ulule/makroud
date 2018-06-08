@@ -82,7 +82,7 @@ func archive(driver Driver, model Model) (Queries, error) {
 	}
 
 	if !schema.HasDeletedKey() {
-		return nil, errors.Wrapf(err, "sqlxx: %T doesn't support archive operation", model)
+		return nil, errors.Wrapf(ErrDeletedKey, "sqlxx: %T doesn't support archive operation", model)
 	}
 
 	pk := schema.PrimaryKey()
@@ -92,9 +92,9 @@ func archive(driver Driver, model Model) (Queries, error) {
 	}
 
 	builder := loukoum.Update(schema.TableName()).
-		Set(loukoum.Pair(schema.DeletedKeyPath(), loukoum.Raw("NOW()"))).
+		Set(loukoum.Pair(schema.DeletedKeyName(), loukoum.Raw("NOW()"))).
 		Where(loukoum.Condition(pk.ColumnName()).Equal(id)).
-		Returning(schema.DeletedKeyPath())
+		Returning(schema.DeletedKeyName())
 
 	queries = append(queries, NewQuery(builder))
 	defer func() {
@@ -120,16 +120,13 @@ func archive(driver Driver, model Model) (Queries, error) {
 		return queries, err
 	}
 
-	mapper := map[string]interface{}{}
-	err = row.MapScan(mapper)
+	mapper, err := ScanRow(row)
 	if err != nil && !IsErrNoRows(err) {
 		return queries, err
 	}
-	if len(mapper) > 0 {
-		err = schema.WriteModel(mapper, model)
-		if err != nil {
-			return queries, err
-		}
+	err = schema.WriteModel(mapper, model)
+	if err != nil {
+		return queries, err
 	}
 
 	return queries, err

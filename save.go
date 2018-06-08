@@ -55,9 +55,18 @@ func save(driver Driver, model Model) (Queries, error) {
 		}
 
 		if column.HasDefault() && reflectx.IsZero(value) && !hasPK {
+
 			returning = append(returning, column.ColumnName())
+
+		} else if column.IsUpdatedKey() && hasPK {
+
+			values[column.ColumnName()] = loukoum.Raw("NOW()")
+			returning = append(returning, column.ColumnName())
+
 		} else {
+
 			values[column.ColumnName()] = value
+
 		}
 	}
 
@@ -77,9 +86,17 @@ func save(driver Driver, model Model) (Queries, error) {
 			schema.WriteModel(mapper, model)
 		}
 
-		builder = loukoum.Insert(schema.TableName()).Set(values).Returning(returning)
+		builder = loukoum.Insert(schema.TableName()).
+			Set(values).
+			Returning(returning)
+
 	} else {
-		builder = loukoum.Update(schema.TableName()).Set(values).Where(loukoum.Condition(pk.ColumnName()).Equal(id))
+
+		builder = loukoum.Update(schema.TableName()).
+			Set(values).
+			Where(loukoum.Condition(pk.ColumnName()).Equal(id)).
+			Returning(returning)
+
 	}
 
 	queries = append(queries, NewQuery(builder))
@@ -106,16 +123,13 @@ func save(driver Driver, model Model) (Queries, error) {
 		return queries, err
 	}
 
-	mapper := map[string]interface{}{}
-	err = row.MapScan(mapper)
+	mapper, err := ScanRow(row)
 	if err != nil && !IsErrNoRows(err) {
 		return queries, err
 	}
-	if len(mapper) > 0 {
-		err = schema.WriteModel(mapper, model)
-		if err != nil {
-			return queries, err
-		}
+	err = schema.WriteModel(mapper, model)
+	if err != nil {
+		return queries, err
 	}
 
 	return queries, nil

@@ -59,24 +59,16 @@ const (
 //     }
 //
 type PrimaryKey struct {
-	modelName    string
-	tableName    string
-	pkName       string
-	pkColumnName string
-	pkColumnPath string
-	pkType       PrimaryKeyType
-	pkDefault    PrimaryKeyDefault
+	Field
+	pkType    PrimaryKeyType
+	pkDefault PrimaryKeyDefault
 }
 
 // NewPrimaryKey creates a primary key from a field instance.
 func NewPrimaryKey(field *Field) (*PrimaryKey, error) {
 	pk := &PrimaryKey{
-		modelName:    field.modelName,
-		tableName:    field.tableName,
-		pkName:       field.fieldName,
-		pkColumnName: field.columnName,
-		pkColumnPath: field.columnPath,
-		pkDefault:    PrimaryKeyDBDefault,
+		Field:     *field,
+		pkDefault: PrimaryKeyDBDefault,
 	}
 
 	switch field.Type().Kind() {
@@ -93,31 +85,6 @@ func NewPrimaryKey(field *Field) (*PrimaryKey, error) {
 	}
 
 	return pk, nil
-}
-
-// ModelName define the model name of this primary key.
-func (key PrimaryKey) ModelName() string {
-	return key.modelName
-}
-
-// FieldName define the struct field name used as primary key.
-func (key PrimaryKey) FieldName() string {
-	return key.pkName
-}
-
-// TableName returns the primary key's table name.
-func (key PrimaryKey) TableName() string {
-	return key.tableName
-}
-
-// ColumnPath returns the primary key's full column path.
-func (key PrimaryKey) ColumnPath() string {
-	return key.pkColumnPath
-}
-
-// ColumnName returns the primary key's column name.
-func (key PrimaryKey) ColumnName() string {
-	return key.pkColumnName
 }
 
 // Type returns the primary key's type.
@@ -143,13 +110,13 @@ func (key PrimaryKey) Value(model Model) (interface{}, error) {
 func (key PrimaryKey) ValueOpt(model Model) (interface{}, bool) {
 	switch key.pkType {
 	case PrimaryKeyIntegerType:
-		id, err := reflectx.GetFieldValueInt64(model, key.pkName)
+		id, err := reflectx.GetFieldValueInt64(model, key.FieldName())
 		if err != nil || id == int64(0) {
 			return int64(0), false
 		}
 		return id, true
 	case PrimaryKeyStringType:
-		id, err := reflectx.GetFieldValueString(model, key.pkName)
+		id, err := reflectx.GetFieldValueString(model, key.FieldName())
 		if err != nil || id == "" {
 			return "", false
 		}

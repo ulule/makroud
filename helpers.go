@@ -29,6 +29,7 @@ func Exec(driver Driver, builder lkb.Builder, dest ...interface{}) error {
 		"query": query,
 	})
 
+	// TODO Handle single object.
 	if len(dest) > 0 {
 		err = stmt.Select(dest[0], args)
 	} else {
@@ -41,6 +42,7 @@ func Exec(driver Driver, builder lkb.Builder, dest ...interface{}) error {
 	return nil
 }
 
+// TODO Rename Sync to Save
 // Sync will create or update a row from a Loukoum builder.
 // If an object is given, it will mutate it to match the row values.
 func Sync(driver Driver, builder lkb.Builder, dest interface{}) error {
@@ -69,6 +71,7 @@ func Sync(driver Driver, builder lkb.Builder, dest interface{}) error {
 	return nil
 }
 
+// TODO Merge Fetch and List
 // Fetch returns an instance from a Loukoum builder.
 func Fetch(driver Driver, builder lkb.Builder, dest interface{}) error {
 	start := time.Now()
@@ -123,7 +126,7 @@ func List(driver Driver, builder lkb.Builder, dest interface{}) error {
 	return nil
 }
 
-// Count will execute given query to counts the number of rows.
+// Count will execute given query to return a number from a aggregate function.
 func Count(driver Driver, builder lkb.Builder) (int64, error) {
 	count := int64(0)
 
@@ -138,7 +141,22 @@ func Count(driver Driver, builder lkb.Builder) (int64, error) {
 	return count, nil
 }
 
+// FloatCount will execute given query to return a number (in float) from a aggregate function.
+func FloatCount(driver Driver, builder lkb.Builder) (float64, error) {
+	count := float64(0)
+
+	err := Fetch(driver, builder, &count)
+	if IsErrNoRows(err) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 // IsErrNoRows returns if given error is a "no rows" error.
 func IsErrNoRows(err error) bool {
-	return errors.Cause(err) == sql.ErrNoRows
+	return err != nil && errors.Cause(err) == sql.ErrNoRows
 }

@@ -8,12 +8,13 @@ import (
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 	"github.com/ulule/loukoum"
+	"github.com/ulule/loukoum/format"
 
 	"github.com/ulule/sqlxx"
 )
 
 func TestSave_Owl(t *testing.T) {
-	Setup(t, sqlxx.Cache(true))(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver sqlxx.Driver) {
 		is := require.New(t)
 
 		name := "Kika"
@@ -81,11 +82,11 @@ func TestSave_Owl(t *testing.T) {
 }
 
 func TestSave_Meow(t *testing.T) {
-	Setup(t, sqlxx.Cache(true))(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver sqlxx.Driver) {
 		is := require.New(t)
 
+		t0 := time.Now()
 		body := "meow"
-		now := time.Now()
 		meow := &Meow{
 			Body: body,
 		}
@@ -96,8 +97,8 @@ func TestSave_Meow(t *testing.T) {
 		is.Len(queries, 1)
 		query := queries[0]
 		expected := fmt.Sprint(
-			"INSERT INTO wp_meow (body, deleted, hash) VALUES ('", body, "', NULL, '",
-			meow.Hash, "') RETURNING created, updated",
+			"INSERT INTO wp_meow (body, deleted, hash) VALUES (", format.String(body), ", NULL, ",
+			format.String(meow.Hash), ") RETURNING created, updated",
 		)
 		is.Equal(expected, query.Raw)
 		expected = fmt.Sprint(
@@ -110,9 +111,40 @@ func TestSave_Meow(t *testing.T) {
 		is.Equal(pq.NullTime{}, query.Args["arg_2"])
 		is.Equal(meow.Hash, query.Args["arg_3"])
 		is.False(meow.CreatedAt.IsZero())
-		is.True(meow.CreatedAt.After(now))
+		is.True(meow.CreatedAt.After(t0))
 		is.False(meow.UpdatedAt.IsZero())
-		is.True(meow.UpdatedAt.After(now))
+		is.True(meow.UpdatedAt.After(t0))
+
+		t1 := time.Now()
+		body = "meow meow!"
+		meow.Body = body
+
+		queries, err = sqlxx.SaveWithQueries(driver, meow)
+		is.NoError(err)
+		is.NotNil(queries)
+		is.Len(queries, 1)
+		query = queries[0]
+		expected = fmt.Sprint(
+			"UPDATE wp_meow SET body = ", format.String(body), ", created = ", format.Time(meow.CreatedAt),
+			", deleted = NULL, updated = NOW() WHERE (hash = ", format.String(meow.Hash), ") RETURNING updated",
+		)
+		is.Equal(expected, query.Raw)
+		expected = fmt.Sprint(
+			"UPDATE wp_meow SET body = :arg_1, created = :arg_2, deleted = :arg_3, updated = NOW() ",
+			"WHERE (hash = :arg_4) RETURNING updated",
+		)
+		is.Equal(expected, query.Query)
+		is.Len(query.Args, 4)
+		is.Equal(body, query.Args["arg_1"])
+		is.Equal(meow.CreatedAt, query.Args["arg_2"])
+		is.Equal(pq.NullTime{}, query.Args["arg_3"])
+		is.Equal(meow.Hash, query.Args["arg_4"])
+		is.False(meow.CreatedAt.IsZero())
+		is.True(meow.CreatedAt.After(t0))
+		is.True(meow.CreatedAt.Before(t1))
+		is.False(meow.UpdatedAt.IsZero())
+		is.True(meow.UpdatedAt.After(t0))
+		is.True(meow.UpdatedAt.After(t1))
 
 	})
 }

@@ -10,6 +10,15 @@ import (
 	"github.com/ulule/sqlxx/reflectx"
 )
 
+// ErrCreatedKey is returned when we cannot find a created key in given schema.
+var ErrCreatedKey = fmt.Errorf("cannot find created key in schema")
+
+// ErrUpdatedKey is returned when we cannot find a updated key in given schema.
+var ErrUpdatedKey = fmt.Errorf("cannot find updated key in schema")
+
+// ErrDeletedKey is returned when we cannot find a deleted key in given schema.
+var ErrDeletedKey = fmt.Errorf("cannot find deleted key in schema")
+
 // Schema is a model schema.
 type Schema struct {
 	model      Model
@@ -42,7 +51,15 @@ func (schema Schema) CreatedKeyPath() string {
 	if schema.HasUpdatedKey() {
 		return schema.createdKey.ColumnPath()
 	}
-	return ""
+	panic(fmt.Sprint("sqlxx: ", ErrCreatedKey))
+}
+
+// CreatedKeyName returns schema created key column's name.
+func (schema Schema) CreatedKeyName() string {
+	if schema.HasUpdatedKey() {
+		return schema.createdKey.ColumnName()
+	}
+	panic(fmt.Sprint("sqlxx: ", ErrCreatedKey))
 }
 
 // HasUpdatedKey returns if an updated key is defined for current schema.
@@ -55,7 +72,15 @@ func (schema Schema) UpdatedKeyPath() string {
 	if schema.HasUpdatedKey() {
 		return schema.updatedKey.ColumnPath()
 	}
-	return ""
+	panic(fmt.Sprint("sqlxx: ", ErrUpdatedKey))
+}
+
+// UpdatedKeyName returns schema deleted key column's name.
+func (schema Schema) UpdatedKeyName() string {
+	if schema.HasUpdatedKey() {
+		return schema.updatedKey.ColumnName()
+	}
+	panic(fmt.Sprint("sqlxx: ", ErrUpdatedKey))
 }
 
 // HasDeletedKey returns if an deleted key is defined for current schema.
@@ -68,7 +93,15 @@ func (schema Schema) DeletedKeyPath() string {
 	if schema.HasDeletedKey() {
 		return schema.deletedKey.ColumnPath()
 	}
-	return ""
+	panic(fmt.Sprint("sqlxx: ", ErrDeletedKey))
+}
+
+// DeletedKeyName returns schema deleted key column's name.
+func (schema Schema) DeletedKeyName() string {
+	if schema.HasDeletedKey() {
+		return schema.deletedKey.ColumnName()
+	}
+	panic(fmt.Sprint("sqlxx: ", ErrDeletedKey))
 }
 
 // Columns returns schema columns without table prefix.
@@ -100,22 +133,22 @@ func (schema Schema) columns(withTable bool) Columns {
 }
 
 // WriteModel will try to updates given model from sqlx mapper.
-func (schema Schema) WriteModel(mapper map[string]interface{}, model Model) error {
+func (schema Schema) WriteModel(mapper Mapper, model Model) error {
+	if len(mapper) == 0 {
+		return nil
+	}
 	for key, value := range mapper {
 		if schema.pk.ColumnName() == key || schema.pk.ColumnPath() == key {
-			err := reflectx.SetFieldValue(model, schema.pk.FieldName(), value)
+			err := schema.writeField(model, schema.pk.Field, value)
 			if err != nil {
 				return err
 			}
 			continue
 		}
 
-		fmt.Printf("%s %+v\n", key, value)
-		fmt.Printf("%+v\n", schema.fields)
-
 		field, ok := schema.fields[key]
 		if ok {
-			err := reflectx.SetFieldValue(model, field.FieldName(), value)
+			err := schema.writeField(model, field, value)
 			if err != nil {
 				return err
 			}
@@ -125,7 +158,7 @@ func (schema Schema) WriteModel(mapper map[string]interface{}, model Model) erro
 		key = strings.TrimPrefix(key, fmt.Sprint(schema.TableName(), "."))
 		field, ok = schema.fields[key]
 		if ok {
-			err := reflectx.SetFieldValue(model, field.FieldName(), value)
+			err := schema.writeField(model, field, value)
 			if err != nil {
 				return err
 			}
@@ -133,6 +166,10 @@ func (schema Schema) WriteModel(mapper map[string]interface{}, model Model) erro
 		}
 	}
 	return nil
+}
+
+func (schema Schema) writeField(model Model, field Field, value interface{}) error {
+	return reflectx.UpdateFieldValue(model, field.FieldName(), value)
 }
 
 // ----------------------------------------------------------------------------

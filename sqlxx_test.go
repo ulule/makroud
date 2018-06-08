@@ -5,7 +5,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/lib/pq"
@@ -1396,7 +1395,7 @@ type SetupCallback func(handler SetupHandler)
 
 type SetupHandler func(driver sqlxx.Driver)
 
-func Setup(t *testing.T, options ...sqlxx.Option) SetupCallback {
+func Setup(t require.TestingT, options ...sqlxx.Option) SetupCallback {
 	is := require.New(t)
 	opts := []sqlxx.Option{
 		dbParamString(sqlxx.Host, "host", "PGHOST"),
@@ -1404,7 +1403,7 @@ func Setup(t *testing.T, options ...sqlxx.Option) SetupCallback {
 		dbParamString(sqlxx.User, "user", "PGUSER"),
 		dbParamString(sqlxx.Password, "password", "PGPASSWORD"),
 		dbParamString(sqlxx.Database, "name", "PGDATABASE"),
-		sqlxx.Cache(false),
+		sqlxx.Cache(true),
 	}
 	opts = append(opts, options...)
 

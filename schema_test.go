@@ -9,6 +9,13 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
+import "time"
+import "github.com/lib/pq"
+import "github.com/ulule/amber/registry"
+
+// import "reflect"
+// import "github.com/ulule/sqlxx/reflectx"
+
 func TestSchema_Owl(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		is := require.New(t)
@@ -124,4 +131,83 @@ func TestSchema_Meow(t *testing.T) {
 		is.Contains(columns, "wp_meow.deleted")
 
 	})
+}
+
+var model *Meow
+
+func BenchmarkSchemaWriteModel1(b *testing.B) {
+	var m *Meow
+	Setup(b)(func(driver sqlxx.Driver) {
+		is := require.New(b)
+
+		err := sqlxx.Save(driver, &Meow{
+			Body: "meow!",
+		})
+		is.NoError(err)
+
+		stmt, err := driver.PrepareNamed("SELECT * FROM wp_meow LIMIT 1;")
+		is.NoError(err)
+
+		h := registry.NewHistogram("duration")
+
+		for n := 0; n < b.N; n++ {
+
+			type Meow3 struct {
+				Hash      string      `db:"hash"`
+				Body      string      `db:"body"`
+				CreatedAt time.Time   `db:"created"`
+				UpdatedAt time.Time   `db:"updated"`
+				DeletedAt pq.NullTime `db:"deleted"`
+			}
+
+			model := &Meow3{}
+			row := stmt.QueryRowx(map[string]interface{}{})
+			t0 := time.Now()
+			err = row.StructScan(model)
+			h.Observe(int64(time.Since(t0)))
+			is.NoError(err)
+		}
+
+		fmt.Println(time.Duration(h.Mean()))
+	})
+	model = m
+}
+
+func BenchmarkSchemaWriteModel2(b *testing.B) {
+	var m *Meow
+	Setup(b)(func(driver sqlxx.Driver) {
+		is := require.New(b)
+		schema, err := sqlxx.GetSchema(driver, &Meow{})
+		is.NoError(err)
+
+		h := registry.NewHistogram("duration")
+
+		for n := 0; n < b.N; n++ {
+
+			model := &Meow{}
+
+			//hash := "01CEXVDPT7YAAAV9J3CWWAH8KP"
+			body := "meow meow!"
+			// created := time.Now()
+			// updated := time.Now()
+			// deleted := time.Now()
+
+			mapper := sqlxx.Mapper{
+				// "hash": hash,
+				"body": body,
+				// "created": created,
+				// "updated": updated,
+				// "deleted": deleted,
+			}
+
+			t0 := time.Now()
+			schema.WriteModel(mapper, model)
+			h.Observe(int64(time.Since(t0)))
+
+			m = model
+		}
+
+		fmt.Println(time.Duration(h.Mean()))
+	})
+	model = m
 }

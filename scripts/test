@@ -7,7 +7,7 @@ scripts/database
 
 go get -d -u github.com/stretchr/testify/require
 
-OPTIONS=""
+OPTIONS="./..."
 if [ -n "$1" ]; then
     OPTIONS="$@"
 fi
