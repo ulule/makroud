@@ -12,4 +12,4 @@ if [ -n "$1" ]; then
     OPTIONS="$@"
 fi
 
-go test -v ${OPTIONS}
+go test -v -count=1 ${OPTIONS}
