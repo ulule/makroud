@@ -139,7 +139,7 @@ func (schema Schema) WriteModel(mapper Mapper, model Model) error {
 	}
 	for key, value := range mapper {
 		if schema.pk.ColumnName() == key || schema.pk.ColumnPath() == key {
-			err := schema.writeField(model, schema.pk.Field, value)
+			err := reflectx.UpdateFieldValue(model, schema.pk.Field.FieldName(), value)
 			if err != nil {
 				return err
 			}
@@ -148,7 +148,7 @@ func (schema Schema) WriteModel(mapper Mapper, model Model) error {
 
 		field, ok := schema.fields[key]
 		if ok {
-			err := schema.writeField(model, field, value)
+			err := reflectx.UpdateFieldValue(model, field.FieldName(), value)
 			if err != nil {
 				return err
 			}
@@ -158,7 +158,7 @@ func (schema Schema) WriteModel(mapper Mapper, model Model) error {
 		key = strings.TrimPrefix(key, fmt.Sprint(schema.TableName(), "."))
 		field, ok = schema.fields[key]
 		if ok {
-			err := schema.writeField(model, field, value)
+			err := reflectx.UpdateFieldValue(model, field.FieldName(), value)
 			if err != nil {
 				return err
 			}
