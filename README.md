@@ -147,18 +147,30 @@ type User struct {
 
 ## Development
 
-The test suite is running on postgresql so make sure it's correctly installed on your computer.
+### Docker
 
-You will have to create an initial database attached to the user used by this test suite:
+The test suite is running on PostgreSQL. We use [Docker](https://docs.docker.com/install/) to create a running container using [scripts/database](scripts/database).
 
+### Testing
 
-```console
-CREATE USER postgres WITH PASSWORD '';
-CREATE DATABASE sqlxx_test WITH OWNER postgres;
+To run the test suite, simply execute:
+
+```
+scripts/test
 ```
 
-You can now run the test suite:
+Also, you can execute the linter with:
 
-```console
-make test
 ```
+scripts/lint
+```
+
+### Random
+
+Because sometimes it's hard to think of a good test fixture, using generators can save your productivity.
+This is a small list used to write unit test:
+
+ * http://www.fantasynamegenerators.com/pet-cat-names.php
+ * http://www.fantasynamegenerators.com/pet-owl-names.php
+ * http://www.fantasynamegenerators.com/food-names.php
+ * http://www.fantasynamegenerators.com/color-names.php
