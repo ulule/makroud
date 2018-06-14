@@ -3,8 +3,6 @@ package sqlxx
 import (
 	"reflect"
 
-	"github.com/pkg/errors"
-
 	"github.com/ulule/sqlxx/reflectx"
 )
 
@@ -84,44 +82,6 @@ func ToModel(itf interface{}) Model {
 // 	return values, nil
 // }
 
-// SetFieldValue sets the provided value
-func SetFieldValue(itf interface{}, name string, value interface{}) error {
-	v, ok := itf.(reflect.Value)
-	if !ok {
-		v = reflect.Indirect(reflect.ValueOf(itf))
-	}
-
-	if v.Kind() == reflect.Interface {
-		v = reflect.ValueOf(v.Interface())
-	}
-
-	field := v.FieldByName(name)
-	if !field.IsValid() {
-		return errors.Errorf("no such field %s in %+v", name, v.Interface())
-	}
-
-	if !field.CanSet() {
-		return errors.Errorf("cannot set %s field on %v%+v", name, v.Type().Name(), v.Interface())
-	}
-
-	fv := reflect.Indirect(reflect.ValueOf(value))
-	if !fv.IsValid() {
-		return nil
-	}
-
-	if field.Type().Kind() == reflect.Ptr {
-		fv = reflect.ValueOf(MakePointer(fv.Interface()))
-	}
-
-	if field.Type() != fv.Type() {
-		return errors.Errorf("provided value type %v didn't match field type %v", fv.Type(), field.Type())
-	}
-
-	field.Set(fv)
-
-	return nil
-}
-
 // ----------------------------------------------------------------------------
 // Reflection
 // ----------------------------------------------------------------------------
@@ -129,16 +89,6 @@ func SetFieldValue(itf interface{}, name string, value interface{}) error {
 // IsSlice returns true if the given interface is a slice.
 func IsSlice(itf interface{}) bool {
 	return reflectx.GetIndirectType(reflect.ValueOf(itf).Type()).Kind() == reflect.Slice
-}
-
-// GetZero returns a zero value for the given element.
-func GetZero(element interface{}) reflect.Value {
-	t, ok := element.(reflect.Type)
-	if !ok {
-		t = reflect.TypeOf(element)
-	}
-
-	return reflect.New(reflectx.GetIndirectType(t)).Elem()
 }
 
 // MakePointer makes a copy of the given interface and returns a pointer.

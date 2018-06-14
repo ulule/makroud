@@ -25,6 +25,11 @@ type Query struct {
 	Args  map[string]interface{}
 }
 
+// String returns query statement.
+func (q Query) String() string {
+	return q.Raw
+}
+
 // NewQuery creates a new Query instance from given loukoum builder.
 func NewQuery(builder lkb.Builder) Query {
 	raw := builder.String()
@@ -36,7 +41,9 @@ func NewQuery(builder lkb.Builder) Query {
 	}
 }
 
-// String returns query statement.
-func (q Query) String() string {
-	return q.Raw
+// NewRawQuery creates a new Query instance from given query.
+func NewRawQuery(raw string) Query {
+	return Query{
+		Raw: raw,
+	}
 }

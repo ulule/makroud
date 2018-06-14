@@ -73,7 +73,7 @@ func TestSave_Owl(t *testing.T) {
 
 		check := loukoum.Select("COUNT(*)").From("wp_owl").Where(loukoum.Condition("name").Equal("Kika"))
 		count := -1
-		err = sqlxx.Fetch(driver, check, &count)
+		err = sqlxx.Exec(driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(1, count)

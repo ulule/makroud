@@ -1459,7 +1459,7 @@ func CreateTables(db *sqlxx.Client) {
 			favorite_food   VARCHAR(255) NOT NULL
 		);
 		CREATE TABLE wp_cat (
-			id              VARCHAR(26) PRIMARY KEY NOT NULL,
+			id              VARCHAR(32) PRIMARY KEY NOT NULL DEFAULT md5(random()::text),
 			name            VARCHAR(255) NOT NULL,
 			created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 			updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),

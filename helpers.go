@@ -5,132 +5,69 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/ulule/loukoum/builder"
 
-	lkb "github.com/ulule/loukoum/builder"
+	"github.com/ulule/sqlxx/reflectx"
 )
 
 // Exec will execute given query from a Loukoum builder.
 // If an object is given, it will mutate it to match the row values.
-func Exec(driver Driver, builder lkb.Builder, dest ...interface{}) error {
+func Exec(driver Driver, stmt builder.Builder, dest ...interface{}) error {
 	start := time.Now()
-	queries := Queries{NewQuery(builder)}
+	queries := Queries{NewQuery(stmt)}
 
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	query, args := builder.NamedQuery()
+	query, args := stmt.NamedQuery()
 
-	stmt, err := driver.PrepareNamed(query)
-	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot prepare statement")
-	}
-	defer driver.close(stmt, map[string]string{
-		"query": query,
-	})
-
-	// TODO Handle single object.
-	if len(dest) > 0 {
-		err = stmt.Select(dest[0], args)
-	} else {
-		_, err = stmt.Exec(args)
-	}
-	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute query")
-	}
-
-	return nil
+	return exec(driver, query, args, dest...)
 }
 
-// TODO Rename Sync to Save
-// Sync will create or update a row from a Loukoum builder.
+// RawExec will execute given query.
 // If an object is given, it will mutate it to match the row values.
-func Sync(driver Driver, builder lkb.Builder, dest interface{}) error {
+func RawExec(driver Driver, query string, dest ...interface{}) error {
 	start := time.Now()
-	queries := Queries{NewQuery(builder)}
+	queries := Queries{NewRawQuery(query)}
 
 	defer func() {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	query, args := builder.NamedQuery()
+	return exec(driver, query, nil, dest...)
+}
 
-	stmt, err := driver.PrepareNamed(query)
+func exec(driver Driver, query string, args map[string]interface{}, dest ...interface{}) error {
+	named, err := driver.PrepareNamed(query)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot prepare statement")
 	}
-	defer driver.close(stmt, map[string]string{
+	defer driver.close(named, map[string]string{
 		"query": query,
 	})
 
-	err = stmt.Get(dest, args)
+	if len(dest) > 0 {
+		if reflectx.IsSlice(dest[0]) {
+			err = named.Select(dest[0], args)
+		} else {
+			err = named.Get(dest[0], args)
+		}
+	} else {
+		_, err = named.Exec(args)
+	}
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot execute query")
-	}
-
-	return nil
-}
-
-// TODO Merge Fetch and List
-// Fetch returns an instance from a Loukoum builder.
-func Fetch(driver Driver, builder lkb.Builder, dest interface{}) error {
-	start := time.Now()
-	queries := Queries{NewQuery(builder)}
-
-	defer func() {
-		Log(driver, queries, time.Since(start))
-	}()
-
-	query, args := builder.NamedQuery()
-
-	stmt, err := driver.PrepareNamed(query)
-	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot prepare statement")
-	}
-	defer driver.close(stmt, map[string]string{
-		"query": query,
-	})
-
-	err = stmt.Get(dest, args)
-	if err != nil {
-		return errors.Wrap(err, "sqlx: cannot execute query")
-	}
-
-	return nil
-}
-
-// List returns a slice of instances from a Loukoum builder.
-func List(driver Driver, builder lkb.Builder, dest interface{}) error {
-	start := time.Now()
-	queries := Queries{NewQuery(builder)}
-
-	defer func() {
-		Log(driver, queries, time.Since(start))
-	}()
-
-	query, args := builder.NamedQuery()
-
-	stmt, err := driver.PrepareNamed(query)
-	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot prepare statement")
-	}
-	defer driver.close(stmt, map[string]string{
-		"query": query,
-	})
-
-	err = stmt.Select(dest, args)
-	if err != nil && !IsErrNoRows(err) {
-		return errors.Wrap(err, "sqlx: cannot execute query")
 	}
 
 	return nil
 }
 
 // Count will execute given query to return a number from a aggregate function.
-func Count(driver Driver, builder lkb.Builder) (int64, error) {
+func Count(driver Driver, stmt builder.Builder) (int64, error) {
 	count := int64(0)
 
-	err := Fetch(driver, builder, &count)
+	err := Exec(driver, stmt, &count)
 	if IsErrNoRows(err) {
 		return 0, nil
 	}
@@ -142,10 +79,10 @@ func Count(driver Driver, builder lkb.Builder) (int64, error) {
 }
 
 // FloatCount will execute given query to return a number (in float) from a aggregate function.
-func FloatCount(driver Driver, builder lkb.Builder) (float64, error) {
+func FloatCount(driver Driver, stmt builder.Builder) (float64, error) {
 	count := float64(0)
 
-	err := Fetch(driver, builder, &count)
+	err := Exec(driver, stmt, &count)
 	if IsErrNoRows(err) {
 		return 0, nil
 	}

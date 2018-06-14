@@ -39,7 +39,7 @@ func TestDelete_DeleteOwl(t *testing.T) {
 
 		check := loukoum.Select("COUNT(*)").From("wp_owl").Where(loukoum.Condition("name").Equal("Blake"))
 		count := -1
-		err = sqlxx.Fetch(driver, check, &count)
+		err = sqlxx.Exec(driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(0, count)
@@ -92,7 +92,7 @@ func TestDelete_DeleteMeow(t *testing.T) {
 
 		check := loukoum.Select("COUNT(*)").From("wp_meow").Where(loukoum.Condition("hash").Equal(id))
 		count := -1
-		err = sqlxx.Fetch(driver, check, &count)
+		err = sqlxx.Exec(driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(0, count)
@@ -129,7 +129,7 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 		count := -1
 		check := loukoum.Select("COUNT(*)").From("wp_meow").
 			Where(loukoum.Condition("hash").Equal(id))
-		err = sqlxx.Fetch(driver, check, &count)
+		err = sqlxx.Exec(driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(1, count)
@@ -137,7 +137,7 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 		count = -1
 		check = loukoum.Select("COUNT(*)").From("wp_meow").
 			Where(loukoum.Condition("hash").Equal(id)).And(loukoum.Condition("deleted").IsNull(true))
-		err = sqlxx.Fetch(driver, check, &count)
+		err = sqlxx.Exec(driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(0, count)
