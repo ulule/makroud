@@ -12,12 +12,13 @@ func IsZero(instance interface{}) bool {
 
 	value, ok := instance.(reflect.Value)
 	if !ok {
-		value = reflect.Indirect(reflect.ValueOf(instance))
+		value = reflect.ValueOf(instance)
 	}
-
 	if value.Kind() == reflect.Ptr && value.IsNil() {
 		return true
 	}
+
+	value = reflect.Indirect(value)
 
 	zero := reflect.Zero(value.Type())
 	if value.Type().Comparable() && zero.Type().Comparable() {

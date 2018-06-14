@@ -158,4 +158,42 @@ func TestReflectx_IsZero(t *testing.T) {
 		v := reflectx.IsZero(invalid)
 		is.False(v, fmt.Sprintf("loop #%d", i))
 	}
+
+	type Foo struct {
+		Name   *string
+		Fk     sql.NullInt64
+		Ptr    *sql.NullString
+		Active bool
+	}
+
+	empty := ""
+	name := "novln"
+
+	foo0 := Foo{}
+	foo1 := Foo{Name: &empty}
+	foo2 := Foo{Name: &name}
+	foo3 := Foo{Ptr: &sql.NullString{}}
+	foo4 := Foo{Ptr: &sql.NullString{Valid: true, String: empty}}
+	foo5 := Foo{Ptr: &sql.NullString{Valid: true, String: name}}
+	foo6 := Foo{Fk: sql.NullInt64{}}
+	foo7 := Foo{Fk: sql.NullInt64{Valid: true}}
+	foo8 := Foo{Fk: sql.NullInt64{Valid: true, Int64: 64}}
+	foo9 := Foo{Active: false}
+	foo10 := Foo{Active: true}
+
+	is.True(reflectx.IsZero(foo0.Name))
+	is.True(reflectx.IsZero(foo1.Name))
+	is.False(reflectx.IsZero(foo2.Name))
+	is.True(reflectx.IsZero(foo0.Ptr))
+	is.True(reflectx.IsZero(foo3.Ptr))
+	is.False(reflectx.IsZero(foo4.Ptr))
+	is.False(reflectx.IsZero(foo5.Ptr))
+	is.True(reflectx.IsZero(foo0.Fk))
+	is.True(reflectx.IsZero(foo6.Fk))
+	is.False(reflectx.IsZero(foo7.Fk))
+	is.False(reflectx.IsZero(foo8.Fk))
+	is.True(reflectx.IsZero(foo0.Active))
+	is.True(reflectx.IsZero(foo9.Active))
+	is.False(reflectx.IsZero(foo10.Active))
+
 }
