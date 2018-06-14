@@ -86,26 +86,6 @@ func ToModel(itf interface{}) Model {
 // Reflection
 // ----------------------------------------------------------------------------
 
-// IsSlice returns true if the given interface is a slice.
-func IsSlice(itf interface{}) bool {
-	return reflectx.GetIndirectType(reflect.ValueOf(itf).Type()).Kind() == reflect.Slice
-}
-
-// MakePointer makes a copy of the given interface and returns a pointer.
-func MakePointer(itf interface{}) interface{} {
-	t := reflect.TypeOf(itf)
-
-	cp := reflect.New(t)
-	cp.Elem().Set(reflect.ValueOf(itf))
-
-	// Avoid double pointers if itf is a pointer
-	if t.Kind() == reflect.Ptr {
-		return cp.Elem().Interface()
-	}
-
-	return cp.Interface()
-}
-
 //
 // // GetValues will extract given list of args from params using a sqlx mapper.
 // // Example: Let's say we have this struct,
