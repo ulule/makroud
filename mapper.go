@@ -8,6 +8,7 @@ import (
 // Mapper
 // ----------------------------------------------------------------------------
 
+// Mapper will be used to mutate a Model with row values.
 type Mapper map[string]interface{}
 
 // ScanRow will scan given sqlx.Row to created its Mapper.

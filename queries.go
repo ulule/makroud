@@ -2,6 +2,7 @@ package sqlxx
 
 import (
 	"bytes"
+	"strings"
 
 	lkb "github.com/ulule/loukoum/builder"
 )
@@ -12,7 +13,11 @@ type Queries []Query
 func (q Queries) String() string {
 	buffer := &bytes.Buffer{}
 	for i := range q {
-		buffer.WriteString(q[i].String())
+		query := q[i].String()
+		buffer.WriteString(query)
+		if !strings.HasSuffix(query, ";") {
+			buffer.WriteString(";")
+		}
 		buffer.WriteString("\n")
 	}
 	return buffer.String()
