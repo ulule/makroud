@@ -5,14 +5,14 @@ import (
 )
 
 // IsZero returns true if the given interface is a zero value or nil.
-func IsZero(itf interface{}) bool {
-	if itf == nil {
+func IsZero(instance interface{}) bool {
+	if instance == nil {
 		return true
 	}
 
-	value, ok := itf.(reflect.Value)
+	value, ok := instance.(reflect.Value)
 	if !ok {
-		value = reflect.Indirect(reflect.ValueOf(itf))
+		value = reflect.Indirect(reflect.ValueOf(instance))
 	}
 
 	if value.Kind() == reflect.Ptr && value.IsNil() {
@@ -20,7 +20,11 @@ func IsZero(itf interface{}) bool {
 	}
 
 	zero := reflect.Zero(value.Type())
-	return value.Interface() == zero.Interface()
+	if value.Type().Comparable() && zero.Type().Comparable() {
+		return value.Interface() == zero.Interface()
+	}
+
+	return reflect.DeepEqual(value.Interface(), zero.Interface())
 }
 
 // MakeZero returns a zero value for the given element.

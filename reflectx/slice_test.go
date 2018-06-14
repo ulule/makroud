@@ -12,78 +12,78 @@ import (
 	"github.com/ulule/sqlxx/reflectx"
 )
 
-func TestReflectx_IsZero(t *testing.T) {
+func TestReflectx_IsSlice(t *testing.T) {
 	is := require.New(t)
 
-	zi := int(0)
-	zi8 := int8(0)
-	zi16 := int16(0)
-	zi32 := int32(0)
-	zi64 := int64(0)
-	zui := uint(0)
-	zui8 := uint8(0)
-	zui16 := uint16(0)
-	zui32 := uint32(0)
-	zui64 := uint64(0)
-	zf32 := float32(0)
-	zf64 := float64(0)
-	zb := false
-	zs := ""
-	zt := time.Time{}
-	zni64 := sql.NullInt64{}
-	znf64 := sql.NullFloat64{}
-	znb := sql.NullBool{}
-	zns := sql.NullString{}
-	znt := pq.NullTime{}
-	ze := Elements{}
+	si := []int{}
+	si8 := []int8{}
+	si16 := []int16{}
+	si32 := []int32{}
+	si64 := []int64{}
+	sui := []uint{}
+	sui8 := []uint8{}
+	sui16 := []uint16{}
+	sui32 := []uint32{}
+	sui64 := []uint64{}
+	sf32 := []float32{}
+	sf64 := []float64{}
+	sb := []bool{}
+	ss := []string{}
+	st := []time.Time{}
+	sni64 := []sql.NullInt64{}
+	snf64 := []sql.NullFloat64{}
+	snb := []sql.NullBool{}
+	sns := []sql.NullString{}
+	snt := []pq.NullTime{}
+	se := []Elements{}
 
 	valids := []interface{}{
-		zi,
-		&zi,
-		zi8,
-		&zi8,
-		zi16,
-		&zi16,
-		zi32,
-		&zi32,
-		zi64,
-		&zi64,
-		zui,
-		&zui,
-		zui8,
-		&zui8,
-		zui16,
-		&zui16,
-		zui32,
-		&zui32,
-		zui64,
-		&zui64,
-		zf32,
-		&zf32,
-		zf64,
-		&zf64,
-		zb,
-		&zb,
-		zs,
-		&zs,
-		zt,
-		&zt,
-		zni64,
-		&zni64,
-		znf64,
-		&znf64,
-		znb,
-		&znb,
-		zns,
-		&zns,
-		znt,
-		&znt,
-		ze,
-		&ze,
+		si,
+		&si,
+		si8,
+		&si8,
+		si16,
+		&si16,
+		si32,
+		&si32,
+		si64,
+		&si64,
+		sui,
+		&sui,
+		sui8,
+		&sui8,
+		sui16,
+		&sui16,
+		sui32,
+		&sui32,
+		sui64,
+		&sui64,
+		sf32,
+		&sf32,
+		sf64,
+		&sf64,
+		sb,
+		&sb,
+		ss,
+		&ss,
+		st,
+		&st,
+		sni64,
+		&sni64,
+		snf64,
+		&snf64,
+		snb,
+		&snb,
+		sns,
+		&sns,
+		snt,
+		&snt,
+		se,
+		&se,
 	}
 
 	for i, valid := range valids {
-		v := reflectx.IsZero(valid)
+		v := reflectx.IsSlice(valid)
 		is.True(v, fmt.Sprintf("loop #%d", i))
 	}
 
@@ -155,7 +155,8 @@ func TestReflectx_IsZero(t *testing.T) {
 	}
 
 	for i, invalid := range invalids {
-		v := reflectx.IsZero(invalid)
+		v := reflectx.IsSlice(invalid)
 		is.False(v, fmt.Sprintf("loop #%d", i))
 	}
+
 }
