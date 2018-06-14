@@ -26,7 +26,7 @@ func Transaction(driver Driver, handler func(driver Driver) error) error {
 
 		thr := tx.Rollback()
 		if thr != nil {
-			// TODO: Add an observer to collect this error.
+			// TODO (novln): Add an observer to collect this error.
 			thr = errors.Wrap(thr, "sqlxx: cannot rollback transaction")
 			_ = thr
 		}
