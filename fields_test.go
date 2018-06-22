@@ -9,8 +9,6 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
-// TODO Default
-
 func TestFields_Owl(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		is := require.New(t)

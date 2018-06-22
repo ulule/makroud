@@ -12,6 +12,8 @@ import (
 	"github.com/ulule/sqlxx/reflectx"
 )
 
+import "reflect"
+
 func TestReflectx_IsSlice(t *testing.T) {
 	is := require.New(t)
 
@@ -157,6 +159,213 @@ func TestReflectx_IsSlice(t *testing.T) {
 	for i, invalid := range invalids {
 		v := reflectx.IsSlice(invalid)
 		is.False(v, fmt.Sprintf("loop #%d", i))
+	}
+
+}
+
+func TestReflectx_GetSliceType(t *testing.T) {
+	is := require.New(t)
+
+	si := []int{}
+	si8 := []int8{}
+	si16 := []int16{}
+	si32 := []int32{}
+	si64 := []int64{}
+	sui := []uint{}
+	sui8 := []uint8{}
+	sui16 := []uint16{}
+	sui32 := []uint32{}
+	sui64 := []uint64{}
+	sf32 := []float32{}
+	sf64 := []float64{}
+	sb := []bool{}
+	ss := []string{}
+	st := []time.Time{}
+	sni64 := []sql.NullInt64{}
+	snf64 := []sql.NullFloat64{}
+	snb := []sql.NullBool{}
+	sns := []sql.NullString{}
+	snt := []pq.NullTime{}
+	se := []Elements{}
+
+	list := []struct {
+		slice interface{}
+		kind  interface{}
+	}{
+		{
+			slice: si,
+			kind:  int(0),
+		},
+		{
+			slice: &si,
+			kind:  int(0),
+		},
+		{
+			slice: si8,
+			kind:  int8(0),
+		},
+		{
+			slice: &si8,
+			kind:  int8(0),
+		},
+		{
+			slice: si16,
+			kind:  int16(0),
+		},
+		{
+			slice: &si16,
+			kind:  int16(0),
+		},
+		{
+			slice: si32,
+			kind:  int32(0),
+		},
+		{
+			slice: &si32,
+			kind:  int32(0),
+		},
+		{
+			slice: si64,
+			kind:  int64(0),
+		},
+		{
+			slice: &si64,
+			kind:  int64(0),
+		},
+		{
+			slice: sui,
+			kind:  uint(0),
+		},
+		{
+			slice: &sui,
+			kind:  uint(0),
+		},
+		{
+			slice: sui8,
+			kind:  uint8(0),
+		},
+		{
+			slice: &sui8,
+			kind:  uint8(0),
+		},
+		{
+			slice: sui16,
+			kind:  uint16(0),
+		},
+		{
+			slice: &sui16,
+			kind:  uint16(0),
+		},
+		{
+			slice: sui32,
+			kind:  uint32(0),
+		},
+		{
+			slice: &sui32,
+			kind:  uint32(0),
+		},
+		{
+			slice: sui64,
+			kind:  uint64(0),
+		},
+		{
+			slice: &sui64,
+			kind:  uint64(0),
+		},
+		{
+			slice: sf32,
+			kind:  float32(0),
+		},
+		{
+			slice: &sf32,
+			kind:  float32(0),
+		},
+		{
+			slice: sf64,
+			kind:  float64(0),
+		},
+		{
+			slice: &sf64,
+			kind:  float64(0),
+		},
+		{
+			slice: sb,
+			kind:  false,
+		},
+		{
+			slice: &sb,
+			kind:  false,
+		},
+		{
+			slice: ss,
+			kind:  "",
+		},
+		{
+			slice: &ss,
+			kind:  "",
+		},
+		{
+			slice: st,
+			kind:  time.Time{},
+		},
+		{
+			slice: &st,
+			kind:  time.Time{},
+		},
+		{
+			slice: sni64,
+			kind:  sql.NullInt64{},
+		},
+		{
+			slice: &sni64,
+			kind:  sql.NullInt64{},
+		},
+		{
+			slice: snf64,
+			kind:  sql.NullFloat64{},
+		},
+		{
+			slice: &snf64,
+			kind:  sql.NullFloat64{},
+		},
+		{
+			slice: snb,
+			kind:  sql.NullBool{},
+		},
+		{
+			slice: &snb,
+			kind:  sql.NullBool{},
+		},
+		{
+			slice: sns,
+			kind:  sql.NullString{},
+		},
+		{
+			slice: &sns,
+			kind:  sql.NullString{},
+		},
+		{
+			slice: snt,
+			kind:  pq.NullTime{},
+		},
+		{
+			slice: &snt,
+			kind:  pq.NullTime{},
+		},
+		{
+			slice: se,
+			kind:  Elements{},
+		},
+		{
+			slice: &se,
+			kind:  Elements{},
+		},
+	}
+
+	for i := range list {
+		v := reflectx.GetSliceType(list[i].slice)
+		match := v == reflect.TypeOf(list[i].kind)
+		is.True(match, fmt.Sprintf("loop #%d", i))
 	}
 
 }

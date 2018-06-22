@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/ulule/loukoum/builder"
 
@@ -22,7 +23,12 @@ func Exec(driver Driver, stmt builder.Builder, dest ...interface{}) error {
 
 	query, args := stmt.NamedQuery()
 
-	return exec(driver, query, args, dest...)
+	err := exec(driver, query, args, dest...)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute query")
+	}
+
+	return nil
 }
 
 // RawExec will execute given query.
@@ -35,7 +41,12 @@ func RawExec(driver Driver, query string, dest ...interface{}) error {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	return exec(driver, query, nil, dest...)
+	err := exec(driver, query, nil, dest...)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute query")
+	}
+
+	return nil
 }
 
 func exec(driver Driver, query string, args map[string]interface{}, dest ...interface{}) error {
@@ -49,18 +60,86 @@ func exec(driver Driver, query string, args map[string]interface{}, dest ...inte
 
 	if len(dest) > 0 {
 		if reflectx.IsSlice(dest[0]) {
-			err = named.Select(dest[0], args)
+			return execRows(driver, named, args, dest[0])
 		} else {
-			err = named.Get(dest[0], args)
+			return execRow(driver, named, args, dest[0])
 		}
-	} else {
-		_, err = named.Exec(args)
-	}
-	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute query")
 	}
 
+	_, err = named.Exec(args)
+	return err
+}
+
+func execRows(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, dest interface{}) error {
+	model, ok := reflectx.NewSliceValue(dest).(Model)
+	if !ok {
+		return named.Select(dest, args)
+	}
+
+	if !reflectx.IsPointer(dest) {
+		// TODO Better error
+		return errors.New("a pointer is required")
+	}
+
+	schema, err := GetSchema(driver, model)
+	if err != nil {
+		return err
+	}
+
+	rows, err := named.Queryx(args)
+	if err != nil {
+		return err
+	}
+
+	list := reflectx.NewSlice(reflectx.GetSliceType(dest))
+
+	for rows.Next() {
+		mapper, err := ScanRows(rows)
+		if err != nil {
+			return err
+		}
+
+		row := reflectx.NewSliceValue(dest)
+		err = schema.WriteModel(mapper, row.(Model))
+		if err != nil {
+			return err
+		}
+
+		reflectx.AppendSlice(list, row)
+	}
+
+	reflectx.CopySlice(dest, list)
+
 	return nil
+}
+
+func execRow(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, dest interface{}) error {
+	model, ok := dest.(Model)
+	if !ok {
+		return named.Get(dest, args)
+	}
+
+	schema, err := GetSchema(driver, model)
+	if err != nil {
+		return err
+	}
+
+	row := named.QueryRow(args)
+	if row == nil {
+		return errors.Wrap(sql.ErrNoRows, "cannot obtain result from driver")
+	}
+
+	err = row.Err()
+	if err != nil {
+		return err
+	}
+
+	mapper, err := ScanRow(row)
+	if err != nil && !IsErrNoRows(err) {
+		return err
+	}
+
+	return schema.WriteModel(mapper, model)
 }
 
 // Count will execute given query to return a number from a aggregate function.

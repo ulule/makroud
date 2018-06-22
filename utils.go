@@ -11,16 +11,16 @@ import (
 // ----------------------------------------------------------------------------
 
 // ToModel converts the given instance to a Model instance.
-func ToModel(itf interface{}) Model {
-	typ, ok := itf.(reflect.Type)
+func ToModel(instance interface{}) Model {
+	value, ok := instance.(reflect.Type)
 	if ok {
-		if typ.Kind() == reflect.Slice {
-			typ = reflectx.GetIndirectType(typ.Elem())
+		if value.Kind() == reflect.Slice {
+			value = reflectx.GetIndirectType(value.Elem())
 		} else {
-			typ = reflectx.GetIndirectType(typ)
+			value = reflectx.GetIndirectType(value)
 		}
 
-		model, ok := reflect.New(typ).Elem().Interface().(Model)
+		model, ok := reflect.New(value).Elem().Interface().(Model)
 		if ok {
 			return model
 		}
@@ -28,25 +28,45 @@ func ToModel(itf interface{}) Model {
 		return nil
 	}
 
-	value := reflect.Indirect(reflect.ValueOf(itf))
+	out := reflect.Indirect(reflect.ValueOf(instance))
 
-	// Single instance
-	if value.IsValid() && value.Kind() == reflect.Struct {
-		return value.Interface().(Model)
+	// Single instance.
+	if out.IsValid() && out.Kind() == reflect.Struct {
+		model, ok := out.Interface().(Model)
+		if ok {
+			return model
+		}
+		return nil
 	}
 
-	// Slice of instances
-	if value.Kind() == reflect.Slice {
+	// Slice of instances.
+	if out.Kind() == reflect.Slice {
 		// Slice of pointers
-		if value.Type().Elem().Kind() == reflect.Ptr {
-			return reflect.New(value.Type().Elem().Elem()).Interface().(Model)
+		if out.Type().Elem().Kind() == reflect.Ptr {
+			model, ok := reflect.New(out.Type().Elem().Elem()).Interface().(Model)
+			if ok {
+				return model
+			}
+
+			return nil
 		}
 
 		// Slice of values
-		return reflect.New(value.Type().Elem()).Interface().(Model)
+		model, ok := reflect.New(out.Type().Elem()).Interface().(Model)
+		if ok {
+			return model
+		}
+
+		return nil
 	}
 
-	return reflect.New(value.Type()).Interface().(Model)
+	// Try to convert it to model.
+	model, ok := reflect.New(out.Type()).Interface().(Model)
+	if ok {
+		return model
+	}
+
+	return nil
 }
 
 // // GetFieldValues returns values for the given field for struct or slice.

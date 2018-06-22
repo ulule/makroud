@@ -105,32 +105,6 @@ func save(driver Driver, model Model) (Queries, error) {
 	}()
 
 	query, args := builder.NamedQuery()
-
-	stmt, err := driver.PrepareNamed(query)
-	if err != nil {
-		return queries, err
-	}
-	defer driver.close(stmt, map[string]string{
-		"query": query,
-	})
-
-	row := stmt.QueryRow(args)
-	if row == nil {
-		return queries, errors.New("sqlxx: cannot obtain result from driver")
-	}
-	err = row.Err()
-	if err != nil {
-		return queries, err
-	}
-
-	mapper, err := ScanRow(row)
-	if err != nil && !IsErrNoRows(err) {
-		return queries, err
-	}
-	err = schema.WriteModel(mapper, model)
-	if err != nil {
-		return queries, err
-	}
-
-	return queries, nil
+	err = exec(driver, query, args, model)
+	return queries, err
 }

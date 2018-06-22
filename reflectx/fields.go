@@ -133,9 +133,14 @@ func UpdateFieldValue(instance interface{}, name string, value interface{}) erro
 			scan.Set(zero.Addr())
 		}
 
+		// If value is nil, creates a zero value.
+		arg := reflect.Indirect(reflect.ValueOf(value))
+		if value == nil {
+			arg = reflect.ValueOf(MakeZero(scan.Type()))
+		}
+
 		// And try to use reflection to call Scan method.
-		args := []reflect.Value{reflect.Indirect(reflect.ValueOf(value))}
-		values := scan.MethodByName("Scan").Call(args)
+		values := scan.MethodByName("Scan").Call([]reflect.Value{arg})
 		if len(values) == 1 {
 			okType := reflect.TypeOf((*error)(nil)).Elem() == values[0].Type()
 			okValue := values[0].IsNil()

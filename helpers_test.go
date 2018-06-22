@@ -142,3 +142,67 @@ func TestRawExec_Fetch(t *testing.T) {
 
 	})
 }
+
+func TestExec_FetchModel(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		is := require.New(t)
+
+		cat1 := &Cat{Name: "Afro"}
+		cat2 := &Cat{Name: "Ajax"}
+		cat3 := &Cat{Name: "Akbar"}
+		cat4 := &Cat{Name: "Akiko"}
+
+		cats := []*Cat{cat1, cat2, cat3, cat4}
+		expected := cat4
+
+		for i := range cats {
+			err := sqlxx.Save(driver, cats[i])
+			is.NoError(err)
+		}
+
+		result := &Cat{}
+		query := loukoum.Select("*").From("wp_cat").
+			Where(loukoum.Condition("name").Equal("Akiko"))
+
+		err := sqlxx.Exec(driver, query, result)
+		is.NoError(err)
+
+		is.Equal(expected.ID, result.ID)
+		is.Equal(expected.Name, result.Name)
+		is.Equal(expected.CreatedAt, result.CreatedAt)
+		is.Equal(expected.UpdatedAt, result.UpdatedAt)
+		is.Equal(expected.DeletedAt, result.DeletedAt)
+
+	})
+}
+
+func TestExec_ListModel(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		is := require.New(t)
+
+		cat1 := &Cat{Name: "Amazon"}
+		cat2 := &Cat{Name: "Amelia"}
+		cat3 := &Cat{Name: "Amigo"}
+		cat4 := &Cat{Name: "Amos"}
+
+		cats := []*Cat{cat1, cat2, cat3, cat4}
+
+		for i := range cats {
+			err := sqlxx.Save(driver, cats[i])
+			is.NoError(err)
+		}
+
+		result := []Cat{}
+		query := loukoum.Select("*").From("wp_cat").
+			Where(loukoum.Condition("name").In("Amazon", "Amelia", "Amigo", "Amos"))
+
+		err := sqlxx.Exec(driver, query, &result)
+		is.NoError(err)
+		is.Len(result, 4)
+
+		for i := range result {
+			is.Contains(cats, &(result[i]))
+		}
+
+	})
+}

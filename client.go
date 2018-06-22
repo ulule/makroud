@@ -139,7 +139,7 @@ func (e *Client) close(closer io.Closer, flags map[string]string) {
 	thr := closer.Close()
 	if thr != nil {
 		thr = errors.Wrapf(thr, "trying to close: %T", closer)
-		// TODO: Add an observer to collect this error.
+		// TODO (novln): Add an observer to collect this error.
 		_ = thr
 	}
 }
