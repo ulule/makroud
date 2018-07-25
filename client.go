@@ -8,6 +8,7 @@ import (
 
 	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 )
 
@@ -72,6 +73,8 @@ func New(options ...Option) (*Client, error) {
 			return nil, err
 		}
 	}
+
+	_ = pq.Driver{}
 
 	dbx, err := sqlx.Connect(ClientDriver, opts.String())
 	if err != nil {
