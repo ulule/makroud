@@ -21,6 +21,10 @@ var dbDefaultOptions = map[string]sqlxx.Option{
 	"NAME":     sqlxx.Database("sqlxx_test"),
 }
 
+// ----------------------------------------------------------------------------
+// Miscellaneous models
+// ----------------------------------------------------------------------------
+
 type Elements struct {
 	Air   string `db:"air"`
 	Fire  string `sqlxx:"column:fire"`
@@ -29,9 +33,45 @@ type Elements struct {
 	Fifth string
 }
 
-type Chunk struct {
-	Hash string `sqlxx:"column:hash,pk:ulid"`
+// ----------------------------------------------------------------------------
+// Object storage application
+// ----------------------------------------------------------------------------
+
+type ExoChunk struct {
+	// Columns
+	Hash   string `sqlxx:"column:hash,pk:ulid"`
+	Bytes  string `sqlxx:"column:bytes"`
+	ModeID int64  `sqlxx:"column:mode_id,fk:exo_chunk_mode"`
+	// Relationships
+	Signature *ExoChunkSignature
+	Mode      *ExoChunkMode
 }
+
+func (ExoChunk) TableName() string {
+	return "exo_chunk"
+}
+
+type ExoChunkSignature struct {
+	ID      string `sqlxx:"column:id,pk:ulid"`
+	ChunkID string `sqlxx:"column:chunk_id,fk:exo_chunk"`
+}
+
+func (ExoChunkSignature) TableName() string {
+	return "exo_chunk_signature"
+}
+
+type ExoChunkMode struct {
+	ID   int64  `sqlxx:"column:id,pk"`
+	Mode string `sqlxx:"column:mode"`
+}
+
+func (ExoChunkMode) TableName() string {
+	return "exo_chunk_mode"
+}
+
+// ----------------------------------------------------------------------------
+// Animal stuff
+// ----------------------------------------------------------------------------
 
 type Owl struct {
 	ID           int64  `sqlxx:"column:id,pk"`

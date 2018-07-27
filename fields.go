@@ -13,21 +13,23 @@ import (
 
 // Field is a field.
 type Field struct {
-	modelName     string
-	tableName     string
-	fieldName     string
-	columnPath    string
-	columnName    string
-	isPrimaryKey  bool
-	isForeignKey  bool
-	isAssociation bool
-	isExcluded    bool
-	hasDefault    bool
-	hasULID       bool
-	isCreatedKey  bool
-	isUpdatedKey  bool
-	isDeletedKey  bool
-	rtype         reflect.Type
+	modelName       string
+	tableName       string
+	fieldName       string
+	columnPath      string
+	columnName      string
+	foreignKey      string
+	isPrimaryKey    bool
+	isForeignKey    bool
+	isAssociation   bool
+	isExcluded      bool
+	hasDefault      bool
+	hasULID         bool
+	isCreatedKey    bool
+	isUpdatedKey    bool
+	isDeletedKey    bool
+	rtype           reflect.Type
+	associationType AssociationType
 
 	// // The reflect.StructField instance
 	// StructField reflect.StructField
@@ -86,6 +88,11 @@ func (field Field) IsExcluded() bool {
 // IsForeignKey returns if the field is a foreign key.
 func (field Field) IsForeignKey() bool {
 	return field.isForeignKey
+}
+
+// GetForeignKey returns the field foreign key's table name.
+func (field Field) GetForeignKey() string {
+	return field.foreignKey
 }
 
 // IsAssociation returns if the field is an association.
@@ -164,7 +171,8 @@ func NewField(driver Driver, schema *Schema, model Model, name string, args ...M
 	columnPath := fmt.Sprintf("%s.%s", tableName, columnName)
 
 	isPrimaryKey := tags.HasKey(TagName, TagKeyPrimaryKey)
-	isForeignKey := tags.HasKey(TagName, TagKeyForeignKey)
+	foreignKey := tags.GetByKey(TagName, TagKeyForeignKey)
+	isForeignKey := foreignKey != ""
 	isExcluded := tags.HasKey(TagName, TagKeyIgnored) || field.PkgPath != ""
 	hasDefault := tags.HasKey(TagName, TagKeyDefault)
 	hasULID := tags.GetByKey(TagName, TagKeyPrimaryKey) == TagKeyULID
@@ -183,6 +191,7 @@ func NewField(driver Driver, schema *Schema, model Model, name string, args ...M
 		columnPath:   columnPath,
 		isPrimaryKey: isPrimaryKey,
 		isForeignKey: isForeignKey,
+		foreignKey:   foreignKey,
 		isExcluded:   isExcluded,
 		isCreatedKey: isCreatedKey,
 		isUpdatedKey: isUpdatedKey,
@@ -198,33 +207,40 @@ func NewField(driver Driver, schema *Schema, model Model, name string, args ...M
 		return instance, nil
 	}
 
-	// associationType := AssociationTypeUndefined
-	//
-	// if field.Type.Kind() == reflect.Struct {
-	// 	associationType = AssociationTypeOne
-	// }
-	//
-	// if field.Type.Kind() == reflect.Slice {
-	// 	associationType = AssociationTypeMany
-	// }
-	//
-	// if associationType == AssociationTypeUndefined {
-	// 	return field, errors.Errorf("unable to guess the association type for field %s", name)
-	// }
-	//
-	// field.IsAssociation = true
-	// field.AssociationType = associationType
-	//
-	// // author -> author_id
-	// field.ColumnName = fmt.Sprintf("%s_%s", field.ColumnName, strings.ToLower(PrimaryKeyFieldName))
-	//
-	// field.ForeignKey, err = NewForeignKey(driver, field)
-	// if err != nil {
-	// 	return field, err
-	// }
-	//
-	// return field, nil
-	return nil, nil
+	return getFieldAssocitationType(driver, instance, rtype, reference, tags)
+}
+
+func getFieldAssocitationType(driver Driver, instance *Field, rtype reflect.Type,
+	reference Model, tags Tags) (*Field, error) {
+
+	if instance.isPrimaryKey {
+		return nil, errors.Errorf("field '%s' cannot be a primary key and a association", instance.fieldName)
+	}
+
+	associationType := AssociationTypeUndefined
+	if rtype.Kind() == reflect.Struct {
+		associationType = AssociationTypeOne
+	}
+	if rtype.Kind() == reflect.Slice {
+		associationType = AssociationTypeMany
+	}
+
+	if associationType == AssociationTypeUndefined {
+		return nil, errors.Errorf("unable to infer the association type for field '%s'", instance.fieldName)
+	}
+
+	instance.isAssociation = true
+	instance.associationType = associationType
+	instance.columnName = ""
+	instance.columnPath = ""
+	instance.isCreatedKey = false
+	instance.isForeignKey = false
+	instance.isUpdatedKey = false
+	instance.isDeletedKey = false
+	instance.hasDefault = false
+	instance.hasULID = false
+
+	return instance, nil
 }
 
 // ----------------------------------------------------------------------------
@@ -256,78 +272,3 @@ func NewField(driver Driver, schema *Schema, model Model, name string, args ...M
 // 	return fmt.Sprintf("%s.%s", fk.TableName, fk.ColumnName)
 // }
 //
-// // NewForeignKey returns a new ForeignKey instance from the given field instance.
-// func NewForeignKey(driver Driver, field Field) (*ForeignKey, error) {
-//
-// 	fmt.Printf("::4 %+v\n", field)
-//
-// 	var (
-// 		referenceModel     = ToModel(field.Type)
-// 		referenceModelName = reflect.Indirect(reflect.ValueOf(referenceModel)).Type().Name()
-// 		referenceTableName = referenceModel.TableName()
-// 	)
-//
-// 	referenceSchema, err := GetSchema(driver, referenceModel)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	fmt.Printf("::5 %+v\n", referenceSchema)
-//
-// 	fieldName := field.Tags.GetByKey(StructTagName, StructTagForeignKey)
-// 	if fieldName == "" {
-// 		fieldName = fmt.Sprintf("%s%s", field.FieldName, PrimaryKeyFieldName)
-// 	}
-//
-// 	fmt.Printf("::6 %+v\n", fieldName)
-//
-// 	// Article.Author(User)
-// 	if field.AssociationType == AssociationTypeOne {
-// 		fmt.Printf("::7 has_once\n")
-// 		fk := &ForeignKey{
-// 			Schema:               &referenceSchema,
-// 			Model:                field.Model,      // Article model
-// 			ModelName:            field.ModelName,  // Article
-// 			TableName:            field.TableName,  // articles
-// 			FieldName:            fieldName,        // AuthorID
-// 			ColumnName:           field.ColumnName, // author_id
-// 			AssociationFieldName: field.FieldName,  // Author
-//
-// 			Reference: &ForeignKey{
-// 				Model:      referenceModel,                       // User model
-// 				ModelName:  referenceModelName,                   // User
-// 				TableName:  referenceTableName,                   // users
-// 				FieldName:  PrimaryKeyFieldName,                  // ID
-// 				ColumnName: strings.ToLower(PrimaryKeyFieldName), // id
-// 			},
-// 		}
-// 		spew.Dump(fk)
-// 		return fk, nil
-// 	}
-//
-// 	// User.Avatars(Avatar) -- Avatar.UserID
-// 	if field.AssociationType == AssociationTypeMany {
-// 		fmt.Printf("::7 has_many\n")
-// 		fk := &ForeignKey{
-// 			Model:                referenceModel,                                                                                   // Avatar model
-// 			ModelName:            referenceModelName,                                                                               // Avatar
-// 			TableName:            referenceTableName,                                                                               // avatars
-// 			FieldName:            fmt.Sprintf("%s%s", field.ModelName, PrimaryKeyFieldName),                                        // UserID
-// 			ColumnName:           fmt.Sprintf("%s_%s", snaker.CamelToSnake(field.ModelName), strings.ToLower(PrimaryKeyFieldName)), // user_id
-// 			AssociationFieldName: field.ModelName,                                                                                  // User
-//
-// 			Reference: &ForeignKey{
-// 				Model:                field.Model,                          // User model
-// 				ModelName:            field.ModelName,                      // User
-// 				TableName:            field.TableName,                      // users
-// 				FieldName:            PrimaryKeyFieldName,                  // ID
-// 				ColumnName:           strings.ToLower(PrimaryKeyFieldName), // id
-// 				AssociationFieldName: field.FieldName,                      // Avatars
-// 			},
-// 		}
-// 		spew.Dump(fk)
-// 		return fk, nil
-// 	}
-// 	fmt.Printf("::7 has_none ?\n")
-// 	return nil, nil
-// }

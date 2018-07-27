@@ -125,3 +125,42 @@ func TestSchema_Meow(t *testing.T) {
 
 	})
 }
+
+func TestSchema_ExoChunk(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		is := require.New(t)
+		model := &ExoChunk{}
+
+		schema, err := sqlxx.GetSchema(driver, model)
+		is.NoError(err)
+		is.NotNil(schema)
+
+		// is.Equal("wp_meow", schema.TableName())
+		// is.Equal("hash", schema.PrimaryKey().ColumnName())
+		// is.Equal("wp_meow.hash", schema.PrimaryKey().ColumnPath())
+		//
+		// is.True(schema.HasCreatedKey())
+		// is.True(schema.HasUpdatedKey())
+		// is.True(schema.HasDeletedKey())
+		// is.Equal("wp_meow.created", schema.CreatedKeyPath())
+		// is.Equal("wp_meow.updated", schema.UpdatedKeyPath())
+		// is.Equal("wp_meow.deleted", schema.DeletedKeyPath())
+		//
+		// columns := schema.Columns()
+		// is.Len(columns, 5)
+		// is.Contains(columns, "hash")
+		// is.Contains(columns, "body")
+		// is.Contains(columns, "created")
+		// is.Contains(columns, "updated")
+		// is.Contains(columns, "deleted")
+		//
+		// columns = schema.ColumnPaths()
+		// is.Len(columns, 5)
+		// is.Contains(columns, "wp_meow.hash")
+		// is.Contains(columns, "wp_meow.body")
+		// is.Contains(columns, "wp_meow.created")
+		// is.Contains(columns, "wp_meow.updated")
+		// is.Contains(columns, "wp_meow.deleted")
+
+	})
+}

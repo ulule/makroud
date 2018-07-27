@@ -171,6 +171,10 @@ func debugField(field Field) debugWriter {
 			v: strconv.FormatBool(field.IsForeignKey()),
 		},
 		debugValue{
+			k: "foreign_key",
+			v: field.GetForeignKey(),
+		},
+		debugValue{
 			k: "is_association",
 			v: strconv.FormatBool(field.IsAssociation()),
 		},
@@ -201,6 +205,10 @@ func debugField(field Field) debugWriter {
 		debugValue{
 			k: "reflect_type",
 			v: field.rtype.String(),
+		},
+		debugValue{
+			k: "association_type",
+			v: field.associationType.String(),
 		},
 	}
 }

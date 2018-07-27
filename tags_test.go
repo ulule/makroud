@@ -86,7 +86,7 @@ func TestTags_Analyze(t *testing.T) {
 		is.Empty(field)
 	}
 
-	chunk := &Chunk{}
+	chunk := &ExoChunk{}
 
 	{
 		field, ok := reflectx.GetFieldByName(chunk, "Hash")
@@ -103,4 +103,22 @@ func TestTags_Analyze(t *testing.T) {
 		is.Equal(sqlxx.TagKeyPrimaryKey, properties[1].Key())
 		is.Equal("ulid", properties[1].Value())
 	}
+
+	// signature := &ExoChunkSignature{}
+	//
+	// {
+	// 	field, ok := reflectx.GetFieldByName(signature, "ChunkID")
+	// 	is.True(ok)
+	// 	is.NotEmpty(field)
+	//
+	// 	tags := sqlxx.GetTags(field)
+	// 	is.Len(tags, 1)
+	// 	name := tags[0].Name()
+	// 	properties := tags[0].Properties()
+	// 	is.Equal(sqlxx.TagName, name)
+	// 	is.Equal(sqlxx.TagKeyColumn, properties[0].Key())
+	// 	is.Equal("chunk_id", properties[0].Value())
+	// 	is.Equal(sqlxx.TagKeyForeignKey, properties[1].Key())
+	// 	is.Equal("ulid", properties[1].Value())
+	// }
 }

@@ -43,6 +43,17 @@ const (
 	PrimaryKeyULIDDefault
 )
 
+func (e PrimaryKeyDefault) String() string {
+	switch e {
+	case PrimaryKeyDBDefault:
+		return "db"
+	case PrimaryKeyULIDDefault:
+		return "ulid"
+	default:
+		panic(fmt.Sprintf("sqlxx: unknown primary key default types: %d", e))
+	}
+}
+
 // TODO Add unit test
 
 // PrimaryKey is a composite object that define a primary key for a model.
@@ -55,7 +66,8 @@ const (
 //         FieldName: ID,
 //         ColumnName: id,
 //         ColumnPath: users.id,
-//         Type: integer,
+//         Type: int64,
+//         Default: db,
 //     }
 //
 type PrimaryKey struct {

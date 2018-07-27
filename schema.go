@@ -21,14 +21,16 @@ var ErrDeletedKey = fmt.Errorf("cannot find deleted key in schema")
 
 // Schema is a model schema.
 type Schema struct {
-	model      Model
-	modelName  string
-	tableName  string
-	pk         PrimaryKey
-	fields     map[string]Field
-	createdKey *Field
-	updatedKey *Field
-	deletedKey *Field
+	model        Model
+	modelName    string
+	tableName    string
+	pk           PrimaryKey
+	fields       map[string]Field
+	references   map[string]ForeignKey
+	associations map[string]Reference
+	createdKey   *Field
+	updatedKey   *Field
+	deletedKey   *Field
 }
 
 // TableName returns the schema table name.
@@ -255,11 +257,14 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 
 	schema := &Schema{
 		// Model:     model,
-		modelName: reflectx.GetIndirectTypeName(model),
-		tableName: model.TableName(),
-		fields:    map[string]Field{},
-		// Associations: map[string]Field{},
+		modelName:    reflectx.GetIndirectTypeName(model),
+		tableName:    model.TableName(),
+		fields:       map[string]Field{},
+		references:   map[string]ForeignKey{},
+		associations: map[string]Reference{},
 	}
+
+	relationships := map[string]*Field{}
 
 	for _, name := range fields {
 		field, err := NewField(driver, schema, model, name, modelOpts)
@@ -288,20 +293,36 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 			continue
 		}
 
+		if field.IsForeignKey() {
+			fk, err := NewForeignKey(field)
+			if err != nil {
+				return nil, errors.Wrapf(err, "cannot use '%s' as foreign key for %T", name, model)
+			}
+			schema.references[fk.ColumnName()] = *fk
+		}
+
 		if !field.IsAssociation() {
 			schema.fields[field.ColumnName()] = *field
 			continue
 		}
 
+		relationships[name] = field
+	}
+
+	for name, field := range relationships {
 		fmt.Println(field)
 
-		//
-		// _, ok := schema.Associations[field.FieldName]
-		// if ok {
-		// 	continue
-		// }
+		_, ok := schema.associations[field.FieldName()]
+		if ok {
+			continue
+		}
 
-		// schema.Associations[field.FieldName] = field
+		reference, err := NewReference(driver, schema, field)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot use '%s' as association for %T", name, model)
+		}
+
+		schema.associations[field.FieldName()] = *reference
 		//
 		// nextModel := field.ForeignKey.Reference.Model
 		// if field.IsAssociationTypeMany() {
