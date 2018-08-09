@@ -71,13 +71,13 @@ func exec(driver Driver, query string, args map[string]interface{}, dest ...inte
 }
 
 func execRows(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, dest interface{}) error {
+	if !reflectx.IsPointer(dest) {
+		return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
+	}
+
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
 		return named.Select(dest, args)
-	}
-
-	if !reflectx.IsPointer(dest) {
-		return errors.WithStack(ErrPointerRequired)
 	}
 
 	schema, err := GetSchema(driver, model)
@@ -113,13 +113,13 @@ func execRows(driver Driver, named *sqlx.NamedStmt, args map[string]interface{},
 }
 
 func execRow(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, dest interface{}) error {
+	if !reflectx.IsPointer(dest) {
+		return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
+	}
+
 	model, ok := dest.(Model)
 	if !ok {
 		return named.Get(dest, args)
-	}
-
-	if !reflectx.IsPointer(dest) {
-		return errors.WithStack(ErrPointerRequired)
 	}
 
 	schema, err := GetSchema(driver, model)

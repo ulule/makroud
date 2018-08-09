@@ -3,6 +3,7 @@ package sqlxx_test
 import (
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"github.com/ulule/loukoum"
 
@@ -42,6 +43,10 @@ func TestExec_List(t *testing.T) {
 			is.Contains(list, expected[i].ID)
 		}
 
+		err = sqlxx.Exec(driver, query, []string{})
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+
 	})
 }
 
@@ -76,6 +81,10 @@ func TestRawExec_List(t *testing.T) {
 			is.Contains(list, expected[i].ID)
 		}
 
+		err = sqlxx.RawExec(driver, query, []string{})
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+
 	})
 }
 
@@ -106,8 +115,11 @@ func TestExec_Fetch(t *testing.T) {
 
 		err := sqlxx.Exec(driver, query, &id)
 		is.NoError(err)
-
 		is.Equal(expected.ID, id)
+
+		err = sqlxx.Exec(driver, query, id)
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
 	})
 }
@@ -137,8 +149,11 @@ func TestRawExec_Fetch(t *testing.T) {
 		query := `SELECT id FROM wp_cat WHERE name = 'Calzone'`
 		err := sqlxx.RawExec(driver, query, &id)
 		is.NoError(err)
-
 		is.Equal(expected.ID, id)
+
+		err = sqlxx.RawExec(driver, query, id)
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
 	})
 }
@@ -173,6 +188,10 @@ func TestExec_FetchModel(t *testing.T) {
 		is.Equal(expected.UpdatedAt, result.UpdatedAt)
 		is.Equal(expected.DeletedAt, result.DeletedAt)
 
+		err = sqlxx.Exec(driver, query, Cat{})
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+
 	})
 }
 
@@ -203,6 +222,10 @@ func TestExec_ListModel(t *testing.T) {
 		for i := range result {
 			is.Contains(cats, &(result[i]))
 		}
+
+		err = sqlxx.Exec(driver, query, []Cat{})
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
 	})
 }
