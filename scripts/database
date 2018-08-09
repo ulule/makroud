@@ -73,6 +73,19 @@ do_stop() {
 
 }
 
+do_client() {
+
+    echo "[database] use psql on ${CONTAINER_NAME}"
+    docker run --rm -it \
+        -e PGUSER="${PGUSER}" \
+        -e PGPASSWORD="${PGPASSWORD}" \
+        -e PGDATABASE="${PGDATABASE}" \
+        --link "${CONTAINER_NAME}:postgres" \
+        "${CONTAINER_IMAGE}" psql -h postgres
+
+}
+
+
 case "$1" in
     --stop)
         do_stop
@@ -80,6 +93,9 @@ case "$1" in
     --restart)
         do_stop
         do_start
+    ;;
+    --client)
+        do_client
     ;;
     --start | *)
         do_start
