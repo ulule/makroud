@@ -5,7 +5,11 @@ cd "${SOURCE_DIRECTORY}/.."
 
 scripts/database
 
-go get -d -u github.com/stretchr/testify/require
+gotest_path="${GOPATH}/src/github.com/stretchr/testify/require"
+
+if [[ ! -x "${gotest_path}" ]]; then
+    go get -d -u -v github.com/stretchr/testify/require
+fi
 
 OPTIONS="./..."
 if [ -n "$1" ]; then
