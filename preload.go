@@ -12,14 +12,18 @@ import (
 
 // TODO:
 //
-//     |--------------|--------------|-----------------|
-//     |    Source    |    Action    |    Reference    |
-//     |--------------|--------------|-----------------|
-//     |      1       |      ->      |        1        |
-//     |      1       |      <-      |        1        |
-//     |    Source    |    Action    |    Reference    |
-//     |    Source    |    Action    |    Reference    |
-//     |    Source    |    Action    |    Reference    |
+//     |--------------|--------------|-----------------|----------------|
+//     |    Source    |    Action    |    Reference    |     Status     |
+//     |--------------|--------------|-----------------|----------------|
+//     |      1       |      ->      |        1        |       Ok       |
+//     |      1       |      <-      |        1        |       Ok       |
+//     |      1       |      ->      |        N        |                |
+//     |      1       |      <-      |        N        |                |
+//     |      N       |      ->      |        1        |                |
+//     |      N       |      <-      |        1        |                |
+//     |      N       |      ->      |        N        |                |
+//     |      N       |      <-      |        N        |                |
+//     |--------------|--------------|-----------------|----------------|
 
 // Preload preloads related fields.
 func Preload(driver Driver, out interface{}, paths ...string) error {
