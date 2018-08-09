@@ -90,14 +90,19 @@ func (field Field) IsForeignKey() bool {
 	return field.isForeignKey
 }
 
-// GetForeignKey returns the field foreign key's table name.
-func (field Field) GetForeignKey() string {
+// ForeignKey returns the field foreign key's table name.
+func (field Field) ForeignKey() string {
 	return field.foreignKey
 }
 
 // IsAssociation returns if the field is an association.
 func (field Field) IsAssociation() bool {
 	return field.isAssociation
+}
+
+// IsAssociationType returns if the field has given association type.
+func (field Field) IsAssociationType(kind AssociationType) bool {
+	return field.isAssociation && field.associationType == kind
 }
 
 // HasDefault returns if the field has a default value and should be in returning statement.

@@ -77,8 +77,7 @@ func execRows(driver Driver, named *sqlx.NamedStmt, args map[string]interface{},
 	}
 
 	if !reflectx.IsPointer(dest) {
-		// TODO Better error
-		return errors.New("a pointer is required")
+		return errors.WithStack(ErrPointerRequired)
 	}
 
 	schema, err := GetSchema(driver, model)
@@ -117,6 +116,10 @@ func execRow(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, 
 	model, ok := dest.(Model)
 	if !ok {
 		return named.Get(dest, args)
+	}
+
+	if !reflectx.IsPointer(dest) {
+		return errors.WithStack(ErrPointerRequired)
 	}
 
 	schema, err := GetSchema(driver, model)

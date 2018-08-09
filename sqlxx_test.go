@@ -54,6 +54,7 @@ func (ExoChunk) TableName() string {
 type ExoChunkSignature struct {
 	ID      string `sqlxx:"column:id,pk:ulid"`
 	ChunkID string `sqlxx:"column:chunk_id,fk:exo_chunk"`
+	Bytes   string `sqlxx:"column:bytes"`
 }
 
 func (ExoChunkSignature) TableName() string {
@@ -1047,19 +1048,6 @@ type environment struct {
 func (e *environment) startup() {
 	DropTables(e.driver)
 	CreateTables(e.driver)
-
-	// e.insertPartners()
-	// e.insertAPIKeys()
-	// e.insertMedias()
-	// e.insertUsers()
-	// e.insertManagers()
-	// e.insertProjects()
-	// e.insertAvatarFilters()
-	// e.insertAvatars()
-	// e.insertProfiles()
-	// e.insertCategories()
-	// e.insertTags()
-	// e.insertArticles()
 }
 
 func (e *environment) fetch(query string, callback func(mapper sqlxx.Mapper)) {
@@ -1392,7 +1380,7 @@ func (e *environment) exec(query string, args ...interface{}) {
 // }
 
 func (e *environment) shutdown() {
-	value := os.Getenv("KEEP_DB")
+	value := os.Getenv("DB_KEEP")
 	if len(value) == 0 {
 		DropTables(e.driver)
 	}
@@ -1470,6 +1458,11 @@ func DropTables(db *sqlxx.Client) {
 		DROP TABLE IF EXISTS wp_cat CASCADE;
 		DROP TABLE IF EXISTS wp_meow CASCADE;
 
+		-- Object storage application
+		DROP TABLE IF EXISTS exo_chunk_signature CASCADE;
+		DROP TABLE IF EXISTS exo_chunk CASCADE;
+		DROP TABLE IF EXISTS exo_chunk_mode CASCADE;
+
 		-- Application schema
 		DROP TABLE IF EXISTS users CASCADE;
 		DROP TABLE IF EXISTS api_keys CASCADE;
@@ -1491,7 +1484,11 @@ func DropTables(db *sqlxx.Client) {
 
 func CreateTables(db *sqlxx.Client) {
 	db.MustExec(`
+
+		--
 		-- Simple schema
+		--
+
 		CREATE TABLE wp_owl (
 			id              SERIAL PRIMARY KEY NOT NULL,
 			name            VARCHAR(255) NOT NULL,
@@ -1513,8 +1510,29 @@ func CreateTables(db *sqlxx.Client) {
 			deleted         TIMESTAMP WITH TIME ZONE
 		);
 
+		--
+		-- Object storage application
+		--
 
+		CREATE TABLE exo_chunk_mode (
+			id              SERIAL PRIMARY KEY NOT NULL,
+			mode            VARCHAR(255) NOT NULL
+		);
+		CREATE TABLE exo_chunk (
+			hash            VARCHAR(26) PRIMARY KEY NOT NULL,
+			bytes           VARCHAR(2048) NOT NULL,
+			mode_id         INTEGER REFERENCES exo_chunk_mode(id)
+		);
+		CREATE TABLE exo_chunk_signature (
+			id               VARCHAR(26) PRIMARY KEY NOT NULL,
+			chunk_id         VARCHAR(26) REFERENCES exo_chunk(hash),
+			bytes            VARCHAR(2048) NOT NULL
+		);
+
+		--
 		-- Application schema
+		--
+
 		CREATE TABLE notifications (
 			id       serial primary key not null,
 			enabled  boolean default true

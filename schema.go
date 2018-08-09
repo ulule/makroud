@@ -33,6 +33,16 @@ type Schema struct {
 	deletedKey   *Field
 }
 
+// Model returns the schema model.
+func (schema Schema) Model() Model {
+	return schema.model
+}
+
+// ModelName returns the schema model name.
+func (schema Schema) ModelName() string {
+	return schema.modelName
+}
+
 // TableName returns the schema table name.
 func (schema Schema) TableName() string {
 	return schema.tableName
@@ -43,12 +53,12 @@ func (schema Schema) PrimaryKey() PrimaryKey {
 	return schema.pk
 }
 
-// HasCreatedKey returns if an created key is defined for current schema.
+// HasCreatedKey returns if a created key is defined for current schema.
 func (schema Schema) HasCreatedKey() bool {
 	return schema.createdKey != nil
 }
 
-// CreatedKeyPath returns schema created key column's name.
+// CreatedKeyPath returns schema created key column path.
 func (schema Schema) CreatedKeyPath() string {
 	if schema.HasUpdatedKey() {
 		return schema.createdKey.ColumnPath()
@@ -56,7 +66,7 @@ func (schema Schema) CreatedKeyPath() string {
 	panic(fmt.Sprint("sqlxx: ", ErrCreatedKey))
 }
 
-// CreatedKeyName returns schema created key column's name.
+// CreatedKeyName returns schema created key column name.
 func (schema Schema) CreatedKeyName() string {
 	if schema.HasUpdatedKey() {
 		return schema.createdKey.ColumnName()
@@ -69,7 +79,7 @@ func (schema Schema) HasUpdatedKey() bool {
 	return schema.updatedKey != nil
 }
 
-// UpdatedKeyPath returns schema updated key column's name.
+// UpdatedKeyPath returns schema updated key column path.
 func (schema Schema) UpdatedKeyPath() string {
 	if schema.HasUpdatedKey() {
 		return schema.updatedKey.ColumnPath()
@@ -77,7 +87,7 @@ func (schema Schema) UpdatedKeyPath() string {
 	panic(fmt.Sprint("sqlxx: ", ErrUpdatedKey))
 }
 
-// UpdatedKeyName returns schema deleted key column's name.
+// UpdatedKeyName returns schema deleted key column name.
 func (schema Schema) UpdatedKeyName() string {
 	if schema.HasUpdatedKey() {
 		return schema.updatedKey.ColumnName()
@@ -85,12 +95,12 @@ func (schema Schema) UpdatedKeyName() string {
 	panic(fmt.Sprint("sqlxx: ", ErrUpdatedKey))
 }
 
-// HasDeletedKey returns if an deleted key is defined for current schema.
+// HasDeletedKey returns if a deleted key is defined for current schema.
 func (schema Schema) HasDeletedKey() bool {
 	return schema.deletedKey != nil
 }
 
-// DeletedKeyPath returns schema deleted key column's name.
+// DeletedKeyPath returns schema deleted key column path.
 func (schema Schema) DeletedKeyPath() string {
 	if schema.HasDeletedKey() {
 		return schema.deletedKey.ColumnPath()
@@ -98,7 +108,7 @@ func (schema Schema) DeletedKeyPath() string {
 	panic(fmt.Sprint("sqlxx: ", ErrDeletedKey))
 }
 
-// DeletedKeyName returns schema deleted key column's name.
+// DeletedKeyName returns schema deleted key column name.
 func (schema Schema) DeletedKeyName() string {
 	if schema.HasDeletedKey() {
 		return schema.deletedKey.ColumnName()
@@ -256,7 +266,7 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 	modelOpts := analyzeModelOpts(model)
 
 	schema := &Schema{
-		// Model:     model,
+		model:        reflectx.CopyZero(model).(Model),
 		modelName:    reflectx.GetIndirectTypeName(model),
 		tableName:    model.TableName(),
 		fields:       map[string]Field{},
@@ -310,7 +320,7 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 	}
 
 	for name, field := range relationships {
-		fmt.Println(field)
+		fmt.Println("::4", field)
 
 		_, ok := schema.associations[field.FieldName()]
 		if ok {
@@ -405,6 +415,11 @@ type Columns []string
 func (c Columns) String() string {
 	sort.Strings(c)
 	return strings.Join(c, ", ")
+}
+
+// List returns table columns.
+func (c Columns) List() []string {
+	return c
 }
 
 // GetColumns returns a comma-separated string representation of a model's table columns.

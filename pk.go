@@ -15,20 +15,36 @@ type PrimaryKeyType uint8
 
 // PrimaryKey types.
 const (
+	// PrimaryKeyUnknownType is an unknown primary key.
+	PrimaryKeyUnknownType = PrimaryKeyType(iota)
 	// PrimaryKeyIntegerType uses an integer as primary key.
-	PrimaryKeyIntegerType = PrimaryKeyType(iota)
+	PrimaryKeyIntegerType
 	// PrimaryKeyString uses a string as primary key.
 	PrimaryKeyStringType
 )
 
-func (e PrimaryKeyType) String() string {
-	switch e {
+func (val PrimaryKeyType) String() string {
+	switch val {
+	case PrimaryKeyUnknownType:
+		return ""
 	case PrimaryKeyIntegerType:
 		return "int64"
 	case PrimaryKeyStringType:
 		return "string"
 	default:
-		panic(fmt.Sprintf("sqlxx: unknown primary key type: %d", e))
+		panic(fmt.Sprintf("sqlxx: unknown primary key type: %d", val))
+	}
+}
+
+// Equals returns if given foreign key has the same type as primary key.
+func (val PrimaryKeyType) Equals(key ForeignKeyType) bool {
+	switch val {
+	case PrimaryKeyIntegerType:
+		return key == ForeignKeyIntegerType
+	case PrimaryKeyStringType:
+		return key == ForeignKeyStringType
+	default:
+		return false
 	}
 }
 

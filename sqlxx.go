@@ -9,8 +9,13 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// ErrInvalidDriver is returned when given driver is undefined.
-var ErrInvalidDriver = fmt.Errorf("a sqlxx driver is required")
+// Sqlxx errors.
+var (
+	// ErrInvalidDriver is returned when given driver is undefined.
+	ErrInvalidDriver = fmt.Errorf("a sqlxx driver is required")
+	// ErrPointerRequired is returned when given value is not a pointer.
+	ErrPointerRequired = fmt.Errorf("a pointer is required")
+)
 
 // Driver can either be a *sqlx.DB or a *sqlx.Tx.
 type Driver interface {

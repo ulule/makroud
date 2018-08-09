@@ -76,6 +76,18 @@ func (val debugValues) write(buffer *bytes.Buffer) {
 	buffer.WriteString(`}`)
 }
 
+type debugWrap struct {
+	k string
+	v debugWriter
+}
+
+func (val debugWrap) write(buffer *bytes.Buffer) {
+	buffer.WriteString(`"`)
+	buffer.WriteString(val.k)
+	buffer.WriteString(`": `)
+	val.v.write(buffer)
+}
+
 type debugObj []debugWriter
 
 func (val debugObj) write(buffer *bytes.Buffer) {
@@ -172,7 +184,7 @@ func debugField(field Field) debugWriter {
 		},
 		debugValue{
 			k: "foreign_key",
-			v: field.GetForeignKey(),
+			v: field.ForeignKey(),
 		},
 		debugValue{
 			k: "is_association",
@@ -209,6 +221,80 @@ func debugField(field Field) debugWriter {
 		debugValue{
 			k: "association_type",
 			v: field.associationType.String(),
+		},
+	}
+}
+
+func debugReference(reference Reference) debugWriter {
+	return debugObj{
+		debugValue{
+			k: "model_name",
+			v: reference.ModelName(),
+		},
+		debugValue{
+			k: "table_name",
+			v: reference.TableName(),
+		},
+		debugValue{
+			k: "field_name",
+			v: reference.FieldName(),
+		},
+		debugValue{
+			k: "is_local",
+			v: strconv.FormatBool(reference.IsLocal()),
+		},
+		debugWrap{
+			k: "local",
+			v: debugReferenceObject(reference.Local()),
+		},
+		debugWrap{
+			k: "remote",
+			v: debugReferenceObject(reference.Remote()),
+		},
+	}
+}
+
+func debugReferenceObject(reference ReferenceObject) debugWriter {
+	return debugObj{
+		debugValue{
+			k: "schema",
+			v: reference.Schema().ModelName(),
+		},
+		debugValue{
+			k: "model_name",
+			v: reference.ModelName(),
+		},
+		debugValue{
+			k: "table_name",
+			v: reference.TableName(),
+		},
+		debugValue{
+			k: "field_name",
+			v: reference.FieldName(),
+		},
+		debugValue{
+			k: "column_path",
+			v: reference.ColumnPath(),
+		},
+		debugValue{
+			k: "column_name",
+			v: reference.ColumnName(),
+		},
+		debugValue{
+			k: "is_primary_key",
+			v: strconv.FormatBool(reference.isPrimaryKey),
+		},
+		debugValue{
+			k: "primary_key_type",
+			v: reference.pkType.String(),
+		},
+		debugValue{
+			k: "is_foreign_key",
+			v: strconv.FormatBool(reference.isForeignKey),
+		},
+		debugValue{
+			k: "foreign_key_type",
+			v: reference.fkType.String(),
 		},
 	}
 }

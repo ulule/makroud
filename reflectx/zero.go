@@ -37,3 +37,8 @@ func MakeZero(element interface{}) reflect.Value {
 
 	return reflect.New(GetIndirectType(t)).Elem()
 }
+
+// CopyZero returns a zero value for the given element.
+func CopyZero(element interface{}) interface{} {
+	return MakeZero(element).Interface()
+}
