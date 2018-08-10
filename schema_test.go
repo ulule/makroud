@@ -1,13 +1,14 @@
 package sqlxx_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
 )
+
+// TODO: Finish and improve coverage
 
 func TestSchema_Owl(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
@@ -18,29 +19,28 @@ func TestSchema_Owl(t *testing.T) {
 		is.NoError(err)
 		is.NotNil(schema)
 
-		is.Equal("wp_owl", schema.TableName())
+		is.Equal("ztp_owl", schema.TableName())
 		is.Equal("id", schema.PrimaryKey().ColumnName())
-		is.Equal("wp_owl.id", schema.PrimaryKey().ColumnPath())
+		is.Equal("ztp_owl.id", schema.PrimaryKey().ColumnPath())
 		is.False(schema.HasCreatedKey())
 		is.False(schema.HasUpdatedKey())
 		is.False(schema.HasDeletedKey())
 
 		columns := schema.Columns()
-		is.Len(columns, 4)
+		is.Len(columns, 5)
 		is.Contains(columns, "id")
 		is.Contains(columns, "name")
 		is.Contains(columns, "feather_color")
 		is.Contains(columns, "favorite_food")
+		is.Contains(columns, "group_id")
 
 		columns = schema.ColumnPaths()
-		is.Len(columns, 4)
-		is.Contains(columns, "wp_owl.id")
-		is.Contains(columns, "wp_owl.name")
-		is.Contains(columns, "wp_owl.feather_color")
-		is.Contains(columns, "wp_owl.favorite_food")
-
-		// TODO REMOVE
-		fmt.Printf("%+v\n", schema)
+		is.Len(columns, 5)
+		is.Contains(columns, "ztp_owl.id")
+		is.Contains(columns, "ztp_owl.name")
+		is.Contains(columns, "ztp_owl.feather_color")
+		is.Contains(columns, "ztp_owl.favorite_food")
+		is.Contains(columns, "ztp_owl.group_id")
 
 	})
 }
@@ -54,19 +54,16 @@ func TestSchema_Cat(t *testing.T) {
 		is.NoError(err)
 		is.NotNil(schema)
 
-		// TODO REMOVE
-		fmt.Printf("%+v\n", schema)
-
-		is.Equal("wp_cat", schema.TableName())
+		is.Equal("ztp_cat", schema.TableName())
 		is.Equal("id", schema.PrimaryKey().ColumnName())
-		is.Equal("wp_cat.id", schema.PrimaryKey().ColumnPath())
+		is.Equal("ztp_cat.id", schema.PrimaryKey().ColumnPath())
 
 		is.True(schema.HasCreatedKey())
 		is.True(schema.HasUpdatedKey())
 		is.True(schema.HasDeletedKey())
-		is.Equal("wp_cat.created_at", schema.CreatedKeyPath())
-		is.Equal("wp_cat.updated_at", schema.UpdatedKeyPath())
-		is.Equal("wp_cat.deleted_at", schema.DeletedKeyPath())
+		is.Equal("ztp_cat.created_at", schema.CreatedKeyPath())
+		is.Equal("ztp_cat.updated_at", schema.UpdatedKeyPath())
+		is.Equal("ztp_cat.deleted_at", schema.DeletedKeyPath())
 
 		columns := schema.Columns()
 		is.Len(columns, 5)
@@ -78,11 +75,11 @@ func TestSchema_Cat(t *testing.T) {
 
 		columns = schema.ColumnPaths()
 		is.Len(columns, 5)
-		is.Contains(columns, "wp_cat.id")
-		is.Contains(columns, "wp_cat.name")
-		is.Contains(columns, "wp_cat.created_at")
-		is.Contains(columns, "wp_cat.updated_at")
-		is.Contains(columns, "wp_cat.deleted_at")
+		is.Contains(columns, "ztp_cat.id")
+		is.Contains(columns, "ztp_cat.name")
+		is.Contains(columns, "ztp_cat.created_at")
+		is.Contains(columns, "ztp_cat.updated_at")
+		is.Contains(columns, "ztp_cat.deleted_at")
 
 	})
 }
@@ -96,16 +93,16 @@ func TestSchema_Meow(t *testing.T) {
 		is.NoError(err)
 		is.NotNil(schema)
 
-		is.Equal("wp_meow", schema.TableName())
+		is.Equal("ztp_meow", schema.TableName())
 		is.Equal("hash", schema.PrimaryKey().ColumnName())
-		is.Equal("wp_meow.hash", schema.PrimaryKey().ColumnPath())
+		is.Equal("ztp_meow.hash", schema.PrimaryKey().ColumnPath())
 
 		is.True(schema.HasCreatedKey())
 		is.True(schema.HasUpdatedKey())
 		is.True(schema.HasDeletedKey())
-		is.Equal("wp_meow.created", schema.CreatedKeyPath())
-		is.Equal("wp_meow.updated", schema.UpdatedKeyPath())
-		is.Equal("wp_meow.deleted", schema.DeletedKeyPath())
+		is.Equal("ztp_meow.created", schema.CreatedKeyPath())
+		is.Equal("ztp_meow.updated", schema.UpdatedKeyPath())
+		is.Equal("ztp_meow.deleted", schema.DeletedKeyPath())
 
 		columns := schema.Columns()
 		is.Len(columns, 5)
@@ -117,11 +114,11 @@ func TestSchema_Meow(t *testing.T) {
 
 		columns = schema.ColumnPaths()
 		is.Len(columns, 5)
-		is.Contains(columns, "wp_meow.hash")
-		is.Contains(columns, "wp_meow.body")
-		is.Contains(columns, "wp_meow.created")
-		is.Contains(columns, "wp_meow.updated")
-		is.Contains(columns, "wp_meow.deleted")
+		is.Contains(columns, "ztp_meow.hash")
+		is.Contains(columns, "ztp_meow.body")
+		is.Contains(columns, "ztp_meow.created")
+		is.Contains(columns, "ztp_meow.updated")
+		is.Contains(columns, "ztp_meow.deleted")
 
 	})
 }
@@ -135,16 +132,18 @@ func TestSchema_ExoChunk(t *testing.T) {
 		is.NoError(err)
 		is.NotNil(schema)
 
-		// is.Equal("wp_meow", schema.TableName())
+		// TODO: Finish
+
+		// is.Equal("ztp_meow", schema.TableName())
 		// is.Equal("hash", schema.PrimaryKey().ColumnName())
-		// is.Equal("wp_meow.hash", schema.PrimaryKey().ColumnPath())
+		// is.Equal("ztp_meow.hash", schema.PrimaryKey().ColumnPath())
 		//
 		// is.True(schema.HasCreatedKey())
 		// is.True(schema.HasUpdatedKey())
 		// is.True(schema.HasDeletedKey())
-		// is.Equal("wp_meow.created", schema.CreatedKeyPath())
-		// is.Equal("wp_meow.updated", schema.UpdatedKeyPath())
-		// is.Equal("wp_meow.deleted", schema.DeletedKeyPath())
+		// is.Equal("ztp_meow.created", schema.CreatedKeyPath())
+		// is.Equal("ztp_meow.updated", schema.UpdatedKeyPath())
+		// is.Equal("ztp_meow.deleted", schema.DeletedKeyPath())
 		//
 		// columns := schema.Columns()
 		// is.Len(columns, 5)
@@ -156,11 +155,11 @@ func TestSchema_ExoChunk(t *testing.T) {
 		//
 		// columns = schema.ColumnPaths()
 		// is.Len(columns, 5)
-		// is.Contains(columns, "wp_meow.hash")
-		// is.Contains(columns, "wp_meow.body")
-		// is.Contains(columns, "wp_meow.created")
-		// is.Contains(columns, "wp_meow.updated")
-		// is.Contains(columns, "wp_meow.deleted")
+		// is.Contains(columns, "ztp_meow.hash")
+		// is.Contains(columns, "ztp_meow.body")
+		// is.Contains(columns, "ztp_meow.created")
+		// is.Contains(columns, "ztp_meow.updated")
+		// is.Contains(columns, "ztp_meow.deleted")
 
 	})
 }

@@ -28,7 +28,7 @@ func TestTransaction_Commit(t *testing.T) {
 		is.NoError(err)
 
 		name := ""
-		query := loukoum.Select("name").From("wp_cat").Where(loukoum.Condition("id").Equal(cat.ID))
+		query := loukoum.Select("name").From("ztp_cat").Where(loukoum.Condition("id").Equal(cat.ID))
 		err = sqlxx.Exec(driver, query, &name)
 		is.NoError(err)
 		is.Equal("Harley", name)
@@ -56,7 +56,7 @@ func TestTransaction_Rollback(t *testing.T) {
 		is.Equal(timeout, err)
 
 		name := ""
-		query := loukoum.Select("name").From("wp_cat").Where(loukoum.Condition("id").Equal(cat.ID))
+		query := loukoum.Select("name").From("ztp_cat").Where(loukoum.Condition("id").Equal(cat.ID))
 		err = sqlxx.Exec(driver, query, &name)
 		is.NoError(err)
 		is.Equal("Gemmz", name)

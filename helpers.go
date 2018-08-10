@@ -138,7 +138,7 @@ func execRow(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, 
 	}
 
 	mapper, err := ScanRow(row)
-	if err != nil && !IsErrNoRows(err) {
+	if err != nil {
 		return err
 	}
 
@@ -177,5 +177,9 @@ func FloatCount(driver Driver, stmt builder.Builder) (float64, error) {
 
 // IsErrNoRows returns if given error is a "no rows" error.
 func IsErrNoRows(err error) bool {
-	return err != nil && errors.Cause(err) == sql.ErrNoRows
+	if err == nil {
+		return false
+	}
+	err = errors.Cause(err)
+	return err == sql.ErrNoRows || err == ErrNoRows
 }

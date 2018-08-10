@@ -69,6 +69,9 @@ func TestReflectx_ToInt64(t *testing.T) {
 	str := "hello"
 	type A struct{}
 	foo := true
+	zni64 := sql.NullInt64{}
+	znf64 := sql.NullFloat64{}
+	nf64 = sql.NullFloat64{Valid: true, Float64: float64(1.5)}
 
 	invalids := []interface{}{
 		nil,
@@ -81,6 +84,10 @@ func TestReflectx_ToInt64(t *testing.T) {
 		&foo,
 		[]A{},
 		&[]A{},
+		zni64,
+		&zni64,
+		znf64,
+		&znf64,
 	}
 
 	for i, invalid := range invalids {
@@ -114,6 +121,7 @@ func TestReflectx_ToString(t *testing.T) {
 
 	type A struct{}
 	foo := true
+	zns := sql.NullString{}
 
 	invalids := []interface{}{
 		nil,
@@ -124,6 +132,8 @@ func TestReflectx_ToString(t *testing.T) {
 		&foo,
 		[]A{},
 		&[]A{},
+		zns,
+		&zns,
 	}
 
 	for i, invalid := range invalids {
@@ -132,3 +142,9 @@ func TestReflectx_ToString(t *testing.T) {
 		is.Equal("", v, fmt.Sprintf("loop #%d", i))
 	}
 }
+
+// TODO
+//
+//  * GetType
+//  * ToOptionalInt64
+//  * ToOptionalString

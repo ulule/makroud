@@ -106,5 +106,11 @@ func save(driver Driver, model Model) (Queries, error) {
 
 	query, args := builder.NamedQuery()
 	err = exec(driver, query, args, model)
+
+	// Ignore no rows error if returning is empty.
+	if IsErrNoRows(err) && len(returning) == 0 {
+		return queries, nil
+	}
+
 	return queries, err
 }

@@ -30,14 +30,14 @@ func TestDelete_DeleteOwl(t *testing.T) {
 		is.NotNil(queries)
 		is.Len(queries, 1)
 		query := queries[0]
-		expected := fmt.Sprintf("DELETE FROM wp_owl WHERE (id = %s)", format.Int(owl.ID))
+		expected := fmt.Sprintf("DELETE FROM ztp_owl WHERE (id = %s)", format.Int(owl.ID))
 		is.Equal(expected, query.Raw)
-		expected = "DELETE FROM wp_owl WHERE (id = :arg_1)"
+		expected = "DELETE FROM ztp_owl WHERE (id = :arg_1)"
 		is.Equal(expected, query.Query)
 		is.Len(query.Args, 1)
 		is.Equal(id, query.Args["arg_1"])
 
-		check := loukoum.Select("COUNT(*)").From("wp_owl").Where(loukoum.Condition("name").Equal("Blake"))
+		check := loukoum.Select("COUNT(*)").From("ztp_owl").Where(loukoum.Condition("name").Equal("Blake"))
 		count := -1
 		err = sqlxx.Exec(driver, check, &count)
 		is.NoError(err)
@@ -62,7 +62,7 @@ func TestDelete_ArchiveOwl(t *testing.T) {
 		queries, err := sqlxx.ArchiveWithQueries(driver, owl)
 		is.Error(err)
 		is.Nil(queries)
-		is.Equal(sqlxx.ErrDeletedKey, errors.Cause(err))
+		is.Equal(sqlxx.ErrSchemaDeletedKey, errors.Cause(err))
 
 	})
 }
@@ -83,14 +83,14 @@ func TestDelete_DeleteMeow(t *testing.T) {
 		is.NotNil(queries)
 		is.Len(queries, 1)
 		query := queries[0]
-		expected := fmt.Sprintf("DELETE FROM wp_meow WHERE (hash = %s)", format.String(meow.Hash))
+		expected := fmt.Sprintf("DELETE FROM ztp_meow WHERE (hash = %s)", format.String(meow.Hash))
 		is.Equal(expected, query.Raw)
-		expected = "DELETE FROM wp_meow WHERE (hash = :arg_1)"
+		expected = "DELETE FROM ztp_meow WHERE (hash = :arg_1)"
 		is.Equal(expected, query.Query)
 		is.Len(query.Args, 1)
 		is.Equal(id, query.Args["arg_1"])
 
-		check := loukoum.Select("COUNT(*)").From("wp_meow").Where(loukoum.Condition("hash").Equal(id))
+		check := loukoum.Select("COUNT(*)").From("ztp_meow").Where(loukoum.Condition("hash").Equal(id))
 		count := -1
 		err = sqlxx.Exec(driver, check, &count)
 		is.NoError(err)
@@ -117,17 +117,17 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 		is.Len(queries, 1)
 		query := queries[0]
 		expected := fmt.Sprintf(
-			"UPDATE wp_meow SET deleted = NOW() WHERE (hash = %s) RETURNING deleted",
+			"UPDATE ztp_meow SET deleted = NOW() WHERE (hash = %s) RETURNING deleted",
 			format.String(meow.Hash),
 		)
 		is.Equal(expected, query.Raw)
-		expected = "UPDATE wp_meow SET deleted = NOW() WHERE (hash = :arg_1) RETURNING deleted"
+		expected = "UPDATE ztp_meow SET deleted = NOW() WHERE (hash = :arg_1) RETURNING deleted"
 		is.Equal(expected, query.Query)
 		is.Len(query.Args, 1)
 		is.Equal(id, query.Args["arg_1"])
 
 		count := -1
-		check := loukoum.Select("COUNT(*)").From("wp_meow").
+		check := loukoum.Select("COUNT(*)").From("ztp_meow").
 			Where(loukoum.Condition("hash").Equal(id))
 		err = sqlxx.Exec(driver, check, &count)
 		is.NoError(err)
@@ -135,7 +135,7 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 		is.Equal(1, count)
 
 		count = -1
-		check = loukoum.Select("COUNT(*)").From("wp_meow").
+		check = loukoum.Select("COUNT(*)").From("ztp_meow").
 			Where(loukoum.Condition("hash").Equal(id)).And(loukoum.Condition("deleted").IsNull(true))
 		err = sqlxx.Exec(driver, check, &count)
 		is.NoError(err)

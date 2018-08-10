@@ -32,7 +32,7 @@ func TestExec_List(t *testing.T) {
 		}
 
 		list := []string{}
-		query := loukoum.Select("id").From("wp_cat").
+		query := loukoum.Select("id").From("ztp_cat").
 			Where(loukoum.Condition("name").ILike("Whi%"))
 
 		err := sqlxx.Exec(driver, query, &list)
@@ -72,7 +72,7 @@ func TestRawExec_List(t *testing.T) {
 		}
 
 		list := []string{}
-		query := `SELECT id FROM wp_cat WHERE name ILIKE 'Ver%'`
+		query := `SELECT id FROM ztp_cat WHERE name ILIKE 'Ver%'`
 		err := sqlxx.RawExec(driver, query, &list)
 		is.NoError(err)
 
@@ -110,7 +110,7 @@ func TestExec_Fetch(t *testing.T) {
 		}
 
 		id := ""
-		query := loukoum.Select("id").From("wp_cat").
+		query := loukoum.Select("id").From("ztp_cat").
 			Where(loukoum.Condition("name").Equal("Banker"))
 
 		err := sqlxx.Exec(driver, query, &id)
@@ -146,7 +146,7 @@ func TestRawExec_Fetch(t *testing.T) {
 		}
 
 		id := ""
-		query := `SELECT id FROM wp_cat WHERE name = 'Calzone'`
+		query := `SELECT id FROM ztp_cat WHERE name = 'Calzone'`
 		err := sqlxx.RawExec(driver, query, &id)
 		is.NoError(err)
 		is.Equal(expected.ID, id)
@@ -176,7 +176,7 @@ func TestExec_FetchModel(t *testing.T) {
 		}
 
 		result := &Cat{}
-		query := loukoum.Select("*").From("wp_cat").
+		query := loukoum.Select("*").From("ztp_cat").
 			Where(loukoum.Condition("name").Equal("Akiko"))
 
 		err := sqlxx.Exec(driver, query, result)
@@ -212,7 +212,7 @@ func TestExec_ListModel(t *testing.T) {
 		}
 
 		result := []Cat{}
-		query := loukoum.Select("*").From("wp_cat").
+		query := loukoum.Select("*").From("ztp_cat").
 			Where(loukoum.Condition("name").In("Amazon", "Amelia", "Amigo", "Amos"))
 
 		err := sqlxx.Exec(driver, query, &result)

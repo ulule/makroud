@@ -82,7 +82,7 @@ func archive(driver Driver, model Model) (Queries, error) {
 	}
 
 	if !schema.HasDeletedKey() {
-		return nil, errors.Wrapf(ErrDeletedKey, "sqlxx: %T doesn't support archive operation", model)
+		return nil, errors.Wrapf(ErrSchemaDeletedKey, "sqlxx: %T doesn't support archive operation", model)
 	}
 
 	pk := schema.PrimaryKey()

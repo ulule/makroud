@@ -2,19 +2,10 @@ package sqlxx
 
 import (
 	"database/sql"
-	"fmt"
 	"io"
 
 	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
-)
-
-// Sqlxx errors.
-var (
-	// ErrInvalidDriver is returned when given driver is undefined.
-	ErrInvalidDriver = fmt.Errorf("a sqlxx driver is required")
-	// ErrPointerRequired is returned when given value is not a pointer.
-	ErrPointerRequired = fmt.Errorf("a pointer is required")
 )
 
 // Driver can either be a *sqlx.DB or a *sqlx.Tx.

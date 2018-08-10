@@ -1,6 +1,7 @@
 package sqlxx_test
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
@@ -26,11 +27,16 @@ var dbDefaultOptions = map[string]sqlxx.Option{
 // ----------------------------------------------------------------------------
 
 type Elements struct {
-	Air   string `db:"air"`
-	Fire  string `sqlxx:"column:fire"`
-	Water string `sqlxx:"-"`
-	Earth string `sqlxx:"column:earth,default"`
-	Fifth string
+	Air     string `db:"air"`
+	Fire    string `sqlxx:"column:fire"`
+	Water   string `sqlxx:"-"`
+	Earth   string `sqlxx:"column:earth,default"`
+	Fifth   string
+	enabled bool
+}
+
+func (Elements) TableName() string {
+	return "rune_elements"
 }
 
 // ----------------------------------------------------------------------------
@@ -71,34 +77,79 @@ func (ExoChunkMode) TableName() string {
 }
 
 // ----------------------------------------------------------------------------
-// Animal stuff
+// Zootopia
 // ----------------------------------------------------------------------------
 
+type Group struct {
+	// Columns
+	ID   int64  `sqlxx:"column:id,pk"`
+	Name string `sqlxx:"column:name"`
+}
+
+func (Group) TableName() string {
+	return "ztp_group"
+}
+
+type Center struct {
+	// Columns
+	ID   string `sqlxx:"column:id"`
+	Name string `sqlxx:"column:name"`
+	Area string `sqlxx:"column:area"`
+}
+
+func (Center) TableName() string {
+	return "ztp_center"
+}
+
 type Owl struct {
-	ID           int64  `sqlxx:"column:id,pk"`
-	Name         string `sqlxx:"column:name"`
-	FeatherColor string `sqlxx:"column:feather_color"`
-	FavoriteFood string
-	tracking     bool
+	// Columns
+	ID           int64         `sqlxx:"column:id,pk"`
+	Name         string        `sqlxx:"column:name"`
+	FeatherColor string        `sqlxx:"column:feather_color"`
+	FavoriteFood string        `sqlxx:"column:favorite_food"`
+	GroupID      sql.NullInt64 `sqlxx:"column:group_id,fk:ztp_group"`
+	// Relationships
+	Group *Group
 }
 
 func (Owl) TableName() string {
-	return "wp_owl"
+	return "ztp_owl"
 }
 
+//
+// type Package struct {
+// 	// Columns
+// 	ID          string         `sqlxx:"column:id,pk:ulid"`
+// 	Status      string         `sqlxx:"column:status"`
+// 	SenderID    string         `sqlxx:"column:sender_id"`
+// 	ReceiverID  string         `sqlxx:"column:receiver_id"`
+// 	Transporter sql.NullString `sqlxx:"column:transporter_id"`
+// 	// Relationships
+// 	Sender   *Center
+// 	Receiver *Center
+// }
+//
+// func (Package) TableName() string {
+// 	return "ztp_package"
+// }
+
 type Cat struct {
-	ID        string      `sqlxx:"column:id"`
+	// Columns
+	ID        string      `sqlxx:"column:id,pk:ulid"`
 	Name      string      `sqlxx:"column:name"`
 	CreatedAt time.Time   `sqlxx:"column:created_at,default"`
 	UpdatedAt time.Time   `sqlxx:"column:updated_at,default"`
 	DeletedAt pq.NullTime `sqlxx:"column:deleted_at"`
+	// Relationships
+	Owner *Human
 }
 
 func (Cat) TableName() string {
-	return "wp_cat"
+	return "ztp_cat"
 }
 
 type Meow struct {
+	// Columns
 	Hash      string      `sqlxx:"column:hash,pk:ulid"`
 	Body      string      `sqlxx:"column:body"`
 	CreatedAt time.Time   `sqlxx:"column:created"`
@@ -107,7 +158,7 @@ type Meow struct {
 }
 
 func (Meow) TableName() string {
-	return "wp_meow"
+	return "ztp_meow"
 }
 
 func (Meow) CreatedKey() string {
@@ -120,6 +171,20 @@ func (Meow) UpdatedKey() string {
 
 func (Meow) DeletedKey() string {
 	return "deleted"
+}
+
+type Human struct {
+	// Columns
+	ID        string         `sqlxx:"column:id,pk:ulid"`
+	Name      string         `sqlxx:"column:name"`
+	CreatedAt time.Time      `sqlxx:"column:created_at,default"`
+	UpdatedAt time.Time      `sqlxx:"column:updated_at,default"`
+	DeletedAt pq.NullTime    `sqlxx:"column:deleted_at"`
+	CatID     sql.NullString `sqlxx:"column:cat_id,fk:ztp_cat"`
+}
+
+func (Human) TableName() string {
+	return "ztp_human"
 }
 
 //
@@ -1454,9 +1519,12 @@ func Setup(t require.TestingT, options ...sqlxx.Option) SetupCallback {
 func DropTables(db *sqlxx.Client) {
 	db.MustExec(`
 		-- Simple schema
-		DROP TABLE IF EXISTS wp_owl CASCADE;
-		DROP TABLE IF EXISTS wp_cat CASCADE;
-		DROP TABLE IF EXISTS wp_meow CASCADE;
+		DROP TABLE IF EXISTS ztp_human CASCADE;
+		DROP TABLE IF EXISTS ztp_owl CASCADE;
+		DROP TABLE IF EXISTS ztp_cat CASCADE;
+		DROP TABLE IF EXISTS ztp_meow CASCADE;
+		DROP TABLE IF EXISTS ztp_group CASCADE;
+		DROP TABLE IF EXISTS ztp_center CASCADE;
 
 		-- Object storage application
 		DROP TABLE IF EXISTS exo_chunk_signature CASCADE;
@@ -1486,28 +1554,46 @@ func CreateTables(db *sqlxx.Client) {
 	db.MustExec(`
 
 		--
-		-- Simple schema
+		-- Zootopia schema
 		--
 
-		CREATE TABLE wp_owl (
+		CREATE TABLE ztp_group (
+			id              SERIAL PRIMARY KEY NOT NULL,
+			name            VARCHAR(255) NOT NULL
+		);
+		CREATE TABLE ztp_center (
+			id              VARCHAR(32) PRIMARY KEY NOT NULL DEFAULT md5(random()::text),
+			name            VARCHAR(255) NOT NULL,
+			area            VARCHAR(255) NOT NULL
+		);
+		CREATE TABLE ztp_owl (
 			id              SERIAL PRIMARY KEY NOT NULL,
 			name            VARCHAR(255) NOT NULL,
 			feather_color   VARCHAR(255) NOT NULL,
-			favorite_food   VARCHAR(255) NOT NULL
+			favorite_food   VARCHAR(255) NOT NULL,
+			group_id        INTEGER REFERENCES ztp_group(id)
 		);
-		CREATE TABLE wp_cat (
-			id              VARCHAR(32) PRIMARY KEY NOT NULL DEFAULT md5(random()::text),
+		CREATE TABLE ztp_cat (
+			id              VARCHAR(26) PRIMARY KEY NOT NULL,
 			name            VARCHAR(255) NOT NULL,
 			created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 			updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 			deleted_at      TIMESTAMP WITH TIME ZONE
 		);
-		CREATE TABLE wp_meow (
+		CREATE TABLE ztp_meow (
 			hash            VARCHAR(26) PRIMARY KEY NOT NULL,
 			body            VARCHAR(2048) NOT NULL,
 			created         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 			updated         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 			deleted         TIMESTAMP WITH TIME ZONE
+		);
+		CREATE TABLE ztp_human (
+			id              VARCHAR(26) PRIMARY KEY NOT NULL,
+			name            VARCHAR(255) NOT NULL,
+			created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+			updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+			deleted_at      TIMESTAMP WITH TIME ZONE,
+			cat_id           VARCHAR(26) REFERENCES ztp_cat(id)
 		);
 
 		--
@@ -1521,11 +1607,11 @@ func CreateTables(db *sqlxx.Client) {
 		CREATE TABLE exo_chunk (
 			hash            VARCHAR(26) PRIMARY KEY NOT NULL,
 			bytes           VARCHAR(2048) NOT NULL,
-			mode_id         INTEGER REFERENCES exo_chunk_mode(id)
+			mode_id         INTEGER NOT NULL REFERENCES exo_chunk_mode(id) ON DELETE RESTRICT
 		);
 		CREATE TABLE exo_chunk_signature (
 			id               VARCHAR(26) PRIMARY KEY NOT NULL,
-			chunk_id         VARCHAR(26) REFERENCES exo_chunk(hash),
+			chunk_id         VARCHAR(26) NOT NULL REFERENCES exo_chunk(hash),
 			bytes            VARCHAR(2048) NOT NULL
 		);
 

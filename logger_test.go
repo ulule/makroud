@@ -47,8 +47,8 @@ func TestLogger(t *testing.T) {
 		err := sqlxx.Save(driver, owl)
 		is.NoError(err)
 		expected := fmt.Sprint(
-			`INSERT INTO wp_owl (favorite_food, feather_color, name) VALUES `,
-			`('Shrimps', 'lavender', 'Guacamowle') RETURNING id;`, EOL,
+			`INSERT INTO ztp_owl (favorite_food, feather_color, group_id, name) VALUES `,
+			`('Shrimps', 'lavender', NULL, 'Guacamowle') RETURNING id;`, EOL,
 		)
 
 		log, err := logger.read()
@@ -59,8 +59,8 @@ func TestLogger(t *testing.T) {
 		err = sqlxx.Save(driver, owl)
 		is.NoError(err)
 		expected = fmt.Sprint(
-			`UPDATE wp_owl SET favorite_food = 'Shrimps', feather_color = 'lavender', name = 'Nibbles' `,
-			`WHERE (id = `, format.Int(owl.ID), `);`, EOL,
+			`UPDATE ztp_owl SET favorite_food = 'Shrimps', feather_color = 'lavender', group_id = NULL, `,
+			`name = 'Nibbles' WHERE (id = `, format.Int(owl.ID), `);`, EOL,
 		)
 
 		log, err = logger.read()
@@ -69,7 +69,7 @@ func TestLogger(t *testing.T) {
 
 		sqlxx.Delete(driver, owl)
 		is.NoError(err)
-		expected = fmt.Sprint(`DELETE FROM wp_owl WHERE (id = `, format.Int(owl.ID), `);`, EOL)
+		expected = fmt.Sprint(`DELETE FROM ztp_owl WHERE (id = `, format.Int(owl.ID), `);`, EOL)
 
 		log, err = logger.read()
 		is.NoError(err)

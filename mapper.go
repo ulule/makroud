@@ -2,6 +2,7 @@ package sqlxx
 
 import (
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 )
 
 // ----------------------------------------------------------------------------
@@ -15,6 +16,9 @@ type Mapper map[string]interface{}
 func ScanRow(row *sqlx.Row) (Mapper, error) {
 	mapper := map[string]interface{}{}
 	err := row.MapScan(mapper)
+	if len(mapper) == 0 {
+		return nil, errors.WithStack(ErrNoRows)
+	}
 	return mapper, err
 }
 

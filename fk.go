@@ -3,48 +3,62 @@ package sqlxx
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 
 	"github.com/pkg/errors"
+
+	"github.com/ulule/sqlxx/reflectx"
 )
 
-// ForeignKeyType define a foreign key type.
-type ForeignKeyType uint8
+// FKType define a foreign key type.
+type FKType uint8
 
-// ForeignKey types.
+// Foreign key types.
 const (
-	// ForeignKeyUnknownType is an unknown foreign key.
-	ForeignKeyUnknownType = ForeignKeyType(iota)
-	// ForeignKeyIntegerType uses an integer as foreign key.
-	ForeignKeyIntegerType
+	// FKUnknownType is an unknown foreign key.
+	FKUnknownType = FKType(iota)
+	// FKIntegerType uses an integer as foreign key.
+	FKIntegerType
 	// ForeignKeyString uses a string as foreign key.
-	ForeignKeyStringType
+	FKStringType
+	// FKOptionalIntegerType uses an optional integer as foreign key.
+	FKOptionalIntegerType
+	// FKOptionalStringType uses an optional string as foreign key.
+	FKOptionalStringType
 )
 
 // String returns a human readable version of current instance.
-func (val ForeignKeyType) String() string {
+func (val FKType) String() string {
 	switch val {
-	case ForeignKeyUnknownType:
+	case FKUnknownType:
 		return ""
-	case ForeignKeyIntegerType:
-		return "int64"
-	case ForeignKeyStringType:
+	case FKIntegerType:
+		return "integer"
+	case FKStringType:
 		return "string"
+	case FKOptionalIntegerType:
+		return "option[integer]"
+	case FKOptionalStringType:
+		return "option[string]"
 	default:
 		panic(fmt.Sprintf("sqlxx: unknown foreign key type: %d", val))
 	}
 }
 
-// Equals returns if given primary key has the same type as foreign key.
-func (val ForeignKeyType) Equals(key PrimaryKeyType) bool {
+// IsCompatible returns if given primary key is compatible with foreign key.
+func (val FKType) IsCompatible(key PKType) bool {
 	switch val {
-	case ForeignKeyIntegerType:
-		return key == PrimaryKeyIntegerType
-	case ForeignKeyStringType:
-		return key == PrimaryKeyStringType
+	case FKIntegerType, FKOptionalIntegerType:
+		return key == PKIntegerType
+	case FKStringType, FKOptionalStringType:
+		return key == PKStringType
 	default:
 		return false
 	}
+}
+
+// IsOptional returns if foreign key has an optional type.
+func (val FKType) IsOptional() bool {
+	return val == FKOptionalIntegerType || val == FKOptionalStringType
 }
 
 // ForeignKey is a composite object that define a foreign key for a model.
@@ -65,7 +79,7 @@ func (val ForeignKeyType) Equals(key PrimaryKeyType) bool {
 type ForeignKey struct {
 	Field
 	fkTableName string
-	fkType      ForeignKeyType
+	fkType      FKType
 }
 
 // NewForeignKey creates a foreign key from a field instance.
@@ -75,11 +89,15 @@ func NewForeignKey(field *Field) (*ForeignKey, error) {
 		fkTableName: field.ForeignKey(),
 	}
 
-	switch field.Type().Kind() {
-	case reflect.String:
-		pk.fkType = ForeignKeyStringType
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		pk.fkType = ForeignKeyIntegerType
+	switch reflectx.GetType(field.Type()) {
+	case reflectx.Int64Type:
+		pk.fkType = FKIntegerType
+	case reflectx.OptionalInt64Type:
+		pk.fkType = FKOptionalIntegerType
+	case reflectx.StringType:
+		pk.fkType = FKStringType
+	case reflectx.OptionalStringType:
+		pk.fkType = FKOptionalStringType
 	default:
 		return nil, errors.Errorf("cannot use '%s' as foreign key type", field.Type().String())
 	}
@@ -93,7 +111,7 @@ func (key ForeignKey) Reference() string {
 }
 
 // Type returns the foreign key's type.
-func (key ForeignKey) Type() ForeignKeyType {
+func (key ForeignKey) Type() FKType {
 	return key.fkType
 }
 
@@ -137,8 +155,8 @@ type ReferenceObject struct {
 	columnName   string
 	isPrimaryKey bool
 	isForeignKey bool
-	pkType       PrimaryKeyType
-	fkType       ForeignKeyType
+	pkType       PKType
+	fkType       FKType
 }
 
 // Schema returns the reference schema.
@@ -187,12 +205,12 @@ func (object ReferenceObject) IsForeignKey() bool {
 }
 
 // PrimaryKeyType returns this reference primary key type.
-func (object ReferenceObject) PrimaryKeyType() PrimaryKeyType {
+func (object ReferenceObject) PrimaryKeyType() PKType {
 	return object.pkType
 }
 
 // ForeignKeyType returns this reference foreign key type.
-func (object ReferenceObject) ForeignKeyType() ForeignKeyType {
+func (object ReferenceObject) ForeignKeyType() FKType {
 	return object.fkType
 }
 

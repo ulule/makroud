@@ -2,7 +2,6 @@ package sqlxx
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
@@ -10,39 +9,39 @@ import (
 	"github.com/ulule/sqlxx/reflectx"
 )
 
-// PrimaryKeyType define a primary key type.
-type PrimaryKeyType uint8
+// PKType define a primary key type.
+type PKType uint8
 
 // PrimaryKey types.
 const (
-	// PrimaryKeyUnknownType is an unknown primary key.
-	PrimaryKeyUnknownType = PrimaryKeyType(iota)
-	// PrimaryKeyIntegerType uses an integer as primary key.
-	PrimaryKeyIntegerType
+	// PKUnknownType is an unknown primary key.
+	PKUnknownType = PKType(iota)
+	// PKIntegerType uses an integer as primary key.
+	PKIntegerType
 	// PrimaryKeyString uses a string as primary key.
-	PrimaryKeyStringType
+	PKStringType
 )
 
-func (val PrimaryKeyType) String() string {
+func (val PKType) String() string {
 	switch val {
-	case PrimaryKeyUnknownType:
+	case PKUnknownType:
 		return ""
-	case PrimaryKeyIntegerType:
-		return "int64"
-	case PrimaryKeyStringType:
+	case PKIntegerType:
+		return "integer"
+	case PKStringType:
 		return "string"
 	default:
 		panic(fmt.Sprintf("sqlxx: unknown primary key type: %d", val))
 	}
 }
 
-// Equals returns if given foreign key has the same type as primary key.
-func (val PrimaryKeyType) Equals(key ForeignKeyType) bool {
+// IsCompatible returns if given foreign key is compatible with primary key.
+func (val PKType) IsCompatible(key FKType) bool {
 	switch val {
-	case PrimaryKeyIntegerType:
-		return key == ForeignKeyIntegerType
-	case PrimaryKeyStringType:
-		return key == ForeignKeyStringType
+	case PKIntegerType:
+		return key == FKIntegerType || key == FKOptionalIntegerType
+	case PKStringType:
+		return key == FKStringType || key == FKOptionalStringType
 	default:
 		return false
 	}
@@ -88,7 +87,7 @@ func (e PrimaryKeyDefault) String() string {
 //
 type PrimaryKey struct {
 	Field
-	pkType    PrimaryKeyType
+	pkType    PKType
 	pkDefault PrimaryKeyDefault
 }
 
@@ -99,11 +98,11 @@ func NewPrimaryKey(field *Field) (*PrimaryKey, error) {
 		pkDefault: PrimaryKeyDBDefault,
 	}
 
-	switch field.Type().Kind() {
-	case reflect.String:
-		pk.pkType = PrimaryKeyStringType
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		pk.pkType = PrimaryKeyIntegerType
+	switch reflectx.GetType(field.Type()) {
+	case reflectx.Int64Type:
+		pk.pkType = PKIntegerType
+	case reflectx.StringType:
+		pk.pkType = PKStringType
 	default:
 		return nil, errors.Errorf("cannot use '%s' as primary key type", field.Type().String())
 	}
@@ -116,7 +115,7 @@ func NewPrimaryKey(field *Field) (*PrimaryKey, error) {
 }
 
 // Type returns the primary key's type.
-func (key PrimaryKey) Type() PrimaryKeyType {
+func (key PrimaryKey) Type() PKType {
 	return key.pkType
 }
 
@@ -137,13 +136,13 @@ func (key PrimaryKey) Value(model Model) (interface{}, error) {
 // ValueOpt may returns the primary key's value, if defined.
 func (key PrimaryKey) ValueOpt(model Model) (interface{}, bool) {
 	switch key.pkType {
-	case PrimaryKeyIntegerType:
+	case PKIntegerType:
 		id, err := reflectx.GetFieldValueInt64(model, key.FieldName())
 		if err != nil || id == int64(0) {
 			return int64(0), false
 		}
 		return id, true
-	case PrimaryKeyStringType:
+	case PKStringType:
 		id, err := reflectx.GetFieldValueString(model, key.FieldName())
 		if err != nil || id == "" {
 			return "", false

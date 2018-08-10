@@ -1,6 +1,7 @@
 package reflectx
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"reflect"
 
@@ -8,26 +9,39 @@ import (
 )
 
 // ----------------------------------------------------------------------------
+// Types
+// ----------------------------------------------------------------------------
+
+var (
+	int64Type       = reflect.TypeOf(int64(0))
+	nullInt64Type   = reflect.TypeOf(sql.NullInt64{})
+	nullFloat64Type = reflect.TypeOf(sql.NullFloat64{})
+	stringType      = reflect.TypeOf("")
+	nullStringType  = reflect.TypeOf(sql.NullString{})
+)
+
+// ----------------------------------------------------------------------------
 // Int64
 // ----------------------------------------------------------------------------
 
-var int64Type = reflect.TypeOf(int64(0))
-
 // ToInt64 converts given value to int64.
+// In case of a optional value (ie: sql.NullInt64), please use ToOptionalInt64.
 func ToInt64(value interface{}) (int64, error) {
 	cast, ok := value.(int64)
 	if ok {
 		return cast, nil
 	}
 
-	// sql.NullInt64 support
+	// For sql.NullInt64 and sql.NullFloat64 support.
 	valuer, ok := value.(driver.Valuer)
 	if ok {
 		v, err := valuer.Value()
-		if err != nil || v == nil {
+		if err != nil {
 			return 0, errors.Wrap(err, "cannot convert to int64")
 		}
-
+		if v == nil {
+			return 0, errors.Errorf("cannot convert to int64")
+		}
 		value = v
 	}
 
@@ -44,11 +58,15 @@ func ToInt64(value interface{}) (int64, error) {
 	return reflected.Convert(int64Type).Int(), nil
 }
 
+// ToOptionalInt64 try to converts given value to int64.
+func ToOptionalInt64(value interface{}) (int64, bool) {
+	v, err := ToInt64(value)
+	return v, err == nil
+}
+
 // ----------------------------------------------------------------------------
 // String
 // ----------------------------------------------------------------------------
-
-var stringType = reflect.TypeOf("")
 
 // ToString converts given value to string.
 func ToString(value interface{}) (string, error) {
@@ -61,10 +79,12 @@ func ToString(value interface{}) (string, error) {
 	valuer, ok := value.(driver.Valuer)
 	if ok {
 		v, err := valuer.Value()
-		if err != nil || v == nil {
+		if err != nil {
 			return "", errors.Wrap(err, "cannot convert to string")
 		}
-
+		if v == nil {
+			return "", errors.Errorf("cannot convert to string")
+		}
 		value = v
 	}
 
@@ -79,4 +99,54 @@ func ToString(value interface{}) (string, error) {
 	}
 
 	return reflected.Convert(stringType).String(), nil
+}
+
+// ToOptionalString try to converts given value to string.
+func ToOptionalString(value interface{}) (string, bool) {
+	v, err := ToString(value)
+	return v, err == nil
+}
+
+// ----------------------------------------------------------------------------
+// Helpers
+// ----------------------------------------------------------------------------
+
+// Type defines high level types used by reflectx. It's a subset of go types.
+type Type uint8
+
+const (
+	// UnsupportedType is an unsupported type.
+	UnsupportedType = Type(iota)
+	// Int64Type uses an integer.
+	Int64Type
+	// StringType uses a string.
+	StringType
+	// OptionalInt64Type uses an optional integer.
+	OptionalInt64Type
+	// OptionalStringType uses an optional string.
+	OptionalStringType
+)
+
+// GetType returns high level type from given reflect type.
+func GetType(value reflect.Type) Type {
+	switch value.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return Int64Type
+
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return Int64Type
+
+	case reflect.String:
+		return StringType
+
+	case reflect.Struct:
+		indirect := GetIndirectType(value)
+		if indirect == nullStringType {
+			return OptionalStringType
+		}
+		if indirect == nullInt64Type || indirect == nullFloat64Type {
+			return OptionalInt64Type
+		}
+	}
+	return UnsupportedType
 }

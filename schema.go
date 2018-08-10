@@ -10,15 +10,6 @@ import (
 	"github.com/ulule/sqlxx/reflectx"
 )
 
-// ErrCreatedKey is returned when we cannot find a created key in given schema.
-var ErrCreatedKey = fmt.Errorf("cannot find created key in schema")
-
-// ErrUpdatedKey is returned when we cannot find a updated key in given schema.
-var ErrUpdatedKey = fmt.Errorf("cannot find updated key in schema")
-
-// ErrDeletedKey is returned when we cannot find a deleted key in given schema.
-var ErrDeletedKey = fmt.Errorf("cannot find deleted key in schema")
-
 // Schema is a model schema.
 type Schema struct {
 	model        Model
@@ -63,7 +54,7 @@ func (schema Schema) CreatedKeyPath() string {
 	if schema.HasUpdatedKey() {
 		return schema.createdKey.ColumnPath()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrCreatedKey))
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaCreatedKey))
 }
 
 // CreatedKeyName returns schema created key column name.
@@ -71,7 +62,7 @@ func (schema Schema) CreatedKeyName() string {
 	if schema.HasUpdatedKey() {
 		return schema.createdKey.ColumnName()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrCreatedKey))
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaCreatedKey))
 }
 
 // HasUpdatedKey returns if an updated key is defined for current schema.
@@ -84,7 +75,7 @@ func (schema Schema) UpdatedKeyPath() string {
 	if schema.HasUpdatedKey() {
 		return schema.updatedKey.ColumnPath()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrUpdatedKey))
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaUpdatedKey))
 }
 
 // UpdatedKeyName returns schema deleted key column name.
@@ -92,7 +83,7 @@ func (schema Schema) UpdatedKeyName() string {
 	if schema.HasUpdatedKey() {
 		return schema.updatedKey.ColumnName()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrUpdatedKey))
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaUpdatedKey))
 }
 
 // HasDeletedKey returns if a deleted key is defined for current schema.
@@ -105,7 +96,7 @@ func (schema Schema) DeletedKeyPath() string {
 	if schema.HasDeletedKey() {
 		return schema.deletedKey.ColumnPath()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrDeletedKey))
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaDeletedKey))
 }
 
 // DeletedKeyName returns schema deleted key column name.
@@ -113,7 +104,7 @@ func (schema Schema) DeletedKeyName() string {
 	if schema.HasDeletedKey() {
 		return schema.deletedKey.ColumnName()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrDeletedKey))
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaDeletedKey))
 }
 
 // Columns returns schema columns without table prefix.

@@ -85,6 +85,17 @@ func GetFieldValueInt64(instance interface{}, field string) (int64, error) {
 	return converted, nil
 }
 
+// GetFieldOptionalValueInt64 returns an optional int64 value for the given instance field.
+func GetFieldOptionalValueInt64(instance interface{}, field string) (int64, bool, error) {
+	value, err := GetFieldValue(instance, field)
+	if err != nil {
+		return 0, false, err
+	}
+
+	converted, ok := ToOptionalInt64(value)
+	return converted, ok, nil
+}
+
 // GetFieldValueString returns string value for the given instance field.
 func GetFieldValueString(instance interface{}, field string) (string, error) {
 	value, err := GetFieldValue(instance, field)
@@ -98,6 +109,17 @@ func GetFieldValueString(instance interface{}, field string) (string, error) {
 	}
 
 	return converted, nil
+}
+
+// GetFieldOptionalValueString returns an optional string value for the given instance field.
+func GetFieldOptionalValueString(instance interface{}, field string) (string, bool, error) {
+	value, err := GetFieldValue(instance, field)
+	if err != nil {
+		return "", false, err
+	}
+
+	converted, ok := ToOptionalString(value)
+	return converted, ok, nil
 }
 
 // UpdateFieldValue updates the field's value with given name.

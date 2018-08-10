@@ -1,11 +1,9 @@
 package sqlxx
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/ulule/loukoum"
-	//"github.com/ulule/loukoum/builder"
+	"github.com/ulule/loukoum/builder"
 
 	"github.com/ulule/sqlxx/reflectx"
 )
@@ -56,8 +54,7 @@ func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
 func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error) {
 	model, ok := dest.(Model)
 	if !ok {
-		// TODO Better error handling
-		panic("A model is required")
+		return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
 	}
 
 	schema, err := GetSchema(driver, model)
@@ -77,17 +74,9 @@ func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error
 				remote := reference.Remote()
 				local := reference.Local()
 
-				if !local.IsForeignKey() {
-					// TODO Better error handling
-					return nil, errors.Errorf("association must have a local foreign key")
-				}
-				if !remote.IsPrimaryKey() {
-					// TODO Better error handling
-					return nil, errors.Errorf("association must have a remote primary key")
-				}
-				if !local.ForeignKeyType().Equals(remote.PrimaryKeyType()) {
-					// TODO Better error handling
-					return nil, errors.Errorf("association must have a the same type between primary and foreign key")
+				err := preloadCheckLocalForeignKey(reference, local, remote)
+				if err != nil {
+					return nil, err
 				}
 
 				builder := loukoum.Select(remote.Columns()).From(remote.TableName()).Limit(1)
@@ -95,48 +84,27 @@ func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error
 					builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
 				}
 
-				fmt.Println(remote.ForeignKeyType())
-
-				switch local.ForeignKeyType() {
-				case ForeignKeyStringType:
-
-					fk, err := reflectx.GetFieldValueString(dest, local.FieldName())
-					if err != nil {
-						return nil, err
-					}
-					if fk == "" {
-						// TODO Better error handling
-						return nil, errors.Errorf("foreign key has a zero value")
-					}
-
-					builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
-
-				case ForeignKeyIntegerType:
-
-					fk, err := reflectx.GetFieldValueInt64(dest, local.FieldName())
-					if err != nil {
-						return nil, err
-					}
-					if fk == 0 {
-						// TODO Better error handling
-						return nil, errors.Errorf("foreign key has a zero value")
-					}
-
-					builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
-
-				default:
-					return nil, errors.Errorf("'%s' is a unsupported foreign type for preload", reference.Type())
+				builder, preload, err := preloadAddLocalForeignKey(reference, local, remote, builder, dest)
+				if err != nil {
+					return nil, err
+				}
+				if !preload {
+					return nil, nil
 				}
 
 				relation := reflectx.MakePointer(remote.Model())
 
-				// TODO Handle no rows result
 				err = Exec(driver, builder, relation)
-				if err != nil {
+				if err != nil && !IsErrNoRows(err) {
+					return nil, err
+				}
+				if IsErrNoRows(err) {
+					err = errors.Wrapf(ErrPreloadInvalidModel, "foreign key '%s' has an invalid value: %s",
+						local.FieldName(), err.Error())
 					return nil, err
 				}
 
-				err := reflectx.UpdateFieldValue(model, reference.FieldName(), relation)
+				err = reflectx.UpdateFieldValue(model, reference.FieldName(), relation)
 				if err != nil {
 					return nil, err
 				}
@@ -146,17 +114,9 @@ func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error
 				remote := reference.Remote()
 				local := reference.Local()
 
-				if !local.IsPrimaryKey() {
-					// TODO Better error handling
-					return nil, errors.Errorf("association must have a local primary key")
-				}
-				if !remote.IsForeignKey() {
-					// TODO Better error handling
-					return nil, errors.Errorf("association must have a remote foreign key")
-				}
-				if !local.PrimaryKeyType().Equals(remote.ForeignKeyType()) {
-					// TODO Better error handling
-					return nil, errors.Errorf("association must have a the same type between primary and foreign key")
+				err := preloadCheckRemoteForeignKey(reference, local, remote)
+				if err != nil {
+					return nil, err
 				}
 
 				builder := loukoum.Select(remote.Columns()).From(remote.TableName()).Limit(1)
@@ -164,46 +124,25 @@ func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error
 					builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
 				}
 
-				switch local.PrimaryKeyType() {
-				case PrimaryKeyStringType:
-
-					fk, err := reflectx.GetFieldValueString(dest, local.FieldName())
-					if err != nil {
-						return nil, err
-					}
-					if fk == "" {
-						// TODO Better error handling
-						return nil, errors.Errorf("foreign key has a zero value")
-					}
-
-					builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
-
-				case PrimaryKeyIntegerType:
-
-					fk, err := reflectx.GetFieldValueInt64(dest, local.FieldName())
-					if err != nil {
-						return nil, err
-					}
-					if fk == 0 {
-						// TODO Better error handling
-						return nil, errors.Errorf("foreign key has a zero value")
-					}
-
-					builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
-
-				default:
-					return nil, errors.Errorf("'%s' is a unsupported foreign type for preload", reference.Type())
+				builder, preload, err := preloadAddRemoteForeignKey(reference, local, remote, builder, dest)
+				if err != nil {
+					return nil, err
+				}
+				if !preload {
+					return nil, nil
 				}
 
 				relation := reflectx.MakePointer(remote.Model())
 
-				// TODO Handle no rows result
 				err = Exec(driver, builder, relation)
-				if err != nil {
+				if err != nil && !IsErrNoRows(err) {
 					return nil, err
 				}
+				if IsErrNoRows(err) {
+					return nil, nil
+				}
 
-				err := reflectx.UpdateFieldValue(model, reference.FieldName(), relation)
+				err = reflectx.UpdateFieldValue(model, reference.FieldName(), relation)
 				if err != nil {
 					return nil, err
 				}
@@ -225,3 +164,131 @@ func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error
 // 		panic("A slice of model is required")
 // 	}
 // }
+
+func preloadCheckLocalForeignKey(reference Reference, local ReferenceObject, remote ReferenceObject) error {
+	if !local.IsForeignKey() {
+		return errors.Wrapf(ErrPreloadInvalidSchema,
+			"association must have a local foreign key for: '%s'", reference.Type())
+	}
+	if !remote.IsPrimaryKey() {
+		return errors.Wrapf(ErrPreloadInvalidSchema,
+			"association must have a remote primary key for: '%s'", reference.Type())
+	}
+	if !local.ForeignKeyType().IsCompatible(remote.PrimaryKeyType()) {
+		return errors.Wrapf(ErrPreloadInvalidSchema,
+			"association must have a compatible primary key and foreign key for: '%s'", reference.Type())
+	}
+	return nil
+}
+
+func preloadCheckRemoteForeignKey(reference Reference, local ReferenceObject, remote ReferenceObject) error {
+	if !local.IsPrimaryKey() {
+		return errors.Wrapf(ErrPreloadInvalidSchema,
+			"association must have a local primary key for: '%s'", reference.Type())
+	}
+	if !remote.IsForeignKey() {
+		return errors.Wrapf(ErrPreloadInvalidSchema,
+			"association must have a remote foreign key for: '%s'", reference.Type())
+	}
+	if !local.PrimaryKeyType().IsCompatible(remote.ForeignKeyType()) {
+		return errors.Wrapf(ErrPreloadInvalidSchema,
+			"association must have a compatible primary key and foreign key for: '%s'", reference.Type())
+	}
+	return nil
+}
+
+func preloadAddLocalForeignKey(reference Reference, local ReferenceObject, remote ReferenceObject,
+	builder builder.Select, dest interface{}) (builder.Select, bool, error) {
+
+	switch local.ForeignKeyType() {
+	case FKStringType:
+
+		fk, err := reflectx.GetFieldValueString(dest, local.FieldName())
+		if err != nil {
+			return builder, false, err
+		}
+		if fk == "" {
+			return builder, false, errors.Wrap(ErrPreloadInvalidModel, "foreign key has a zero value")
+		}
+
+		builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
+		return builder, true, nil
+
+	case FKIntegerType:
+
+		fk, err := reflectx.GetFieldValueInt64(dest, local.FieldName())
+		if err != nil {
+			return builder, false, err
+		}
+		if fk == 0 {
+			return builder, false, errors.Wrap(ErrPreloadInvalidModel, "foreign key has a zero value")
+		}
+
+		builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
+		return builder, true, nil
+
+	case FKOptionalIntegerType:
+
+		fk, ok, err := reflectx.GetFieldOptionalValueInt64(dest, local.FieldName())
+		if err != nil {
+			return builder, false, err
+		}
+		if !ok {
+			return builder, false, nil
+		}
+
+		builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
+		return builder, true, nil
+
+	case FKOptionalStringType:
+
+		fk, ok, err := reflectx.GetFieldOptionalValueString(dest, local.FieldName())
+		if err != nil {
+			return builder, false, err
+		}
+		if !ok {
+			return builder, false, nil
+		}
+
+		builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
+		return builder, true, nil
+
+	default:
+		return builder, false, errors.Errorf("'%s' is a unsupported foreign type for preload", reference.Type())
+	}
+}
+
+func preloadAddRemoteForeignKey(reference Reference, local ReferenceObject, remote ReferenceObject,
+	builder builder.Select, dest interface{}) (builder.Select, bool, error) {
+
+	switch local.PrimaryKeyType() {
+	case PKStringType:
+
+		fk, err := reflectx.GetFieldValueString(dest, local.FieldName())
+		if err != nil {
+			return builder, false, err
+		}
+		if fk == "" {
+			return builder, false, errors.Wrap(ErrPreloadInvalidModel, "foreign key has a zero value")
+		}
+
+		builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
+		return builder, true, nil
+
+	case PKIntegerType:
+
+		fk, err := reflectx.GetFieldValueInt64(dest, local.FieldName())
+		if err != nil {
+			return builder, false, err
+		}
+		if fk == 0 {
+			return builder, false, errors.Wrap(ErrPreloadInvalidModel, "foreign key has a zero value")
+		}
+
+		builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(fk))
+		return builder, true, nil
+
+	default:
+		return builder, false, errors.Errorf("'%s' is a unsupported foreign type for preload", reference.Type())
+	}
+}
