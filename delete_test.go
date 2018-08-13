@@ -70,11 +70,19 @@ func TestDelete_ArchiveOwl(t *testing.T) {
 func TestDelete_DeleteMeow(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		is := require.New(t)
+
+		cat := &Cat{
+			Name: "Wolfram",
+		}
+		err := sqlxx.Save(driver, cat)
+		is.NoError(err)
+
 		meow := &Meow{
-			Body: "meow meow meow?",
+			Body:  "meow meow meow?",
+			CatID: cat.ID,
 		}
 
-		err := sqlxx.Save(driver, meow)
+		err = sqlxx.Save(driver, meow)
 		is.NoError(err)
 		id := meow.Hash
 
@@ -103,11 +111,19 @@ func TestDelete_DeleteMeow(t *testing.T) {
 func TestDelete_ArchiveMeow(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		is := require.New(t)
+
+		cat := &Cat{
+			Name: "Wolfram",
+		}
+		err := sqlxx.Save(driver, cat)
+		is.NoError(err)
+
 		meow := &Meow{
-			Body: "meow! meow meow meow ?!",
+			Body:  "meow! meow meow meow ?!",
+			CatID: cat.ID,
 		}
 
-		err := sqlxx.Save(driver, meow)
+		err = sqlxx.Save(driver, meow)
 		is.NoError(err)
 		id := meow.Hash
 

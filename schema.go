@@ -324,6 +324,8 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 		}
 
 		schema.associations[field.FieldName()] = *reference
+
+		// TODO (novln): Handle child references...
 		//
 		// nextModel := field.ForeignKey.Reference.Model
 		// if field.IsAssociationTypeMany() {

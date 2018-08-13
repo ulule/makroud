@@ -26,9 +26,42 @@ func GetIndirectTypeName(element interface{}) string {
 
 // GetIndirectValue returns indirect value for the given element.
 func GetIndirectValue(element interface{}) reflect.Value {
-	v := reflect.ValueOf(element)
+	v, ok := element.(reflect.Value)
+	if !ok {
+		v = reflect.ValueOf(element)
+	}
 	for v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
 	return v
+}
+
+// GetFlattenValue returns a zero value from GetFlattenType.
+//
+// For example:
+//
+//  * Type "Foo" will returns "Foo"...
+//  * Type "*Foo" will returns "*Foo"...
+//  * Type "**Foo" will returns "*Foo"...
+//  * Type "***Foo" will returns "*Foo"...
+//  * Type "[]Foo" will returns "[]Foo"...
+//  * Type "*[]Foo" will returns "*[]Foo"...
+//  * Type "**[]Foo" will returns "*[]Foo"...
+//  * Type "***[]Foo" will returns "*[]Foo"...
+//
+func GetFlattenValue(element interface{}) interface{} {
+	t, ok := element.(reflect.Value)
+	if !ok {
+		t = reflect.ValueOf(element)
+	}
+	if t.Kind() != reflect.Ptr {
+		return t.Interface()
+	}
+	for {
+		e := t.Elem()
+		if e.Kind() != reflect.Ptr {
+			return t.Interface()
+		}
+		t = e
+	}
 }

@@ -167,6 +167,13 @@ func TestPreload_Cat(t *testing.T) {
 		is.NoError(err)
 		is.NotEmpty(cat2.ID)
 
+		cat3 := &Cat{
+			Name: "Icarus",
+		}
+		err = sqlxx.Save(driver, cat3)
+		is.NoError(err)
+		is.NotEmpty(cat3.ID)
+
 		human1 := &Human{
 			Name: "Larry Golade",
 		}
@@ -185,8 +192,44 @@ func TestPreload_Cat(t *testing.T) {
 		is.NoError(err)
 		is.NotEmpty(human2.ID)
 
+		meow1 := &Meow{
+			Body:  "Meow !",
+			CatID: cat1.ID,
+		}
+		err = sqlxx.Save(driver, meow1)
+		is.NoError(err)
+		is.NotEmpty(meow1.Hash)
+
+		meow2 := &Meow{
+			Body:  "Meow meow...",
+			CatID: cat1.ID,
+		}
+		err = sqlxx.Save(driver, meow2)
+		is.NoError(err)
+		is.NotEmpty(meow2.Hash)
+
+		meow3 := &Meow{
+			Body:  "Meow meow ? meeeeeoooow ?!",
+			CatID: cat1.ID,
+		}
+		err = sqlxx.Save(driver, meow3)
+		is.NoError(err)
+		is.NotEmpty(meow3.Hash)
+
+		meow4 := &Meow{
+			Body:  "Meow, meow meow.",
+			CatID: cat3.ID,
+		}
+		err = sqlxx.Save(driver, meow4)
+		is.NoError(err)
+		is.NotEmpty(meow4.Hash)
+
 		is.Nil(cat1.Owner)
+		is.Empty(cat1.Meows)
 		is.Nil(cat2.Owner)
+		is.Empty(cat2.Meows)
+		is.Nil(cat3.Owner)
+		is.Empty(cat3.Meows)
 
 		err = sqlxx.Preload(driver, cat1, "Owner")
 		is.NoError(err)
@@ -197,6 +240,25 @@ func TestPreload_Cat(t *testing.T) {
 		is.NotNil(cat2.Owner)
 		is.Equal(human2.ID, cat2.Owner.ID)
 		is.Equal(human2.Name, cat2.Owner.Name)
+
+		err = sqlxx.Preload(driver, cat1, "Meows")
+		is.NoError(err)
+		is.NotEmpty(cat1.Meows)
+		is.Len(cat1.Meows, 3)
+		is.Contains(cat1.Meows, meow1)
+		is.Contains(cat1.Meows, meow2)
+		is.Contains(cat1.Meows, meow3)
+
+		err = sqlxx.Preload(driver, cat2, "Meows")
+		is.NoError(err)
+		is.Empty(cat2.Meows)
+
+		err = sqlxx.Preload(driver, cat3, "Owner", "Meows")
+		is.NoError(err)
+		is.Nil(cat3.Owner)
+		is.NotEmpty(cat3.Meows)
+		is.Len(cat3.Meows, 1)
+		is.Contains(cat3.Meows, meow4)
 
 	})
 }

@@ -117,7 +117,7 @@ func execRow(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, 
 		return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
 	}
 
-	model, ok := dest.(Model)
+	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
 		return named.Get(dest, args)
 	}

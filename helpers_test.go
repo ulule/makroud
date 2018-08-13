@@ -175,22 +175,37 @@ func TestExec_FetchModel(t *testing.T) {
 			is.NoError(err)
 		}
 
-		result := &Cat{}
 		query := loukoum.Select("*").From("ztp_cat").
 			Where(loukoum.Condition("name").Equal("Akiko"))
 
-		err := sqlxx.Exec(driver, query, result)
-		is.NoError(err)
+		{
+			result := &Cat{}
+			err := sqlxx.Exec(driver, query, result)
+			is.NoError(err)
+			is.Equal(expected.ID, result.ID)
+			is.Equal(expected.Name, result.Name)
+			is.Equal(expected.CreatedAt, result.CreatedAt)
+			is.Equal(expected.UpdatedAt, result.UpdatedAt)
+			is.Equal(expected.DeletedAt, result.DeletedAt)
+		}
 
-		is.Equal(expected.ID, result.ID)
-		is.Equal(expected.Name, result.Name)
-		is.Equal(expected.CreatedAt, result.CreatedAt)
-		is.Equal(expected.UpdatedAt, result.UpdatedAt)
-		is.Equal(expected.DeletedAt, result.DeletedAt)
+		{
+			result := &Cat{}
+			err := sqlxx.Exec(driver, query, &result)
+			is.NoError(err)
+			is.Equal(expected.ID, result.ID)
+			is.Equal(expected.Name, result.Name)
+			is.Equal(expected.CreatedAt, result.CreatedAt)
+			is.Equal(expected.UpdatedAt, result.UpdatedAt)
+			is.Equal(expected.DeletedAt, result.DeletedAt)
+		}
 
-		err = sqlxx.Exec(driver, query, Cat{})
-		is.Error(err)
-		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		{
+			result := Cat{}
+			err := sqlxx.Exec(driver, query, result)
+			is.Error(err)
+			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		}
 
 	})
 }
@@ -211,21 +226,66 @@ func TestExec_ListModel(t *testing.T) {
 			is.NoError(err)
 		}
 
-		result := []Cat{}
 		query := loukoum.Select("*").From("ztp_cat").
 			Where(loukoum.Condition("name").In("Amazon", "Amelia", "Amigo", "Amos"))
 
-		err := sqlxx.Exec(driver, query, &result)
-		is.NoError(err)
-		is.Len(result, 4)
-
-		for i := range result {
-			is.Contains(cats, &(result[i]))
+		{
+			result := []Cat{}
+			err := sqlxx.Exec(driver, query, &result)
+			is.NoError(err)
+			is.Len(result, 4)
+			is.Contains(cats, &result[0])
+			is.Contains(cats, &result[1])
+			is.Contains(cats, &result[2])
+			is.Contains(cats, &result[3])
 		}
 
-		err = sqlxx.Exec(driver, query, []Cat{})
-		is.Error(err)
-		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		{
+			result := []*Cat{}
+			err := sqlxx.Exec(driver, query, &result)
+			is.NoError(err)
+			is.Len(result, 4)
+			is.Contains(cats, result[0])
+			is.Contains(cats, result[1])
+			is.Contains(cats, result[2])
+			is.Contains(cats, result[3])
+		}
+
+		{
+			result := &[]Cat{}
+			err := sqlxx.Exec(driver, query, &result)
+			is.NoError(err)
+			is.Len(*result, 4)
+			is.Contains(cats, &(*result)[0])
+			is.Contains(cats, &(*result)[1])
+			is.Contains(cats, &(*result)[2])
+			is.Contains(cats, &(*result)[3])
+		}
+
+		{
+			result := &[]*Cat{}
+			err := sqlxx.Exec(driver, query, &result)
+			is.NoError(err)
+			is.Len(*result, 4)
+			is.Contains(cats, (*result)[0])
+			is.Contains(cats, (*result)[1])
+			is.Contains(cats, (*result)[2])
+			is.Contains(cats, (*result)[3])
+		}
+
+		{
+			result := []Cat{}
+			err := sqlxx.Exec(driver, query, result)
+			is.Error(err)
+			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		}
+
+		{
+			result := []*Cat{}
+			err := sqlxx.Exec(driver, query, result)
+			is.Error(err)
+			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		}
 
 	})
 }

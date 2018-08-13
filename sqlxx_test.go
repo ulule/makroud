@@ -142,6 +142,7 @@ type Cat struct {
 	DeletedAt pq.NullTime `sqlxx:"column:deleted_at"`
 	// Relationships
 	Owner *Human
+	Meows []*Meow
 }
 
 func (Cat) TableName() string {
@@ -152,6 +153,7 @@ type Meow struct {
 	// Columns
 	Hash      string      `sqlxx:"column:hash,pk:ulid"`
 	Body      string      `sqlxx:"column:body"`
+	CatID     string      `sqlxx:"column:cat_id,fk:ztp_cat"`
 	CreatedAt time.Time   `sqlxx:"column:created"`
 	UpdatedAt time.Time   `sqlxx:"column:updated"`
 	DeletedAt pq.NullTime `sqlxx:"column:deleted"`
@@ -1583,6 +1585,7 @@ func CreateTables(db *sqlxx.Client) {
 		CREATE TABLE ztp_meow (
 			hash            VARCHAR(26) PRIMARY KEY NOT NULL,
 			body            VARCHAR(2048) NOT NULL,
+			cat_id          VARCHAR(26) REFERENCES ztp_cat(id),
 			created         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 			updated         TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 			deleted         TIMESTAMP WITH TIME ZONE
@@ -1590,10 +1593,10 @@ func CreateTables(db *sqlxx.Client) {
 		CREATE TABLE ztp_human (
 			id              VARCHAR(26) PRIMARY KEY NOT NULL,
 			name            VARCHAR(255) NOT NULL,
+			cat_id          VARCHAR(26) REFERENCES ztp_cat(id),
 			created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 			updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-			deleted_at      TIMESTAMP WITH TIME ZONE,
-			cat_id           VARCHAR(26) REFERENCES ztp_cat(id)
+			deleted_at      TIMESTAMP WITH TIME ZONE
 		);
 
 		--

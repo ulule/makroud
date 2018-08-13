@@ -247,103 +247,118 @@ func NewReference(driver Driver, local *Schema, field *Field) (*Reference, error
 		return nil, err
 	}
 
-	// Article.Author(User)
-	if field.associationType == AssociationTypeOne {
-		fmt.Printf("::7 has_once\n")
+	switch field.associationType {
+	case AssociationTypeOne:
+		return newReferenceAsOne(driver, local, remote, field)
 
-		for _, element := range local.references {
-			fmt.Println("::8", element)
-			if element.ForeignKey() == remote.TableName() {
-				target := remote.PrimaryKey()
-				current := &Reference{
-					Field:   *field,
-					isLocal: true,
-					local: ReferenceObject{
-						schema:       local,
-						modelName:    element.ModelName(),
-						tableName:    element.TableName(),
-						fieldName:    element.FieldName(),
-						columnName:   element.ColumnName(),
-						columnPath:   element.ColumnPath(),
-						isForeignKey: true,
-						fkType:       element.Type(),
-					},
-					remote: ReferenceObject{
-						schema:       remote,
-						modelName:    target.ModelName(),
-						tableName:    target.TableName(),
-						fieldName:    target.FieldName(),
-						columnName:   target.ColumnName(),
-						columnPath:   target.ColumnPath(),
-						isPrimaryKey: true,
-						pkType:       target.Type(),
-					},
-				}
-				fmt.Println("::10", current)
-				return current, nil
+	case AssociationTypeMany:
+		return newReferenceAsMany(driver, local, remote, field)
+
+	default:
+		panic("TODO")
+		return nil, nil
+	}
+}
+
+// Article.Author -> User
+func newReferenceAsOne(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
+	for _, element := range local.references {
+		if element.ForeignKey() == remote.TableName() {
+			target := remote.PrimaryKey()
+			current := &Reference{
+				Field:   *field,
+				isLocal: true,
+				local: ReferenceObject{
+					schema:       local,
+					modelName:    element.ModelName(),
+					tableName:    element.TableName(),
+					fieldName:    element.FieldName(),
+					columnName:   element.ColumnName(),
+					columnPath:   element.ColumnPath(),
+					isForeignKey: true,
+					fkType:       element.Type(),
+				},
+				remote: ReferenceObject{
+					schema:       remote,
+					modelName:    target.ModelName(),
+					tableName:    target.TableName(),
+					fieldName:    target.FieldName(),
+					columnName:   target.ColumnName(),
+					columnPath:   target.ColumnPath(),
+					isPrimaryKey: true,
+					pkType:       target.Type(),
+				},
 			}
+			return current, nil
 		}
-
-		for _, element := range remote.references {
-			fmt.Println("::9", element)
-			if element.ForeignKey() == local.TableName() {
-				target := local.PrimaryKey()
-				current := &Reference{
-					Field:   *field,
-					isLocal: false,
-					local: ReferenceObject{
-						schema:       local,
-						modelName:    target.ModelName(),
-						tableName:    target.TableName(),
-						fieldName:    target.FieldName(),
-						columnName:   target.ColumnName(),
-						columnPath:   target.ColumnPath(),
-						isPrimaryKey: true,
-						pkType:       target.Type(),
-					},
-					remote: ReferenceObject{
-						schema:       remote,
-						modelName:    element.ModelName(),
-						tableName:    element.TableName(),
-						fieldName:    element.FieldName(),
-						columnName:   element.ColumnName(),
-						columnPath:   element.ColumnPath(),
-						isForeignKey: true,
-						fkType:       element.Type(),
-					},
-				}
-				fmt.Println("::11", current)
-				return current, nil
-			}
-		}
-
-		return nil, errors.Errorf("cannot find foreign key for: %s.%s", field.ModelName(), field.FieldName())
 	}
 
-	// // User.Avatars(Avatar) -- Avatar.UserID
-	// if field.AssociationType == AssociationTypeMany {
-	// 	fmt.Printf("::7 has_many\n")
-	// 	fk := &ForeignKey{
-	// 		Model:                referenceModel,                                                                                   // Avatar model
-	// 		ModelName:            referenceModelName,                                                                               // Avatar
-	// 		TableName:            referenceTableName,                                                                               // avatars
-	// 		FieldName:            fmt.Sprintf("%s%s", field.ModelName, PrimaryKeyFieldName),                                        // UserID
-	// 		ColumnName:           fmt.Sprintf("%s_%s", snaker.CamelToSnake(field.ModelName), strings.ToLower(PrimaryKeyFieldName)), // user_id
-	// 		AssociationFieldName: field.ModelName,                                                                                  // User
-	//
-	// 		Reference: &ForeignKey{
-	// 			Model:                field.Model,                          // User model
-	// 			ModelName:            field.ModelName,                      // User
-	// 			TableName:            field.TableName,                      // users
-	// 			FieldName:            PrimaryKeyFieldName,                  // ID
-	// 			ColumnName:           strings.ToLower(PrimaryKeyFieldName), // id
-	// 			AssociationFieldName: field.FieldName,                      // Avatars
-	// 		},
-	// 	}
-	// 	spew.Dump(fk)
-	// 	return fk, nil
-	// }
-	// fmt.Printf("::7 has_none ?\n")
-	panic("TODO")
-	return nil, nil
+	for _, element := range remote.references {
+		if element.ForeignKey() == local.TableName() {
+			target := local.PrimaryKey()
+			current := &Reference{
+				Field:   *field,
+				isLocal: false,
+				local: ReferenceObject{
+					schema:       local,
+					modelName:    target.ModelName(),
+					tableName:    target.TableName(),
+					fieldName:    target.FieldName(),
+					columnName:   target.ColumnName(),
+					columnPath:   target.ColumnPath(),
+					isPrimaryKey: true,
+					pkType:       target.Type(),
+				},
+				remote: ReferenceObject{
+					schema:       remote,
+					modelName:    element.ModelName(),
+					tableName:    element.TableName(),
+					fieldName:    element.FieldName(),
+					columnName:   element.ColumnName(),
+					columnPath:   element.ColumnPath(),
+					isForeignKey: true,
+					fkType:       element.Type(),
+				},
+			}
+			return current, nil
+		}
+	}
+
+	return nil, errors.Errorf("cannot find foreign key for: %s.%s", field.ModelName(), field.FieldName())
+}
+
+// Article.Hashtags -> Tag
+func newReferenceAsMany(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
+	for _, element := range remote.references {
+		if element.ForeignKey() == local.TableName() {
+			target := local.PrimaryKey()
+			current := &Reference{
+				Field:   *field,
+				isLocal: false,
+				local: ReferenceObject{
+					schema:       local,
+					modelName:    target.ModelName(),
+					tableName:    target.TableName(),
+					fieldName:    target.FieldName(),
+					columnName:   target.ColumnName(),
+					columnPath:   target.ColumnPath(),
+					isPrimaryKey: true,
+					pkType:       target.Type(),
+				},
+				remote: ReferenceObject{
+					schema:       remote,
+					modelName:    element.ModelName(),
+					tableName:    element.TableName(),
+					fieldName:    element.FieldName(),
+					columnName:   element.ColumnName(),
+					columnPath:   element.ColumnPath(),
+					isForeignKey: true,
+					fkType:       element.Type(),
+				},
+			}
+			return current, nil
+		}
+	}
+
+	return nil, errors.Errorf("cannot find foreign key for: %s.%s", field.ModelName(), field.FieldName())
 }

@@ -193,3 +193,85 @@ func TestReflectx_GetIndirectType(t *testing.T) {
 	}
 
 }
+
+func TestReflectx_GetFlattenValue(t *testing.T) {
+	is := require.New(t)
+
+	type foo struct {
+		value int
+	}
+
+	e1 := foo{value: 3}
+	e2 := &e1
+	e3 := &e2
+	e4 := &e3
+	e5 := &e4
+	e6 := &e5
+
+	l1 := []foo{{value: 3}}
+	l2 := &l1
+	l3 := &l2
+	l4 := &l3
+	l5 := &l4
+	l6 := &l5
+
+	scenarios := []struct {
+		input  interface{}
+		output interface{}
+	}{
+		{
+			input:  e1,
+			output: foo{value: 3},
+		},
+		{
+			input:  e2,
+			output: &foo{value: 3},
+		},
+		{
+			input:  e3,
+			output: &foo{value: 3},
+		},
+		{
+			input:  e4,
+			output: &foo{value: 3},
+		},
+		{
+			input:  e5,
+			output: &foo{value: 3},
+		},
+		{
+			input:  e6,
+			output: &foo{value: 3},
+		},
+		{
+			input:  l1,
+			output: []foo{{value: 3}},
+		},
+		{
+			input:  l2,
+			output: &[]foo{{value: 3}},
+		},
+		{
+			input:  l3,
+			output: &[]foo{{value: 3}},
+		},
+		{
+			input:  l4,
+			output: &[]foo{{value: 3}},
+		},
+		{
+			input:  l5,
+			output: &[]foo{{value: 3}},
+		},
+		{
+			input:  l6,
+			output: &[]foo{{value: 3}},
+		},
+	}
+
+	for i, scenario := range scenarios {
+		v := reflectx.GetFlattenValue(scenario.input)
+		is.Equal(scenario.output, v, fmt.Sprintf("loop #%d", i))
+	}
+
+}
