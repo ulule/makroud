@@ -15,6 +15,8 @@ import (
 //     |--------------|--------------|-----------------|----------------|
 //     |      1       |      ->      |        1        |       Ok       |
 //     |      1       |      <-      |        1        |       Ok       |
+//     |      1?      |      ->      |        1        |       Ok       |
+//     |      1       |      <-      |        1?       |       Ok       |
 //     |      1       |      ->      |        N        |                |
 //     |      1       |      <-      |        N        |                |
 //     |      N       |      ->      |        1        |                |
@@ -39,18 +41,23 @@ func PreloadWithQueries(driver Driver, out interface{}, paths ...string) (Querie
 }
 
 // preload preloads related fields.
-func preload(driver Driver, out interface{}, paths ...string) (Queries, error) {
+func preload(driver Driver, dest interface{}, paths ...string) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
 
-	// if !reflect.Indirect(reflect.ValueOf(out)).CanAddr() {
-	// 	return nil, errors.New("model instance must be addressable (pointer required)")
-	// }
+	if !reflectx.IsPointer(dest) {
+		return nil, errors.Wrapf(ErrPointerRequired, "cannot preload %T", dest)
+	}
 
-	return preloadOne(driver, out, paths)
+	if reflectx.IsSlice(dest) {
+		panic("TODO")
+	}
+
+	return preloadOne(driver, dest, paths)
 }
 
+// preloadOne preload a single instance.
 func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error) {
 	model, ok := dest.(Model)
 	if !ok {

@@ -132,6 +132,20 @@ func TestPreload_Owl(t *testing.T) {
 		is.Nil(owl2.Group)
 		is.False(owl2.GroupID.Valid)
 
+		owl3 := Owl{
+			Name:         "Wacky",
+			FeatherColor: "Harsh Cyan",
+			FavoriteFood: "Pecan Trifle",
+			GroupID: sql.NullInt64{
+				Valid: true,
+				Int64: group.ID,
+			},
+		}
+		err = sqlxx.Preload(driver, owl3, "Group")
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		is.Nil(owl3.Group)
+
 	})
 }
 
