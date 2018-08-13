@@ -91,6 +91,38 @@ func TestPreload_Owl(t *testing.T) {
 		is.NoError(err)
 		is.NotEmpty(group.ID)
 
+		center1 := &Center{
+			Name: "Soul",
+			Area: "Lancaster",
+		}
+		err = sqlxx.Save(driver, center1)
+		is.NoError(err)
+		is.NotEmpty(center1.ID)
+
+		center2 := &Center{
+			Name: "Cloud",
+			Area: "Nancledra",
+		}
+		err = sqlxx.Save(driver, center2)
+		is.NoError(err)
+		is.NotEmpty(center2.ID)
+
+		center3 := &Center{
+			Name: "Gold",
+			Area: "Woodhurst",
+		}
+		err = sqlxx.Save(driver, center3)
+		is.NoError(err)
+		is.NotEmpty(center3.ID)
+
+		center4 := &Center{
+			Name: "Moonstone",
+			Area: "Armskirk",
+		}
+		err = sqlxx.Save(driver, center4)
+		is.NoError(err)
+		is.NotEmpty(center4.ID)
+
 		owl1 := &Owl{
 			Name:         "Pyro",
 			FeatherColor: "Timeless Sanguine",
@@ -116,23 +148,7 @@ func TestPreload_Owl(t *testing.T) {
 		is.NoError(err)
 		is.NotEmpty(owl2.ID)
 
-		is.Nil(owl1.Group)
-		is.Nil(owl2.Group)
-
-		err = sqlxx.Preload(driver, owl1, "Group")
-		is.NoError(err)
-		is.NotNil(owl1.Group)
-		is.True(owl1.GroupID.Valid)
-		is.Equal(group.ID, owl1.GroupID.Int64)
-		is.Equal(group.ID, owl1.Group.ID)
-		is.Equal(group.Name, owl1.Group.Name)
-
-		err = sqlxx.Preload(driver, owl2, "Group")
-		is.NoError(err)
-		is.Nil(owl2.Group)
-		is.False(owl2.GroupID.Valid)
-
-		owl3 := Owl{
+		owl3 := &Owl{
 			Name:         "Wacky",
 			FeatherColor: "Harsh Cyan",
 			FavoriteFood: "Pecan Trifle",
@@ -141,10 +157,172 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: group.ID,
 			},
 		}
-		err = sqlxx.Preload(driver, owl3, "Group")
+		err = sqlxx.Save(driver, owl3)
+		is.NoError(err)
+		is.NotEmpty(owl3.ID)
+
+		pack1 := &Package{
+			SenderID:   center2.ID,
+			ReceiverID: center1.ID,
+			Status:     "processing",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl1.ID,
+			},
+		}
+		err = sqlxx.Save(driver, pack1)
+		is.NoError(err)
+		is.NotEmpty(pack1.ID)
+
+		pack2 := &Package{
+			SenderID:   center2.ID,
+			ReceiverID: center4.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl1.ID,
+			},
+		}
+		err = sqlxx.Save(driver, pack2)
+		is.NoError(err)
+		is.NotEmpty(pack2.ID)
+
+		pack3 := &Package{
+			SenderID:   center2.ID,
+			ReceiverID: center4.ID,
+			Status:     "waiting",
+			TransporterID: sql.NullInt64{
+				Valid: false,
+			},
+		}
+		err = sqlxx.Save(driver, pack3)
+		is.NoError(err)
+		is.NotEmpty(pack3.ID)
+
+		pack4 := &Package{
+			SenderID:   center1.ID,
+			ReceiverID: center4.ID,
+			Status:     "processing",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl2.ID,
+			},
+		}
+		err = sqlxx.Save(driver, pack4)
+		is.NoError(err)
+		is.NotEmpty(pack4.ID)
+
+		pack5 := &Package{
+			SenderID:   center3.ID,
+			ReceiverID: center4.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(driver, pack5)
+		is.NoError(err)
+		is.NotEmpty(pack5.ID)
+
+		pack6 := &Package{
+			SenderID:   center4.ID,
+			ReceiverID: center3.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(driver, pack6)
+		is.NoError(err)
+		is.NotEmpty(pack6.ID)
+
+		pack7 := &Package{
+			SenderID:   center3.ID,
+			ReceiverID: center2.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(driver, pack7)
+		is.NoError(err)
+		is.NotEmpty(pack7.ID)
+
+		pack8 := &Package{
+			SenderID:   center2.ID,
+			ReceiverID: center3.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(driver, pack8)
+		is.NoError(err)
+		is.NotEmpty(pack8.ID)
+
+		pack9 := &Package{
+			SenderID:   center3.ID,
+			ReceiverID: center1.ID,
+			Status:     "processing",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(driver, pack9)
+		is.NoError(err)
+		is.NotEmpty(pack9.ID)
+
+		is.Nil(owl1.Group)
+		is.Nil(owl2.Group)
+		is.Nil(owl3.Group)
+		is.Empty(owl1.Packages)
+		is.Empty(owl2.Packages)
+		is.Empty(owl3.Packages)
+
+		err = sqlxx.Preload(driver, owl1, "Group")
+		is.NoError(err)
+		is.NotNil(owl1.Group)
+		is.True(owl1.GroupID.Valid)
+		is.Equal(group.ID, owl1.GroupID.Int64)
+		is.Equal(group.ID, owl1.Group.ID)
+		is.Equal(group.Name, owl1.Group.Name)
+		is.Empty(owl1.Packages)
+
+		err = sqlxx.Preload(driver, &owl1, "Packages")
+		is.NoError(err)
+		is.NotEmpty(owl1.Packages)
+		is.Len(owl1.Packages, 2)
+		is.Contains(owl1.Packages, *pack1)
+		is.Contains(owl1.Packages, *pack2)
+
+		err = sqlxx.Preload(driver, owl2, "Group", "Packages")
+		is.NoError(err)
+		is.Nil(owl2.Group)
+		is.False(owl2.GroupID.Valid)
+		is.NotEmpty(owl2.Packages)
+		is.Len(owl2.Packages, 1)
+		is.Contains(owl2.Packages, *pack4)
+
+		err = sqlxx.Preload(driver, *owl3, "Group", "Packages")
 		is.Error(err)
 		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 		is.Nil(owl3.Group)
+		is.Empty(owl3.Packages)
+
+		err = sqlxx.Preload(driver, owl3, "Group", "Packages")
+		is.NoError(err)
+		is.NotNil(owl3.Group)
+		is.True(owl3.GroupID.Valid)
+		is.Equal(group.ID, owl3.GroupID.Int64)
+		is.Equal(group.ID, owl3.Group.ID)
+		is.Equal(group.Name, owl3.Group.Name)
+		is.NotEmpty(owl3.Packages)
+		is.Len(owl3.Packages, 5)
 
 	})
 }
@@ -241,7 +419,7 @@ func TestPreload_Cat(t *testing.T) {
 		is.Equal(human2.ID, cat2.Owner.ID)
 		is.Equal(human2.Name, cat2.Owner.Name)
 
-		err = sqlxx.Preload(driver, cat1, "Meows")
+		err = sqlxx.Preload(driver, &cat1, "Meows")
 		is.NoError(err)
 		is.NotEmpty(cat1.Meows)
 		is.Len(cat1.Meows, 3)
@@ -249,7 +427,7 @@ func TestPreload_Cat(t *testing.T) {
 		is.Contains(cat1.Meows, meow2)
 		is.Contains(cat1.Meows, meow3)
 
-		err = sqlxx.Preload(driver, cat2, "Meows")
+		err = sqlxx.Preload(driver, &cat2, "Meows")
 		is.NoError(err)
 		is.Empty(cat2.Meows)
 

@@ -59,7 +59,7 @@ func preload(driver Driver, dest interface{}, paths ...string) (Queries, error) 
 
 // preloadOne preload a single instance.
 func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error) {
-	model, ok := dest.(Model)
+	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
 		return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
 	}
