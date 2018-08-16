@@ -95,7 +95,7 @@ type Statement interface {
 	FindAll(ctx context.Context, dest interface{}, arg interface{}) error
 }
 
-// A row is a simple row.
+// A Row is a simple row.
 type Row interface {
 	// Write copies the columns in the current row into the given map.
 	Write(dest map[string]interface{}) error
