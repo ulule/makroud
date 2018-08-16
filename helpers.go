@@ -76,7 +76,7 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
-		return stmt.Select(ctx, dest, args)
+		return stmt.FindAll(ctx, dest, args)
 	}
 
 	schema, err := GetSchema(driver, model)
@@ -118,7 +118,7 @@ func execRow(ctx context.Context, driver Driver, stmt Statement, args map[string
 
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
-		return stmt.Get(ctx, dest, args)
+		return stmt.FindOne(ctx, dest, args)
 	}
 
 	schema, err := GetSchema(driver, model)

@@ -12,7 +12,7 @@ func Transaction(driver Driver, handler func(driver Driver) error) error {
 
 	tx, err := driver.Begin()
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot create a transaction")
+		return err
 	}
 
 	err = handler(tx)
@@ -21,7 +21,6 @@ func Transaction(driver Driver, handler func(driver Driver) error) error {
 		thr := tx.Rollback()
 		if thr != nil {
 			// TODO (novln): Add an observer to collect this error.
-			thr = errors.Wrap(thr, "sqlxx: cannot rollback transaction")
 			_ = thr
 		}
 
@@ -30,7 +29,7 @@ func Transaction(driver Driver, handler func(driver Driver) error) error {
 
 	err = tx.Commit()
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot commit transaction")
+		return err
 	}
 
 	return nil

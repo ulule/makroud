@@ -114,11 +114,21 @@ func New(options ...Option) (*Client, error) {
 // Exec executes a named statement using given arguments.
 func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) error {
 	if len(args) == 0 {
+
 		_, err := c.node.ExecContext(ctx, query)
-		return err
+		if err != nil {
+			return errors.Wrap(err, "sqlxx: cannot execute query")
+		}
+
+		return nil
 	}
+
 	_, err := c.node.NamedExecContext(ctx, query, args[0])
-	return err
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute query")
+	}
+
+	return nil
 }
 
 // MustExec executes a named statement using given arguments.
@@ -126,13 +136,17 @@ func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) er
 func (c *Client) MustExec(ctx context.Context, query string, args ...interface{}) {
 	err := c.Exec(ctx, query, args...)
 	if err != nil {
-		panic(fmt.Sprintf("sqlxx: %s", err.Error()))
+		panic(err)
 	}
 }
 
 // Query executes a named statement that returns rows using given arguments.
 func (c *Client) Query(ctx context.Context, query string, arg interface{}) (Rows, error) {
-	return c.node.NamedQueryContext(ctx, query, arg)
+	rows, err := c.node.NamedQueryContext(ctx, query, arg)
+	if err != nil {
+		return nil, errors.Wrap(err, "sqlxx: cannot execute query")
+	}
+	return wrapRows(rows), nil
 }
 
 // MustQuery executes a named statement that returns rows using given arguments.
@@ -140,7 +154,7 @@ func (c *Client) Query(ctx context.Context, query string, arg interface{}) (Rows
 func (c *Client) MustQuery(ctx context.Context, query string, arg interface{}) Rows {
 	rows, err := c.Query(ctx, query, arg)
 	if err != nil {
-		panic(fmt.Sprintf("sqlxx: %s", err.Error()))
+		panic(err)
 	}
 	return rows
 }
@@ -150,41 +164,57 @@ func (c *Client) MustQuery(ctx context.Context, query string, arg interface{}) R
 func (c *Client) Prepare(ctx context.Context, query string) (Statement, error) {
 	stmt, err := c.node.PrepareNamedContext(ctx, query)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "sqlxx: cannot prepare statement")
 	}
 	return wrapStatement(stmt), nil
 }
 
-// Get using given named statement and arguments.
+// FindOne executes this named statement to fetch one record.
 // If there is no row, an error is returned.
 // Output must be a pointer to a value.
-func (c *Client) Get(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return c.node.GetContext(ctx, dest, query, args...)
+func (c *Client) FindOne(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	err := c.node.GetContext(ctx, dest, query, args...)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute query")
+	}
+	return nil
 }
 
-// Select using given named statement and arguments.
+// FindAll executes this named statement to fetch a list of records.
 // Output must be a pointer to a slice of value.
-func (c *Client) Select(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	return c.node.SelectContext(ctx, dest, query, args...)
+func (c *Client) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
+	err := c.node.SelectContext(ctx, dest, query, args...)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute query")
+	}
+	return nil
 }
 
 // Begin a new transaction.
 func (c *Client) Begin() (Driver, error) {
 	node, err := c.node.Beginx()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "sqlxx: create a transaction")
 	}
 	return wrapClient(c, node), nil
 }
 
 // Rollback the associated transaction.
 func (c *Client) Rollback() error {
-	return c.node.Rollback()
+	err := c.node.Rollback()
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot rollback transaction")
+	}
+	return nil
 }
 
 // Commit the associated transaction.
 func (c *Client) Commit() error {
-	return c.node.Commit()
+	err := c.node.Commit()
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot commit transaction")
+	}
+	return nil
 }
 
 // Close closes the underlying connection.
@@ -252,7 +282,7 @@ type stmtWrapper struct {
 }
 
 // wrapStatement creates a new Statement using given named statement from sqlx.
-func wrapStatement(stmt *sqlx.NamedStmt) *stmtWrapper {
+func wrapStatement(stmt *sqlx.NamedStmt) Statement {
 	return &stmtWrapper{
 		stmt: stmt,
 	}
@@ -260,33 +290,123 @@ func wrapStatement(stmt *sqlx.NamedStmt) *stmtWrapper {
 
 // Close closes the statement.
 func (w *stmtWrapper) Close() error {
-	return w.stmt.Close()
+	err := w.stmt.Close()
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot close statement")
+	}
+	return nil
 }
 
-// Exec executes a named statement using the struct passed.
+// Exec executes this named statement using the struct passed.
 func (w *stmtWrapper) Exec(ctx context.Context, arg interface{}) error {
 	_, err := w.stmt.ExecContext(ctx, arg)
-	return err
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute statement")
+	}
+	return nil
 }
 
-// QueryRow using this Statement.
+// QueryRow executes this named statement returning a single row.
 func (w *stmtWrapper) QueryRow(ctx context.Context, arg interface{}) (Row, error) {
 	row := w.stmt.QueryRowxContext(ctx, arg)
 	err := row.Err()
-	return row, err
+	if err != nil {
+		return nil, errors.Wrap(err, "sqlxx: cannot execute statement")
+	}
+	return wrapRow(row), nil
 }
 
-// QueryRows using this Statement.
+// QueryRows executes this named statement returning a list of rows.
 func (w *stmtWrapper) QueryRows(ctx context.Context, arg interface{}) (Rows, error) {
-	return w.stmt.QueryxContext(ctx, arg)
+	rows, err := w.stmt.QueryxContext(ctx, arg)
+	if err != nil {
+		return nil, errors.Wrap(err, "sqlxx: cannot execute statement")
+	}
+	return wrapRows(rows), nil
 }
 
-// Get using this Statement.
-func (w *stmtWrapper) Get(ctx context.Context, dest interface{}, arg interface{}) error {
-	return w.stmt.GetContext(ctx, dest, arg)
+// FindOne executes this named statement to fetch one record.
+func (w *stmtWrapper) FindOne(ctx context.Context, dest interface{}, arg interface{}) error {
+	err := w.stmt.GetContext(ctx, dest, arg)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute statement")
+	}
+	return nil
 }
 
-// Select using this Statement.
-func (w *stmtWrapper) Select(ctx context.Context, dest interface{}, arg interface{}) error {
-	return w.stmt.SelectContext(ctx, dest, arg)
+// FindAll executes this named statement to fetch a list of records.
+func (w *stmtWrapper) FindAll(ctx context.Context, dest interface{}, arg interface{}) error {
+	err := w.stmt.SelectContext(ctx, dest, arg)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute statement")
+	}
+	return nil
+}
+
+// A rowWrapper wraps a row from sqlx.
+type rowWrapper struct {
+	row *sqlx.Row
+}
+
+// wrapRow creates a new Row using given row from sqlx.
+func wrapRow(row *sqlx.Row) Row {
+	return &rowWrapper{
+		row: row,
+	}
+}
+
+// Write copies the columns in the current row into the given map.
+func (r *rowWrapper) Write(dest map[string]interface{}) error {
+	err := r.row.MapScan(dest)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot write row")
+	}
+	return nil
+}
+
+// A rowsWrapper wraps a rows from sqlx.
+type rowsWrapper struct {
+	rows *sqlx.Rows
+}
+
+// wrapRow creates a new Rows using given rows from sqlx.
+func wrapRows(rows *sqlx.Rows) Rows {
+	return &rowsWrapper{
+		rows: rows,
+	}
+}
+
+// Next prepares the next result row for reading with the MapScan method.
+// It returns true on success, or false if there is no next result row or an error
+// happened while preparing it.
+// Err should be consulted to distinguish between the two cases.
+// Every call to MapScan, even the first one, must be preceded by a call to Next.
+func (r *rowsWrapper) Next() bool {
+	return r.rows.Next()
+}
+
+// Close closes the Rows, preventing further enumeration/iteration.
+// If Next is called and returns false and there are no further result sets, the Rows are closed automatically
+// and it will suffice to check the result of Err.
+func (r *rowsWrapper) Close() error {
+	err := r.rows.Close()
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot close rows")
+	}
+	return nil
+}
+
+// Err returns the error, if any, that was encountered during iteration.
+// Err may be called after an explicit or implicit Close.
+func (r *rowsWrapper) Err() error {
+	return r.rows.Err()
+}
+
+// Write copies the columns in the current row into the given map.
+func (r *rowsWrapper) Write(dest map[string]interface{}) error {
+	err := r.rows.MapScan(dest)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot write row")
+	}
+	return nil
 }

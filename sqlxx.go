@@ -30,14 +30,14 @@ type Driver interface {
 	// Multiple queries or executions may be run concurrently from the returned statement.
 	Prepare(ctx context.Context, query string) (Statement, error)
 
-	// Get using given named statement and arguments.
+	// FindOne executes this named statement to fetch one record.
 	// If there is no row, an error is returned.
 	// Output must be a pointer to a value.
-	Get(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	FindOne(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 
-	// Select using given named statement and arguments.
+	// FindAll executes this named statement to fetch a list of records.
 	// Output must be a pointer to a slice of value.
-	Select(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+	FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 
 	// ----------------------------------------------------------------------------
 	// Connection
@@ -76,30 +76,32 @@ type Driver interface {
 	entropy() io.Reader
 }
 
-// Statement from PrepareNamed.
+// A Statement from prepare.
 type Statement interface {
 	// Close closes the statement.
 	Close() error
-	// Exec executes a named statement using the struct passed.
+	// Exec executes this named statement using the struct passed.
 	Exec(ctx context.Context, arg interface{}) error
-	// QueryRow using this Statement.
+	// QueryRow executes this named statement returning a single row.
 	QueryRow(ctx context.Context, arg interface{}) (Row, error)
-	// QueryRows using this Statement.
+	// QueryRows executes this named statement returning a list of rows.
 	QueryRows(ctx context.Context, arg interface{}) (Rows, error)
-	// Get using this Statement.
-	Get(ctx context.Context, dest interface{}, arg interface{}) error
-	// Select using this Statement.
-	Select(ctx context.Context, dest interface{}, arg interface{}) error
+	// FindOne executes this named statement to fetch one record.
+	// If there is no row, an error is returned.
+	// Output must be a pointer to a value.
+	FindOne(ctx context.Context, dest interface{}, arg interface{}) error
+	// FindAll executes this named statement to fetch a list of records.
+	// Output must be a pointer to a slice of value.
+	FindAll(ctx context.Context, dest interface{}, arg interface{}) error
 }
 
+// A row is a simple row.
 type Row interface {
-	// Err returns the error, if any, that was encountered during iteration.
-	// Err may be called after an explicit or implicit Close.
-	Err() error
-	// MapScan copies the columns in the current row into the given map.
-	MapScan(dest map[string]interface{}) error
+	// Write copies the columns in the current row into the given map.
+	Write(dest map[string]interface{}) error
 }
 
+// A Rows is an iteratee of a list of records.
 type Rows interface {
 	// Next prepares the next result row for reading with the MapScan method.
 	// It returns true on success, or false if there is no next result row or an error
@@ -114,6 +116,6 @@ type Rows interface {
 	// Err returns the error, if any, that was encountered during iteration.
 	// Err may be called after an explicit or implicit Close.
 	Err() error
-	// MapScan copies the columns in the current row into the given map.
-	MapScan(dest map[string]interface{}) error
+	// Write copies the columns in the current row into the given map.
+	Write(dest map[string]interface{}) error
 }

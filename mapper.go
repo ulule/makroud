@@ -14,7 +14,7 @@ type Mapper map[string]interface{}
 // ScanRow will scan given sqlx.Row to created its Mapper.
 func ScanRow(row Row) (Mapper, error) {
 	mapper := map[string]interface{}{}
-	err := row.MapScan(mapper)
+	err := row.Write(mapper)
 	if len(mapper) == 0 {
 		return nil, errors.WithStack(ErrNoRows)
 	}
@@ -24,6 +24,6 @@ func ScanRow(row Row) (Mapper, error) {
 // ScanRows will scan given sqlx.Rows to created its Mapper.
 func ScanRows(rows Rows) (Mapper, error) {
 	mapper := map[string]interface{}{}
-	err := rows.MapScan(mapper)
+	err := rows.Write(mapper)
 	return mapper, err
 }
