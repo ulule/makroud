@@ -1,12 +1,13 @@
 package sqalx
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"strings"
 
-	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
+	"github.com/ulule/sqlx"
 )
 
 var (
@@ -39,18 +40,28 @@ type Node interface {
 // and therefore is limited to the methods they have in common.
 type Driver interface {
 	sqlx.Execer
+	sqlx.ExecerContext
 	sqlx.Queryer
+	sqlx.QueryerContext
 	sqlx.Preparer
+	sqlx.PreparerContext
 	BindNamed(query string, arg interface{}) (string, []interface{}, error)
 	DriverName() string
 	Get(dest interface{}, query string, args ...interface{}) error
+	GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	MustExec(query string, args ...interface{}) sql.Result
+	MustExecContext(ctx context.Context, query string, args ...interface{}) sql.Result
 	NamedExec(query string, arg interface{}) (sql.Result, error)
+	NamedExecContext(ctx context.Context, query string, arg interface{}) (sql.Result, error)
 	NamedQuery(query string, arg interface{}) (*sqlx.Rows, error)
+	NamedQueryContext(ctx context.Context, query string, arg interface{}) (*sqlx.Rows, error)
 	PrepareNamed(query string) (*sqlx.NamedStmt, error)
+	PrepareNamedContext(ctx context.Context, query string) (*sqlx.NamedStmt, error)
 	Preparex(query string) (*sqlx.Stmt, error)
+	PreparexContext(ctx context.Context, query string) (*sqlx.Stmt, error)
 	Rebind(query string) string
 	Select(dest interface{}, query string, args ...interface{}) error
+	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 }
 
 // New creates a new Node with the given DB.

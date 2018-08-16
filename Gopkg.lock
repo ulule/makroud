@@ -2,17 +2,10 @@
 
 
 [[projects]]
-  name = "github.com/heetch/sqalx"
-  packages = ["."]
-  revision = "e40536072f95235446bdd63325902f82373774cc"
-
-[[projects]]
+  branch = "master"
   name = "github.com/jmoiron/sqlx"
-  packages = [
-    ".",
-    "reflectx"
-  ]
-  revision = "2aeb6a910c2b94f2d5eb53d9895d80e27264ec41"
+  packages = ["reflectx"]
+  revision = "0dae4fefe7c0e190f7b5a78dac28a1c82cc8d849"
 
 [[projects]]
   name = "github.com/lib/pq"
@@ -25,7 +18,7 @@
 [[projects]]
   name = "github.com/oklog/ulid"
   packages = ["."]
-  revision = "7e1bd8a9a281b5abdf651a430b918bb0ecdbceda"
+  revision = "3928b679b154aad7ea1db5352e4277e4e448b324"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -57,9 +50,19 @@
   ]
   revision = "79401924b612bdf526ab9e1b55483103ec4429fc"
 
+[[projects]]
+  name = "github.com/ulule/sqalx"
+  packages = ["."]
+  revision = "d9cae201d6f9efafb7c8b76038c077c5d203f161"
+
+[[projects]]
+  name = "github.com/ulule/sqlx"
+  packages = ["."]
+  revision = "c5252437a47be63a059eccced7436bc68e0e4a53"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "844dcc1c37b7a9e07808fcadf30bfedd4af468255664d7480da152c4d56a6af4"
+  inputs-digest = "ca4e6d6de90aa17b5d9afd0bd415a311b1037f7deac717fd79f34e8c921457a2"
   solver-name = "gps-cdcl"
   solver-version = 1
