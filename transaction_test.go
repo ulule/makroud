@@ -1,6 +1,7 @@
 package sqlxx_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -12,16 +13,17 @@ import (
 
 func TestTransaction_Commit(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat := &Cat{Name: "Harlay"}
 
-		err := sqlxx.Save(driver, cat)
+		err := sqlxx.Save(ctx, driver, cat)
 		is.NoError(err)
 
 		err = sqlxx.Transaction(driver, func(driver sqlxx.Driver) error {
 			cat.Name = "Harley"
-			err := sqlxx.Save(driver, cat)
+			err := sqlxx.Save(ctx, driver, cat)
 			is.NoError(err)
 			return nil
 		})
@@ -29,7 +31,7 @@ func TestTransaction_Commit(t *testing.T) {
 
 		name := ""
 		query := loukoum.Select("name").From("ztp_cat").Where(loukoum.Condition("id").Equal(cat.ID))
-		err = sqlxx.Exec(driver, query, &name)
+		err = sqlxx.Exec(ctx, driver, query, &name)
 		is.NoError(err)
 		is.Equal("Harley", name)
 
@@ -38,17 +40,18 @@ func TestTransaction_Commit(t *testing.T) {
 
 func TestTransaction_Rollback(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat := &Cat{Name: "Gemmz"}
 		timeout := errors.New("tcp: read timeout on 10.0.3.11:7000")
 
-		err := sqlxx.Save(driver, cat)
+		err := sqlxx.Save(ctx, driver, cat)
 		is.NoError(err)
 
 		err = sqlxx.Transaction(driver, func(driver sqlxx.Driver) error {
 			cat.Name = "Gemma"
-			err := sqlxx.Save(driver, cat)
+			err := sqlxx.Save(ctx, driver, cat)
 			is.NoError(err)
 			return timeout
 		})
@@ -57,7 +60,7 @@ func TestTransaction_Rollback(t *testing.T) {
 
 		name := ""
 		query := loukoum.Select("name").From("ztp_cat").Where(loukoum.Condition("id").Equal(cat.ID))
-		err = sqlxx.Exec(driver, query, &name)
+		err = sqlxx.Exec(ctx, driver, query, &name)
 		is.NoError(err)
 		is.Equal("Gemmz", name)
 

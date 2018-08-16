@@ -1,6 +1,8 @@
 package sqlxx
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/ulule/loukoum"
 	"github.com/ulule/loukoum/builder"
@@ -26,14 +28,14 @@ import (
 //     |--------------|--------------|-----------------|----------------|
 
 // Preload preloads related fields.
-func Preload(driver Driver, out interface{}, paths ...string) error {
-	_, err := PreloadWithQueries(driver, out, paths...)
+func Preload(ctx context.Context, driver Driver, out interface{}, paths ...string) error {
+	_, err := PreloadWithQueries(ctx, driver, out, paths...)
 	return err
 }
 
 // PreloadWithQueries preloads related fields and returns performed queries.
-func PreloadWithQueries(driver Driver, out interface{}, paths ...string) (Queries, error) {
-	queries, err := preload(driver, out, paths...)
+func PreloadWithQueries(ctx context.Context, driver Driver, out interface{}, paths ...string) (Queries, error) {
+	queries, err := preload(ctx, driver, out, paths...)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute preload")
 	}
@@ -41,7 +43,7 @@ func PreloadWithQueries(driver Driver, out interface{}, paths ...string) (Querie
 }
 
 // preload preloads related fields.
-func preload(driver Driver, dest interface{}, paths ...string) (Queries, error) {
+func preload(ctx context.Context, driver Driver, dest interface{}, paths ...string) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
@@ -54,11 +56,11 @@ func preload(driver Driver, dest interface{}, paths ...string) (Queries, error) 
 		panic("TODO")
 	}
 
-	return preloadOne(driver, dest, paths)
+	return preloadOne(ctx, driver, dest, paths)
 }
 
 // preloadOne preload a single instance.
-func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error) {
+func preloadOne(ctx context.Context, driver Driver, dest interface{}, paths []string) (Queries, error) {
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
 		return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
@@ -70,6 +72,7 @@ func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error
 	}
 
 	preloader := preloadOneHandler{
+		ctx:    ctx,
 		driver: driver,
 		model:  model,
 		dest:   dest,
@@ -100,6 +103,7 @@ func preloadOne(driver Driver, dest interface{}, paths []string) (Queries, error
 // }
 
 type preloadOneHandler struct {
+	ctx    context.Context
 	driver Driver
 	model  Model
 	dest   interface{}
@@ -122,6 +126,7 @@ func (preloader *preloadOneHandler) preloadOne(reference Reference) error {
 }
 
 func (preloader *preloadOneHandler) preloadOneLocal(reference Reference) error {
+	ctx := preloader.ctx
 	driver := preloader.driver
 	dest := preloader.dest
 	model := preloader.model
@@ -148,7 +153,7 @@ func (preloader *preloadOneHandler) preloadOneLocal(reference Reference) error {
 
 	relation := reflectx.MakePointer(remote.Model())
 
-	err = Exec(driver, builder, relation)
+	err = Exec(ctx, driver, builder, relation)
 	if err != nil && !IsErrNoRows(err) {
 		return err
 	}
@@ -161,6 +166,7 @@ func (preloader *preloadOneHandler) preloadOneLocal(reference Reference) error {
 }
 
 func (preloader *preloadOneHandler) preloadOneRemote(reference Reference) error {
+	ctx := preloader.ctx
 	driver := preloader.driver
 	dest := preloader.dest
 	model := preloader.model
@@ -187,7 +193,7 @@ func (preloader *preloadOneHandler) preloadOneRemote(reference Reference) error 
 
 	relation := reflectx.MakePointer(remote.Model())
 
-	err = Exec(driver, builder, relation)
+	err = Exec(ctx, driver, builder, relation)
 	if err != nil && !IsErrNoRows(err) {
 		return err
 	}
@@ -199,6 +205,7 @@ func (preloader *preloadOneHandler) preloadOneRemote(reference Reference) error 
 }
 
 func (preloader *preloadOneHandler) preloadMany(reference Reference) error {
+	ctx := preloader.ctx
 	driver := preloader.driver
 	dest := preloader.dest
 	model := preloader.model
@@ -226,7 +233,7 @@ func (preloader *preloadOneHandler) preloadMany(reference Reference) error {
 	list := reflectx.NewSlice(reflectx.GetSliceType(reference.Type()))
 	relation := reflectx.MakePointer(list.Interface())
 
-	err = Exec(driver, builder, relation)
+	err = Exec(ctx, driver, builder, relation)
 	if err != nil && !IsErrNoRows(err) {
 		return err
 	}

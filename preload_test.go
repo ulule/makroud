@@ -1,6 +1,7 @@
 package sqlxx_test
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"testing"
@@ -13,12 +14,13 @@ import (
 
 func TestPreload_ExoChunk(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		mode := &ExoChunkMode{
 			Mode: "rwx",
 		}
-		err := sqlxx.Save(driver, mode)
+		err := sqlxx.Save(ctx, driver, mode)
 		is.NoError(err)
 		is.NotEmpty(mode.ID)
 
@@ -30,7 +32,7 @@ func TestPreload_ExoChunk(t *testing.T) {
 				"ea7548dec5b924a5a7ff2bd94dbe9a109849a3ea322919cc672980d037a325da",
 			),
 		}
-		err = sqlxx.Save(driver, chunk)
+		err = sqlxx.Save(ctx, driver, chunk)
 		is.NoError(err)
 		is.NotEmpty(chunk.Hash)
 
@@ -41,21 +43,21 @@ func TestPreload_ExoChunk(t *testing.T) {
 				"67c92c907edf6a68847e3aab6210ff1537e3e1ae079177feded543bb8ee35132",
 			),
 		}
-		err = sqlxx.Save(driver, signature)
+		err = sqlxx.Save(ctx, driver, signature)
 		is.NoError(err)
 		is.NotEmpty(signature.ID)
 
 		is.Nil(chunk.Mode)
 		is.Nil(chunk.Signature)
 
-		err = sqlxx.Preload(driver, chunk, "Mode")
+		err = sqlxx.Preload(ctx, driver, chunk, "Mode")
 		is.NoError(err)
 		is.NotNil(chunk.Mode)
 		is.Equal(mode.ID, chunk.ModeID)
 		is.Equal(mode.ID, chunk.Mode.ID)
 		is.Equal(mode.Mode, chunk.Mode.Mode)
 
-		err = sqlxx.Preload(driver, chunk, "Signature")
+		err = sqlxx.Preload(ctx, driver, chunk, "Signature")
 		is.NoError(err)
 		is.NotNil(chunk.Signature)
 		is.Equal(signature.ChunkID, chunk.Hash)
@@ -72,7 +74,7 @@ func TestPreload_ExoChunk(t *testing.T) {
 				"86213a4e0fa96d84b1b997de3d9552b1a1d53c559e61abdc486d36735a06b9de",
 			),
 		}
-		err = sqlxx.Preload(driver, chunk, "Mode")
+		err = sqlxx.Preload(ctx, driver, chunk, "Mode")
 		is.Error(err)
 		is.Equal(sqlxx.ErrPreloadInvalidModel, errors.Cause(err))
 		is.Nil(chunk.Mode)
@@ -82,12 +84,13 @@ func TestPreload_ExoChunk(t *testing.T) {
 
 func TestPreload_Owl(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		group := &Group{
 			Name: "spring",
 		}
-		err := sqlxx.Save(driver, group)
+		err := sqlxx.Save(ctx, driver, group)
 		is.NoError(err)
 		is.NotEmpty(group.ID)
 
@@ -95,7 +98,7 @@ func TestPreload_Owl(t *testing.T) {
 			Name: "Soul",
 			Area: "Lancaster",
 		}
-		err = sqlxx.Save(driver, center1)
+		err = sqlxx.Save(ctx, driver, center1)
 		is.NoError(err)
 		is.NotEmpty(center1.ID)
 
@@ -103,7 +106,7 @@ func TestPreload_Owl(t *testing.T) {
 			Name: "Cloud",
 			Area: "Nancledra",
 		}
-		err = sqlxx.Save(driver, center2)
+		err = sqlxx.Save(ctx, driver, center2)
 		is.NoError(err)
 		is.NotEmpty(center2.ID)
 
@@ -111,7 +114,7 @@ func TestPreload_Owl(t *testing.T) {
 			Name: "Gold",
 			Area: "Woodhurst",
 		}
-		err = sqlxx.Save(driver, center3)
+		err = sqlxx.Save(ctx, driver, center3)
 		is.NoError(err)
 		is.NotEmpty(center3.ID)
 
@@ -119,7 +122,7 @@ func TestPreload_Owl(t *testing.T) {
 			Name: "Moonstone",
 			Area: "Armskirk",
 		}
-		err = sqlxx.Save(driver, center4)
+		err = sqlxx.Save(ctx, driver, center4)
 		is.NoError(err)
 		is.NotEmpty(center4.ID)
 
@@ -132,7 +135,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: group.ID,
 			},
 		}
-		err = sqlxx.Save(driver, owl1)
+		err = sqlxx.Save(ctx, driver, owl1)
 		is.NoError(err)
 		is.NotEmpty(owl1.ID)
 
@@ -144,7 +147,7 @@ func TestPreload_Owl(t *testing.T) {
 				Valid: false,
 			},
 		}
-		err = sqlxx.Save(driver, owl2)
+		err = sqlxx.Save(ctx, driver, owl2)
 		is.NoError(err)
 		is.NotEmpty(owl2.ID)
 
@@ -157,7 +160,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: group.ID,
 			},
 		}
-		err = sqlxx.Save(driver, owl3)
+		err = sqlxx.Save(ctx, driver, owl3)
 		is.NoError(err)
 		is.NotEmpty(owl3.ID)
 
@@ -170,7 +173,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: owl1.ID,
 			},
 		}
-		err = sqlxx.Save(driver, pack1)
+		err = sqlxx.Save(ctx, driver, pack1)
 		is.NoError(err)
 		is.NotEmpty(pack1.ID)
 
@@ -183,7 +186,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: owl1.ID,
 			},
 		}
-		err = sqlxx.Save(driver, pack2)
+		err = sqlxx.Save(ctx, driver, pack2)
 		is.NoError(err)
 		is.NotEmpty(pack2.ID)
 
@@ -195,7 +198,7 @@ func TestPreload_Owl(t *testing.T) {
 				Valid: false,
 			},
 		}
-		err = sqlxx.Save(driver, pack3)
+		err = sqlxx.Save(ctx, driver, pack3)
 		is.NoError(err)
 		is.NotEmpty(pack3.ID)
 
@@ -208,7 +211,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: owl2.ID,
 			},
 		}
-		err = sqlxx.Save(driver, pack4)
+		err = sqlxx.Save(ctx, driver, pack4)
 		is.NoError(err)
 		is.NotEmpty(pack4.ID)
 
@@ -221,7 +224,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: owl3.ID,
 			},
 		}
-		err = sqlxx.Save(driver, pack5)
+		err = sqlxx.Save(ctx, driver, pack5)
 		is.NoError(err)
 		is.NotEmpty(pack5.ID)
 
@@ -234,7 +237,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: owl3.ID,
 			},
 		}
-		err = sqlxx.Save(driver, pack6)
+		err = sqlxx.Save(ctx, driver, pack6)
 		is.NoError(err)
 		is.NotEmpty(pack6.ID)
 
@@ -247,7 +250,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: owl3.ID,
 			},
 		}
-		err = sqlxx.Save(driver, pack7)
+		err = sqlxx.Save(ctx, driver, pack7)
 		is.NoError(err)
 		is.NotEmpty(pack7.ID)
 
@@ -260,7 +263,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: owl3.ID,
 			},
 		}
-		err = sqlxx.Save(driver, pack8)
+		err = sqlxx.Save(ctx, driver, pack8)
 		is.NoError(err)
 		is.NotEmpty(pack8.ID)
 
@@ -273,7 +276,7 @@ func TestPreload_Owl(t *testing.T) {
 				Int64: owl3.ID,
 			},
 		}
-		err = sqlxx.Save(driver, pack9)
+		err = sqlxx.Save(ctx, driver, pack9)
 		is.NoError(err)
 		is.NotEmpty(pack9.ID)
 
@@ -284,7 +287,7 @@ func TestPreload_Owl(t *testing.T) {
 		is.Empty(owl2.Packages)
 		is.Empty(owl3.Packages)
 
-		err = sqlxx.Preload(driver, owl1, "Group")
+		err = sqlxx.Preload(ctx, driver, owl1, "Group")
 		is.NoError(err)
 		is.NotNil(owl1.Group)
 		is.True(owl1.GroupID.Valid)
@@ -293,14 +296,14 @@ func TestPreload_Owl(t *testing.T) {
 		is.Equal(group.Name, owl1.Group.Name)
 		is.Empty(owl1.Packages)
 
-		err = sqlxx.Preload(driver, &owl1, "Packages")
+		err = sqlxx.Preload(ctx, driver, &owl1, "Packages")
 		is.NoError(err)
 		is.NotEmpty(owl1.Packages)
 		is.Len(owl1.Packages, 2)
 		is.Contains(owl1.Packages, *pack1)
 		is.Contains(owl1.Packages, *pack2)
 
-		err = sqlxx.Preload(driver, owl2, "Group", "Packages")
+		err = sqlxx.Preload(ctx, driver, owl2, "Group", "Packages")
 		is.NoError(err)
 		is.Nil(owl2.Group)
 		is.False(owl2.GroupID.Valid)
@@ -308,13 +311,13 @@ func TestPreload_Owl(t *testing.T) {
 		is.Len(owl2.Packages, 1)
 		is.Contains(owl2.Packages, *pack4)
 
-		err = sqlxx.Preload(driver, *owl3, "Group", "Packages")
+		err = sqlxx.Preload(ctx, driver, *owl3, "Group", "Packages")
 		is.Error(err)
 		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 		is.Nil(owl3.Group)
 		is.Empty(owl3.Packages)
 
-		err = sqlxx.Preload(driver, owl3, "Group", "Packages")
+		err = sqlxx.Preload(ctx, driver, owl3, "Group", "Packages")
 		is.NoError(err)
 		is.NotNil(owl3.Group)
 		is.True(owl3.GroupID.Valid)
@@ -329,33 +332,34 @@ func TestPreload_Owl(t *testing.T) {
 
 func TestPreload_Cat(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat1 := &Cat{
 			Name: "Dinky",
 		}
-		err := sqlxx.Save(driver, cat1)
+		err := sqlxx.Save(ctx, driver, cat1)
 		is.NoError(err)
 		is.NotEmpty(cat1.ID)
 
 		cat2 := &Cat{
 			Name: "Flick",
 		}
-		err = sqlxx.Save(driver, cat2)
+		err = sqlxx.Save(ctx, driver, cat2)
 		is.NoError(err)
 		is.NotEmpty(cat2.ID)
 
 		cat3 := &Cat{
 			Name: "Icarus",
 		}
-		err = sqlxx.Save(driver, cat3)
+		err = sqlxx.Save(ctx, driver, cat3)
 		is.NoError(err)
 		is.NotEmpty(cat3.ID)
 
 		human1 := &Human{
 			Name: "Larry Golade",
 		}
-		err = sqlxx.Save(driver, human1)
+		err = sqlxx.Save(ctx, driver, human1)
 		is.NoError(err)
 		is.NotEmpty(human1.ID)
 
@@ -366,7 +370,7 @@ func TestPreload_Cat(t *testing.T) {
 				String: cat2.ID,
 			},
 		}
-		err = sqlxx.Save(driver, human2)
+		err = sqlxx.Save(ctx, driver, human2)
 		is.NoError(err)
 		is.NotEmpty(human2.ID)
 
@@ -374,7 +378,7 @@ func TestPreload_Cat(t *testing.T) {
 			Body:  "Meow !",
 			CatID: cat1.ID,
 		}
-		err = sqlxx.Save(driver, meow1)
+		err = sqlxx.Save(ctx, driver, meow1)
 		is.NoError(err)
 		is.NotEmpty(meow1.Hash)
 
@@ -382,7 +386,7 @@ func TestPreload_Cat(t *testing.T) {
 			Body:  "Meow meow...",
 			CatID: cat1.ID,
 		}
-		err = sqlxx.Save(driver, meow2)
+		err = sqlxx.Save(ctx, driver, meow2)
 		is.NoError(err)
 		is.NotEmpty(meow2.Hash)
 
@@ -390,7 +394,7 @@ func TestPreload_Cat(t *testing.T) {
 			Body:  "Meow meow ? meeeeeoooow ?!",
 			CatID: cat1.ID,
 		}
-		err = sqlxx.Save(driver, meow3)
+		err = sqlxx.Save(ctx, driver, meow3)
 		is.NoError(err)
 		is.NotEmpty(meow3.Hash)
 
@@ -398,7 +402,7 @@ func TestPreload_Cat(t *testing.T) {
 			Body:  "Meow, meow meow.",
 			CatID: cat3.ID,
 		}
-		err = sqlxx.Save(driver, meow4)
+		err = sqlxx.Save(ctx, driver, meow4)
 		is.NoError(err)
 		is.NotEmpty(meow4.Hash)
 
@@ -409,17 +413,17 @@ func TestPreload_Cat(t *testing.T) {
 		is.Nil(cat3.Owner)
 		is.Empty(cat3.Meows)
 
-		err = sqlxx.Preload(driver, cat1, "Owner")
+		err = sqlxx.Preload(ctx, driver, cat1, "Owner")
 		is.NoError(err)
 		is.Nil(cat1.Owner)
 
-		err = sqlxx.Preload(driver, cat2, "Owner")
+		err = sqlxx.Preload(ctx, driver, cat2, "Owner")
 		is.NoError(err)
 		is.NotNil(cat2.Owner)
 		is.Equal(human2.ID, cat2.Owner.ID)
 		is.Equal(human2.Name, cat2.Owner.Name)
 
-		err = sqlxx.Preload(driver, &cat1, "Meows")
+		err = sqlxx.Preload(ctx, driver, &cat1, "Meows")
 		is.NoError(err)
 		is.NotEmpty(cat1.Meows)
 		is.Len(cat1.Meows, 3)
@@ -427,11 +431,11 @@ func TestPreload_Cat(t *testing.T) {
 		is.Contains(cat1.Meows, meow2)
 		is.Contains(cat1.Meows, meow3)
 
-		err = sqlxx.Preload(driver, &cat2, "Meows")
+		err = sqlxx.Preload(ctx, driver, &cat2, "Meows")
 		is.NoError(err)
 		is.Empty(cat2.Meows)
 
-		err = sqlxx.Preload(driver, cat3, "Owner", "Meows")
+		err = sqlxx.Preload(ctx, driver, cat3, "Owner", "Meows")
 		is.NoError(err)
 		is.Nil(cat3.Owner)
 		is.NotEmpty(cat3.Meows)

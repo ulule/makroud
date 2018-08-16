@@ -1,6 +1,7 @@
 package sqlxx_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -12,6 +13,7 @@ import (
 
 func TestExec_List(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat1 := &Cat{Name: "Wheezie"}
@@ -27,7 +29,7 @@ func TestExec_List(t *testing.T) {
 		expected := []*Cat{cat2, cat3, cat4, cat5, cat6, cat7}
 
 		for i := range cats {
-			err := sqlxx.Save(driver, cats[i])
+			err := sqlxx.Save(ctx, driver, cats[i])
 			is.NoError(err)
 		}
 
@@ -35,7 +37,7 @@ func TestExec_List(t *testing.T) {
 		query := loukoum.Select("id").From("ztp_cat").
 			Where(loukoum.Condition("name").ILike("Whi%"))
 
-		err := sqlxx.Exec(driver, query, &list)
+		err := sqlxx.Exec(ctx, driver, query, &list)
 		is.NoError(err)
 
 		is.Len(list, len(expected))
@@ -43,7 +45,7 @@ func TestExec_List(t *testing.T) {
 			is.Contains(list, expected[i].ID)
 		}
 
-		err = sqlxx.Exec(driver, query, []string{})
+		err = sqlxx.Exec(ctx, driver, query, []string{})
 		is.Error(err)
 		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
@@ -52,6 +54,7 @@ func TestExec_List(t *testing.T) {
 
 func TestRawExec_List(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat1 := &Cat{Name: "Venice"}
@@ -67,13 +70,13 @@ func TestRawExec_List(t *testing.T) {
 		expected := []*Cat{cat2, cat3, cat4, cat5, cat6, cat7}
 
 		for i := range cats {
-			err := sqlxx.Save(driver, cats[i])
+			err := sqlxx.Save(ctx, driver, cats[i])
 			is.NoError(err)
 		}
 
 		list := []string{}
 		query := `SELECT id FROM ztp_cat WHERE name ILIKE 'Ver%'`
-		err := sqlxx.RawExec(driver, query, &list)
+		err := sqlxx.RawExec(ctx, driver, query, &list)
 		is.NoError(err)
 
 		is.Len(list, len(expected))
@@ -81,7 +84,7 @@ func TestRawExec_List(t *testing.T) {
 			is.Contains(list, expected[i].ID)
 		}
 
-		err = sqlxx.RawExec(driver, query, []string{})
+		err = sqlxx.RawExec(ctx, driver, query, []string{})
 		is.Error(err)
 		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
@@ -90,6 +93,7 @@ func TestRawExec_List(t *testing.T) {
 
 func TestExec_Fetch(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat1 := &Cat{Name: "Bambino"}
@@ -105,7 +109,7 @@ func TestExec_Fetch(t *testing.T) {
 		expected := cat6
 
 		for i := range cats {
-			err := sqlxx.Save(driver, cats[i])
+			err := sqlxx.Save(ctx, driver, cats[i])
 			is.NoError(err)
 		}
 
@@ -113,11 +117,11 @@ func TestExec_Fetch(t *testing.T) {
 		query := loukoum.Select("id").From("ztp_cat").
 			Where(loukoum.Condition("name").Equal("Banker"))
 
-		err := sqlxx.Exec(driver, query, &id)
+		err := sqlxx.Exec(ctx, driver, query, &id)
 		is.NoError(err)
 		is.Equal(expected.ID, id)
 
-		err = sqlxx.Exec(driver, query, id)
+		err = sqlxx.Exec(ctx, driver, query, id)
 		is.Error(err)
 		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
@@ -126,6 +130,7 @@ func TestExec_Fetch(t *testing.T) {
 
 func TestRawExec_Fetch(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat1 := &Cat{Name: "Cake"}
@@ -141,17 +146,17 @@ func TestRawExec_Fetch(t *testing.T) {
 		expected := cat4
 
 		for i := range cats {
-			err := sqlxx.Save(driver, cats[i])
+			err := sqlxx.Save(ctx, driver, cats[i])
 			is.NoError(err)
 		}
 
 		id := ""
 		query := `SELECT id FROM ztp_cat WHERE name = 'Calzone'`
-		err := sqlxx.RawExec(driver, query, &id)
+		err := sqlxx.RawExec(ctx, driver, query, &id)
 		is.NoError(err)
 		is.Equal(expected.ID, id)
 
-		err = sqlxx.RawExec(driver, query, id)
+		err = sqlxx.RawExec(ctx, driver, query, id)
 		is.Error(err)
 		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
@@ -160,6 +165,7 @@ func TestRawExec_Fetch(t *testing.T) {
 
 func TestExec_FetchModel(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat1 := &Cat{Name: "Afro"}
@@ -171,7 +177,7 @@ func TestExec_FetchModel(t *testing.T) {
 		expected := cat4
 
 		for i := range cats {
-			err := sqlxx.Save(driver, cats[i])
+			err := sqlxx.Save(ctx, driver, cats[i])
 			is.NoError(err)
 		}
 
@@ -180,7 +186,7 @@ func TestExec_FetchModel(t *testing.T) {
 
 		{
 			result := &Cat{}
-			err := sqlxx.Exec(driver, query, result)
+			err := sqlxx.Exec(ctx, driver, query, result)
 			is.NoError(err)
 			is.Equal(expected.ID, result.ID)
 			is.Equal(expected.Name, result.Name)
@@ -191,7 +197,7 @@ func TestExec_FetchModel(t *testing.T) {
 
 		{
 			result := &Cat{}
-			err := sqlxx.Exec(driver, query, &result)
+			err := sqlxx.Exec(ctx, driver, query, &result)
 			is.NoError(err)
 			is.Equal(expected.ID, result.ID)
 			is.Equal(expected.Name, result.Name)
@@ -202,7 +208,7 @@ func TestExec_FetchModel(t *testing.T) {
 
 		{
 			result := Cat{}
-			err := sqlxx.Exec(driver, query, result)
+			err := sqlxx.Exec(ctx, driver, query, result)
 			is.Error(err)
 			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 		}
@@ -212,6 +218,7 @@ func TestExec_FetchModel(t *testing.T) {
 
 func TestExec_ListModel(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat1 := &Cat{Name: "Amazon"}
@@ -222,7 +229,7 @@ func TestExec_ListModel(t *testing.T) {
 		cats := []*Cat{cat1, cat2, cat3, cat4}
 
 		for i := range cats {
-			err := sqlxx.Save(driver, cats[i])
+			err := sqlxx.Save(ctx, driver, cats[i])
 			is.NoError(err)
 		}
 
@@ -231,7 +238,7 @@ func TestExec_ListModel(t *testing.T) {
 
 		{
 			result := []Cat{}
-			err := sqlxx.Exec(driver, query, &result)
+			err := sqlxx.Exec(ctx, driver, query, &result)
 			is.NoError(err)
 			is.Len(result, 4)
 			is.Contains(cats, &result[0])
@@ -242,7 +249,7 @@ func TestExec_ListModel(t *testing.T) {
 
 		{
 			result := []*Cat{}
-			err := sqlxx.Exec(driver, query, &result)
+			err := sqlxx.Exec(ctx, driver, query, &result)
 			is.NoError(err)
 			is.Len(result, 4)
 			is.Contains(cats, result[0])
@@ -253,7 +260,7 @@ func TestExec_ListModel(t *testing.T) {
 
 		{
 			result := &[]Cat{}
-			err := sqlxx.Exec(driver, query, &result)
+			err := sqlxx.Exec(ctx, driver, query, &result)
 			is.NoError(err)
 			is.Len(*result, 4)
 			is.Contains(cats, &(*result)[0])
@@ -264,7 +271,7 @@ func TestExec_ListModel(t *testing.T) {
 
 		{
 			result := &[]*Cat{}
-			err := sqlxx.Exec(driver, query, &result)
+			err := sqlxx.Exec(ctx, driver, query, &result)
 			is.NoError(err)
 			is.Len(*result, 4)
 			is.Contains(cats, (*result)[0])
@@ -275,14 +282,14 @@ func TestExec_ListModel(t *testing.T) {
 
 		{
 			result := []Cat{}
-			err := sqlxx.Exec(driver, query, result)
+			err := sqlxx.Exec(ctx, driver, query, result)
 			is.Error(err)
 			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 		}
 
 		{
 			result := []*Cat{}
-			err := sqlxx.Exec(driver, query, result)
+			err := sqlxx.Exec(ctx, driver, query, result)
 			is.Error(err)
 			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 		}

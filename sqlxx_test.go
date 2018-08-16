@@ -1,6 +1,7 @@
 package sqlxx_test
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -198,38 +199,15 @@ type environment struct {
 	is     *require.Assertions
 }
 
-func (e *environment) startup() {
-	DropTables(e.driver)
-	CreateTables(e.driver)
+func (e *environment) startup(ctx context.Context) {
+	DropTables(ctx, e.driver)
+	CreateTables(ctx, e.driver)
 }
 
-func (e *environment) fetch(query string, callback func(mapper sqlxx.Mapper)) {
-	is := e.is
-	driver := e.driver
-
-	rows, err := driver.Queryx(query)
-	is.NoError(err)
-	is.NotNil(rows)
-	defer rows.Close()
-
-	for rows.Next() {
-		mapper := map[string]interface{}{}
-		err = rows.MapScan(mapper)
-		is.NoError(err)
-		callback(mapper)
-	}
-	err = rows.Err()
-	is.NoError(err)
-}
-
-func (e *environment) exec(query string, args ...interface{}) {
-	e.driver.MustExec(query, args...)
-}
-
-func (e *environment) shutdown() {
+func (e *environment) shutdown(ctx context.Context) {
 	value := os.Getenv("DB_KEEP")
 	if len(value) == 0 {
-		DropTables(e.driver)
+		DropTables(ctx, e.driver)
 	}
 	e.is.NoError(e.driver.Close())
 }
@@ -272,6 +250,7 @@ type SetupHandler func(driver sqlxx.Driver)
 
 func Setup(t require.TestingT, options ...sqlxx.Option) SetupCallback {
 	is := require.New(t)
+	ctx := context.Background()
 	opts := []sqlxx.Option{
 		dbParamString(sqlxx.Host, "host", "PGHOST"),
 		dbParamInt(sqlxx.Port, "port", "PGPORT"),
@@ -292,14 +271,14 @@ func Setup(t require.TestingT, options ...sqlxx.Option) SetupCallback {
 	}
 
 	return func(handler SetupHandler) {
-		env.startup()
+		env.startup(ctx)
 		handler(db)
-		env.shutdown()
+		env.shutdown(ctx)
 	}
 }
 
-func DropTables(db *sqlxx.Client) {
-	db.MustExec(`
+func DropTables(ctx context.Context, db *sqlxx.Client) {
+	db.MustExec(ctx, `
 		-- Simple schema
 		DROP TABLE IF EXISTS ztp_human CASCADE;
 		DROP TABLE IF EXISTS ztp_package CASCADE;
@@ -317,8 +296,8 @@ func DropTables(db *sqlxx.Client) {
 	`)
 }
 
-func CreateTables(db *sqlxx.Client) {
-	db.MustExec(`
+func CreateTables(ctx context.Context, db *sqlxx.Client) {
+	db.MustExec(ctx, `
 
 		--
 		-- Zootopia schema

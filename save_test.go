@@ -1,6 +1,7 @@
 package sqlxx_test
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"testing"
@@ -16,6 +17,7 @@ import (
 
 func TestSave_Owl(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		name := "Kika"
@@ -27,7 +29,7 @@ func TestSave_Owl(t *testing.T) {
 			FavoriteFood: favoriteFood,
 		}
 
-		queries, err := sqlxx.SaveWithQueries(driver, owl)
+		queries, err := sqlxx.SaveWithQueries(ctx, driver, owl)
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)
@@ -52,7 +54,7 @@ func TestSave_Owl(t *testing.T) {
 		owl.FavoriteFood = favoriteFood
 		id := owl.ID
 
-		queries, err = sqlxx.SaveWithQueries(driver, owl)
+		queries, err = sqlxx.SaveWithQueries(ctx, driver, owl)
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)
@@ -76,7 +78,7 @@ func TestSave_Owl(t *testing.T) {
 
 		check := loukoum.Select("COUNT(*)").From("ztp_owl").Where(loukoum.Condition("name").Equal("Kika"))
 		count := -1
-		err = sqlxx.Exec(driver, check, &count)
+		err = sqlxx.Exec(ctx, driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(1, count)
@@ -86,12 +88,13 @@ func TestSave_Owl(t *testing.T) {
 
 func TestSave_Meow(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat := &Cat{
 			Name: "Hemlock",
 		}
-		err := sqlxx.Save(driver, cat)
+		err := sqlxx.Save(ctx, driver, cat)
 		is.NoError(err)
 
 		t0 := time.Now()
@@ -101,7 +104,7 @@ func TestSave_Meow(t *testing.T) {
 			CatID: cat.ID,
 		}
 
-		queries, err := sqlxx.SaveWithQueries(driver, meow)
+		queries, err := sqlxx.SaveWithQueries(ctx, driver, meow)
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)
@@ -131,7 +134,7 @@ func TestSave_Meow(t *testing.T) {
 		body = "meow meow!"
 		meow.Body = body
 
-		queries, err = sqlxx.SaveWithQueries(driver, meow)
+		queries, err = sqlxx.SaveWithQueries(ctx, driver, meow)
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)

@@ -1,6 +1,7 @@
 package sqlxx_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -14,18 +15,20 @@ import (
 
 func TestDelete_DeleteOwl(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
+
 		owl := &Owl{
 			Name:         "Blake",
 			FeatherColor: "brown",
 			FavoriteFood: "Raspberry",
 		}
 
-		err := sqlxx.Save(driver, owl)
+		err := sqlxx.Save(ctx, driver, owl)
 		is.NoError(err)
 		id := owl.ID
 
-		queries, err := sqlxx.DeleteWithQueries(driver, owl)
+		queries, err := sqlxx.DeleteWithQueries(ctx, driver, owl)
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)
@@ -39,7 +42,7 @@ func TestDelete_DeleteOwl(t *testing.T) {
 
 		check := loukoum.Select("COUNT(*)").From("ztp_owl").Where(loukoum.Condition("name").Equal("Blake"))
 		count := -1
-		err = sqlxx.Exec(driver, check, &count)
+		err = sqlxx.Exec(ctx, driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(0, count)
@@ -49,17 +52,19 @@ func TestDelete_DeleteOwl(t *testing.T) {
 
 func TestDelete_ArchiveOwl(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
+
 		owl := &Owl{
 			Name:         "Frosty",
 			FeatherColor: "beige",
 			FavoriteFood: "Wasabi",
 		}
 
-		err := sqlxx.Save(driver, owl)
+		err := sqlxx.Save(ctx, driver, owl)
 		is.NoError(err)
 
-		queries, err := sqlxx.ArchiveWithQueries(driver, owl)
+		queries, err := sqlxx.ArchiveWithQueries(ctx, driver, owl)
 		is.Error(err)
 		is.Nil(queries)
 		is.Equal(sqlxx.ErrSchemaDeletedKey, errors.Cause(err))
@@ -69,12 +74,13 @@ func TestDelete_ArchiveOwl(t *testing.T) {
 
 func TestDelete_DeleteMeow(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat := &Cat{
 			Name: "Wolfram",
 		}
-		err := sqlxx.Save(driver, cat)
+		err := sqlxx.Save(ctx, driver, cat)
 		is.NoError(err)
 
 		meow := &Meow{
@@ -82,11 +88,11 @@ func TestDelete_DeleteMeow(t *testing.T) {
 			CatID: cat.ID,
 		}
 
-		err = sqlxx.Save(driver, meow)
+		err = sqlxx.Save(ctx, driver, meow)
 		is.NoError(err)
 		id := meow.Hash
 
-		queries, err := sqlxx.DeleteWithQueries(driver, meow)
+		queries, err := sqlxx.DeleteWithQueries(ctx, driver, meow)
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)
@@ -100,7 +106,7 @@ func TestDelete_DeleteMeow(t *testing.T) {
 
 		check := loukoum.Select("COUNT(*)").From("ztp_meow").Where(loukoum.Condition("hash").Equal(id))
 		count := -1
-		err = sqlxx.Exec(driver, check, &count)
+		err = sqlxx.Exec(ctx, driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(0, count)
@@ -110,12 +116,13 @@ func TestDelete_DeleteMeow(t *testing.T) {
 
 func TestDelete_ArchiveMeow(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		cat := &Cat{
 			Name: "Wolfram",
 		}
-		err := sqlxx.Save(driver, cat)
+		err := sqlxx.Save(ctx, driver, cat)
 		is.NoError(err)
 
 		meow := &Meow{
@@ -123,11 +130,11 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 			CatID: cat.ID,
 		}
 
-		err = sqlxx.Save(driver, meow)
+		err = sqlxx.Save(ctx, driver, meow)
 		is.NoError(err)
 		id := meow.Hash
 
-		queries, err := sqlxx.ArchiveWithQueries(driver, meow)
+		queries, err := sqlxx.ArchiveWithQueries(ctx, driver, meow)
 		is.NoError(err)
 		is.NotNil(queries)
 		is.Len(queries, 1)
@@ -145,7 +152,7 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 		count := -1
 		check := loukoum.Select("COUNT(*)").From("ztp_meow").
 			Where(loukoum.Condition("hash").Equal(id))
-		err = sqlxx.Exec(driver, check, &count)
+		err = sqlxx.Exec(ctx, driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(1, count)
@@ -153,7 +160,7 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 		count = -1
 		check = loukoum.Select("COUNT(*)").From("ztp_meow").
 			Where(loukoum.Condition("hash").Equal(id)).And(loukoum.Condition("deleted").IsNull(true))
-		err = sqlxx.Exec(driver, check, &count)
+		err = sqlxx.Exec(ctx, driver, check, &count)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(0, count)

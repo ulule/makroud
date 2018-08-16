@@ -1,10 +1,10 @@
 package sqlxx
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/ulule/loukoum/builder"
 
@@ -13,7 +13,7 @@ import (
 
 // Exec will execute given query from a Loukoum builder.
 // If an object is given, it will mutate it to match the row values.
-func Exec(driver Driver, stmt builder.Builder, dest ...interface{}) error {
+func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...interface{}) error {
 	start := time.Now()
 	queries := Queries{NewQuery(stmt)}
 
@@ -23,7 +23,7 @@ func Exec(driver Driver, stmt builder.Builder, dest ...interface{}) error {
 
 	query, args := stmt.NamedQuery()
 
-	err := exec(driver, query, args, dest...)
+	err := exec(ctx, driver, query, args, dest...)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot execute query")
 	}
@@ -33,7 +33,7 @@ func Exec(driver Driver, stmt builder.Builder, dest ...interface{}) error {
 
 // RawExec will execute given query.
 // If an object is given, it will mutate it to match the row values.
-func RawExec(driver Driver, query string, dest ...interface{}) error {
+func RawExec(ctx context.Context, driver Driver, query string, dest ...interface{}) error {
 	start := time.Now()
 	queries := Queries{NewRawQuery(query)}
 
@@ -41,7 +41,7 @@ func RawExec(driver Driver, query string, dest ...interface{}) error {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	err := exec(driver, query, nil, dest...)
+	err := exec(ctx, driver, query, nil, dest...)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot execute query")
 	}
@@ -49,35 +49,34 @@ func RawExec(driver Driver, query string, dest ...interface{}) error {
 	return nil
 }
 
-func exec(driver Driver, query string, args map[string]interface{}, dest ...interface{}) error {
-	named, err := driver.PrepareNamed(query)
+func exec(ctx context.Context, driver Driver, query string, args map[string]interface{}, dest ...interface{}) error {
+	stmt, err := driver.Prepare(ctx, query)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot prepare statement")
 	}
-	defer driver.close(named, map[string]string{
+	defer driver.close(stmt, map[string]string{
 		"query": query,
 	})
 
 	if len(dest) > 0 {
 		if reflectx.IsSlice(dest[0]) {
-			return execRows(driver, named, args, dest[0])
+			return execRows(ctx, driver, stmt, args, dest[0])
 		} else {
-			return execRow(driver, named, args, dest[0])
+			return execRow(ctx, driver, stmt, args, dest[0])
 		}
 	}
 
-	_, err = named.Exec(args)
-	return err
+	return stmt.Exec(ctx, args)
 }
 
-func execRows(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, dest interface{}) error {
+func execRows(ctx context.Context, driver Driver, stmt Statement, args map[string]interface{}, dest interface{}) error {
 	if !reflectx.IsPointer(dest) {
 		return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
 	}
 
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
-		return named.Select(dest, args)
+		return stmt.Select(ctx, dest, args)
 	}
 
 	schema, err := GetSchema(driver, model)
@@ -85,7 +84,7 @@ func execRows(driver Driver, named *sqlx.NamedStmt, args map[string]interface{},
 		return err
 	}
 
-	rows, err := named.Queryx(args)
+	rows, err := stmt.QueryRows(ctx, args)
 	if err != nil {
 		return err
 	}
@@ -112,14 +111,14 @@ func execRows(driver Driver, named *sqlx.NamedStmt, args map[string]interface{},
 	return nil
 }
 
-func execRow(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, dest interface{}) error {
+func execRow(ctx context.Context, driver Driver, stmt Statement, args map[string]interface{}, dest interface{}) error {
 	if !reflectx.IsPointer(dest) {
 		return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
 	}
 
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
-		return named.Get(dest, args)
+		return stmt.Get(ctx, dest, args)
 	}
 
 	schema, err := GetSchema(driver, model)
@@ -127,14 +126,9 @@ func execRow(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, 
 		return err
 	}
 
-	row := named.QueryRow(args)
+	row, err := stmt.QueryRow(ctx, args)
 	if row == nil {
 		return errors.Wrap(sql.ErrNoRows, "cannot obtain result from driver")
-	}
-
-	err = row.Err()
-	if err != nil {
-		return err
 	}
 
 	mapper, err := ScanRow(row)
@@ -146,10 +140,10 @@ func execRow(driver Driver, named *sqlx.NamedStmt, args map[string]interface{}, 
 }
 
 // Count will execute given query to return a number from a aggregate function.
-func Count(driver Driver, stmt builder.Builder) (int64, error) {
+func Count(ctx context.Context, driver Driver, stmt builder.Builder) (int64, error) {
 	count := int64(0)
 
-	err := Exec(driver, stmt, &count)
+	err := Exec(ctx, driver, stmt, &count)
 	if IsErrNoRows(err) {
 		return 0, nil
 	}
@@ -161,10 +155,10 @@ func Count(driver Driver, stmt builder.Builder) (int64, error) {
 }
 
 // FloatCount will execute given query to return a number (in float) from a aggregate function.
-func FloatCount(driver Driver, stmt builder.Builder) (float64, error) {
+func FloatCount(ctx context.Context, driver Driver, stmt builder.Builder) (float64, error) {
 	count := float64(0)
 
-	err := Exec(driver, stmt, &count)
+	err := Exec(ctx, driver, stmt, &count)
 	if IsErrNoRows(err) {
 		return 0, nil
 	}

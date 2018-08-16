@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -11,21 +12,21 @@ import (
 )
 
 // Save saves the given instance.
-func Save(driver Driver, model Model) error {
-	_, err := SaveWithQueries(driver, model)
+func Save(ctx context.Context, driver Driver, model Model) error {
+	_, err := SaveWithQueries(ctx, driver, model)
 	return err
 }
 
 // SaveWithQueries saves the given instance and returns performed queries.
-func SaveWithQueries(driver Driver, model Model) (Queries, error) {
-	queries, err := save(driver, model)
+func SaveWithQueries(ctx context.Context, driver Driver, model Model) (Queries, error) {
+	queries, err := save(ctx, driver, model)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute save")
 	}
 	return queries, nil
 }
 
-func save(driver Driver, model Model) (Queries, error) {
+func save(ctx context.Context, driver Driver, model Model) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
@@ -105,7 +106,7 @@ func save(driver Driver, model Model) (Queries, error) {
 	}()
 
 	query, args := builder.NamedQuery()
-	err = exec(driver, query, args, model)
+	err = exec(ctx, driver, query, args, model)
 
 	// Ignore no rows error if returning is empty.
 	if IsErrNoRows(err) && len(returning) == 0 {

@@ -10,18 +10,12 @@ func Transaction(driver Driver, handler func(driver Driver) error) error {
 		return errors.Wrap(ErrInvalidDriver, "sqlxx: cannot create a transaction")
 	}
 
-	tx, err := driver.Beginx()
+	tx, err := driver.Begin()
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot create a transaction")
 	}
 
-	client := &Client{
-		Node:  tx,
-		store: driver.cache(),
-		log:   driver.logger(),
-	}
-
-	err = handler(client)
+	err = handler(tx)
 	if err != nil {
 
 		thr := tx.Rollback()

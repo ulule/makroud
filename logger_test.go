@@ -1,6 +1,7 @@
 package sqlxx_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -36,6 +37,7 @@ func TestLogger(t *testing.T) {
 		logs: make(chan string, 10),
 	}
 	Setup(t, sqlxx.WithLogger(logger))(func(driver sqlxx.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
 		owl := &Owl{
@@ -44,7 +46,7 @@ func TestLogger(t *testing.T) {
 			FavoriteFood: "Shrimps",
 		}
 
-		err := sqlxx.Save(driver, owl)
+		err := sqlxx.Save(ctx, driver, owl)
 		is.NoError(err)
 		expected := fmt.Sprint(
 			`INSERT INTO ztp_owl (favorite_food, feather_color, group_id, name) VALUES `,
@@ -56,7 +58,7 @@ func TestLogger(t *testing.T) {
 		is.Equal(expected, log)
 
 		owl.Name = "Nibbles"
-		err = sqlxx.Save(driver, owl)
+		err = sqlxx.Save(ctx, driver, owl)
 		is.NoError(err)
 		expected = fmt.Sprint(
 			`UPDATE ztp_owl SET favorite_food = 'Shrimps', feather_color = 'lavender', group_id = NULL, `,
@@ -67,7 +69,7 @@ func TestLogger(t *testing.T) {
 		is.NoError(err)
 		is.Equal(expected, log)
 
-		sqlxx.Delete(driver, owl)
+		sqlxx.Delete(ctx, driver, owl)
 		is.NoError(err)
 		expected = fmt.Sprint(`DELETE FROM ztp_owl WHERE (id = `, format.Int(owl.ID), `);`, EOL)
 

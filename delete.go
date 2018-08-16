@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -8,14 +9,14 @@ import (
 )
 
 // Delete deletes the given instance.
-func Delete(driver Driver, model Model) error {
-	_, err := DeleteWithQueries(driver, model)
+func Delete(ctx context.Context, driver Driver, model Model) error {
+	_, err := DeleteWithQueries(ctx, driver, model)
 	return err
 }
 
 // DeleteWithQueries deletes the given instance and returns performed queries.
-func DeleteWithQueries(driver Driver, model Model) (Queries, error) {
-	queries, err := remove(driver, model)
+func DeleteWithQueries(ctx context.Context, driver Driver, model Model) (Queries, error) {
+	queries, err := remove(ctx, driver, model)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute delete")
 	}
@@ -23,21 +24,21 @@ func DeleteWithQueries(driver Driver, model Model) (Queries, error) {
 }
 
 // Archive archives the given instance.
-func Archive(driver Driver, model Model) error {
-	_, err := ArchiveWithQueries(driver, model)
+func Archive(ctx context.Context, driver Driver, model Model) error {
+	_, err := ArchiveWithQueries(ctx, driver, model)
 	return err
 }
 
 // ArchiveWithQueries archives the given instance and returns performed queries.
-func ArchiveWithQueries(driver Driver, model Model) (Queries, error) {
-	queries, err := archive(driver, model)
+func ArchiveWithQueries(ctx context.Context, driver Driver, model Model) (Queries, error) {
+	queries, err := archive(ctx, driver, model)
 	if err != nil {
 		return queries, errors.Wrap(err, "sqlxx: cannot execute archive")
 	}
 	return queries, nil
 }
 
-func remove(driver Driver, model Model) (Queries, error) {
+func remove(ctx context.Context, driver Driver, model Model) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
@@ -64,11 +65,11 @@ func remove(driver Driver, model Model) (Queries, error) {
 		Log(driver, queries, time.Since(start))
 	}()
 
-	err = Exec(driver, builder)
+	err = Exec(ctx, driver, builder)
 	return queries, err
 }
 
-func archive(driver Driver, model Model) (Queries, error) {
+func archive(ctx context.Context, driver Driver, model Model) (Queries, error) {
 	if driver == nil {
 		return nil, ErrInvalidDriver
 	}
@@ -102,6 +103,6 @@ func archive(driver Driver, model Model) (Queries, error) {
 	}()
 
 	query, args := builder.NamedQuery()
-	err = exec(driver, query, args, model)
+	err = exec(ctx, driver, query, args, model)
 	return queries, err
 }

@@ -1,7 +1,6 @@
 package sqlxx
 
 import (
-	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
@@ -13,7 +12,7 @@ import (
 type Mapper map[string]interface{}
 
 // ScanRow will scan given sqlx.Row to created its Mapper.
-func ScanRow(row *sqlx.Row) (Mapper, error) {
+func ScanRow(row Row) (Mapper, error) {
 	mapper := map[string]interface{}{}
 	err := row.MapScan(mapper)
 	if len(mapper) == 0 {
@@ -23,7 +22,7 @@ func ScanRow(row *sqlx.Row) (Mapper, error) {
 }
 
 // ScanRows will scan given sqlx.Rows to created its Mapper.
-func ScanRows(rows *sqlx.Rows) (Mapper, error) {
+func ScanRows(rows Rows) (Mapper, error) {
 	mapper := map[string]interface{}{}
 	err := rows.MapScan(mapper)
 	return mapper, err
