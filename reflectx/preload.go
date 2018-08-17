@@ -75,7 +75,7 @@ func (w *StructPreloader) UpdateValueForStringIndex(name string, id string, elem
 		return errors.Errorf("only one element was expected for primary key: '%s'", id)
 	}
 
-	return UpdateFieldValue(values[0].Interface(), name, element)
+	return PushFieldValue(values[0].Interface(), name, element)
 }
 
 func (w *StructPreloader) Int64Indexes() []int64 {
@@ -95,7 +95,7 @@ func (w *StructPreloader) UpdateValueForInt64Index(name string, id int64, elemen
 		return errors.Errorf("only one element was expected for primary key: '%d'", id)
 	}
 
-	return UpdateFieldValue(values[0].Interface(), name, element)
+	return PushFieldValue(values[0].Interface(), name, element)
 }
 
 type SlicePreloader struct {
@@ -140,7 +140,15 @@ func (w *SlicePreloader) ForEach(callback func(element reflect.Value) error) err
 }
 
 func (w *SlicePreloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
-	w.relations = NewReflectSlice(kind)
+	if kind.Kind() == reflect.Slice {
+		fmt.Println(kind)
+		fmt.Println("is_slice")
+		w.relations = NewReflectSlice(kind.Elem())
+	} else {
+		w.relations = NewReflectSlice(kind)
+		fmt.Println(w.relations.Type())
+		fmt.Println("is_not_slice")
+	}
 	return callback(w.relations.Interface())
 }
 
@@ -178,7 +186,7 @@ func (w *SlicePreloader) UpdateValueForStringIndex(name string, id string, eleme
 	}
 
 	for i := range values {
-		err := UpdateFieldValue(values[i].Interface(), name, element)
+		err := PushFieldValue(values[i].Interface(), name, element)
 		if err != nil {
 			return err
 		}
@@ -202,7 +210,7 @@ func (w *SlicePreloader) UpdateValueForInt64Index(name string, id int64, element
 	}
 
 	for i := range values {
-		err := UpdateFieldValue(values[i].Interface(), name, element)
+		err := PushFieldValue(values[i].Interface(), name, element)
 		if err != nil {
 			return err
 		}

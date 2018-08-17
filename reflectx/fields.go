@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+import "fmt"
+
 // GetFields returns a list of field name.
 func GetFields(element interface{}) ([]string, error) {
 	dest := reflect.TypeOf(element)
@@ -176,6 +178,55 @@ func UpdateFieldValue(instance interface{}, name string, value interface{}) erro
 	output := reflect.Indirect(reflect.ValueOf(value))
 	if !output.IsValid() {
 		return errors.Errorf("sqlxx: cannot uses %T as value to update %s in %T", value, name, instance)
+	}
+
+	// If field's type is a pointer, create a pointer of the given value.
+	if dest.Type().Kind() == reflect.Ptr {
+		output = reflect.ValueOf(MakePointer(output.Interface()))
+	}
+
+	// Verify that types are equals. Otherwise, returns a nice error.
+	if dest.Type() != output.Type() {
+		return errors.Errorf("sqlxx: cannot use type %v to update type %v in %T", output.Type(), dest.Type(), instance)
+	}
+
+	dest.Set(output)
+
+	return nil
+}
+
+// PushFieldValue updates the field's value with given name.
+// TODO Better comments
+func PushFieldValue(instance interface{}, name string, value interface{}) error {
+	v, ok := instance.(reflect.Value)
+	if !ok {
+		v = reflect.Indirect(reflect.ValueOf(instance))
+	}
+
+	if v.Kind() == reflect.Interface {
+		v = reflect.ValueOf(v.Interface())
+	}
+
+	dest := v.FieldByName(name)
+	if !dest.IsValid() {
+		return errors.Errorf("sqlxx: no such field %s in %T", name, instance)
+	}
+	if !dest.CanSet() {
+		return errors.Errorf("sqlxx: cannot update field %s in %T", name, instance)
+	}
+
+	// Otherwise, try to manually update field using reflection.
+	output := reflect.Indirect(reflect.ValueOf(value))
+	if !output.IsValid() {
+		return errors.Errorf("sqlxx: cannot uses %T as value to update %s in %T", value, name, instance)
+	}
+
+	if dest.Kind() == reflect.Slice {
+		fmt.Println(dest.Type().Kind())
+		fmt.Println("::4")
+		fmt.Println(output)
+		AppendReflectSlice(dest, output)
+		return nil
 	}
 
 	// If field's type is a pointer, create a pointer of the given value.

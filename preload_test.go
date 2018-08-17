@@ -533,8 +533,8 @@ func TestPreload_Cat_Many(t *testing.T) {
 
 		{
 			cats := []Cat{*cat1, *cat2, *cat3}
-			//err = sqlxx.Preload(ctx, driver, &cats, "Owner", "Meows")
-			err = sqlxx.Preload(ctx, driver, &cats, "Owner")
+			err = sqlxx.Preload(ctx, driver, &cats, "Owner", "Meows")
+			// err = sqlxx.Preload(ctx, driver, &cats, "Owner")
 			is.NoError(err)
 			is.Len(cats, 3)
 			is.Equal(cat1.ID, cats[0].ID)
@@ -544,11 +544,11 @@ func TestPreload_Cat_Many(t *testing.T) {
 			is.NotNil(cats[0].Owner)
 			is.Equal(human1.ID, cats[0].Owner.ID)
 			is.Equal(human1.Name, cats[0].Owner.Name)
-			// is.NotEmpty(cats[0].Meows)
-			// is.Len(cats[0].Meows, 3)
-			// is.Contains(cats[0].Meows, meow1)
-			// is.Contains(cats[0].Meows, meow2)
-			// is.Contains(cats[0].Meows, meow3)
+			is.NotEmpty(cats[0].Meows)
+			is.Len(cats[0].Meows, 3)
+			is.Contains(cats[0].Meows, meow1)
+			is.Contains(cats[0].Meows, meow2)
+			is.Contains(cats[0].Meows, meow3)
 
 			is.NotNil(cats[1].Owner)
 			is.Equal(human2.ID, cats[1].Owner.ID)

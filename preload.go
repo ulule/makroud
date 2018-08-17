@@ -136,11 +136,10 @@ func preloadMany(ctx context.Context, driver Driver, dest interface{}, paths []s
 // Common version
 
 type preloadHandler struct {
-	ctx    context.Context
-	driver Driver
-	model  Model
-	//dest      interface{}
+	ctx       context.Context
 	preloader reflectx.Preloader
+	driver    Driver
+	model     Model
 }
 
 func (handler *preloadHandler) preload(reference Reference) error {
@@ -530,6 +529,83 @@ func (handler *preloadHandler) preloadOneRemoteInteger(reference Reference, buil
 }
 
 func (handler *preloadHandler) preloadMany(reference Reference) error {
+	remote := reference.Remote()
+	local := reference.Local()
+
+	err := preloadCheckRemoteForeignKey(reference, local, remote)
+	if err != nil {
+		return err
+	}
+
+	builder := loukoum.Select(remote.Columns()).From(remote.TableName())
+	if remote.HasDeletedKey() {
+		builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
+	}
+
+	switch local.PrimaryKeyType() {
+	case PKStringType:
+		return handler.preloadManyString(reference, builder)
+
+	case PKIntegerType:
+		return handler.preloadManyInteger(reference, builder)
+
+	default:
+		return errors.Errorf("'%s' is a unsupported primary key type for preload", reference.Type())
+	}
+}
+
+func (handler *preloadHandler) preloadManyString(reference Reference, builder builder.Select) error {
+	remote := reference.Remote()
+	preloader := handler.preloader
+
+	err := preloader.ForEach(func(element reflect.Value) error {
+		pk, err := handler.fetchRemoteForeignKeyString(reference, element.Interface())
+		if err != nil {
+			return err
+		}
+		return preloader.AddStringIndex(pk, element)
+	})
+	if err != nil {
+		return err
+	}
+
+	list := preloader.StringIndexes()
+	if len(list) == 0 {
+		return nil
+	}
+
+	builder = builder.Where(loukoum.Condition(remote.ColumnPath()).In(list))
+
+	err = preloader.OnExecute(reference.Type(), func(relation interface{}) error {
+		err := Exec(handler.ctx, handler.driver, builder, relation)
+		if err != nil && !IsErrNoRows(err) {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	err = preloader.OnUpdate(func(element interface{}) error {
+		fk, err := reflectx.GetFieldValueString(element, remote.FieldName())
+		if err != nil {
+			return err
+		}
+		if fk == "" {
+			return errors.Wrap(ErrPreloadInvalidModel, "foreign key has a zero value")
+		}
+
+		return preloader.UpdateValueForStringIndex(reference.FieldName(), fk, element)
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (handler *preloadHandler) preloadManyInteger(reference Reference, builder builder.Select) error {
 	panic("TODO")
 }
 

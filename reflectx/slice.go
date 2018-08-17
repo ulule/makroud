@@ -41,7 +41,11 @@ func NewReflectSlice(instance interface{}) reflect.Value {
 
 // AppendReflectSlice will append given element to  reflect slice.
 func AppendReflectSlice(list reflect.Value, value interface{}) {
-	target := list.Elem()
+	target := list
+	if list.Kind() == reflect.Ptr {
+		target = list.Elem()
+	}
+
 	elem := target.Type().Elem()
 
 	val, ok := value.(reflect.Value)
