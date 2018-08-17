@@ -36,7 +36,7 @@ func GetIndirectValue(element interface{}) reflect.Value {
 	return v
 }
 
-// GetFlattenValue returns a zero value from GetFlattenType.
+// GetFlattenValue returns a zero value from a flattened indirect type.
 //
 // For example:
 //

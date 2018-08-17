@@ -44,6 +44,30 @@ func (Elements) TableName() string {
 // Object storage application
 // ----------------------------------------------------------------------------
 
+// type ExoFile struct {
+// 	// Columns
+// 	ID   string `sqlxx:"column:id,pk:ulid"`
+// 	Name string `sqlxx:"column:name"`
+// 	Path string `sqlxx:"column:path"`
+// 	// Relationships
+// 	Chunk []ExoChunk
+// }
+//
+// func (ExoFile) TableName() string {
+// 	return "exo_file"
+// }
+//
+// type ExoFileChunk struct {
+// 	// Columns
+// 	ID      string `sqlxx:"column:id,pk:ulid"`
+// 	FileID  string `sqlxx:"column:file_id,fk:exo_file"`
+// 	ChunkID string `sqlxx:"column:chunk_id,fk:exo_chunk"`
+// }
+//
+// func (ExoFileChunk) TableName() string {
+// 	return "exo_file_chunk"
+// }
+
 type ExoChunk struct {
 	// Columns
 	Hash   string `sqlxx:"column:hash,pk:ulid"`

@@ -28,3 +28,23 @@ func IsPointer(instance interface{}) bool {
 
 	return val.Kind() == reflect.Ptr
 }
+
+// MakeReflectPointer makes a pointer from given reflect value.
+func MakeReflectPointer(instance reflect.Value) reflect.Value {
+	t := instance.Type()
+
+	cp := reflect.New(t)
+	cp.Elem().Set(instance)
+
+	// Avoid double pointers...
+	if t.Kind() == reflect.Ptr {
+		return cp.Elem()
+	}
+
+	return cp
+}
+
+// CreateReflectPointer creates a reflect pointer from given value.
+func CreateReflectPointer(instance interface{}) reflect.Value {
+	return MakeReflectPointer(reflect.ValueOf(instance))
+}

@@ -311,8 +311,6 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 	}
 
 	for name, field := range relationships {
-		fmt.Println("::4", field)
-
 		_, ok := schema.associations[field.FieldName()]
 		if ok {
 			continue

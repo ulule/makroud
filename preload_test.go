@@ -12,7 +12,7 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
-func TestPreload_ExoChunk(t *testing.T) {
+func TestPreload_ExoChunk_One(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
@@ -75,14 +75,13 @@ func TestPreload_ExoChunk(t *testing.T) {
 			),
 		}
 		err = sqlxx.Preload(ctx, driver, chunk, "Mode")
-		is.Error(err)
-		is.Equal(sqlxx.ErrPreloadInvalidModel, errors.Cause(err))
+		is.NoError(err)
 		is.Nil(chunk.Mode)
 
 	})
 }
 
-func TestPreload_Owl(t *testing.T) {
+func TestPreload_Owl_One(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
@@ -330,7 +329,7 @@ func TestPreload_Owl(t *testing.T) {
 	})
 }
 
-func TestPreload_Cat(t *testing.T) {
+func TestPreload_Cat_One(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
@@ -441,6 +440,126 @@ func TestPreload_Cat(t *testing.T) {
 		is.NotEmpty(cat3.Meows)
 		is.Len(cat3.Meows, 1)
 		is.Contains(cat3.Meows, meow4)
+
+	})
+}
+
+func TestPreload_Cat_Many(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		cat1 := &Cat{
+			Name: "Eagle",
+		}
+		err := sqlxx.Save(ctx, driver, cat1)
+		is.NoError(err)
+		is.NotEmpty(cat1.ID)
+
+		cat2 := &Cat{
+			Name: "Zigzag",
+		}
+		err = sqlxx.Save(ctx, driver, cat2)
+		is.NoError(err)
+		is.NotEmpty(cat2.ID)
+
+		cat3 := &Cat{
+			Name: "Scully",
+		}
+		err = sqlxx.Save(ctx, driver, cat3)
+		is.NoError(err)
+		is.NotEmpty(cat3.ID)
+
+		human1 := &Human{
+			Name: "André Naline",
+			CatID: sql.NullString{
+				Valid:  true,
+				String: cat1.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, human1)
+		is.NoError(err)
+		is.NotEmpty(human1.ID)
+
+		human2 := &Human{
+			Name: "Garcin Lazare",
+			CatID: sql.NullString{
+				Valid:  true,
+				String: cat2.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, human2)
+		is.NoError(err)
+		is.NotEmpty(human2.ID)
+
+		meow1 := &Meow{
+			Body:  "Meow !",
+			CatID: cat1.ID,
+		}
+		err = sqlxx.Save(ctx, driver, meow1)
+		is.NoError(err)
+		is.NotEmpty(meow1.Hash)
+
+		meow2 := &Meow{
+			Body:  "Meow meow...",
+			CatID: cat1.ID,
+		}
+		err = sqlxx.Save(ctx, driver, meow2)
+		is.NoError(err)
+		is.NotEmpty(meow2.Hash)
+
+		meow3 := &Meow{
+			Body:  "Meow meow ? meeeeeoooow ?!",
+			CatID: cat1.ID,
+		}
+		err = sqlxx.Save(ctx, driver, meow3)
+		is.NoError(err)
+		is.NotEmpty(meow3.Hash)
+
+		meow4 := &Meow{
+			Body:  "Meow, meow meow.",
+			CatID: cat3.ID,
+		}
+		err = sqlxx.Save(ctx, driver, meow4)
+		is.NoError(err)
+		is.NotEmpty(meow4.Hash)
+
+		is.Nil(cat1.Owner)
+		is.Empty(cat1.Meows)
+		is.Nil(cat2.Owner)
+		is.Empty(cat2.Meows)
+		is.Nil(cat3.Owner)
+		is.Empty(cat3.Meows)
+
+		{
+			cats := []Cat{*cat1, *cat2, *cat3}
+			//err = sqlxx.Preload(ctx, driver, &cats, "Owner", "Meows")
+			err = sqlxx.Preload(ctx, driver, &cats, "Owner")
+			is.NoError(err)
+			is.Len(cats, 3)
+			is.Equal(cat1.ID, cats[0].ID)
+			is.Equal(cat2.ID, cats[1].ID)
+			is.Equal(cat3.ID, cats[2].ID)
+
+			is.NotNil(cats[0].Owner)
+			is.Equal(human1.ID, cats[0].Owner.ID)
+			is.Equal(human1.Name, cats[0].Owner.Name)
+			// is.NotEmpty(cats[0].Meows)
+			// is.Len(cats[0].Meows, 3)
+			// is.Contains(cats[0].Meows, meow1)
+			// is.Contains(cats[0].Meows, meow2)
+			// is.Contains(cats[0].Meows, meow3)
+
+			is.NotNil(cats[1].Owner)
+			is.Equal(human2.ID, cats[1].Owner.ID)
+			is.Equal(human2.Name, cats[1].Owner.Name)
+			is.Empty(cats[1].Meows)
+
+			is.Nil(cats[2].Owner)
+			// is.NotEmpty(cats[2].Meows)
+			// is.Len(cats[2].Meows, 1)
+			// is.Contains(cats[2].Meows, meow4)
+		}
 
 	})
 }

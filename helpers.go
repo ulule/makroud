@@ -89,7 +89,7 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 		return err
 	}
 
-	list := reflectx.NewSlice(reflectx.GetSliceType(dest))
+	list := reflectx.NewReflectSlice(reflectx.GetSliceType(dest))
 
 	for rows.Next() {
 		mapper, err := ScanRows(rows)
@@ -103,10 +103,10 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 			return err
 		}
 
-		reflectx.AppendSlice(list, row)
+		reflectx.AppendReflectSlice(list, row)
 	}
 
-	reflectx.CopySlice(dest, list)
+	reflectx.CopyReflectSlice(dest, list)
 
 	return nil
 }

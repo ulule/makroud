@@ -29,8 +29,8 @@ func NewSliceValue(instance interface{}) interface{} {
 	return reflect.New(t).Interface()
 }
 
-// NewSlice creates a new slice for type.
-func NewSlice(instance interface{}) reflect.Value {
+// NewReflectSlice creates a new slice for type and returns it's pointer.
+func NewReflectSlice(instance interface{}) reflect.Value {
 	t, ok := instance.(reflect.Type)
 	if !ok {
 		t = reflect.TypeOf(instance)
@@ -39,8 +39,8 @@ func NewSlice(instance interface{}) reflect.Value {
 	return reflect.New(reflect.SliceOf(t))
 }
 
-// AppendSlice will append given element to  reflect slice.
-func AppendSlice(list reflect.Value, value interface{}) {
+// AppendReflectSlice will append given element to  reflect slice.
+func AppendReflectSlice(list reflect.Value, value interface{}) {
 	target := list.Elem()
 	elem := target.Type().Elem()
 
@@ -59,8 +59,8 @@ func AppendSlice(list reflect.Value, value interface{}) {
 	target.Set(reflect.Append(target, val))
 }
 
-// CopySlice will attach given reflect slice to the destination value.
-func CopySlice(dest interface{}, list reflect.Value) {
+// CopyReflectSlice will attach given reflect slice to the destination value.
+func CopyReflectSlice(dest interface{}, list reflect.Value) {
 	val, ok := dest.(reflect.Value)
 	if !ok {
 		val = reflect.ValueOf(dest)
