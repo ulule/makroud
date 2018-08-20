@@ -143,6 +143,11 @@ func PushFieldValue(instance interface{}, name string, value interface{}, strict
 		return err
 	}
 
+	// If output is nil, do nothing...
+	if output.Kind() == reflect.Ptr && output.IsNil() || !output.IsValid() {
+		return nil
+	}
+
 	dtype := dest.Type()
 	dkind := dtype.Kind()
 
@@ -152,6 +157,7 @@ func PushFieldValue(instance interface{}, name string, value interface{}, strict
 
 		switch elem.Kind() {
 		case reflect.Slice:
+
 			// If destination field is a slice, initialize it if it's nil and append given value on slice.
 			if dest.IsNil() {
 				list := NewReflectSlice(elem.Elem())
@@ -255,7 +261,7 @@ func getDestinationReflectValue(instance interface{}, name string) (dest reflect
 // getOutputReflectValue returns a reflect value used to update a field in given instance.
 func getOutputReflectValue(instance interface{}, name string, value interface{}) (output reflect.Value, err error) {
 	output = reflect.ValueOf(value)
-	if !output.IsValid() {
+	if !output.IsValid() && value != nil {
 		return output, errors.Errorf("sqlxx: cannot uses %T as value to update %s in %T", value, name, instance)
 	}
 	return output, nil
