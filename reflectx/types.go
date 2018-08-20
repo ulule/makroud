@@ -18,6 +18,7 @@ var (
 	nullFloat64Type = reflect.TypeOf(sql.NullFloat64{})
 	stringType      = reflect.TypeOf("")
 	nullStringType  = reflect.TypeOf(sql.NullString{})
+	scannerType     = reflect.TypeOf((*sql.Scanner)(nil)).Elem()
 )
 
 // ----------------------------------------------------------------------------

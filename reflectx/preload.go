@@ -1,7 +1,6 @@
 package reflectx
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -41,7 +40,39 @@ func (w *StructPreloader) ForEach(callback func(element reflect.Value) error) er
 }
 
 func (w *StructPreloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
-	w.relations = NewReflectSlice(kind)
+	elem := kind
+
+	if elem.Kind() == reflect.Slice {
+
+		// If output type is a slice, create a new slice with it's indirect type.
+		// For example, a slice with "[]*Foobar" as type will create a new slice with "[]Foobar" as type.
+
+		elem = elem.Elem()
+		if elem.Kind() == reflect.Ptr {
+			elem = elem.Elem()
+		}
+		if elem.Kind() != reflect.Struct {
+			return errors.Errorf("cannot execute a preload this type: %s", elem)
+		}
+
+	} else if elem.Kind() == reflect.Struct || elem.Kind() == reflect.Ptr {
+
+		// If output type is not a slice, so either a struct or a pointer to a struct,
+		// create a new slice with it's indirect type.
+		// For example, a pointer with "*Foobar" as type will create a new slice with "[]Foobar" as type.
+
+		if elem.Kind() == reflect.Ptr {
+			elem = elem.Elem()
+		}
+		if elem.Kind() != reflect.Struct {
+			return errors.Errorf("cannot execute a preload this type: %s", elem)
+		}
+
+	} else {
+		return errors.Errorf("cannot execute a preload this type: %s", kind)
+	}
+
+	w.relations = NewReflectSlice(elem)
 	return callback(w.relations.Interface())
 }
 
@@ -75,7 +106,7 @@ func (w *StructPreloader) UpdateValueForStringIndex(name string, id string, elem
 		return errors.Errorf("only one element was expected for primary key: '%s'", id)
 	}
 
-	return PushFieldValue(values[0].Interface(), name, element)
+	return PushFieldValue(values[0].Interface(), name, element, false)
 }
 
 func (w *StructPreloader) Int64Indexes() []int64 {
@@ -95,7 +126,7 @@ func (w *StructPreloader) UpdateValueForInt64Index(name string, id int64, elemen
 		return errors.Errorf("only one element was expected for primary key: '%d'", id)
 	}
 
-	return PushFieldValue(values[0].Interface(), name, element)
+	return PushFieldValue(values[0].Interface(), name, element, false)
 }
 
 type SlicePreloader struct {
@@ -140,15 +171,40 @@ func (w *SlicePreloader) ForEach(callback func(element reflect.Value) error) err
 }
 
 func (w *SlicePreloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
-	if kind.Kind() == reflect.Slice {
-		fmt.Println(kind)
-		fmt.Println("is_slice")
-		w.relations = NewReflectSlice(kind.Elem())
+	elem := kind
+
+	if elem.Kind() == reflect.Slice {
+
+		// If output type is a slice, create a new slice with it's indirect type.
+		// For example, a slice with "[]*Foobar" as type will create a new slice with "[]Foobar" as type.
+
+		elem = elem.Elem()
+		if elem.Kind() == reflect.Ptr {
+			elem = elem.Elem()
+		}
+		if elem.Kind() != reflect.Struct {
+			return errors.Errorf("cannot execute a preload this type: %s", elem)
+		}
+
+	} else if elem.Kind() == reflect.Struct || elem.Kind() == reflect.Ptr {
+
+		// If output type is not a slice, so either a struct or a pointer to a struct,
+		// create a new slice with it's indirect type.
+		// For example, a pointer with "*Foobar" as type will create a new slice with "[]Foobar" as type.
+
+		if elem.Kind() == reflect.Ptr {
+			elem = elem.Elem()
+		}
+		if elem.Kind() != reflect.Struct {
+			return errors.Errorf("cannot execute a preload this type: %s", elem)
+		}
+
 	} else {
-		w.relations = NewReflectSlice(kind)
-		fmt.Println(w.relations.Type())
-		fmt.Println("is_not_slice")
+		return errors.Errorf("cannot execute a preload this type: %s", kind)
 	}
+
+	w.relations = NewReflectSlice(elem)
+
 	return callback(w.relations.Interface())
 }
 
@@ -159,8 +215,6 @@ func (w *SlicePreloader) OnUpdate(callback func(element interface{}) error) erro
 
 	for i := 0; i < w.relations.Len(); i++ {
 		val := w.relations.Index(i).Addr()
-
-		fmt.Println(val)
 
 		err := callback(val.Interface())
 		if err != nil {
@@ -186,7 +240,7 @@ func (w *SlicePreloader) UpdateValueForStringIndex(name string, id string, eleme
 	}
 
 	for i := range values {
-		err := PushFieldValue(values[i].Interface(), name, element)
+		err := PushFieldValue(values[i].Interface(), name, element, false)
 		if err != nil {
 			return err
 		}
@@ -210,7 +264,7 @@ func (w *SlicePreloader) UpdateValueForInt64Index(name string, id int64, element
 	}
 
 	for i := range values {
-		err := PushFieldValue(values[i].Interface(), name, element)
+		err := PushFieldValue(values[i].Interface(), name, element, false)
 		if err != nil {
 			return err
 		}

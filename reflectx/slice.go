@@ -53,11 +53,11 @@ func AppendReflectSlice(list reflect.Value, value interface{}) {
 		val = reflect.ValueOf(value)
 	}
 
-	if elem.Kind() == reflect.Struct && val.Kind() == reflect.Ptr {
+	for elem.Kind() != reflect.Ptr && val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
-	if elem.Kind() == reflect.Ptr && val.Kind() == reflect.Struct && val.CanAddr() {
-		val = val.Addr()
+	if elem.Kind() == reflect.Ptr && val.Kind() == reflect.Struct {
+		val = MakeReflectPointer(val)
 	}
 
 	target.Set(reflect.Append(target, val))

@@ -1,13 +1,10 @@
 package reflectx
 
 import (
-	"database/sql"
 	"reflect"
 
 	"github.com/pkg/errors"
 )
-
-import "fmt"
 
 // GetFields returns a list of field name.
 func GetFields(element interface{}) ([]string, error) {
@@ -126,6 +123,114 @@ func GetFieldOptionalValueString(instance interface{}, field string) (string, bo
 
 // UpdateFieldValue updates the field's value with given name.
 func UpdateFieldValue(instance interface{}, name string, value interface{}) error {
+	return PushFieldValue(instance, name, value, true)
+}
+
+// PushFieldValue updates the field value identified by given name using a lazy-type push mechanism.
+// This mechanism means that it will try to match structs with pointers, slices or literals,
+// and try to replace it's value.
+// If strict mode is disabled, it will even append given value if field is a slice.
+func PushFieldValue(instance interface{}, name string, value interface{}, strict bool) error {
+	// Find field identified by given name.
+	dest, err := getDestinationReflectValue(instance, name)
+	if err != nil {
+		return err
+	}
+
+	// Wraps given value in a reflect wrapper.
+	output, err := getOutputReflectValue(instance, name, value)
+	if err != nil {
+		return err
+	}
+
+	dtype := dest.Type()
+	dkind := dtype.Kind()
+
+	switch dkind {
+	case reflect.Ptr:
+		elem := dtype.Elem()
+
+		switch elem.Kind() {
+		case reflect.Slice:
+			// If destination field is a slice, initialize it if it's nil and append given value on slice.
+			if dest.IsNil() {
+				list := NewReflectSlice(elem.Elem())
+				dest.Set(list)
+			}
+
+			return updateFieldValueOnSlice(dest, output, instance, strict)
+
+		case reflect.Struct:
+
+			// Try to use scanner interface if available.
+			if tryScannerOnFieldValue(dest, output) {
+				return nil
+			}
+
+			// If destination field is a struct, create a pointer of the given value.
+			output = MakeReflectPointer(output)
+
+			return setFieldValueOnStruct(dest, output, instance)
+
+		case reflect.Ptr:
+
+			// Try to use scanner interface if available.
+			if tryScannerOnFieldValue(dest, output) {
+				return nil
+			}
+
+			// If destination field is a pointer, just forward given value.
+			return setFieldValueOnStruct(dest, output, instance)
+
+		default:
+
+			// Try to use scanner interface if available.
+			if tryScannerOnFieldValue(dest, output) {
+				return nil
+			}
+
+			// If value is not a pointer, create a pointer of the given value.
+			output = MakeReflectPointer(output)
+
+			return setFieldValueOnStruct(dest, output, instance)
+		}
+
+	case reflect.Slice:
+		return updateFieldValueOnSlice(dest, output, instance, strict)
+
+	case reflect.Struct:
+
+		// Try to use scanner interface if available.
+		if tryScannerOnFieldValue(dest, output) {
+			return nil
+		}
+
+		// If value is a pointer, forward it's indirect value.
+		if output.Kind() == reflect.Ptr && !output.IsNil() {
+			output = output.Elem()
+		}
+
+		return setFieldValueOnStruct(dest, output, instance)
+
+	default:
+
+		// Try to use scanner interface if available.
+		if tryScannerOnFieldValue(dest, output) {
+			return nil
+		}
+
+		// If value is a pointer, forward it's indirect value.
+		if output.Kind() == reflect.Ptr && !output.IsNil() {
+			output = output.Elem()
+		}
+
+		return setFieldValueOnStruct(dest, output, instance)
+	}
+}
+
+// getDestinationReflectValue returns field value identified by given name from instance.
+func getDestinationReflectValue(instance interface{}, name string) (dest reflect.Value, err error) {
+
 	v, ok := instance.(reflect.Value)
 	if !ok {
 		v = reflect.Indirect(reflect.ValueOf(instance))
@@ -135,59 +240,65 @@ func UpdateFieldValue(instance interface{}, name string, value interface{}) erro
 		v = reflect.ValueOf(v.Interface())
 	}
 
-	dest := v.FieldByName(name)
+	// Find field identified by given name.
+	dest = v.FieldByName(name)
 	if !dest.IsValid() {
-		return errors.Errorf("sqlxx: no such field %s in %T", name, instance)
+		return dest, errors.Errorf("sqlxx: no such field %s in %T", name, instance)
 	}
 	if !dest.CanSet() {
-		return errors.Errorf("sqlxx: cannot update field %s in %T", name, instance)
+		return dest, errors.Errorf("sqlxx: cannot update field %s in %T", name, instance)
 	}
 
-	// Try scanner interface.
-	scanner := reflect.TypeOf((*sql.Scanner)(nil)).Elem()
-	scan := dest
-	if scan.CanAddr() && scan.Type().Kind() != reflect.Ptr {
-		scan = scan.Addr()
-	}
-	if scan.Type().Implements(scanner) {
+	return dest, nil
+}
 
-		// If scanner pointer is nil, allocate a zero value.
-		if scan.IsNil() {
-			zero := MakeZero(scan.Type().Elem())
-			scan.Set(zero.Addr())
-		}
-
-		// If value is nil, creates a zero value.
-		arg := reflect.Indirect(reflect.ValueOf(value))
-		if value == nil {
-			arg = reflect.ValueOf(MakeZero(scan.Type()))
-		}
-
-		// And try to use reflection to call Scan method.
-		values := scan.MethodByName("Scan").Call([]reflect.Value{arg})
-		if len(values) == 1 {
-			okType := reflect.TypeOf((*error)(nil)).Elem() == values[0].Type()
-			okValue := values[0].IsNil()
-			if okType && okValue {
-				return nil
-			}
-		}
-	}
-
-	// Otherwise, try to manually update field using reflection.
-	output := reflect.Indirect(reflect.ValueOf(value))
+// getOutputReflectValue returns a reflect value used to update a field in given instance.
+func getOutputReflectValue(instance interface{}, name string, value interface{}) (output reflect.Value, err error) {
+	output = reflect.ValueOf(value)
 	if !output.IsValid() {
-		return errors.Errorf("sqlxx: cannot uses %T as value to update %s in %T", value, name, instance)
+		return output, errors.Errorf("sqlxx: cannot uses %T as value to update %s in %T", value, name, instance)
+	}
+	return output, nil
+}
+
+func appendFieldValueOnSlice(dest reflect.Value, output reflect.Value, instance interface{}) error {
+	sdtype := dest.Type()
+	sotype := output.Type()
+
+	// Get indirect type from value: *Foobar -> Foobar
+	otype := sotype
+	for otype.Kind() == reflect.Ptr {
+		otype = otype.Elem()
 	}
 
-	// If field's type is a pointer, create a pointer of the given value.
-	if dest.Type().Kind() == reflect.Ptr {
-		output = reflect.ValueOf(MakePointer(output.Interface()))
+	// Get indirect type from slice: *[]Foobar -> []Foobar
+	dtype := sdtype
+	for dtype.Kind() == reflect.Ptr {
+		dtype = dtype.Elem()
+	}
+
+	// Get indirect type from slice subtype: []*Foobar -> []Foobar
+	dtype = dtype.Elem()
+	for dtype.Kind() == reflect.Ptr {
+		dtype = dtype.Elem()
 	}
 
 	// Verify that types are equals. Otherwise, returns a nice error.
-	if dest.Type() != output.Type() {
-		return errors.Errorf("sqlxx: cannot use type %v to update type %v in %T", output.Type(), dest.Type(), instance)
+	if dtype != otype {
+		return errors.Errorf("sqlxx: cannot use type %v to update type %v in %T", sotype, sdtype, instance)
+	}
+
+	AppendReflectSlice(dest, output)
+	return nil
+}
+
+func setFieldValueOnStruct(dest reflect.Value, output reflect.Value, instance interface{}) error {
+	otype := output.Type()
+	dtype := dest.Type()
+
+	// Verify that types are equals. Otherwise, returns a nice error.
+	if dtype != otype {
+		return errors.Errorf("sqlxx: cannot use type %v to update type %v in %T", otype, dtype, instance)
 	}
 
 	dest.Set(output)
@@ -195,51 +306,86 @@ func UpdateFieldValue(instance interface{}, name string, value interface{}) erro
 	return nil
 }
 
-// PushFieldValue updates the field's value with given name.
-// TODO Better comments
-func PushFieldValue(instance interface{}, name string, value interface{}) error {
-	v, ok := instance.(reflect.Value)
-	if !ok {
-		v = reflect.Indirect(reflect.ValueOf(instance))
+func tryScannerOnFieldValue(dest reflect.Value, output reflect.Value) bool {
+	// Try scanner interface.
+	scan := dest
+	if scan.CanAddr() && scan.Type().Kind() != reflect.Ptr {
+		scan = scan.Addr()
+	}
+	if !scan.Type().Implements(scannerType) {
+		return false
 	}
 
-	if v.Kind() == reflect.Interface {
-		v = reflect.ValueOf(v.Interface())
+	// If scanner pointer is nil, allocate a zero value.
+	if scan.IsNil() {
+		zero := MakeZero(scan.Type().Elem())
+		scan.Set(zero.Addr())
 	}
 
-	dest := v.FieldByName(name)
-	if !dest.IsValid() {
-		return errors.Errorf("sqlxx: no such field %s in %T", name, instance)
+	// If output is direct valid value for destination type, bypass scan method.
+	dtype := dest.Type()
+	if dtype.Kind() == reflect.Ptr {
+		dtype = dtype.Elem()
 	}
-	if !dest.CanSet() {
-		return errors.Errorf("sqlxx: cannot update field %s in %T", name, instance)
+	otype := output.Type()
+	if otype.Kind() == reflect.Ptr {
+		otype = otype.Elem()
 	}
-
-	// Otherwise, try to manually update field using reflection.
-	output := reflect.Indirect(reflect.ValueOf(value))
-	if !output.IsValid() {
-		return errors.Errorf("sqlxx: cannot uses %T as value to update %s in %T", value, name, instance)
-	}
-
-	if dest.Kind() == reflect.Slice {
-		fmt.Println(dest.Type().Kind())
-		fmt.Println("::4")
-		fmt.Println(output)
-		AppendReflectSlice(dest, output)
-		return nil
-	}
-
-	// If field's type is a pointer, create a pointer of the given value.
-	if dest.Type().Kind() == reflect.Ptr {
-		output = reflect.ValueOf(MakePointer(output.Interface()))
+	if otype == dtype {
+		// Try to match dest and output type.
+		if dest.Kind() != reflect.Ptr && output.Kind() == reflect.Ptr {
+			output = output.Elem()
+		}
+		if dest.Kind() == reflect.Ptr && output.Kind() != reflect.Ptr {
+			output = MakeReflectPointer(output)
+		}
+		dest.Set(output)
+		return true
 	}
 
-	// Verify that types are equals. Otherwise, returns a nice error.
-	if dest.Type() != output.Type() {
-		return errors.Errorf("sqlxx: cannot use type %v to update type %v in %T", output.Type(), dest.Type(), instance)
+	// If value is a pointer, get indirect value (or a zero value if nil).
+	arg := output
+	if arg.Kind() == reflect.Ptr {
+		if arg.IsNil() {
+			arg = MakeZero(scan.Type())
+		} else {
+			arg = output.Elem()
+		}
 	}
 
-	dest.Set(output)
+	// And try to use reflection to call Scan method.
+	values := scan.MethodByName("Scan").Call([]reflect.Value{arg})
+	if len(values) == 1 {
+		okType := reflect.TypeOf((*error)(nil)).Elem() == values[0].Type()
+		okValue := values[0].IsNil()
+		if okType && okValue {
+			return true
+		}
+	}
 
-	return nil
+	return false
+}
+
+func updateFieldValueOnSlice(dest reflect.Value, output reflect.Value, instance interface{}, strict bool) error {
+
+	// Try to use append mechanism if strict mode is disabled.
+	if !strict {
+		otype := output.Type()
+		for otype.Kind() == reflect.Ptr {
+			otype = otype.Elem()
+		}
+		if otype.Kind() != reflect.Slice {
+			return appendFieldValueOnSlice(dest, output, instance)
+		}
+	}
+
+	// Try to match dest and output type.
+	if dest.Kind() != reflect.Ptr && output.Kind() == reflect.Ptr {
+		output = output.Elem()
+	}
+	if dest.Kind() == reflect.Ptr && output.Kind() != reflect.Ptr {
+		output = MakeReflectPointer(output)
+	}
+
+	return setFieldValueOnStruct(dest, output, instance)
 }
