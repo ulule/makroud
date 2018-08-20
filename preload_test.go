@@ -531,6 +531,16 @@ func TestPreload_Cat_Many(t *testing.T) {
 		is.Nil(cat3.Owner)
 		is.Empty(cat3.Meows)
 
+		fmt.Printf("cat1: %+v\n", cat1)
+		fmt.Printf("cat2: %+v\n", cat2)
+		fmt.Printf("cat3: %+v\n", cat3)
+		fmt.Printf("human1: %+v\n", human1)
+		fmt.Printf("human2: %+v\n", human2)
+		fmt.Printf("meow1: %+v\n", meow1)
+		fmt.Printf("meow2: %+v\n", meow2)
+		fmt.Printf("meow3: %+v\n", meow3)
+		fmt.Printf("meow4: %+v\n", meow4)
+
 		{
 			cats := []Cat{*cat1, *cat2, *cat3}
 			err = sqlxx.Preload(ctx, driver, &cats, "Owner", "Meows")

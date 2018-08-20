@@ -73,6 +73,7 @@ func preloadOne(ctx context.Context, driver Driver, dest interface{}, paths []st
 		return nil, err
 	}
 
+	// TODO Refactor using preloadHandler
 	preloader := preloadOneHandler{
 		ctx:    ctx,
 		driver: driver,
@@ -109,13 +110,10 @@ func preloadMany(ctx context.Context, driver Driver, dest interface{}, paths []s
 	}
 
 	handler := preloadHandler{
-		ctx:       ctx,
-		driver:    driver,
-		model:     model,
-		preloader: reflectx.NewSlicePreloader(dest),
+		ctx:    ctx,
+		driver: driver,
+		model:  model,
 	}
-
-	fmt.Println("use slice preloader")
 
 	for _, path := range paths {
 		reference, ok := schema.associations[path]
@@ -123,7 +121,7 @@ func preloadMany(ctx context.Context, driver Driver, dest interface{}, paths []s
 			return nil, errors.Errorf("'%s' is not a valid association", path)
 		}
 
-		err := handler.preload(reference)
+		err := handler.preload(reflectx.NewSlicePreloader(dest), reference)
 		if err != nil {
 			return nil, err
 		}
@@ -136,29 +134,28 @@ func preloadMany(ctx context.Context, driver Driver, dest interface{}, paths []s
 // Common version
 
 type preloadHandler struct {
-	ctx       context.Context
-	preloader reflectx.Preloader
-	driver    Driver
-	model     Model
+	ctx    context.Context
+	driver Driver
+	model  Model
 }
 
-func (handler *preloadHandler) preload(reference Reference) error {
+func (handler *preloadHandler) preload(preloader reflectx.Preloader, reference Reference) error {
 	if reference.IsAssociationType(AssociationTypeOne) {
-		return handler.preloadOne(reference)
+		return handler.preloadOne(preloader, reference)
 	} else {
-		return handler.preloadMany(reference)
+		return handler.preloadMany(preloader, reference)
 	}
 }
 
-func (handler *preloadHandler) preloadOne(reference Reference) error {
+func (handler *preloadHandler) preloadOne(preloader reflectx.Preloader, reference Reference) error {
 	if reference.IsLocal() {
-		return handler.preloadOneLocal(reference)
+		return handler.preloadOneLocal(preloader, reference)
 	} else {
-		return handler.preloadOneRemote(reference)
+		return handler.preloadOneRemote(preloader, reference)
 	}
 }
 
-func (handler *preloadHandler) preloadOneLocal(reference Reference) error {
+func (handler *preloadHandler) preloadOneLocal(preloader reflectx.Preloader, reference Reference) error {
 	remote := reference.Remote()
 	local := reference.Local()
 
@@ -174,25 +171,26 @@ func (handler *preloadHandler) preloadOneLocal(reference Reference) error {
 
 	switch local.ForeignKeyType() {
 	case FKStringType:
-		return handler.preloadOneLocalString(reference, builder)
+		return handler.preloadOneLocalString(preloader, reference, builder)
 
 	case FKIntegerType:
-		return handler.preloadOneLocalInteger(reference, builder)
+		return handler.preloadOneLocalInteger(preloader, reference, builder)
 
 	case FKOptionalStringType:
-		return handler.preloadOneLocalOptionalString(reference, builder)
+		return handler.preloadOneLocalOptionalString(preloader, reference, builder)
 
 	case FKOptionalIntegerType:
-		return handler.preloadOneLocalOptionalInteger(reference, builder)
+		return handler.preloadOneLocalOptionalInteger(preloader, reference, builder)
 
 	default:
 		return errors.Errorf("'%s' is a unsupported foreign key type for preload", reference.Type())
 	}
 }
 
-func (handler *preloadHandler) preloadOneLocalString(reference Reference, builder builder.Select) error {
+func (handler *preloadHandler) preloadOneLocalString(preloader reflectx.Preloader,
+	reference Reference, builder builder.Select) error {
+
 	remote := reference.Remote()
-	preloader := handler.preloader
 
 	err := preloader.ForEach(func(element reflect.Value) error {
 		pk, err := handler.fetchLocalForeignKeyString(reference, element.Interface())
@@ -241,9 +239,10 @@ func (handler *preloadHandler) preloadOneLocalString(reference Reference, builde
 	return nil
 }
 
-func (handler *preloadHandler) preloadOneLocalInteger(reference Reference, builder builder.Select) error {
+func (handler *preloadHandler) preloadOneLocalInteger(preloader reflectx.Preloader,
+	reference Reference, builder builder.Select) error {
+
 	remote := reference.Remote()
-	preloader := handler.preloader
 
 	err := preloader.ForEach(func(element reflect.Value) error {
 		pk, err := handler.fetchLocalForeignKeyInteger(reference, element.Interface())
@@ -292,9 +291,10 @@ func (handler *preloadHandler) preloadOneLocalInteger(reference Reference, build
 	return nil
 }
 
-func (handler *preloadHandler) preloadOneLocalOptionalString(reference Reference, builder builder.Select) error {
+func (handler *preloadHandler) preloadOneLocalOptionalString(preloader reflectx.Preloader,
+	reference Reference, builder builder.Select) error {
+
 	remote := reference.Remote()
-	preloader := handler.preloader
 
 	err := preloader.ForEach(func(element reflect.Value) error {
 		pk, err := handler.fetchLocalForeignKeyOptionalString(reference, element.Interface())
@@ -346,9 +346,10 @@ func (handler *preloadHandler) preloadOneLocalOptionalString(reference Reference
 	return nil
 }
 
-func (handler *preloadHandler) preloadOneLocalOptionalInteger(reference Reference, builder builder.Select) error {
+func (handler *preloadHandler) preloadOneLocalOptionalInteger(preloader reflectx.Preloader,
+	reference Reference, builder builder.Select) error {
+
 	remote := reference.Remote()
-	preloader := handler.preloader
 
 	err := preloader.ForEach(func(element reflect.Value) error {
 		pk, err := handler.fetchLocalForeignKeyOptionalInteger(reference, element.Interface())
@@ -400,7 +401,7 @@ func (handler *preloadHandler) preloadOneLocalOptionalInteger(reference Referenc
 	return nil
 }
 
-func (handler *preloadHandler) preloadOneRemote(reference Reference) error {
+func (handler *preloadHandler) preloadOneRemote(preloader reflectx.Preloader, reference Reference) error {
 	remote := reference.Remote()
 	local := reference.Local()
 
@@ -416,19 +417,20 @@ func (handler *preloadHandler) preloadOneRemote(reference Reference) error {
 
 	switch local.PrimaryKeyType() {
 	case PKStringType:
-		return handler.preloadOneRemoteString(reference, builder)
+		return handler.preloadOneRemoteString(preloader, reference, builder)
 
 	case PKIntegerType:
-		return handler.preloadOneRemoteInteger(reference, builder)
+		return handler.preloadOneRemoteInteger(preloader, reference, builder)
 
 	default:
 		return errors.Errorf("'%s' is a unsupported primary key type for preload", reference.Type())
 	}
 }
 
-func (handler *preloadHandler) preloadOneRemoteString(reference Reference, builder builder.Select) error {
+func (handler *preloadHandler) preloadOneRemoteString(preloader reflectx.Preloader,
+	reference Reference, builder builder.Select) error {
+
 	remote := reference.Remote()
-	preloader := handler.preloader
 
 	err := preloader.ForEach(func(element reflect.Value) error {
 		pk, err := handler.fetchRemoteForeignKeyString(reference, element.Interface())
@@ -453,6 +455,7 @@ func (handler *preloadHandler) preloadOneRemoteString(reference Reference, build
 		if err != nil && !IsErrNoRows(err) {
 			return err
 		}
+		fmt.Printf("555-1 %+v\n", relation)
 		return nil
 	})
 	if err != nil {
@@ -477,9 +480,10 @@ func (handler *preloadHandler) preloadOneRemoteString(reference Reference, build
 	return nil
 }
 
-func (handler *preloadHandler) preloadOneRemoteInteger(reference Reference, builder builder.Select) error {
+func (handler *preloadHandler) preloadOneRemoteInteger(preloader reflectx.Preloader,
+	reference Reference, builder builder.Select) error {
+
 	remote := reference.Remote()
-	preloader := handler.preloader
 
 	err := preloader.ForEach(func(element reflect.Value) error {
 		pk, err := handler.fetchRemoteForeignKeyInteger(reference, element.Interface())
@@ -528,7 +532,7 @@ func (handler *preloadHandler) preloadOneRemoteInteger(reference Reference, buil
 	return nil
 }
 
-func (handler *preloadHandler) preloadMany(reference Reference) error {
+func (handler *preloadHandler) preloadMany(preloader reflectx.Preloader, reference Reference) error {
 	remote := reference.Remote()
 	local := reference.Local()
 
@@ -544,19 +548,20 @@ func (handler *preloadHandler) preloadMany(reference Reference) error {
 
 	switch local.PrimaryKeyType() {
 	case PKStringType:
-		return handler.preloadManyString(reference, builder)
+		return handler.preloadManyString(preloader, reference, builder)
 
 	case PKIntegerType:
-		return handler.preloadManyInteger(reference, builder)
+		return handler.preloadManyInteger(preloader, reference, builder)
 
 	default:
 		return errors.Errorf("'%s' is a unsupported primary key type for preload", reference.Type())
 	}
 }
 
-func (handler *preloadHandler) preloadManyString(reference Reference, builder builder.Select) error {
+func (handler *preloadHandler) preloadManyString(preloader reflectx.Preloader,
+	reference Reference, builder builder.Select) error {
+
 	remote := reference.Remote()
-	preloader := handler.preloader
 
 	err := preloader.ForEach(func(element reflect.Value) error {
 		pk, err := handler.fetchRemoteForeignKeyString(reference, element.Interface())
@@ -581,6 +586,7 @@ func (handler *preloadHandler) preloadManyString(reference Reference, builder bu
 		if err != nil && !IsErrNoRows(err) {
 			return err
 		}
+		fmt.Printf("555-2 %+v\n", relation)
 		return nil
 	})
 	if err != nil {
@@ -605,7 +611,9 @@ func (handler *preloadHandler) preloadManyString(reference Reference, builder bu
 	return nil
 }
 
-func (handler *preloadHandler) preloadManyInteger(reference Reference, builder builder.Select) error {
+func (handler *preloadHandler) preloadManyInteger(preloader reflectx.Preloader,
+	reference Reference, builder builder.Select) error {
+
 	panic("TODO")
 }
 
@@ -748,13 +756,12 @@ func (preloader *preloadOneHandler) preload(reference Reference) error {
 
 func (preloader *preloadOneHandler) preloadOne(reference Reference) error {
 	handler := &preloadHandler{
-		ctx:       preloader.ctx,
-		driver:    preloader.driver,
-		model:     preloader.model,
-		preloader: reflectx.NewStructPreloader(preloader.dest),
+		ctx:    preloader.ctx,
+		driver: preloader.driver,
+		model:  preloader.model,
 	}
 
-	return handler.preload(reference)
+	return handler.preload(reflectx.NewStructPreloader(preloader.dest), reference)
 }
 
 func (preloader *preloadOneHandler) preloadMany(reference Reference) error {
