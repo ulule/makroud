@@ -81,6 +81,325 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 	})
 }
 
+func TestPreload_ExoChunk_Many(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		mode1 := &ExoChunkMode{
+			Mode: "rwx",
+		}
+		err := sqlxx.Save(ctx, driver, mode1)
+		is.NoError(err)
+		is.NotEmpty(mode1.ID)
+
+		mode2 := &ExoChunkMode{
+			Mode: "r-x",
+		}
+		err = sqlxx.Save(ctx, driver, mode2)
+		is.NoError(err)
+		is.NotEmpty(mode2.ID)
+
+		mode3 := &ExoChunkMode{
+			Mode: "r-x",
+		}
+		err = sqlxx.Save(ctx, driver, mode3)
+		is.NoError(err)
+		is.NotEmpty(mode3.ID)
+
+		mode4 := &ExoChunkMode{
+			Mode: "rw-",
+		}
+		err = sqlxx.Save(ctx, driver, mode4)
+		is.NoError(err)
+		is.NotEmpty(mode4.ID)
+
+		chunk1 := &ExoChunk{
+			ModeID: mode1.ID,
+			Bytes: fmt.Sprint(
+				"4e919ca20b565bb5b03c65130e018ad23d489412352ac8f25f3d0f8dd64905bd",
+				"8bf1ee3f3f3a1715656f6c39631a5072e5d2afa23ecebe00c61fb05b54652bdb",
+				"ea7548dec5b924a5a7ff2bd94dbe9a109849a3ea322919cc672980d037a325da",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, chunk1)
+		is.NoError(err)
+		is.NotEmpty(chunk1.Hash)
+
+		chunk2 := &ExoChunk{
+			ModeID: mode1.ID,
+			Bytes: fmt.Sprint(
+				"455a9ccb2316fbbeefc621809bdb020986337fcd99a2e497f39aa76b67840a21",
+				"fd6ad7d1877b18ef29026d497a70a573a0bb0329739fa1e51ad0f864b43474c2",
+				"007ffae918ef2b7f9918db0da37b75c32d70e496f0a630ccec0fb0d1c12bdfbc",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, chunk2)
+		is.NoError(err)
+		is.NotEmpty(chunk2.Hash)
+
+		chunk3 := &ExoChunk{
+			ModeID: mode1.ID,
+			Bytes: fmt.Sprint(
+				"5c4ff25049b5f36621f4c9e1e3723b43fc21d9008b1fb7bb90ce7e7d2dec11c9",
+				"9eceb0c2e250ab4ebc895db91f27d861762d6167d316af43a2bdb6c777778bac",
+				"e9a51d6f44d013a38220246bba5f5bf9c46e78941ebe6669fdf141477dddffc6",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, chunk3)
+		is.NoError(err)
+		is.NotEmpty(chunk3.Hash)
+
+		chunk4 := &ExoChunk{
+			ModeID: mode2.ID,
+			Bytes: fmt.Sprint(
+				"d9c234d4934ba063bf9c80fda227529f344580ef237a53419b6710d3184dfb3f",
+				"a59e8a8b81057cd9e4cf54c8af62a4e465f154d2102b4ddd0806ff51de08bd6e",
+				"083e2565506d8a0f59437a58685f468eb3177f26190552cfac7d93631542918d",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, chunk4)
+		is.NoError(err)
+		is.NotEmpty(chunk4.Hash)
+
+		chunk5 := &ExoChunk{
+			ModeID: mode2.ID,
+			Bytes: fmt.Sprint(
+				"f1676c02af03cfe8485f82825d71afa09184ba49d0304a8988dd2c75fb593858",
+				"e59108f9554f7143ab0bb851cd6a301c2bce487f3398976a5b4f18f576e61b1c",
+				"b532922f3c436f92b350871cbb39eabce016d4ab0e465eb22db4a221be13c985",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, chunk5)
+		is.NoError(err)
+		is.NotEmpty(chunk5.Hash)
+
+		chunk6 := &ExoChunk{
+			ModeID: mode3.ID,
+			Bytes: fmt.Sprint(
+				"f1676c02af03cfe8485f82825d71afa09184ba49d0304a8988dd2c75fb593858",
+				"e59108f9554f7143ab0bb851cd6a301c2bce487f3398976a5b4f18f576e61b1c",
+				"b532922f3c436f92b350871cbb39eabce016d4ab0e465eb22db4a221be13c985",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, chunk6)
+		is.NoError(err)
+		is.NotEmpty(chunk6.Hash)
+
+		chunk7 := &ExoChunk{
+			ModeID: mode4.ID,
+			Bytes: fmt.Sprint(
+				"f1676c02af03cfe8485f82825d71afa09184ba49d0304a8988dd2c75fb593858",
+				"e59108f9554f7143ab0bb851cd6a301c2bce487f3398976a5b4f18f576e61b1c",
+				"b532922f3c436f92b350871cbb39eabce016d4ab0e465eb22db4a221be13c985",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, chunk7)
+		is.NoError(err)
+		is.NotEmpty(chunk7.Hash)
+
+		signature1 := &ExoChunkSignature{
+			ChunkID: chunk1.Hash,
+			Bytes: fmt.Sprint(
+				"e5544175f3b80b488234a708be21ca3586b8dc5c9b42bfc2fcce883759bc7f4c",
+				"b360e640a0264737e0e96cad0df2de60daa2920a58e4080672e1596c6b613c5e",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, signature1)
+		is.NoError(err)
+		is.NotEmpty(signature1.ID)
+
+		signature2 := &ExoChunkSignature{
+			ChunkID: chunk2.Hash,
+			Bytes: fmt.Sprint(
+				"e8cfe78d34e59d612e39c1a5c6e6b560b765b699aa4777da26d23a5042e7c104",
+				"090888070233ec70f7035ead153fd217c8b0204687fc1b5ebd3e5701692467d2",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, signature2)
+		is.NoError(err)
+		is.NotEmpty(signature2.ID)
+
+		signature3 := &ExoChunkSignature{
+			ChunkID: chunk3.Hash,
+			Bytes: fmt.Sprint(
+				"53c69ef75f8ce6f6d876a095cc6adda9e32e417334b14d35b6de783235332729",
+				"cba39a4675a475d7b33bd5eec55f1391eaa7e7484feffdd303f62c37a1665009",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, signature3)
+		is.NoError(err)
+		is.NotEmpty(signature3.ID)
+
+		signature4 := &ExoChunkSignature{
+			ChunkID: chunk6.Hash,
+			Bytes: fmt.Sprint(
+				"e867e17445730f555950d16ee4bbdef7c37cb4b687cc7fccdd99e0e92000102b",
+				"c0d4e571cf9b0201f6c68e3725baa3876108ab6881969e38c86bb6308dd729a6",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, signature4)
+		is.NoError(err)
+		is.NotEmpty(signature4.ID)
+
+		signature5 := &ExoChunkSignature{
+			ChunkID: chunk7.Hash,
+			Bytes: fmt.Sprint(
+				"e70f8cdcf10c65d955b638c45ea0a10c34eb8c9c7a82de4bea897512070d5de9",
+				"1c258d4369f3446ad9836c287f8c8b92844b57ce540fffd3a4dca6b053a1a1ea",
+			),
+		}
+		err = sqlxx.Save(ctx, driver, signature5)
+		is.NoError(err)
+		is.NotEmpty(signature5.ID)
+
+		is.Nil(chunk1.Mode)
+		is.Nil(chunk1.Signature)
+		is.Nil(chunk2.Mode)
+		is.Nil(chunk2.Signature)
+		is.Nil(chunk3.Mode)
+		is.Nil(chunk3.Signature)
+		is.Nil(chunk4.Mode)
+		is.Nil(chunk4.Signature)
+		is.Nil(chunk5.Mode)
+		is.Nil(chunk5.Signature)
+		is.Nil(chunk6.Mode)
+		is.Nil(chunk6.Signature)
+		is.Nil(chunk7.Mode)
+		is.Nil(chunk7.Signature)
+
+		{
+			chunks := []ExoChunk{*chunk1, *chunk2, *chunk3, *chunk4, *chunk5, *chunk6, *chunk7}
+			err = sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
+			is.NoError(err)
+			is.Len(chunks, 7)
+			is.Equal(chunk1.Hash, chunks[0].Hash)
+			is.Equal(chunk2.Hash, chunks[1].Hash)
+			is.Equal(chunk3.Hash, chunks[2].Hash)
+			is.Equal(chunk4.Hash, chunks[3].Hash)
+			is.Equal(chunk5.Hash, chunks[4].Hash)
+			is.Equal(chunk6.Hash, chunks[5].Hash)
+			is.Equal(chunk7.Hash, chunks[6].Hash)
+
+			is.NotNil(chunks[0].Mode)
+			is.Equal(mode1.ID, chunks[0].Mode.ID)
+			is.Equal(mode1.Mode, chunks[0].Mode.Mode)
+			is.NotNil(chunks[0].Signature)
+			is.Equal(signature1.ID, chunks[0].Signature.ID)
+			is.Equal(signature1.ChunkID, chunks[0].Signature.ChunkID)
+			is.Equal(signature1.Bytes, chunks[0].Signature.Bytes)
+
+			is.NotNil(chunks[1].Mode)
+			is.Equal(mode1.ID, chunks[1].Mode.ID)
+			is.Equal(mode1.Mode, chunks[1].Mode.Mode)
+			is.NotNil(chunks[1].Signature)
+			is.Equal(signature2.ID, chunks[1].Signature.ID)
+			is.Equal(signature2.ChunkID, chunks[1].Signature.ChunkID)
+			is.Equal(signature2.Bytes, chunks[1].Signature.Bytes)
+
+			is.NotNil(chunks[2].Mode)
+			is.Equal(mode1.ID, chunks[2].Mode.ID)
+			is.Equal(mode1.Mode, chunks[2].Mode.Mode)
+			is.NotNil(chunks[2].Signature)
+			is.Equal(signature3.ID, chunks[2].Signature.ID)
+			is.Equal(signature3.ChunkID, chunks[2].Signature.ChunkID)
+			is.Equal(signature3.Bytes, chunks[2].Signature.Bytes)
+
+			is.NotNil(chunks[3].Mode)
+			is.Equal(mode2.ID, chunks[3].Mode.ID)
+			is.Equal(mode2.Mode, chunks[3].Mode.Mode)
+			is.Nil(chunks[3].Signature)
+
+			is.NotNil(chunks[4].Mode)
+			is.Equal(mode2.ID, chunks[4].Mode.ID)
+			is.Equal(mode2.Mode, chunks[4].Mode.Mode)
+			is.Nil(chunks[4].Signature)
+
+			is.NotNil(chunks[5].Mode)
+			is.Equal(mode3.ID, chunks[5].Mode.ID)
+			is.Equal(mode3.Mode, chunks[5].Mode.Mode)
+			is.NotNil(chunks[5].Signature)
+			is.Equal(signature4.ID, chunks[5].Signature.ID)
+			is.Equal(signature4.ChunkID, chunks[5].Signature.ChunkID)
+			is.Equal(signature4.Bytes, chunks[5].Signature.Bytes)
+
+			is.NotNil(chunks[6].Mode)
+			is.Equal(mode4.ID, chunks[6].Mode.ID)
+			is.Equal(mode4.Mode, chunks[6].Mode.Mode)
+			is.NotNil(chunks[6].Signature)
+			is.Equal(signature5.ID, chunks[6].Signature.ID)
+			is.Equal(signature5.ChunkID, chunks[6].Signature.ChunkID)
+			is.Equal(signature5.Bytes, chunks[6].Signature.Bytes)
+
+		}
+
+		{
+			chunks := []*ExoChunk{chunk1, chunk2, chunk3, chunk4, chunk5, chunk6, chunk7}
+			err = sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
+			is.NoError(err)
+			is.Len(chunks, 7)
+			is.Equal(chunk1.Hash, chunks[0].Hash)
+			is.Equal(chunk2.Hash, chunks[1].Hash)
+			is.Equal(chunk3.Hash, chunks[2].Hash)
+			is.Equal(chunk4.Hash, chunks[3].Hash)
+			is.Equal(chunk5.Hash, chunks[4].Hash)
+			is.Equal(chunk6.Hash, chunks[5].Hash)
+			is.Equal(chunk7.Hash, chunks[6].Hash)
+
+			is.NotNil(chunks[0].Mode)
+			is.Equal(mode1.ID, chunks[0].Mode.ID)
+			is.Equal(mode1.Mode, chunks[0].Mode.Mode)
+			is.NotNil(chunks[0].Signature)
+			is.Equal(signature1.ID, chunks[0].Signature.ID)
+			is.Equal(signature1.ChunkID, chunks[0].Signature.ChunkID)
+			is.Equal(signature1.Bytes, chunks[0].Signature.Bytes)
+
+			is.NotNil(chunks[1].Mode)
+			is.Equal(mode1.ID, chunks[1].Mode.ID)
+			is.Equal(mode1.Mode, chunks[1].Mode.Mode)
+			is.NotNil(chunks[1].Signature)
+			is.Equal(signature2.ID, chunks[1].Signature.ID)
+			is.Equal(signature2.ChunkID, chunks[1].Signature.ChunkID)
+			is.Equal(signature2.Bytes, chunks[1].Signature.Bytes)
+
+			is.NotNil(chunks[2].Mode)
+			is.Equal(mode1.ID, chunks[2].Mode.ID)
+			is.Equal(mode1.Mode, chunks[2].Mode.Mode)
+			is.NotNil(chunks[2].Signature)
+			is.Equal(signature3.ID, chunks[2].Signature.ID)
+			is.Equal(signature3.ChunkID, chunks[2].Signature.ChunkID)
+			is.Equal(signature3.Bytes, chunks[2].Signature.Bytes)
+
+			is.NotNil(chunks[3].Mode)
+			is.Equal(mode2.ID, chunks[3].Mode.ID)
+			is.Equal(mode2.Mode, chunks[3].Mode.Mode)
+			is.Nil(chunks[3].Signature)
+
+			is.NotNil(chunks[4].Mode)
+			is.Equal(mode2.ID, chunks[4].Mode.ID)
+			is.Equal(mode2.Mode, chunks[4].Mode.Mode)
+			is.Nil(chunks[4].Signature)
+
+			is.NotNil(chunks[5].Mode)
+			is.Equal(mode3.ID, chunks[5].Mode.ID)
+			is.Equal(mode3.Mode, chunks[5].Mode.Mode)
+			is.NotNil(chunks[5].Signature)
+			is.Equal(signature4.ID, chunks[5].Signature.ID)
+			is.Equal(signature4.ChunkID, chunks[5].Signature.ChunkID)
+			is.Equal(signature4.Bytes, chunks[5].Signature.Bytes)
+
+			is.NotNil(chunks[6].Mode)
+			is.Equal(mode4.ID, chunks[6].Mode.ID)
+			is.Equal(mode4.Mode, chunks[6].Mode.Mode)
+			is.NotNil(chunks[6].Signature)
+			is.Equal(signature5.ID, chunks[6].Signature.ID)
+			is.Equal(signature5.ChunkID, chunks[6].Signature.ChunkID)
+			is.Equal(signature5.Bytes, chunks[6].Signature.Bytes)
+
+		}
+	})
+}
+
 func TestPreload_Owl_One(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		ctx := context.Background()
@@ -531,20 +850,9 @@ func TestPreload_Cat_Many(t *testing.T) {
 		is.Nil(cat3.Owner)
 		is.Empty(cat3.Meows)
 
-		fmt.Printf("cat1: %+v\n", cat1)
-		fmt.Printf("cat2: %+v\n", cat2)
-		fmt.Printf("cat3: %+v\n", cat3)
-		fmt.Printf("human1: %+v\n", human1)
-		fmt.Printf("human2: %+v\n", human2)
-		fmt.Printf("meow1: %+v\n", meow1)
-		fmt.Printf("meow2: %+v\n", meow2)
-		fmt.Printf("meow3: %+v\n", meow3)
-		fmt.Printf("meow4: %+v\n", meow4)
-
 		{
 			cats := []Cat{*cat1, *cat2, *cat3}
 			err = sqlxx.Preload(ctx, driver, &cats, "Owner", "Meows")
-			// err = sqlxx.Preload(ctx, driver, &cats, "Owner")
 			is.NoError(err)
 			is.Len(cats, 3)
 			is.Equal(cat1.ID, cats[0].ID)
@@ -566,9 +874,37 @@ func TestPreload_Cat_Many(t *testing.T) {
 			is.Empty(cats[1].Meows)
 
 			is.Nil(cats[2].Owner)
-			// is.NotEmpty(cats[2].Meows)
-			// is.Len(cats[2].Meows, 1)
-			// is.Contains(cats[2].Meows, meow4)
+			is.NotEmpty(cats[2].Meows)
+			is.Len(cats[2].Meows, 1)
+			is.Contains(cats[2].Meows, meow4)
+		}
+		{
+			cats := []*Cat{cat1, cat2, cat3}
+			err = sqlxx.Preload(ctx, driver, &cats, "Owner", "Meows")
+			is.NoError(err)
+			is.Len(cats, 3)
+			is.Equal(cat1.ID, cats[0].ID)
+			is.Equal(cat2.ID, cats[1].ID)
+			is.Equal(cat3.ID, cats[2].ID)
+
+			is.NotNil(cats[0].Owner)
+			is.Equal(human1.ID, cats[0].Owner.ID)
+			is.Equal(human1.Name, cats[0].Owner.Name)
+			is.NotEmpty(cats[0].Meows)
+			is.Len(cats[0].Meows, 3)
+			is.Contains(cats[0].Meows, meow1)
+			is.Contains(cats[0].Meows, meow2)
+			is.Contains(cats[0].Meows, meow3)
+
+			is.NotNil(cats[1].Owner)
+			is.Equal(human2.ID, cats[1].Owner.ID)
+			is.Equal(human2.Name, cats[1].Owner.Name)
+			is.Empty(cats[1].Meows)
+
+			is.Nil(cats[2].Owner)
+			is.NotEmpty(cats[2].Meows)
+			is.Len(cats[2].Meows, 1)
+			is.Contains(cats[2].Meows, meow4)
 		}
 
 	})
