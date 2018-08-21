@@ -648,6 +648,448 @@ func TestPreload_Owl_One(t *testing.T) {
 	})
 }
 
+func TestPreload_Owl_Many(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		group1 := &Group{
+			Name: "spring",
+		}
+		err := sqlxx.Save(ctx, driver, group1)
+		is.NoError(err)
+		is.NotEmpty(group1.ID)
+
+		group2 := &Group{
+			Name: "summer",
+		}
+		err = sqlxx.Save(ctx, driver, group2)
+		is.NoError(err)
+		is.NotEmpty(group2.ID)
+
+		group3 := &Group{
+			Name: "winter",
+		}
+		err = sqlxx.Save(ctx, driver, group3)
+		is.NoError(err)
+		is.NotEmpty(group3.ID)
+
+		group4 := &Group{
+			Name: "fall",
+		}
+		err = sqlxx.Save(ctx, driver, group4)
+		is.NoError(err)
+		is.NotEmpty(group4.ID)
+
+		center1 := &Center{
+			Name: "Soul",
+			Area: "Lancaster",
+		}
+		err = sqlxx.Save(ctx, driver, center1)
+		is.NoError(err)
+		is.NotEmpty(center1.ID)
+
+		center2 := &Center{
+			Name: "Cloud",
+			Area: "Nancledra",
+		}
+		err = sqlxx.Save(ctx, driver, center2)
+		is.NoError(err)
+		is.NotEmpty(center2.ID)
+
+		center3 := &Center{
+			Name: "Gold",
+			Area: "Woodhurst",
+		}
+		err = sqlxx.Save(ctx, driver, center3)
+		is.NoError(err)
+		is.NotEmpty(center3.ID)
+
+		center4 := &Center{
+			Name: "Moonstone",
+			Area: "Armskirk",
+		}
+		err = sqlxx.Save(ctx, driver, center4)
+		is.NoError(err)
+		is.NotEmpty(center4.ID)
+
+		center5 := &Center{
+			Name: "Celestial",
+			Area: "Bayside",
+		}
+		err = sqlxx.Save(ctx, driver, center5)
+		is.NoError(err)
+		is.NotEmpty(center5.ID)
+
+		center6 := &Center{
+			Name: "Solitude",
+			Area: "Black Castle",
+		}
+		err = sqlxx.Save(ctx, driver, center6)
+		is.NoError(err)
+		is.NotEmpty(center6.ID)
+
+		owl1 := &Owl{
+			Name:         "Pyro",
+			FeatherColor: "Timeless Sanguine",
+			FavoriteFood: "Ginger Mooncake",
+			GroupID: sql.NullInt64{
+				Valid: true,
+				Int64: group1.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, owl1)
+		is.NoError(err)
+		is.NotEmpty(owl1.ID)
+
+		owl2 := &Owl{
+			Name:         "Bungee",
+			FeatherColor: "Peaceful Peach",
+			FavoriteFood: "Lemon Venison",
+			GroupID: sql.NullInt64{
+				Valid: false,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, owl2)
+		is.NoError(err)
+		is.NotEmpty(owl2.ID)
+
+		owl3 := &Owl{
+			Name:         "Wacky",
+			FeatherColor: "Harsh Cyan",
+			FavoriteFood: "Pecan Trifle",
+			GroupID: sql.NullInt64{
+				Valid: true,
+				Int64: group1.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, owl3)
+		is.NoError(err)
+		is.NotEmpty(owl3.ID)
+
+		owl4 := &Owl{
+			Name:         "Puffins",
+			FeatherColor: "Botanic Ruby",
+			FavoriteFood: "Avocado Salmon",
+			GroupID: sql.NullInt64{
+				Valid: true,
+				Int64: group2.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, owl4)
+		is.NoError(err)
+		is.NotEmpty(owl4.ID)
+
+		owl5 := &Owl{
+			Name:         "Pistache",
+			FeatherColor: "Distorted Cherry",
+			FavoriteFood: "Blueberry Milk",
+			GroupID: sql.NullInt64{
+				Valid: true,
+				Int64: group3.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, owl5)
+		is.NoError(err)
+		is.NotEmpty(owl5.ID)
+
+		owl6 := &Owl{
+			Name:         "Baloo",
+			FeatherColor: "Supreme Mauve",
+			FavoriteFood: "Tomato Turkey",
+			GroupID: sql.NullInt64{
+				Valid: true,
+				Int64: group4.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, owl6)
+		is.NoError(err)
+		is.NotEmpty(owl6.ID)
+
+		pack1 := &Package{
+			SenderID:   center2.ID,
+			ReceiverID: center1.ID,
+			Status:     "processing",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl1.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack1)
+		is.NoError(err)
+		is.NotEmpty(pack1.ID)
+
+		pack2 := &Package{
+			SenderID:   center2.ID,
+			ReceiverID: center4.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl1.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack2)
+		is.NoError(err)
+		is.NotEmpty(pack2.ID)
+
+		pack3 := &Package{
+			SenderID:   center2.ID,
+			ReceiverID: center4.ID,
+			Status:     "waiting",
+			TransporterID: sql.NullInt64{
+				Valid: false,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack3)
+		is.NoError(err)
+		is.NotEmpty(pack3.ID)
+
+		pack4 := &Package{
+			SenderID:   center1.ID,
+			ReceiverID: center4.ID,
+			Status:     "processing",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl2.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack4)
+		is.NoError(err)
+		is.NotEmpty(pack4.ID)
+
+		pack5 := &Package{
+			SenderID:   center3.ID,
+			ReceiverID: center4.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack5)
+		is.NoError(err)
+		is.NotEmpty(pack5.ID)
+
+		pack6 := &Package{
+			SenderID:   center4.ID,
+			ReceiverID: center3.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack6)
+		is.NoError(err)
+		is.NotEmpty(pack6.ID)
+
+		pack7 := &Package{
+			SenderID:   center3.ID,
+			ReceiverID: center2.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack7)
+		is.NoError(err)
+		is.NotEmpty(pack7.ID)
+
+		pack8 := &Package{
+			SenderID:   center2.ID,
+			ReceiverID: center3.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack8)
+		is.NoError(err)
+		is.NotEmpty(pack8.ID)
+
+		pack9 := &Package{
+			SenderID:   center3.ID,
+			ReceiverID: center1.ID,
+			Status:     "processing",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl3.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack9)
+		is.NoError(err)
+		is.NotEmpty(pack9.ID)
+
+		pack10 := &Package{
+			SenderID:   center4.ID,
+			ReceiverID: center6.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl4.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack10)
+		is.NoError(err)
+		is.NotEmpty(pack10.ID)
+
+		pack11 := &Package{
+			SenderID:   center4.ID,
+			ReceiverID: center6.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl4.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack11)
+		is.NoError(err)
+		is.NotEmpty(pack11.ID)
+
+		pack12 := &Package{
+			SenderID:   center4.ID,
+			ReceiverID: center6.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl4.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack12)
+		is.NoError(err)
+		is.NotEmpty(pack12.ID)
+
+		pack13 := &Package{
+			SenderID:   center4.ID,
+			ReceiverID: center6.ID,
+			Status:     "processing",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl4.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack13)
+		is.NoError(err)
+		is.NotEmpty(pack13.ID)
+
+		pack14 := &Package{
+			SenderID:   center6.ID,
+			ReceiverID: center5.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl6.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack14)
+		is.NoError(err)
+		is.NotEmpty(pack14.ID)
+
+		pack15 := &Package{
+			SenderID:   center6.ID,
+			ReceiverID: center5.ID,
+			Status:     "delivered",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl6.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack15)
+		is.NoError(err)
+		is.NotEmpty(pack15.ID)
+
+		pack16 := &Package{
+			SenderID:   center6.ID,
+			ReceiverID: center5.ID,
+			Status:     "processing",
+			TransporterID: sql.NullInt64{
+				Valid: true,
+				Int64: owl6.ID,
+			},
+		}
+		err = sqlxx.Save(ctx, driver, pack16)
+		is.NoError(err)
+		is.NotEmpty(pack16.ID)
+
+		is.Nil(owl1.Group)
+		is.Nil(owl2.Group)
+		is.Nil(owl3.Group)
+		is.Nil(owl4.Group)
+		is.Nil(owl5.Group)
+		is.Nil(owl6.Group)
+		is.Empty(owl1.Packages)
+		is.Empty(owl2.Packages)
+		is.Empty(owl3.Packages)
+		is.Empty(owl4.Packages)
+		is.Empty(owl5.Packages)
+		is.Empty(owl6.Packages)
+
+		{
+			owls := []Owl{*owl1, *owl2, *owl3, *owl4, *owl5, *owl6}
+			err = sqlxx.Preload(ctx, driver, &owls, "Group", "Packages")
+			is.NoError(err)
+			is.Len(owls, 6)
+			is.Equal(owl1.ID, owls[0].ID)
+			is.Equal(owl2.ID, owls[1].ID)
+			is.Equal(owl3.ID, owls[2].ID)
+			is.Equal(owl4.ID, owls[3].ID)
+			is.Equal(owl5.ID, owls[4].ID)
+			is.Equal(owl6.ID, owls[5].ID)
+
+			is.NotNil(owls[0].Group)
+			is.Equal(group1.ID, owls[0].Group.ID)
+			is.Equal(group1.Name, owls[0].Group.Name)
+			is.NotEmpty(owls[0].Packages)
+			is.Len(owls[0].Packages, 2)
+			is.Contains(owls[0].Packages, *pack1)
+			is.Contains(owls[0].Packages, *pack2)
+
+			is.Nil(owls[1].Group)
+			is.NotEmpty(owls[1].Packages)
+			is.Len(owls[1].Packages, 1)
+			is.Contains(owls[1].Packages, *pack4)
+
+			is.NotNil(owls[2].Group)
+			is.Equal(group1.ID, owls[2].Group.ID)
+			is.Equal(group1.Name, owls[2].Group.Name)
+			is.NotEmpty(owls[2].Packages)
+			is.Len(owls[2].Packages, 5)
+			is.Contains(owls[2].Packages, *pack5)
+			is.Contains(owls[2].Packages, *pack6)
+			is.Contains(owls[2].Packages, *pack7)
+			is.Contains(owls[2].Packages, *pack8)
+			is.Contains(owls[2].Packages, *pack9)
+
+			is.NotNil(owls[3].Group)
+			is.Equal(group2.ID, owls[3].Group.ID)
+			is.Equal(group2.Name, owls[3].Group.Name)
+			is.NotEmpty(owls[3].Packages)
+			is.Len(owls[3].Packages, 4)
+			is.Contains(owls[3].Packages, *pack10)
+			is.Contains(owls[3].Packages, *pack11)
+			is.Contains(owls[3].Packages, *pack12)
+			is.Contains(owls[3].Packages, *pack13)
+
+			is.NotNil(owls[4].Group)
+			is.Equal(group3.ID, owls[4].Group.ID)
+			is.Equal(group3.Name, owls[4].Group.Name)
+			is.Empty(owls[4].Packages)
+
+			is.NotNil(owls[5].Group)
+			is.Equal(group4.ID, owls[5].Group.ID)
+			is.Equal(group4.Name, owls[5].Group.Name)
+			is.NotEmpty(owls[5].Packages)
+			is.Len(owls[5].Packages, 3)
+			is.Contains(owls[5].Packages, *pack14)
+			is.Contains(owls[5].Packages, *pack15)
+			is.Contains(owls[5].Packages, *pack16)
+
+		}
+	})
+}
+
 func TestPreload_Cat_One(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		ctx := context.Background()
