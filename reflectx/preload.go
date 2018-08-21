@@ -20,131 +20,45 @@ type Preloader interface {
 	UpdateValueForInt64Index(name string, id int64, element interface{}) error
 }
 
-type StructPreloader struct {
+// type StringPreloader interface {
+// 	Indexes() []string
+// 	AddIndex(id string, element reflect.Value) error
+// 	UpdateValueOnIndex(name string, id string, element interface{}) error
+// }
+//
+// type Int64Preloader interface {
+// 	Indexes() []int64
+// 	AddIndex(id int64, element reflect.Value) error
+// 	UpdateValueOnIndex(name string, id int64, element interface{}) error
+// }
+
+type preloader struct {
 	value     interface{}
 	relations reflect.Value
 	mapString map[string][]reflect.Value
 	mapInt64  map[int64][]reflect.Value
 }
 
-func NewStructPreloader(value interface{}) *StructPreloader {
-	return &StructPreloader{
+func NewPreloader(value interface{}) Preloader {
+	return &preloader{
 		value:     value,
 		mapString: map[string][]reflect.Value{},
 		mapInt64:  map[int64][]reflect.Value{},
 	}
 }
 
-func (w *StructPreloader) ForEach(callback func(element reflect.Value) error) error {
+func (w *preloader) ForEach(callback func(element reflect.Value) error) error {
+	if IsSlice(w.value) {
+		return w.forEach(callback)
+	}
+	return w.forOne(callback)
+}
+
+func (w *preloader) forOne(callback func(element reflect.Value) error) error {
 	return callback(CreateReflectPointer(w.value))
 }
 
-func (w *StructPreloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
-	elem := kind
-
-	if elem.Kind() == reflect.Slice {
-
-		// If output type is a slice, create a new slice with it's indirect type.
-		// For example, a slice with "[]*Foobar" as type will create a new slice with "[]Foobar" as type.
-
-		elem = elem.Elem()
-		if elem.Kind() == reflect.Ptr {
-			elem = elem.Elem()
-		}
-		if elem.Kind() != reflect.Struct {
-			return errors.Errorf("cannot execute a preload this type: %s", elem)
-		}
-
-	} else if elem.Kind() == reflect.Struct || elem.Kind() == reflect.Ptr {
-
-		// If output type is not a slice, so either a struct or a pointer to a struct,
-		// create a new slice with it's indirect type.
-		// For example, a pointer with "*Foobar" as type will create a new slice with "[]Foobar" as type.
-
-		if elem.Kind() == reflect.Ptr {
-			elem = elem.Elem()
-		}
-		if elem.Kind() != reflect.Struct {
-			return errors.Errorf("cannot execute a preload this type: %s", elem)
-		}
-
-	} else {
-		return errors.Errorf("cannot execute a preload this type: %s", kind)
-	}
-
-	w.relations = NewReflectSlice(elem)
-	return callback(w.relations.Interface())
-}
-
-func (w *StructPreloader) OnUpdate(callback func(element interface{}) error) error {
-	if w.relations.Kind() == reflect.Ptr {
-		w.relations = w.relations.Elem()
-	}
-
-	if w.relations.Len() == 0 {
-		return nil
-	}
-
-	val := w.relations.Index(0).Addr()
-	return callback(val.Interface())
-}
-
-func (w *StructPreloader) StringIndexes() []string {
-	return getStringIndexes(w.mapString)
-}
-
-func (w *StructPreloader) AddStringIndex(id string, element reflect.Value) error {
-	return addStringIndex(w.mapString, id, element)
-}
-
-func (w *StructPreloader) UpdateValueForStringIndex(name string, id string, element interface{}) error {
-	values, ok := w.mapString[id]
-	if !ok {
-		return errors.Errorf("cannot find element with primary key: '%s'", id)
-	}
-	if len(values) != 1 {
-		return errors.Errorf("only one element was expected for primary key: '%s'", id)
-	}
-
-	return PushFieldValue(values[0].Interface(), name, element, false)
-}
-
-func (w *StructPreloader) Int64Indexes() []int64 {
-	return getInt64Indexes(w.mapInt64)
-}
-
-func (w *StructPreloader) AddInt64Index(id int64, element reflect.Value) error {
-	return addInt64Index(w.mapInt64, id, element)
-}
-
-func (w *StructPreloader) UpdateValueForInt64Index(name string, id int64, element interface{}) error {
-	values, ok := w.mapInt64[id]
-	if !ok {
-		return errors.Errorf("cannot find element with primary key: '%d'", id)
-	}
-	if len(values) != 1 {
-		return errors.Errorf("only one element was expected for primary key: '%d'", id)
-	}
-
-	return PushFieldValue(values[0].Interface(), name, element, false)
-}
-
-type SlicePreloader struct {
-	value     interface{}
-	relations reflect.Value
-	mapString map[string][]reflect.Value
-	mapInt64  map[int64][]reflect.Value
-}
-
-func NewSlicePreloader(value interface{}) *SlicePreloader {
-	return &SlicePreloader{
-		value:     value,
-		mapString: map[string][]reflect.Value{},
-		mapInt64:  map[int64][]reflect.Value{},
-	}
-}
-
-func (w *SlicePreloader) ForEach(callback func(element reflect.Value) error) error {
+func (w *preloader) forEach(callback func(element reflect.Value) error) error {
 	slice := GetIndirectValue(w.value)
 
 	for i := 0; i < slice.Len(); i++ {
@@ -170,7 +84,7 @@ func (w *SlicePreloader) ForEach(callback func(element reflect.Value) error) err
 	return nil
 }
 
-func (w *SlicePreloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
+func (w *preloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
 	elem := kind
 
 	if elem.Kind() == reflect.Slice {
@@ -204,11 +118,10 @@ func (w *SlicePreloader) OnExecute(kind reflect.Type, callback func(element inte
 	}
 
 	w.relations = NewReflectSlice(elem)
-
 	return callback(w.relations.Interface())
 }
 
-func (w *SlicePreloader) OnUpdate(callback func(element interface{}) error) error {
+func (w *preloader) OnUpdate(callback func(element interface{}) error) error {
 	if w.relations.Kind() == reflect.Ptr {
 		w.relations = w.relations.Elem()
 	}
@@ -225,15 +138,15 @@ func (w *SlicePreloader) OnUpdate(callback func(element interface{}) error) erro
 	return nil
 }
 
-func (w *SlicePreloader) StringIndexes() []string {
+func (w *preloader) StringIndexes() []string {
 	return getStringIndexes(w.mapString)
 }
 
-func (w *SlicePreloader) AddStringIndex(id string, element reflect.Value) error {
+func (w *preloader) AddStringIndex(id string, element reflect.Value) error {
 	return addStringIndex(w.mapString, id, element)
 }
 
-func (w *SlicePreloader) UpdateValueForStringIndex(name string, id string, element interface{}) error {
+func (w *preloader) UpdateValueForStringIndex(name string, id string, element interface{}) error {
 	values, ok := w.mapString[id]
 	if !ok {
 		return errors.Errorf("cannot find element with primary key: '%s'", id)
@@ -249,15 +162,15 @@ func (w *SlicePreloader) UpdateValueForStringIndex(name string, id string, eleme
 	return nil
 }
 
-func (w *SlicePreloader) Int64Indexes() []int64 {
+func (w *preloader) Int64Indexes() []int64 {
 	return getInt64Indexes(w.mapInt64)
 }
 
-func (w *SlicePreloader) AddInt64Index(id int64, element reflect.Value) error {
+func (w *preloader) AddInt64Index(id int64, element reflect.Value) error {
 	return addInt64Index(w.mapInt64, id, element)
 }
 
-func (w *SlicePreloader) UpdateValueForInt64Index(name string, id int64, element interface{}) error {
+func (w *preloader) UpdateValueForInt64Index(name string, id int64, element interface{}) error {
 	values, ok := w.mapInt64[id]
 	if !ok {
 		return errors.Errorf("cannot find element with primary key: '%d'", id)

@@ -236,11 +236,8 @@ func PushFieldValue(instance interface{}, name string, value interface{}, strict
 
 // getDestinationReflectValue returns field value identified by given name from instance.
 func getDestinationReflectValue(instance interface{}, name string) (dest reflect.Value, err error) {
-
-	v, ok := instance.(reflect.Value)
-	if !ok {
-		v = reflect.Indirect(reflect.ValueOf(instance))
-	}
+	// Get a indirect value from given instance.
+	v := GetIndirectValue(instance)
 
 	if v.Kind() == reflect.Interface {
 		v = reflect.ValueOf(v.Interface())

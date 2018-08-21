@@ -73,28 +73,14 @@ func preloadOne(ctx context.Context, driver Driver, dest interface{}, paths []st
 		return nil, err
 	}
 
-	// TODO Refactor using preloadHandler
-	preloader := preloadOneHandler{
+	handler := &preloadHandler{
 		ctx:    ctx,
 		driver: driver,
 		model:  model,
 		dest:   dest,
 	}
 
-	for _, path := range paths {
-		reference, ok := schema.associations[path]
-		if !ok {
-			return nil, errors.Errorf("'%s' is not a valid association", path)
-		}
-
-		err := preloader.preload(reference)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// TODO
-	return nil, nil
+	return executePreload(handler, schema, paths)
 }
 
 // preloadMany preloads a slice of instance.
@@ -109,19 +95,24 @@ func preloadMany(ctx context.Context, driver Driver, dest interface{}, paths []s
 		return nil, err
 	}
 
-	handler := preloadHandler{
+	handler := &preloadHandler{
 		ctx:    ctx,
 		driver: driver,
 		model:  model,
+		dest:   dest,
 	}
 
+	return executePreload(handler, schema, paths)
+}
+
+func executePreload(handler *preloadHandler, schema *Schema, paths []string) (Queries, error) {
 	for _, path := range paths {
 		reference, ok := schema.associations[path]
 		if !ok {
 			return nil, errors.Errorf("'%s' is not a valid association", path)
 		}
 
-		err := handler.preload(reflectx.NewSlicePreloader(dest), reference)
+		err := handler.preload(reference)
 		if err != nil {
 			return nil, err
 		}
@@ -131,31 +122,30 @@ func preloadMany(ctx context.Context, driver Driver, dest interface{}, paths []s
 	return nil, nil
 }
 
-// Common version
-
 type preloadHandler struct {
 	ctx    context.Context
 	driver Driver
 	model  Model
+	dest   interface{}
 }
 
-func (handler *preloadHandler) preload(preloader reflectx.Preloader, reference Reference) error {
+func (handler *preloadHandler) preload(reference Reference) error {
 	if reference.IsAssociationType(AssociationTypeOne) {
-		return handler.preloadOne(preloader, reference)
+		return handler.preloadOne(reference)
 	} else {
-		return handler.preloadMany(preloader, reference)
+		return handler.preloadMany(reference)
 	}
 }
 
-func (handler *preloadHandler) preloadOne(preloader reflectx.Preloader, reference Reference) error {
+func (handler *preloadHandler) preloadOne(reference Reference) error {
 	if reference.IsLocal() {
-		return handler.preloadOneLocal(preloader, reference)
+		return handler.preloadOneLocal(reference)
 	} else {
-		return handler.preloadOneRemote(preloader, reference)
+		return handler.preloadOneRemote(reference)
 	}
 }
 
-func (handler *preloadHandler) preloadOneLocal(preloader reflectx.Preloader, reference Reference) error {
+func (handler *preloadHandler) preloadOneLocal(reference Reference) error {
 	remote := reference.Remote()
 	local := reference.Local()
 
@@ -163,6 +153,8 @@ func (handler *preloadHandler) preloadOneLocal(preloader reflectx.Preloader, ref
 	if err != nil {
 		return err
 	}
+
+	preloader := reflectx.NewPreloader(handler.dest)
 
 	builder := loukoum.Select(remote.Columns()).From(remote.TableName())
 	if remote.HasDeletedKey() {
@@ -401,7 +393,7 @@ func (handler *preloadHandler) preloadOneLocalOptionalInteger(preloader reflectx
 	return nil
 }
 
-func (handler *preloadHandler) preloadOneRemote(preloader reflectx.Preloader, reference Reference) error {
+func (handler *preloadHandler) preloadOneRemote(reference Reference) error {
 	remote := reference.Remote()
 	local := reference.Local()
 
@@ -409,6 +401,8 @@ func (handler *preloadHandler) preloadOneRemote(preloader reflectx.Preloader, re
 	if err != nil {
 		return err
 	}
+
+	preloader := reflectx.NewPreloader(handler.dest)
 
 	builder := loukoum.Select(remote.Columns()).From(remote.TableName())
 	if remote.HasDeletedKey() {
@@ -532,7 +526,7 @@ func (handler *preloadHandler) preloadOneRemoteInteger(preloader reflectx.Preloa
 	return nil
 }
 
-func (handler *preloadHandler) preloadMany(preloader reflectx.Preloader, reference Reference) error {
+func (handler *preloadHandler) preloadMany(reference Reference) error {
 	remote := reference.Remote()
 	local := reference.Local()
 
@@ -540,6 +534,8 @@ func (handler *preloadHandler) preloadMany(preloader reflectx.Preloader, referen
 	if err != nil {
 		return err
 	}
+
+	preloader := reflectx.NewPreloader(handler.dest)
 
 	builder := loukoum.Select(remote.Columns()).From(remote.TableName())
 	if remote.HasDeletedKey() {
@@ -614,7 +610,59 @@ func (handler *preloadHandler) preloadManyString(preloader reflectx.Preloader,
 func (handler *preloadHandler) preloadManyInteger(preloader reflectx.Preloader,
 	reference Reference, builder builder.Select) error {
 
-	panic("TODO")
+	remote := reference.Remote()
+
+	err := preloader.ForEach(func(element reflect.Value) error {
+		pk, err := handler.fetchRemoteForeignKeyInteger(reference, element.Interface())
+		if err != nil {
+			return err
+		}
+		fmt.Printf("555-3-5 %v %v\n", pk, element.Type())
+		return preloader.AddInt64Index(pk, element)
+	})
+	if err != nil {
+		return err
+	}
+
+	list := preloader.Int64Indexes()
+	if len(list) == 0 {
+		return nil
+	}
+
+	builder = builder.Where(loukoum.Condition(remote.ColumnPath()).In(list))
+
+	err = preloader.OnExecute(reference.Type(), func(relation interface{}) error {
+		err := Exec(handler.ctx, handler.driver, builder, relation)
+		if err != nil && !IsErrNoRows(err) {
+			return err
+		}
+		fmt.Printf("555-3-4 %+v\n", relation)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	err = preloader.OnUpdate(func(element interface{}) error {
+		fk, err := reflectx.GetFieldValueInt64(element, remote.FieldName())
+		if err != nil {
+			return err
+		}
+		if fk == 0 {
+			return errors.Wrap(ErrPreloadInvalidModel, "foreign key has a zero value")
+		}
+
+		fmt.Printf("555-3-1 %+v\n", fk)
+		fmt.Printf("555-3-2 %+v\n", reference.FieldName())
+		fmt.Printf("555-3-3 %+v\n", element)
+
+		return preloader.UpdateValueForInt64Index(reference.FieldName(), fk, element)
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (handler *preloadHandler) fetchLocalForeignKeyString(reference Reference,
@@ -737,70 +785,6 @@ func (handler *preloadHandler) fetchRemoteForeignKeyInteger(reference Reference,
 	return pk, nil
 }
 
-// END Common
-
-type preloadOneHandler struct {
-	ctx    context.Context
-	driver Driver
-	model  Model
-	dest   interface{}
-}
-
-func (preloader *preloadOneHandler) preload(reference Reference) error {
-	if reference.IsAssociationType(AssociationTypeOne) {
-		return preloader.preloadOne(reference)
-	} else {
-		return preloader.preloadMany(reference)
-	}
-}
-
-func (preloader *preloadOneHandler) preloadOne(reference Reference) error {
-	handler := &preloadHandler{
-		ctx:    preloader.ctx,
-		driver: preloader.driver,
-		model:  preloader.model,
-	}
-
-	return handler.preload(reflectx.NewStructPreloader(preloader.dest), reference)
-}
-
-func (preloader *preloadOneHandler) preloadMany(reference Reference) error {
-	ctx := preloader.ctx
-	driver := preloader.driver
-	dest := preloader.dest
-	model := preloader.model
-	remote := reference.Remote()
-	local := reference.Local()
-
-	err := preloadCheckRemoteForeignKey(reference, local, remote)
-	if err != nil {
-		return err
-	}
-
-	builder := loukoum.Select(remote.Columns()).From(remote.TableName())
-	if remote.HasDeletedKey() {
-		builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
-	}
-
-	builder, preload, err := preloadAddRemoteForeignKey(reference, local, remote, builder, dest)
-	if err != nil {
-		return err
-	}
-	if !preload {
-		return nil
-	}
-
-	list := reflectx.NewReflectSlice(reflectx.GetSliceType(reference.Type()))
-	relation := reflectx.MakePointer(list.Interface())
-
-	err = Exec(ctx, driver, builder, relation)
-	if err != nil && !IsErrNoRows(err) {
-		return err
-	}
-
-	return reflectx.UpdateFieldValue(model, reference.FieldName(), relation)
-}
-
 func preloadCheckLocalForeignKey(reference Reference, local ReferenceObject, remote ReferenceObject) error {
 	if !reference.IsLocal() {
 		return errors.Wrapf(ErrPreloadInvalidSchema,
@@ -839,39 +823,4 @@ func preloadCheckRemoteForeignKey(reference Reference, local ReferenceObject, re
 			"association must have a compatible primary key and foreign key for: '%s'", reference.Type())
 	}
 	return nil
-}
-
-func preloadAddRemoteForeignKey(reference Reference, local ReferenceObject, remote ReferenceObject,
-	builder builder.Select, dest interface{}) (builder.Select, bool, error) {
-
-	switch local.PrimaryKeyType() {
-	case PKStringType:
-
-		pk, err := reflectx.GetFieldValueString(dest, local.FieldName())
-		if err != nil {
-			return builder, false, err
-		}
-		if pk == "" {
-			return builder, false, errors.Wrap(ErrPreloadInvalidModel, "primary key has a zero value")
-		}
-
-		builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(pk))
-		return builder, true, nil
-
-	case PKIntegerType:
-
-		pk, err := reflectx.GetFieldValueInt64(dest, local.FieldName())
-		if err != nil {
-			return builder, false, err
-		}
-		if pk == 0 {
-			return builder, false, errors.Wrap(ErrPreloadInvalidModel, "primary key has a zero value")
-		}
-
-		builder = builder.Where(loukoum.Condition(remote.ColumnPath()).Equal(pk))
-		return builder, true, nil
-
-	default:
-		return builder, false, errors.Errorf("'%s' is a unsupported primary key type for preload", reference.Type())
-	}
 }

@@ -50,18 +50,35 @@ func GetIndirectValue(element interface{}) reflect.Value {
 //  * Type "***[]Foo" will returns "*[]Foo"...
 //
 func GetFlattenValue(element interface{}) interface{} {
-	t, ok := element.(reflect.Value)
+	return GetFlattenReflectValue(element).Interface()
+}
+
+// GetFlattenReflectValue returns a reflect value from a flattened indirect type.
+//
+// For example:
+//
+//  * Type "Foo" will returns "Foo"...
+//  * Type "*Foo" will returns "*Foo"...
+//  * Type "**Foo" will returns "*Foo"...
+//  * Type "***Foo" will returns "*Foo"...
+//  * Type "[]Foo" will returns "[]Foo"...
+//  * Type "*[]Foo" will returns "*[]Foo"...
+//  * Type "**[]Foo" will returns "*[]Foo"...
+//  * Type "***[]Foo" will returns "*[]Foo"...
+//
+func GetFlattenReflectValue(element interface{}) reflect.Value {
+	v, ok := element.(reflect.Value)
 	if !ok {
-		t = reflect.ValueOf(element)
+		v = reflect.ValueOf(element)
 	}
-	if t.Kind() != reflect.Ptr {
-		return t.Interface()
+	if v.Kind() != reflect.Ptr {
+		return v
 	}
 	for {
-		e := t.Elem()
+		e := v.Elem()
 		if e.Kind() != reflect.Ptr {
-			return t.Interface()
+			return v
 		}
-		t = e
+		v = e
 	}
 }
