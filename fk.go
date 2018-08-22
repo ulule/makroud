@@ -241,8 +241,7 @@ func NewReference(driver Driver, local *Schema, field *Field) (*Reference, error
 		return nil, errors.Errorf("invalid model: %s", field.rtype.String())
 	}
 
-	// TODO (novln): Allow circular reference...
-	remote, err := GetSchema(driver, reference)
+	remote, err := getSchema(driver, reference, false)
 	if err != nil {
 		return nil, err
 	}

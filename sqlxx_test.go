@@ -1109,6 +1109,8 @@ type Human struct {
 	UpdatedAt time.Time      `sqlxx:"column:updated_at,default"`
 	DeletedAt pq.NullTime    `sqlxx:"column:deleted_at"`
 	CatID     sql.NullString `sqlxx:"column:cat_id,fk:ztp_cat"`
+	// Relationships
+	Cat *Cat
 }
 
 func (Human) TableName() string {

@@ -10,6 +10,38 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
+func TestPreload_CommonFailure(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		{
+			value := Human{}
+			err := sqlxx.Preload(ctx, nil, &value, "Cat")
+			is.Error(err)
+			is.Equal(sqlxx.ErrInvalidDriver, errors.Cause(err))
+		}
+		{
+			value := 12
+			err := sqlxx.Preload(ctx, driver, &value, "Cat")
+			is.Error(err)
+			is.Equal(sqlxx.ErrPreloadInvalidSchema, errors.Cause(err))
+		}
+		{
+			value := Human{}
+			err := sqlxx.Preload(ctx, driver, value, "Cat")
+			is.Error(err)
+			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		}
+		{
+			value := Human{}
+			err := sqlxx.Preload(ctx, driver, &value, "X", "Y", "Z")
+			is.Error(err)
+			is.Equal(sqlxx.ErrPreloadInvalidPath, errors.Cause(err))
+		}
+	})
+}
+
 func TestPreload_ExoChunk_One(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		ctx := context.Background()
@@ -116,18 +148,6 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 			is.Equal(fixtures.Modes[1].ID, chunk4.Mode.ID)
 			is.Equal(fixtures.Modes[1].Mode, chunk4.Mode.Mode)
 			is.Nil(chunk4.Signature)
-
-		}
-		{
-
-			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckExoCloudFixtures(fixtures)
-
-			chunk1 := fixtures.Chunks[0]
-
-			err := sqlxx.Preload(ctx, driver, *chunk1, "Mode", "Signature")
-			is.Error(err)
-			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
 		}
 	})
@@ -465,26 +485,6 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 		}
 		{
 
-			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckExoCloudFixtures(fixtures)
-
-			chunks := []ExoChunk{
-				*fixtures.Chunks[0],
-				*fixtures.Chunks[1],
-				*fixtures.Chunks[2],
-				*fixtures.Chunks[3],
-				*fixtures.Chunks[4],
-				*fixtures.Chunks[5],
-				*fixtures.Chunks[6],
-			}
-
-			err := sqlxx.Preload(ctx, driver, chunks, "Mode", "Signature")
-			is.Error(err)
-			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
-
-		}
-		{
-
 			chunks := []ExoChunk{}
 
 			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
@@ -604,18 +604,6 @@ func TestPreload_Owl_One(t *testing.T) {
 			is.Equal(fixtures.Groups[2].ID, owl5.Group.ID)
 			is.Equal(fixtures.Groups[2].Name, owl5.Group.Name)
 			is.Empty(owl5.Packages)
-
-		}
-		{
-
-			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
-			CheckOwlFixtures(fixtures)
-
-			owl1 := fixtures.Owls[0]
-
-			err := sqlxx.Preload(ctx, driver, *owl1, "Group", "Packages")
-			is.Error(err)
-			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
 		}
 	})
@@ -935,25 +923,6 @@ func TestPreload_Owl_Many(t *testing.T) {
 		}
 		{
 
-			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
-			CheckOwlFixtures(fixtures)
-
-			owls := []Owl{
-				*fixtures.Owls[0],
-				*fixtures.Owls[1],
-				*fixtures.Owls[2],
-				*fixtures.Owls[3],
-				*fixtures.Owls[4],
-				*fixtures.Owls[5],
-			}
-
-			err := sqlxx.Preload(ctx, driver, owls, "Group", "Packages")
-			is.Error(err)
-			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
-
-		}
-		{
-
 			owls := []Owl{}
 
 			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Packages")
@@ -1082,18 +1051,6 @@ func TestPreload_Cat_One(t *testing.T) {
 			is.NoError(err)
 			is.Nil(cat6.Feeder)
 			is.Empty(cat6.Meows)
-
-		}
-		{
-
-			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
-			CheckCatFixtures(fixtures)
-
-			cat1 := fixtures.Cats[0]
-
-			err := sqlxx.Preload(ctx, driver, *cat1, "Feeder", "Meows")
-			is.Error(err)
-			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
 		}
 	})
@@ -1449,27 +1406,6 @@ func TestPreload_Cat_Many(t *testing.T) {
 			is.Contains((*cats)[7].Meows, fixtures.Meows[12])
 			is.Contains((*cats)[7].Meows, fixtures.Meows[13])
 			is.Contains((*cats)[7].Meows, fixtures.Meows[14])
-
-		}
-		{
-
-			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
-			CheckCatFixtures(fixtures)
-
-			cats := []Cat{
-				*fixtures.Cats[0],
-				*fixtures.Cats[1],
-				*fixtures.Cats[2],
-				*fixtures.Cats[3],
-				*fixtures.Cats[4],
-				*fixtures.Cats[5],
-				*fixtures.Cats[6],
-				*fixtures.Cats[7],
-			}
-
-			err := sqlxx.Preload(ctx, driver, cats, "Feeder", "Meows")
-			is.Error(err)
-			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 
 		}
 		{

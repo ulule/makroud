@@ -179,11 +179,19 @@ func (schema Schema) writeField(model Model, field Field, value interface{}) err
 // Initializers
 // ----------------------------------------------------------------------------
 
-// GetSchema returns the given schema from global cache
-// If the given schema does not exists, returns false as bool.
+// GetSchema returns the schema from given model.
+// If the schema does not exists, it returns an error.
 func GetSchema(driver Driver, model Model) (*Schema, error) {
+	return getSchema(driver, model, true)
+}
+
+// getSchema returns the schema from given model.
+// If the schema does not exists, it returns an error.
+// If throughout is true, it will execute a full scan of given model:
+// this is a trick to allow circular import of model.
+func getSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
 	if !driver.hasCache() {
-		return newSchema(driver, model)
+		return newSchema(driver, model, throughout)
 	}
 
 	schema := driver.cache().GetSchema(model)
@@ -191,12 +199,14 @@ func GetSchema(driver Driver, model Model) (*Schema, error) {
 		return schema, nil
 	}
 
-	schema, err := newSchema(driver, model)
+	schema, err := newSchema(driver, model, throughout)
 	if err != nil {
 		return nil, err
 	}
 
-	driver.cache().SetSchema(schema)
+	if throughout {
+		driver.cache().SetSchema(schema)
+	}
 
 	return schema, nil
 }
@@ -246,9 +256,13 @@ func analyzeModelOpts(model Model) ModelOpts {
 	return opts
 }
 
-// newSchema returns model's table columns, extracted by reflection.
-// The returned map is Model.FieldName -> table_name.column_name
-func newSchema(driver Driver, model Model) (*Schema, error) {
+// newSchema returns a schema from given model, extracted by reflection.
+// The returned schema is a mapping of a model to table and columns.
+// For example: Model.FieldName -> table_name.column_name
+//
+// If throughout is true, it will execute a full and complete scan of given model:
+// this is a trick to allow circular import of model.
+func newSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
 	fields, err := reflectx.GetFields(model)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot use reflections to obtain %T fields", model)
@@ -310,38 +324,40 @@ func newSchema(driver Driver, model Model) (*Schema, error) {
 		relationships[name] = field
 	}
 
-	for name, field := range relationships {
-		_, ok := schema.associations[field.FieldName()]
-		if ok {
-			continue
+	if throughout {
+		for name, field := range relationships {
+			_, ok := schema.associations[field.FieldName()]
+			if ok {
+				continue
+			}
+
+			reference, err := NewReference(driver, schema, field)
+			if err != nil {
+				return nil, errors.Wrapf(err, "cannot use '%s' as association for %T", name, model)
+			}
+
+			schema.associations[field.FieldName()] = *reference
+
+			// TODO (novln): Handle child references...
+			//
+			// nextModel := field.ForeignKey.Reference.Model
+			// if field.IsAssociationTypeMany() {
+			// 	nextModel = field.ForeignKey.Model
+			// }
+			//
+			// nextSchema, err := GetSchema(driver, nextModel)
+			// if err != nil {
+			// 	return Schema{}, err
+			// }
+			//
+			// for k, v := range nextSchema.Associations {
+			// 	key := fmt.Sprintf("%s.%s", field.FieldName, k)
+			// 	_, ok := schema.Associations[key]
+			// 	if !ok {
+			// 		schema.Associations[key] = v
+			// 	}
+			// }
 		}
-
-		reference, err := NewReference(driver, schema, field)
-		if err != nil {
-			return nil, errors.Wrapf(err, "cannot use '%s' as association for %T", name, model)
-		}
-
-		schema.associations[field.FieldName()] = *reference
-
-		// TODO (novln): Handle child references...
-		//
-		// nextModel := field.ForeignKey.Reference.Model
-		// if field.IsAssociationTypeMany() {
-		// 	nextModel = field.ForeignKey.Model
-		// }
-		//
-		// nextSchema, err := GetSchema(driver, nextModel)
-		// if err != nil {
-		// 	return Schema{}, err
-		// }
-		//
-		// for k, v := range nextSchema.Associations {
-		// 	key := fmt.Sprintf("%s.%s", field.FieldName, k)
-		// 	_, ok := schema.Associations[key]
-		// 	if !ok {
-		// 		schema.Associations[key] = v
-		// 	}
-		// }
 	}
 
 	err = inferSchemaPrimaryKey(model, modelOpts, schema)
