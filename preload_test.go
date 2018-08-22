@@ -1419,3 +1419,316 @@ func TestPreload_Cat_Many(t *testing.T) {
 		}
 	})
 }
+
+func TestPreload_Human_One(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		CheckHumanFixtures := func(fixtures ZootopiaFixtures) {
+			is.Nil(fixtures.Humans[0].Cat)
+			is.Nil(fixtures.Humans[1].Cat)
+			is.Nil(fixtures.Humans[2].Cat)
+			is.Nil(fixtures.Humans[3].Cat)
+			is.Nil(fixtures.Humans[4].Cat)
+			is.Nil(fixtures.Humans[5].Cat)
+			is.Nil(fixtures.Humans[6].Cat)
+		}
+
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckHumanFixtures(fixtures)
+
+			human1 := fixtures.Humans[0]
+
+			err := sqlxx.Preload(ctx, driver, human1, "Cat")
+			is.NoError(err)
+			is.NotNil(human1.Cat)
+			is.Equal(fixtures.Cats[0].ID, human1.Cat.ID)
+			is.Equal(fixtures.Cats[0].Name, human1.Cat.Name)
+
+			human2 := fixtures.Humans[1]
+
+			err = sqlxx.Preload(ctx, driver, human2, "Cat")
+			is.NoError(err)
+			is.NotNil(human2.Cat)
+			is.Equal(fixtures.Cats[1].ID, human2.Cat.ID)
+			is.Equal(fixtures.Cats[1].Name, human2.Cat.Name)
+
+			human3 := fixtures.Humans[2]
+
+			err = sqlxx.Preload(ctx, driver, human3, "Cat")
+			is.NoError(err)
+			is.Nil(human3.Cat)
+
+			human7 := fixtures.Humans[6]
+
+			err = sqlxx.Preload(ctx, driver, human7, "Cat")
+			is.NoError(err)
+			is.NotNil(human7.Cat)
+			is.Equal(fixtures.Cats[6].ID, human7.Cat.ID)
+			is.Equal(fixtures.Cats[6].Name, human7.Cat.Name)
+
+		}
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckHumanFixtures(fixtures)
+
+			human1 := fixtures.Humans[0]
+
+			err := sqlxx.Preload(ctx, driver, &human1, "Cat")
+			is.NoError(err)
+			is.NotNil(human1.Cat)
+			is.Equal(fixtures.Cats[0].ID, human1.Cat.ID)
+			is.Equal(fixtures.Cats[0].Name, human1.Cat.Name)
+
+			human2 := fixtures.Humans[1]
+
+			err = sqlxx.Preload(ctx, driver, &human2, "Cat")
+			is.NoError(err)
+			is.NotNil(human2.Cat)
+			is.Equal(fixtures.Cats[1].ID, human2.Cat.ID)
+			is.Equal(fixtures.Cats[1].Name, human2.Cat.Name)
+
+			human3 := fixtures.Humans[2]
+
+			err = sqlxx.Preload(ctx, driver, &human3, "Cat")
+			is.NoError(err)
+			is.Nil(human3.Cat)
+
+			human7 := fixtures.Humans[6]
+
+			err = sqlxx.Preload(ctx, driver, &human7, "Cat")
+			is.NoError(err)
+			is.NotNil(human7.Cat)
+			is.Equal(fixtures.Cats[6].ID, human7.Cat.ID)
+			is.Equal(fixtures.Cats[6].Name, human7.Cat.Name)
+
+		}
+	})
+}
+
+func TestPreload_Human_Many(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		CheckHumanFixtures := func(fixtures ZootopiaFixtures) {
+			is.Nil(fixtures.Humans[0].Cat)
+			is.Nil(fixtures.Humans[1].Cat)
+			is.Nil(fixtures.Humans[2].Cat)
+			is.Nil(fixtures.Humans[3].Cat)
+			is.Nil(fixtures.Humans[4].Cat)
+			is.Nil(fixtures.Humans[5].Cat)
+			is.Nil(fixtures.Humans[6].Cat)
+		}
+
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckHumanFixtures(fixtures)
+
+			humans := []Human{
+				*fixtures.Humans[0],
+				*fixtures.Humans[1],
+				*fixtures.Humans[2],
+				*fixtures.Humans[3],
+				*fixtures.Humans[4],
+				*fixtures.Humans[5],
+				*fixtures.Humans[6],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			is.NoError(err)
+			is.Len(humans, 7)
+			is.Equal(fixtures.Humans[0].ID, humans[0].ID)
+			is.Equal(fixtures.Humans[1].ID, humans[1].ID)
+			is.Equal(fixtures.Humans[2].ID, humans[2].ID)
+			is.Equal(fixtures.Humans[3].ID, humans[3].ID)
+			is.Equal(fixtures.Humans[4].ID, humans[4].ID)
+			is.Equal(fixtures.Humans[5].ID, humans[5].ID)
+			is.Equal(fixtures.Humans[6].ID, humans[6].ID)
+
+			is.NotNil(humans[0].Cat)
+			is.Equal(fixtures.Cats[0].ID, humans[0].Cat.ID)
+			is.Equal(fixtures.Cats[0].Name, humans[0].Cat.Name)
+
+			is.NotNil(humans[1].Cat)
+			is.Equal(fixtures.Cats[1].ID, humans[1].Cat.ID)
+			is.Equal(fixtures.Cats[1].Name, humans[1].Cat.Name)
+
+			is.Nil(humans[2].Cat)
+
+			is.NotNil(humans[3].Cat)
+			is.Equal(fixtures.Cats[3].ID, humans[3].Cat.ID)
+			is.Equal(fixtures.Cats[3].Name, humans[3].Cat.Name)
+
+			is.Nil(humans[4].Cat)
+
+			is.Nil(humans[5].Cat)
+
+			is.NotNil(humans[6].Cat)
+			is.Equal(fixtures.Cats[6].ID, humans[6].Cat.ID)
+			is.Equal(fixtures.Cats[6].Name, humans[6].Cat.Name)
+
+		}
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckHumanFixtures(fixtures)
+
+			humans := []*Human{
+				fixtures.Humans[0],
+				fixtures.Humans[1],
+				fixtures.Humans[2],
+				fixtures.Humans[3],
+				fixtures.Humans[4],
+				fixtures.Humans[5],
+				fixtures.Humans[6],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			is.NoError(err)
+			is.Len(humans, 7)
+			is.Equal(fixtures.Humans[0].ID, humans[0].ID)
+			is.Equal(fixtures.Humans[1].ID, humans[1].ID)
+			is.Equal(fixtures.Humans[2].ID, humans[2].ID)
+			is.Equal(fixtures.Humans[3].ID, humans[3].ID)
+			is.Equal(fixtures.Humans[4].ID, humans[4].ID)
+			is.Equal(fixtures.Humans[5].ID, humans[5].ID)
+			is.Equal(fixtures.Humans[6].ID, humans[6].ID)
+
+			is.NotNil(humans[0].Cat)
+			is.Equal(fixtures.Cats[0].ID, humans[0].Cat.ID)
+			is.Equal(fixtures.Cats[0].Name, humans[0].Cat.Name)
+
+			is.NotNil(humans[1].Cat)
+			is.Equal(fixtures.Cats[1].ID, humans[1].Cat.ID)
+			is.Equal(fixtures.Cats[1].Name, humans[1].Cat.Name)
+
+			is.Nil(humans[2].Cat)
+
+			is.NotNil(humans[3].Cat)
+			is.Equal(fixtures.Cats[3].ID, humans[3].Cat.ID)
+			is.Equal(fixtures.Cats[3].Name, humans[3].Cat.Name)
+
+			is.Nil(humans[4].Cat)
+
+			is.Nil(humans[5].Cat)
+
+			is.NotNil(humans[6].Cat)
+			is.Equal(fixtures.Cats[6].ID, humans[6].Cat.ID)
+			is.Equal(fixtures.Cats[6].Name, humans[6].Cat.Name)
+
+		}
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckHumanFixtures(fixtures)
+
+			humans := &[]Human{
+				*fixtures.Humans[0],
+				*fixtures.Humans[1],
+				*fixtures.Humans[2],
+				*fixtures.Humans[3],
+				*fixtures.Humans[4],
+				*fixtures.Humans[5],
+				*fixtures.Humans[6],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			is.NoError(err)
+			is.Len((*humans), 7)
+			is.Equal(fixtures.Humans[0].ID, (*humans)[0].ID)
+			is.Equal(fixtures.Humans[1].ID, (*humans)[1].ID)
+			is.Equal(fixtures.Humans[2].ID, (*humans)[2].ID)
+			is.Equal(fixtures.Humans[3].ID, (*humans)[3].ID)
+			is.Equal(fixtures.Humans[4].ID, (*humans)[4].ID)
+			is.Equal(fixtures.Humans[5].ID, (*humans)[5].ID)
+			is.Equal(fixtures.Humans[6].ID, (*humans)[6].ID)
+
+			is.NotNil((*humans)[0].Cat)
+			is.Equal(fixtures.Cats[0].ID, (*humans)[0].Cat.ID)
+			is.Equal(fixtures.Cats[0].Name, (*humans)[0].Cat.Name)
+
+			is.NotNil((*humans)[1].Cat)
+			is.Equal(fixtures.Cats[1].ID, (*humans)[1].Cat.ID)
+			is.Equal(fixtures.Cats[1].Name, (*humans)[1].Cat.Name)
+
+			is.Nil((*humans)[2].Cat)
+
+			is.NotNil((*humans)[3].Cat)
+			is.Equal(fixtures.Cats[3].ID, (*humans)[3].Cat.ID)
+			is.Equal(fixtures.Cats[3].Name, (*humans)[3].Cat.Name)
+
+			is.Nil((*humans)[4].Cat)
+
+			is.Nil((*humans)[5].Cat)
+
+			is.NotNil((*humans)[6].Cat)
+			is.Equal(fixtures.Cats[6].ID, (*humans)[6].Cat.ID)
+			is.Equal(fixtures.Cats[6].Name, (*humans)[6].Cat.Name)
+
+		}
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckHumanFixtures(fixtures)
+
+			humans := &[]*Human{
+				fixtures.Humans[0],
+				fixtures.Humans[1],
+				fixtures.Humans[2],
+				fixtures.Humans[3],
+				fixtures.Humans[4],
+				fixtures.Humans[5],
+				fixtures.Humans[6],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			is.NoError(err)
+			is.Len((*humans), 7)
+			is.Equal(fixtures.Humans[0].ID, (*humans)[0].ID)
+			is.Equal(fixtures.Humans[1].ID, (*humans)[1].ID)
+			is.Equal(fixtures.Humans[2].ID, (*humans)[2].ID)
+			is.Equal(fixtures.Humans[3].ID, (*humans)[3].ID)
+			is.Equal(fixtures.Humans[4].ID, (*humans)[4].ID)
+			is.Equal(fixtures.Humans[5].ID, (*humans)[5].ID)
+			is.Equal(fixtures.Humans[6].ID, (*humans)[6].ID)
+
+			is.NotNil((*humans)[0].Cat)
+			is.Equal(fixtures.Cats[0].ID, (*humans)[0].Cat.ID)
+			is.Equal(fixtures.Cats[0].Name, (*humans)[0].Cat.Name)
+
+			is.NotNil((*humans)[1].Cat)
+			is.Equal(fixtures.Cats[1].ID, (*humans)[1].Cat.ID)
+			is.Equal(fixtures.Cats[1].Name, (*humans)[1].Cat.Name)
+
+			is.Nil((*humans)[2].Cat)
+
+			is.NotNil((*humans)[3].Cat)
+			is.Equal(fixtures.Cats[3].ID, (*humans)[3].Cat.ID)
+			is.Equal(fixtures.Cats[3].Name, (*humans)[3].Cat.Name)
+
+			is.Nil((*humans)[4].Cat)
+
+			is.Nil((*humans)[5].Cat)
+
+			is.NotNil((*humans)[6].Cat)
+			is.Equal(fixtures.Cats[6].ID, (*humans)[6].Cat.ID)
+			is.Equal(fixtures.Cats[6].Name, (*humans)[6].Cat.Name)
+
+		}
+		{
+
+			humans := []Human{}
+
+			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			is.NoError(err)
+			is.Len(humans, 0)
+
+		}
+	})
+}
