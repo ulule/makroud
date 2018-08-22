@@ -40,7 +40,7 @@ func ArchiveWithQueries(ctx context.Context, driver Driver, model Model) (Querie
 
 func remove(ctx context.Context, driver Driver, model Model) (Queries, error) {
 	if driver == nil {
-		return nil, ErrInvalidDriver
+		return nil, errors.WithStack(ErrInvalidDriver)
 	}
 
 	start := time.Now()
@@ -71,7 +71,7 @@ func remove(ctx context.Context, driver Driver, model Model) (Queries, error) {
 
 func archive(ctx context.Context, driver Driver, model Model) (Queries, error) {
 	if driver == nil {
-		return nil, ErrInvalidDriver
+		return nil, errors.WithStack(ErrInvalidDriver)
 	}
 
 	start := time.Now()

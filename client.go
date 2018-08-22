@@ -313,6 +313,9 @@ func (w *stmtWrapper) QueryRow(ctx context.Context, arg interface{}) (Row, error
 	if err != nil {
 		return nil, errors.Wrap(err, "sqlxx: cannot execute statement")
 	}
+	if row == nil {
+		return nil, errors.Wrap(ErrNoRows, "sqlxx: cannot execute statement")
+	}
 	return wrapRow(row), nil
 }
 

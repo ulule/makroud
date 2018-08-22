@@ -22,4 +22,6 @@ var (
 	ErrPreloadInvalidSchema = fmt.Errorf("given model has an invalid schema")
 	// ErrPreloadInvalidModel is returned when preload detect an invalid model.
 	ErrPreloadInvalidModel = fmt.Errorf("given model is invalid")
+	// ErrPreloadInvalidPath is returned when preload detect an invalid path.
+	ErrPreloadInvalidPath = fmt.Errorf("given path is invalid")
 )

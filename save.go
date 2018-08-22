@@ -28,7 +28,7 @@ func SaveWithQueries(ctx context.Context, driver Driver, model Model) (Queries, 
 
 func save(ctx context.Context, driver Driver, model Model) (Queries, error) {
 	if driver == nil {
-		return nil, ErrInvalidDriver
+		return nil, errors.WithStack(ErrInvalidDriver)
 	}
 
 	start := time.Now()

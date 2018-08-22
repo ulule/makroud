@@ -127,8 +127,8 @@ func execRow(ctx context.Context, driver Driver, stmt Statement, args map[string
 	}
 
 	row, err := stmt.QueryRow(ctx, args)
-	if row == nil {
-		return errors.Wrap(sql.ErrNoRows, "cannot obtain result from driver")
+	if err != nil {
+		return err
 	}
 
 	mapper, err := ScanRow(row)

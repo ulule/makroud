@@ -47,7 +47,7 @@ func PreloadWithQueries(ctx context.Context, driver Driver, out interface{}, pat
 // preload preloads related fields.
 func preload(ctx context.Context, driver Driver, dest interface{}, paths ...string) (Queries, error) {
 	if driver == nil {
-		return nil, ErrInvalidDriver
+		return nil, errors.WithStack(ErrInvalidDriver)
 	}
 
 	if !reflectx.IsPointer(dest) {
@@ -109,7 +109,7 @@ func executePreload(handler *preloadHandler, schema *Schema, paths []string) (Qu
 	for _, path := range paths {
 		reference, ok := schema.associations[path]
 		if !ok {
-			return nil, errors.Errorf("'%s' is not a valid association", path)
+			return nil, errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", path)
 		}
 
 		err := handler.preload(reference)
@@ -118,7 +118,7 @@ func executePreload(handler *preloadHandler, schema *Schema, paths []string) (Qu
 		}
 	}
 
-	// TODO
+	// TODO Handle queries...
 	return nil, nil
 }
 
