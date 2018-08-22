@@ -45,6 +45,8 @@ func (Elements) TableName() string {
 // ----------------------------------------------------------------------------
 
 type ExoCloudFixtures struct {
+	Regions    []*ExoRegion
+	Buckets    []*ExoBucket
 	Modes      []*ExoChunkMode
 	Chunks     []*ExoChunk
 	Signatures []*ExoChunkSignature
@@ -52,15 +54,83 @@ type ExoCloudFixtures struct {
 
 func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *require.Assertions) ExoCloudFixtures {
 	fixtures := ExoCloudFixtures{
+		Regions:    []*ExoRegion{},
 		Modes:      []*ExoChunkMode{},
 		Chunks:     []*ExoChunk{},
 		Signatures: []*ExoChunkSignature{},
 	}
 
+	region1 := &ExoRegion{
+		Name:     "eu-west-1",
+		Hostname: "eu-west-1.exocloud.com",
+	}
+	err := sqlxx.Save(ctx, driver, region1)
+	is.NoError(err)
+	is.NotEmpty(region1.ID)
+	fixtures.Regions = append(fixtures.Regions, region1)
+
+	region2 := &ExoRegion{
+		Name:     "eu-west-2",
+		Hostname: "eu-west-2.exocloud.com",
+	}
+	err = sqlxx.Save(ctx, driver, region2)
+	is.NoError(err)
+	is.NotEmpty(region2.ID)
+	fixtures.Regions = append(fixtures.Regions, region2)
+
+	region3 := &ExoRegion{
+		Name:     "eu-west-3",
+		Hostname: "eu-west-3.exocloud.com",
+	}
+	err = sqlxx.Save(ctx, driver, region3)
+	is.NoError(err)
+	is.NotEmpty(region3.ID)
+	fixtures.Regions = append(fixtures.Regions, region3)
+
+	bucket1 := &ExoBucket{
+		Name:        "com.nemoworld.sandbox.media",
+		Description: "Media bucket for sandbox env",
+		RegionID:    region1.ID,
+	}
+	err = sqlxx.Save(ctx, driver, bucket1)
+	is.NoError(err)
+	is.NotEmpty(bucket1.ID)
+	fixtures.Buckets = append(fixtures.Buckets, bucket1)
+
+	bucket2 := &ExoBucket{
+		Name:        "com.nemoworld.production.media",
+		Description: "Media bucket for production env",
+		RegionID:    region1.ID,
+	}
+	err = sqlxx.Save(ctx, driver, bucket2)
+	is.NoError(err)
+	is.NotEmpty(bucket2.ID)
+	fixtures.Buckets = append(fixtures.Buckets, bucket2)
+
+	bucket3 := &ExoBucket{
+		Name:        "com.nemoworld.sandbox.static",
+		Description: "Assets for sandbox env",
+		RegionID:    region3.ID,
+	}
+	err = sqlxx.Save(ctx, driver, bucket3)
+	is.NoError(err)
+	is.NotEmpty(bucket3.ID)
+	fixtures.Buckets = append(fixtures.Buckets, bucket3)
+
+	bucket4 := &ExoBucket{
+		Name:        "com.nemoworld.production.static",
+		Description: "Assets for production env",
+		RegionID:    region3.ID,
+	}
+	err = sqlxx.Save(ctx, driver, bucket4)
+	is.NoError(err)
+	is.NotEmpty(bucket4.ID)
+	fixtures.Buckets = append(fixtures.Buckets, bucket4)
+
 	mode1 := &ExoChunkMode{
 		Mode: "rwx",
 	}
-	err := sqlxx.Save(ctx, driver, mode1)
+	err = sqlxx.Save(ctx, driver, mode1)
 	is.NoError(err)
 	is.NotEmpty(mode1.ID)
 	fixtures.Modes = append(fixtures.Modes, mode1)
@@ -257,6 +327,33 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Signatures = append(fixtures.Signatures, signature5)
 
 	return fixtures
+}
+
+type ExoRegion struct {
+	// Columns
+	ID       string `sqlxx:"column:id,pk:ulid"`
+	Name     string `sqlxx:"column:name"`
+	Hostname string `sqlxx:"column:hostname"`
+	// Relationships
+	Buckets *[]ExoBucket
+}
+
+func (ExoRegion) TableName() string {
+	return "exo_region"
+}
+
+type ExoBucket struct {
+	// Columns
+	ID          string `sqlxx:"column:id,pk:ulid"`
+	Name        string `sqlxx:"column:name"`
+	Description string `sqlxx:"column:description"`
+	RegionID    string `sqlxx:"column:region_id,fk:exo_region"`
+	// Relationships
+	Region ExoRegion
+}
+
+func (ExoBucket) TableName() string {
+	return "exo_bucket"
 }
 
 // type ExoFile struct {
@@ -1219,6 +1316,8 @@ func DropTables(ctx context.Context, db *sqlxx.Client) {
 		DROP TABLE IF EXISTS exo_chunk_signature CASCADE;
 		DROP TABLE IF EXISTS exo_chunk CASCADE;
 		DROP TABLE IF EXISTS exo_chunk_mode CASCADE;
+		DROP TABLE IF EXISTS exo_bucket CASCADE;
+		DROP TABLE IF EXISTS exo_region CASCADE;
 
 	`)
 }
@@ -1281,6 +1380,17 @@ func CreateTables(ctx context.Context, db *sqlxx.Client) {
 		-- Object storage application
 		--
 
+		CREATE TABLE exo_region (
+			id              VARCHAR(26) PRIMARY KEY NOT NULL,
+			name            VARCHAR(255) NOT NULL,
+			hostname        VARCHAR(2048) NOT NULL
+		);
+		CREATE TABLE exo_bucket (
+			id              VARCHAR(26) PRIMARY KEY NOT NULL,
+			name            VARCHAR(512) NOT NULL,
+			description     VARCHAR(2048) NOT NULL,
+			region_id       VARCHAR(26) NOT NULL REFERENCES exo_region(id)
+		);
 		CREATE TABLE exo_chunk_mode (
 			id              SERIAL PRIMARY KEY NOT NULL,
 			mode            VARCHAR(255) NOT NULL
@@ -1291,9 +1401,9 @@ func CreateTables(ctx context.Context, db *sqlxx.Client) {
 			mode_id         INTEGER NOT NULL REFERENCES exo_chunk_mode(id) ON DELETE RESTRICT
 		);
 		CREATE TABLE exo_chunk_signature (
-			id               VARCHAR(26) PRIMARY KEY NOT NULL,
-			chunk_id         VARCHAR(26) NOT NULL REFERENCES exo_chunk(hash),
-			bytes            VARCHAR(2048) NOT NULL
+			id              VARCHAR(26) PRIMARY KEY NOT NULL,
+			chunk_id        VARCHAR(26) NOT NULL REFERENCES exo_chunk(hash),
+			bytes           VARCHAR(2048) NOT NULL
 		);
 
 		--

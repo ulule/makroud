@@ -42,6 +42,284 @@ func TestPreload_CommonFailure(t *testing.T) {
 	})
 }
 
+func TestPreload_ExoBucket_One(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		CheckBucketFixtures := func(fixtures ExoCloudFixtures) {
+			is.Empty(fixtures.Buckets[0].Region)
+			is.Empty(fixtures.Buckets[1].Region)
+			is.Empty(fixtures.Buckets[2].Region)
+			is.Empty(fixtures.Buckets[3].Region)
+		}
+
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckBucketFixtures(fixtures)
+
+			bucket1 := fixtures.Buckets[0]
+
+			err := sqlxx.Preload(ctx, driver, bucket1, "Region")
+			is.NoError(err)
+			is.NotEmpty(bucket1.Region)
+			is.Equal(fixtures.Regions[0].ID, bucket1.Region.ID)
+			is.Equal(fixtures.Regions[0].Name, bucket1.Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, bucket1.Region.Hostname)
+
+			bucket2 := fixtures.Buckets[1]
+
+			err = sqlxx.Preload(ctx, driver, bucket2, "Region")
+			is.NoError(err)
+			is.NotEmpty(bucket2.Region)
+			is.Equal(fixtures.Regions[0].ID, bucket2.Region.ID)
+			is.Equal(fixtures.Regions[0].Name, bucket2.Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, bucket2.Region.Hostname)
+
+			bucket3 := fixtures.Buckets[2]
+
+			err = sqlxx.Preload(ctx, driver, bucket3, "Region")
+			is.NoError(err)
+			is.NotEmpty(bucket3.Region)
+			is.Equal(fixtures.Regions[2].ID, bucket3.Region.ID)
+			is.Equal(fixtures.Regions[2].Name, bucket3.Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, bucket3.Region.Hostname)
+
+			bucket4 := fixtures.Buckets[3]
+
+			err = sqlxx.Preload(ctx, driver, bucket4, "Region")
+			is.NoError(err)
+			is.NotEmpty(bucket4.Region)
+			is.Equal(fixtures.Regions[2].ID, bucket4.Region.ID)
+			is.Equal(fixtures.Regions[2].Name, bucket4.Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, bucket4.Region.Hostname)
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckBucketFixtures(fixtures)
+
+			bucket1 := fixtures.Buckets[0]
+
+			err := sqlxx.Preload(ctx, driver, &bucket1, "Region")
+			is.NoError(err)
+			is.NotEmpty(bucket1.Region)
+			is.Equal(fixtures.Regions[0].ID, bucket1.Region.ID)
+			is.Equal(fixtures.Regions[0].Name, bucket1.Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, bucket1.Region.Hostname)
+
+			bucket2 := fixtures.Buckets[1]
+
+			err = sqlxx.Preload(ctx, driver, &bucket2, "Region")
+			is.NoError(err)
+			is.NotEmpty(bucket2.Region)
+			is.Equal(fixtures.Regions[0].ID, bucket2.Region.ID)
+			is.Equal(fixtures.Regions[0].Name, bucket2.Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, bucket2.Region.Hostname)
+
+			bucket3 := fixtures.Buckets[2]
+
+			err = sqlxx.Preload(ctx, driver, &bucket3, "Region")
+			is.NoError(err)
+			is.NotEmpty(bucket3.Region)
+			is.Equal(fixtures.Regions[2].ID, bucket3.Region.ID)
+			is.Equal(fixtures.Regions[2].Name, bucket3.Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, bucket3.Region.Hostname)
+
+			bucket4 := fixtures.Buckets[3]
+
+			err = sqlxx.Preload(ctx, driver, &bucket4, "Region")
+			is.NoError(err)
+			is.NotEmpty(bucket4.Region)
+			is.Equal(fixtures.Regions[2].ID, bucket4.Region.ID)
+			is.Equal(fixtures.Regions[2].Name, bucket4.Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, bucket4.Region.Hostname)
+
+		}
+	})
+}
+
+func TestPreload_ExoBucket_Many(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		CheckBucketFixtures := func(fixtures ExoCloudFixtures) {
+			is.Empty(fixtures.Buckets[0].Region)
+			is.Empty(fixtures.Buckets[1].Region)
+			is.Empty(fixtures.Buckets[2].Region)
+			is.Empty(fixtures.Buckets[3].Region)
+		}
+
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckBucketFixtures(fixtures)
+
+			buckets := []ExoBucket{
+				*fixtures.Buckets[0],
+				*fixtures.Buckets[1],
+				*fixtures.Buckets[2],
+				*fixtures.Buckets[3],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &buckets, "Region")
+			is.NoError(err)
+			is.Len(buckets, 4)
+			is.Equal(fixtures.Buckets[0].ID, buckets[0].ID)
+			is.Equal(fixtures.Buckets[1].ID, buckets[1].ID)
+			is.Equal(fixtures.Buckets[2].ID, buckets[2].ID)
+			is.Equal(fixtures.Buckets[3].ID, buckets[3].ID)
+
+			is.NotEmpty(buckets[0].Region)
+			is.Equal(fixtures.Regions[0].ID, buckets[0].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, buckets[0].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, buckets[0].Region.Hostname)
+
+			is.NotEmpty(buckets[1].Region)
+			is.Equal(fixtures.Regions[0].ID, buckets[1].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, buckets[1].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, buckets[1].Region.Hostname)
+
+			is.NotEmpty(buckets[2].Region)
+			is.Equal(fixtures.Regions[2].ID, buckets[2].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, buckets[2].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, buckets[2].Region.Hostname)
+
+			is.NotEmpty(buckets[3].Region)
+			is.Equal(fixtures.Regions[2].ID, buckets[3].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, buckets[3].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, buckets[3].Region.Hostname)
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckBucketFixtures(fixtures)
+
+			buckets := []*ExoBucket{
+				fixtures.Buckets[0],
+				fixtures.Buckets[1],
+				fixtures.Buckets[2],
+				fixtures.Buckets[3],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &buckets, "Region")
+			is.NoError(err)
+			is.Len(buckets, 4)
+			is.Equal(fixtures.Buckets[0].ID, buckets[0].ID)
+			is.Equal(fixtures.Buckets[1].ID, buckets[1].ID)
+			is.Equal(fixtures.Buckets[2].ID, buckets[2].ID)
+			is.Equal(fixtures.Buckets[3].ID, buckets[3].ID)
+
+			is.NotEmpty(buckets[0].Region)
+			is.Equal(fixtures.Regions[0].ID, buckets[0].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, buckets[0].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, buckets[0].Region.Hostname)
+
+			is.NotEmpty(buckets[1].Region)
+			is.Equal(fixtures.Regions[0].ID, buckets[1].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, buckets[1].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, buckets[1].Region.Hostname)
+
+			is.NotEmpty(buckets[2].Region)
+			is.Equal(fixtures.Regions[2].ID, buckets[2].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, buckets[2].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, buckets[2].Region.Hostname)
+
+			is.NotEmpty(buckets[3].Region)
+			is.Equal(fixtures.Regions[2].ID, buckets[3].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, buckets[3].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, buckets[3].Region.Hostname)
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckBucketFixtures(fixtures)
+
+			buckets := &[]ExoBucket{
+				*fixtures.Buckets[0],
+				*fixtures.Buckets[1],
+				*fixtures.Buckets[2],
+				*fixtures.Buckets[3],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &buckets, "Region")
+			is.NoError(err)
+			is.Len((*buckets), 4)
+			is.Equal(fixtures.Buckets[0].ID, (*buckets)[0].ID)
+			is.Equal(fixtures.Buckets[1].ID, (*buckets)[1].ID)
+			is.Equal(fixtures.Buckets[2].ID, (*buckets)[2].ID)
+			is.Equal(fixtures.Buckets[3].ID, (*buckets)[3].ID)
+
+			is.NotEmpty((*buckets)[0].Region)
+			is.Equal(fixtures.Regions[0].ID, (*buckets)[0].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, (*buckets)[0].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, (*buckets)[0].Region.Hostname)
+
+			is.NotEmpty((*buckets)[1].Region)
+			is.Equal(fixtures.Regions[0].ID, (*buckets)[1].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, (*buckets)[1].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, (*buckets)[1].Region.Hostname)
+
+			is.NotEmpty((*buckets)[2].Region)
+			is.Equal(fixtures.Regions[2].ID, (*buckets)[2].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, (*buckets)[2].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, (*buckets)[2].Region.Hostname)
+
+			is.NotEmpty((*buckets)[3].Region)
+			is.Equal(fixtures.Regions[2].ID, (*buckets)[3].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, (*buckets)[3].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, (*buckets)[3].Region.Hostname)
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckBucketFixtures(fixtures)
+
+			buckets := &[]*ExoBucket{
+				fixtures.Buckets[0],
+				fixtures.Buckets[1],
+				fixtures.Buckets[2],
+				fixtures.Buckets[3],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &buckets, "Region")
+			is.NoError(err)
+			is.Len((*buckets), 4)
+			is.Equal(fixtures.Buckets[0].ID, (*buckets)[0].ID)
+			is.Equal(fixtures.Buckets[1].ID, (*buckets)[1].ID)
+			is.Equal(fixtures.Buckets[2].ID, (*buckets)[2].ID)
+			is.Equal(fixtures.Buckets[3].ID, (*buckets)[3].ID)
+
+			is.NotEmpty((*buckets)[0].Region)
+			is.Equal(fixtures.Regions[0].ID, (*buckets)[0].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, (*buckets)[0].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, (*buckets)[0].Region.Hostname)
+
+			is.NotEmpty((*buckets)[1].Region)
+			is.Equal(fixtures.Regions[0].ID, (*buckets)[1].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, (*buckets)[1].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, (*buckets)[1].Region.Hostname)
+
+			is.NotEmpty((*buckets)[2].Region)
+			is.Equal(fixtures.Regions[2].ID, (*buckets)[2].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, (*buckets)[2].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, (*buckets)[2].Region.Hostname)
+
+			is.NotEmpty((*buckets)[3].Region)
+			is.Equal(fixtures.Regions[2].ID, (*buckets)[3].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, (*buckets)[3].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, (*buckets)[3].Region.Hostname)
+
+		}
+	})
+}
+
 func TestPreload_ExoChunk_One(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		ctx := context.Background()

@@ -3,6 +3,7 @@ package reflectx_test
 import (
 	"database/sql"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -11,8 +12,6 @@ import (
 
 	"github.com/ulule/sqlxx/reflectx"
 )
-
-import "reflect"
 
 func TestReflectx_IsSlice(t *testing.T) {
 	is := require.New(t)
