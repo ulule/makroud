@@ -384,7 +384,7 @@ type ExoChunk struct {
 	// Columns
 	Hash   string `sqlxx:"column:hash,pk:ulid"`
 	Bytes  string `sqlxx:"column:bytes"`
-	ModeID int64  `sqlxx:"column:mode_id,fk:exo_chunk_mode"`
+	ModeID string `sqlxx:"column:mode_id,fk:exo_chunk_mode"`
 	// Relationships
 	Signature *ExoChunkSignature
 	Mode      *ExoChunkMode
@@ -405,7 +405,7 @@ func (ExoChunkSignature) TableName() string {
 }
 
 type ExoChunkMode struct {
-	ID   int64  `sqlxx:"column:id,pk"`
+	ID   string `sqlxx:"column:id,pk:ulid"`
 	Mode string `sqlxx:"column:mode"`
 }
 
@@ -421,6 +421,7 @@ type ZootopiaFixtures struct {
 	Groups   []*Group
 	Centers  []*Center
 	Owls     []*Owl
+	Bags     []*Bag
 	Packages []*Package
 	Cats     []*Cat
 	Humans   []*Human
@@ -432,6 +433,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Groups:   []*Group{},
 		Centers:  []*Center{},
 		Owls:     []*Owl{},
+		Bags:     []*Bag{},
 		Packages: []*Package{},
 		Cats:     []*Cat{},
 		Humans:   []*Human{},
@@ -606,6 +608,51 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	is.NoError(err)
 	is.NotEmpty(owl6.ID)
 	fixtures.Owls = append(fixtures.Owls, owl6)
+
+	bag1 := &Bag{
+		OwlID: owl1.ID,
+		Color: "Frosty Cyan",
+	}
+	err = sqlxx.Save(ctx, driver, bag1)
+	is.NoError(err)
+	is.NotEmpty(bag1.ID)
+	fixtures.Bags = append(fixtures.Bags, bag1)
+
+	bag2 := &Bag{
+		OwlID: owl2.ID,
+		Color: "Burned Blue",
+	}
+	err = sqlxx.Save(ctx, driver, bag2)
+	is.NoError(err)
+	is.NotEmpty(bag2.ID)
+	fixtures.Bags = append(fixtures.Bags, bag2)
+
+	bag3 := &Bag{
+		OwlID: owl4.ID,
+		Color: "Ordinary Maroon",
+	}
+	err = sqlxx.Save(ctx, driver, bag3)
+	is.NoError(err)
+	is.NotEmpty(bag3.ID)
+	fixtures.Bags = append(fixtures.Bags, bag3)
+
+	bag4 := &Bag{
+		OwlID: owl5.ID,
+		Color: "Misty Lemon",
+	}
+	err = sqlxx.Save(ctx, driver, bag4)
+	is.NoError(err)
+	is.NotEmpty(bag4.ID)
+	fixtures.Bags = append(fixtures.Bags, bag4)
+
+	bag5 := &Bag{
+		OwlID: owl6.ID,
+		Color: "Lustrous Onyx",
+	}
+	err = sqlxx.Save(ctx, driver, bag5)
+	is.NoError(err)
+	is.NotEmpty(bag5.ID)
+	fixtures.Bags = append(fixtures.Bags, bag5)
 
 	pack1 := &Package{
 		SenderID:   center2.ID,
@@ -1134,10 +1181,24 @@ type Owl struct {
 	// Relationships
 	Group    *Group
 	Packages []Package
+	Bag      *Bag
 }
 
 func (Owl) TableName() string {
 	return "ztp_owl"
+}
+
+type Bag struct {
+	// Columns
+	ID    int64  `sqlxx:"column:id,pk"`
+	Color string `sqlxx:"column:color"`
+	OwlID int64  `sqlxx:"column:owl_id,fk:ztp_owl"`
+	// Relationships
+	Owl Owl
+}
+
+func (Bag) TableName() string {
+	return "ztp_bag"
 }
 
 type Package struct {
@@ -1306,6 +1367,7 @@ func DropTables(ctx context.Context, db *sqlxx.Client) {
 		-- Simple schema
 		DROP TABLE IF EXISTS ztp_human CASCADE;
 		DROP TABLE IF EXISTS ztp_package CASCADE;
+		DROP TABLE IF EXISTS ztp_bag CASCADE;
 		DROP TABLE IF EXISTS ztp_owl CASCADE;
 		DROP TABLE IF EXISTS ztp_cat CASCADE;
 		DROP TABLE IF EXISTS ztp_meow CASCADE;
@@ -1344,6 +1406,11 @@ func CreateTables(ctx context.Context, db *sqlxx.Client) {
 			feather_color     VARCHAR(255) NOT NULL,
 			favorite_food     VARCHAR(255) NOT NULL,
 			group_id          INTEGER REFERENCES ztp_group(id)
+		);
+		CREATE TABLE ztp_bag (
+			id                SERIAL PRIMARY KEY NOT NULL,
+			color             VARCHAR(255) NOT NULL,
+			owl_id            INTEGER NOT NULL REFERENCES ztp_owl(id)
 		);
 		CREATE TABLE ztp_cat (
 			id                VARCHAR(26) PRIMARY KEY NOT NULL,
@@ -1392,13 +1459,13 @@ func CreateTables(ctx context.Context, db *sqlxx.Client) {
 			region_id       VARCHAR(26) NOT NULL REFERENCES exo_region(id)
 		);
 		CREATE TABLE exo_chunk_mode (
-			id              SERIAL PRIMARY KEY NOT NULL,
+			id              VARCHAR(26) PRIMARY KEY NOT NULL,
 			mode            VARCHAR(255) NOT NULL
 		);
 		CREATE TABLE exo_chunk (
 			hash            VARCHAR(26) PRIMARY KEY NOT NULL,
 			bytes           VARCHAR(2048) NOT NULL,
-			mode_id         INTEGER NOT NULL REFERENCES exo_chunk_mode(id) ON DELETE RESTRICT
+			mode_id         VARCHAR(26) NOT NULL REFERENCES exo_chunk_mode(id) ON DELETE RESTRICT
 		);
 		CREATE TABLE exo_chunk_signature (
 			id              VARCHAR(26) PRIMARY KEY NOT NULL,

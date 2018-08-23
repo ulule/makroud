@@ -785,12 +785,18 @@ func TestPreload_Owl_One(t *testing.T) {
 			is.Nil(fixtures.Owls[3].Group)
 			is.Nil(fixtures.Owls[4].Group)
 			is.Nil(fixtures.Owls[5].Group)
-			is.Empty(fixtures.Owls[0].Group)
+			is.Empty(fixtures.Owls[0].Packages)
 			is.Empty(fixtures.Owls[1].Packages)
 			is.Empty(fixtures.Owls[2].Packages)
 			is.Empty(fixtures.Owls[3].Packages)
 			is.Empty(fixtures.Owls[4].Packages)
 			is.Empty(fixtures.Owls[5].Packages)
+			is.Empty(fixtures.Owls[0].Bag)
+			is.Empty(fixtures.Owls[1].Bag)
+			is.Empty(fixtures.Owls[2].Bag)
+			is.Empty(fixtures.Owls[3].Bag)
+			is.Empty(fixtures.Owls[4].Bag)
+			is.Empty(fixtures.Owls[5].Bag)
 		}
 
 		{
@@ -806,6 +812,7 @@ func TestPreload_Owl_One(t *testing.T) {
 			is.Equal(fixtures.Groups[0].ID, owl1.Group.ID)
 			is.Equal(fixtures.Groups[0].Name, owl1.Group.Name)
 			is.Empty(owl1.Packages)
+			is.Empty(owl1.Bag)
 
 			err = sqlxx.Preload(ctx, driver, owl1, "Packages")
 			is.NoError(err)
@@ -813,19 +820,29 @@ func TestPreload_Owl_One(t *testing.T) {
 			is.Len(owl1.Packages, 2)
 			is.Contains(owl1.Packages, *fixtures.Packages[0])
 			is.Contains(owl1.Packages, *fixtures.Packages[1])
+			is.Empty(owl1.Bag)
+
+			err = sqlxx.Preload(ctx, driver, owl1, "Bag")
+			is.NoError(err)
+			is.NotEmpty(owl1.Bag)
+			is.Equal(fixtures.Bags[0].ID, owl1.Bag.ID)
+			is.Equal(fixtures.Bags[0].Color, owl1.Bag.Color)
 
 			owl2 := fixtures.Owls[1]
 
-			err = sqlxx.Preload(ctx, driver, owl2, "Group", "Packages")
+			err = sqlxx.Preload(ctx, driver, owl2, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.Nil(owl2.Group)
 			is.NotEmpty(owl2.Packages)
 			is.Len(owl2.Packages, 1)
 			is.Contains(owl2.Packages, *fixtures.Packages[3])
+			is.NotEmpty(owl2.Bag)
+			is.Equal(fixtures.Bags[1].ID, owl2.Bag.ID)
+			is.Equal(fixtures.Bags[1].Color, owl2.Bag.Color)
 
 			owl3 := fixtures.Owls[2]
 
-			err = sqlxx.Preload(ctx, driver, owl3, "Group", "Packages")
+			err = sqlxx.Preload(ctx, driver, owl3, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.NotNil(owl3.Group)
 			is.Equal(fixtures.Groups[0].ID, owl3.Group.ID)
@@ -837,15 +854,19 @@ func TestPreload_Owl_One(t *testing.T) {
 			is.Contains(owl3.Packages, *fixtures.Packages[6])
 			is.Contains(owl3.Packages, *fixtures.Packages[7])
 			is.Contains(owl3.Packages, *fixtures.Packages[8])
+			is.Empty(owl3.Bag)
 
 			owl5 := fixtures.Owls[4]
 
-			err = sqlxx.Preload(ctx, driver, owl5, "Group", "Packages")
+			err = sqlxx.Preload(ctx, driver, owl5, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.NotNil(owl5.Group)
 			is.Equal(fixtures.Groups[2].ID, owl5.Group.ID)
 			is.Equal(fixtures.Groups[2].Name, owl5.Group.Name)
 			is.Empty(owl5.Packages)
+			is.NotEmpty(owl5.Bag)
+			is.Equal(fixtures.Bags[3].ID, owl5.Bag.ID)
+			is.Equal(fixtures.Bags[3].Color, owl5.Bag.Color)
 
 		}
 		{
@@ -855,7 +876,7 @@ func TestPreload_Owl_One(t *testing.T) {
 
 			owl1 := fixtures.Owls[0]
 
-			err := sqlxx.Preload(ctx, driver, &owl1, "Group", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owl1, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.NotNil(owl1.Group)
 			is.Equal(fixtures.Groups[0].ID, owl1.Group.ID)
@@ -864,24 +885,49 @@ func TestPreload_Owl_One(t *testing.T) {
 			is.Len(owl1.Packages, 2)
 			is.Contains(owl1.Packages, *fixtures.Packages[0])
 			is.Contains(owl1.Packages, *fixtures.Packages[1])
+			is.NotEmpty(owl1.Bag)
+			is.Equal(fixtures.Bags[0].ID, owl1.Bag.ID)
+			is.Equal(fixtures.Bags[0].Color, owl1.Bag.Color)
 
 			owl2 := fixtures.Owls[1]
 
-			err = sqlxx.Preload(ctx, driver, &owl2, "Packages")
+			err = sqlxx.Preload(ctx, driver, &owl2, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.Nil(owl2.Group)
 			is.NotEmpty(owl2.Packages)
 			is.Len(owl2.Packages, 1)
 			is.Contains(owl2.Packages, *fixtures.Packages[3])
+			is.NotEmpty(owl2.Bag)
+			is.Equal(fixtures.Bags[1].ID, owl2.Bag.ID)
+			is.Equal(fixtures.Bags[1].Color, owl2.Bag.Color)
+
+			owl3 := fixtures.Owls[2]
+
+			err = sqlxx.Preload(ctx, driver, &owl3, "Group", "Bag", "Packages")
+			is.NoError(err)
+			is.NotNil(owl3.Group)
+			is.Equal(fixtures.Groups[0].ID, owl3.Group.ID)
+			is.Equal(fixtures.Groups[0].Name, owl3.Group.Name)
+			is.NotEmpty(owl3.Packages)
+			is.Len(owl3.Packages, 5)
+			is.Contains(owl3.Packages, *fixtures.Packages[4])
+			is.Contains(owl3.Packages, *fixtures.Packages[5])
+			is.Contains(owl3.Packages, *fixtures.Packages[6])
+			is.Contains(owl3.Packages, *fixtures.Packages[7])
+			is.Contains(owl3.Packages, *fixtures.Packages[8])
+			is.Empty(owl3.Bag)
 
 			owl5 := fixtures.Owls[4]
 
-			err = sqlxx.Preload(ctx, driver, &owl5, "Group", "Packages")
+			err = sqlxx.Preload(ctx, driver, &owl5, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.NotNil(owl5.Group)
 			is.Equal(fixtures.Groups[2].ID, owl5.Group.ID)
 			is.Equal(fixtures.Groups[2].Name, owl5.Group.Name)
 			is.Empty(owl5.Packages)
+			is.NotEmpty(owl5.Bag)
+			is.Equal(fixtures.Bags[3].ID, owl5.Bag.ID)
+			is.Equal(fixtures.Bags[3].Color, owl5.Bag.Color)
 
 		}
 	})
@@ -899,12 +945,18 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Nil(fixtures.Owls[3].Group)
 			is.Nil(fixtures.Owls[4].Group)
 			is.Nil(fixtures.Owls[5].Group)
-			is.Empty(fixtures.Owls[0].Group)
+			is.Empty(fixtures.Owls[0].Packages)
 			is.Empty(fixtures.Owls[1].Packages)
 			is.Empty(fixtures.Owls[2].Packages)
 			is.Empty(fixtures.Owls[3].Packages)
 			is.Empty(fixtures.Owls[4].Packages)
 			is.Empty(fixtures.Owls[5].Packages)
+			is.Empty(fixtures.Owls[0].Bag)
+			is.Empty(fixtures.Owls[1].Bag)
+			is.Empty(fixtures.Owls[2].Bag)
+			is.Empty(fixtures.Owls[3].Bag)
+			is.Empty(fixtures.Owls[4].Bag)
+			is.Empty(fixtures.Owls[5].Bag)
 		}
 
 		{
@@ -921,7 +973,7 @@ func TestPreload_Owl_Many(t *testing.T) {
 				*fixtures.Owls[5],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.Len(owls, 6)
 			is.Equal(fixtures.Owls[0].ID, owls[0].ID)
@@ -938,11 +990,17 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Len(owls[0].Packages, 2)
 			is.Contains(owls[0].Packages, *fixtures.Packages[0])
 			is.Contains(owls[0].Packages, *fixtures.Packages[1])
+			is.NotEmpty(owls[0].Bag)
+			is.Equal(fixtures.Bags[0].ID, owls[0].Bag.ID)
+			is.Equal(fixtures.Bags[0].Color, owls[0].Bag.Color)
 
 			is.Nil(owls[1].Group)
 			is.NotEmpty(owls[1].Packages)
 			is.Len(owls[1].Packages, 1)
 			is.Contains(owls[1].Packages, *fixtures.Packages[3])
+			is.NotEmpty(owls[1].Bag)
+			is.Equal(fixtures.Bags[1].ID, owls[1].Bag.ID)
+			is.Equal(fixtures.Bags[1].Color, owls[1].Bag.Color)
 
 			is.NotNil(owls[2].Group)
 			is.Equal(fixtures.Groups[0].ID, owls[2].Group.ID)
@@ -954,6 +1012,7 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains(owls[2].Packages, *fixtures.Packages[6])
 			is.Contains(owls[2].Packages, *fixtures.Packages[7])
 			is.Contains(owls[2].Packages, *fixtures.Packages[8])
+			is.Empty(owls[2].Bag)
 
 			is.NotNil(owls[3].Group)
 			is.Equal(fixtures.Groups[1].ID, owls[3].Group.ID)
@@ -964,11 +1023,17 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains(owls[3].Packages, *fixtures.Packages[10])
 			is.Contains(owls[3].Packages, *fixtures.Packages[11])
 			is.Contains(owls[3].Packages, *fixtures.Packages[12])
+			is.NotEmpty(owls[3].Bag)
+			is.Equal(fixtures.Bags[2].ID, owls[3].Bag.ID)
+			is.Equal(fixtures.Bags[2].Color, owls[3].Bag.Color)
 
 			is.NotNil(owls[4].Group)
 			is.Equal(fixtures.Groups[2].ID, owls[4].Group.ID)
 			is.Equal(fixtures.Groups[2].Name, owls[4].Group.Name)
 			is.Empty(owls[4].Packages)
+			is.NotEmpty(owls[4].Bag)
+			is.Equal(fixtures.Bags[3].ID, owls[4].Bag.ID)
+			is.Equal(fixtures.Bags[3].Color, owls[4].Bag.Color)
 
 			is.NotNil(owls[5].Group)
 			is.Equal(fixtures.Groups[3].ID, owls[5].Group.ID)
@@ -978,6 +1043,9 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains(owls[5].Packages, *fixtures.Packages[13])
 			is.Contains(owls[5].Packages, *fixtures.Packages[14])
 			is.Contains(owls[5].Packages, *fixtures.Packages[15])
+			is.NotEmpty(owls[5].Bag)
+			is.Equal(fixtures.Bags[4].ID, owls[5].Bag.ID)
+			is.Equal(fixtures.Bags[4].Color, owls[5].Bag.Color)
 
 		}
 		{
@@ -994,7 +1062,7 @@ func TestPreload_Owl_Many(t *testing.T) {
 				fixtures.Owls[5],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.Len(owls, 6)
 			is.Equal(fixtures.Owls[0].ID, owls[0].ID)
@@ -1011,11 +1079,17 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Len(owls[0].Packages, 2)
 			is.Contains(owls[0].Packages, *fixtures.Packages[0])
 			is.Contains(owls[0].Packages, *fixtures.Packages[1])
+			is.NotEmpty(owls[0].Bag)
+			is.Equal(fixtures.Bags[0].ID, owls[0].Bag.ID)
+			is.Equal(fixtures.Bags[0].Color, owls[0].Bag.Color)
 
 			is.Nil(owls[1].Group)
 			is.NotEmpty(owls[1].Packages)
 			is.Len(owls[1].Packages, 1)
 			is.Contains(owls[1].Packages, *fixtures.Packages[3])
+			is.NotEmpty(owls[1].Bag)
+			is.Equal(fixtures.Bags[1].ID, owls[1].Bag.ID)
+			is.Equal(fixtures.Bags[1].Color, owls[1].Bag.Color)
 
 			is.NotNil(owls[2].Group)
 			is.Equal(fixtures.Groups[0].ID, owls[2].Group.ID)
@@ -1027,6 +1101,7 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains(owls[2].Packages, *fixtures.Packages[6])
 			is.Contains(owls[2].Packages, *fixtures.Packages[7])
 			is.Contains(owls[2].Packages, *fixtures.Packages[8])
+			is.Empty(owls[2].Bag)
 
 			is.NotNil(owls[3].Group)
 			is.Equal(fixtures.Groups[1].ID, owls[3].Group.ID)
@@ -1037,11 +1112,17 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains(owls[3].Packages, *fixtures.Packages[10])
 			is.Contains(owls[3].Packages, *fixtures.Packages[11])
 			is.Contains(owls[3].Packages, *fixtures.Packages[12])
+			is.NotEmpty(owls[3].Bag)
+			is.Equal(fixtures.Bags[2].ID, owls[3].Bag.ID)
+			is.Equal(fixtures.Bags[2].Color, owls[3].Bag.Color)
 
 			is.NotNil(owls[4].Group)
 			is.Equal(fixtures.Groups[2].ID, owls[4].Group.ID)
 			is.Equal(fixtures.Groups[2].Name, owls[4].Group.Name)
 			is.Empty(owls[4].Packages)
+			is.NotEmpty(owls[4].Bag)
+			is.Equal(fixtures.Bags[3].ID, owls[4].Bag.ID)
+			is.Equal(fixtures.Bags[3].Color, owls[4].Bag.Color)
 
 			is.NotNil(owls[5].Group)
 			is.Equal(fixtures.Groups[3].ID, owls[5].Group.ID)
@@ -1051,6 +1132,9 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains(owls[5].Packages, *fixtures.Packages[13])
 			is.Contains(owls[5].Packages, *fixtures.Packages[14])
 			is.Contains(owls[5].Packages, *fixtures.Packages[15])
+			is.NotEmpty(owls[5].Bag)
+			is.Equal(fixtures.Bags[4].ID, owls[5].Bag.ID)
+			is.Equal(fixtures.Bags[4].Color, owls[5].Bag.Color)
 
 		}
 		{
@@ -1067,7 +1151,7 @@ func TestPreload_Owl_Many(t *testing.T) {
 				*fixtures.Owls[5],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.Len((*owls), 6)
 			is.Equal(fixtures.Owls[0].ID, (*owls)[0].ID)
@@ -1084,11 +1168,17 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Len((*owls)[0].Packages, 2)
 			is.Contains((*owls)[0].Packages, *fixtures.Packages[0])
 			is.Contains((*owls)[0].Packages, *fixtures.Packages[1])
+			is.NotEmpty((*owls)[0].Bag)
+			is.Equal(fixtures.Bags[0].ID, (*owls)[0].Bag.ID)
+			is.Equal(fixtures.Bags[0].Color, (*owls)[0].Bag.Color)
 
 			is.Nil((*owls)[1].Group)
 			is.NotEmpty((*owls)[1].Packages)
 			is.Len((*owls)[1].Packages, 1)
 			is.Contains((*owls)[1].Packages, *fixtures.Packages[3])
+			is.NotEmpty((*owls)[1].Bag)
+			is.Equal(fixtures.Bags[1].ID, (*owls)[1].Bag.ID)
+			is.Equal(fixtures.Bags[1].Color, (*owls)[1].Bag.Color)
 
 			is.NotNil((*owls)[2].Group)
 			is.Equal(fixtures.Groups[0].ID, (*owls)[2].Group.ID)
@@ -1100,6 +1190,7 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains((*owls)[2].Packages, *fixtures.Packages[6])
 			is.Contains((*owls)[2].Packages, *fixtures.Packages[7])
 			is.Contains((*owls)[2].Packages, *fixtures.Packages[8])
+			is.Empty((*owls)[2].Bag)
 
 			is.NotNil((*owls)[3].Group)
 			is.Equal(fixtures.Groups[1].ID, (*owls)[3].Group.ID)
@@ -1110,11 +1201,17 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains((*owls)[3].Packages, *fixtures.Packages[10])
 			is.Contains((*owls)[3].Packages, *fixtures.Packages[11])
 			is.Contains((*owls)[3].Packages, *fixtures.Packages[12])
+			is.NotEmpty((*owls)[3].Bag)
+			is.Equal(fixtures.Bags[2].ID, (*owls)[3].Bag.ID)
+			is.Equal(fixtures.Bags[2].Color, (*owls)[3].Bag.Color)
 
 			is.NotNil((*owls)[4].Group)
 			is.Equal(fixtures.Groups[2].ID, (*owls)[4].Group.ID)
 			is.Equal(fixtures.Groups[2].Name, (*owls)[4].Group.Name)
 			is.Empty((*owls)[4].Packages)
+			is.NotEmpty((*owls)[4].Bag)
+			is.Equal(fixtures.Bags[3].ID, (*owls)[4].Bag.ID)
+			is.Equal(fixtures.Bags[3].Color, (*owls)[4].Bag.Color)
 
 			is.NotNil((*owls)[5].Group)
 			is.Equal(fixtures.Groups[3].ID, (*owls)[5].Group.ID)
@@ -1124,6 +1221,9 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains((*owls)[5].Packages, *fixtures.Packages[13])
 			is.Contains((*owls)[5].Packages, *fixtures.Packages[14])
 			is.Contains((*owls)[5].Packages, *fixtures.Packages[15])
+			is.NotEmpty((*owls)[5].Bag)
+			is.Equal(fixtures.Bags[4].ID, (*owls)[5].Bag.ID)
+			is.Equal(fixtures.Bags[4].Color, (*owls)[5].Bag.Color)
 
 		}
 		{
@@ -1140,7 +1240,7 @@ func TestPreload_Owl_Many(t *testing.T) {
 				fixtures.Owls[5],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Bag", "Packages")
 			is.NoError(err)
 			is.Len((*owls), 6)
 			is.Equal(fixtures.Owls[0].ID, (*owls)[0].ID)
@@ -1157,11 +1257,17 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Len((*owls)[0].Packages, 2)
 			is.Contains((*owls)[0].Packages, *fixtures.Packages[0])
 			is.Contains((*owls)[0].Packages, *fixtures.Packages[1])
+			is.NotEmpty((*owls)[0].Bag)
+			is.Equal(fixtures.Bags[0].ID, (*owls)[0].Bag.ID)
+			is.Equal(fixtures.Bags[0].Color, (*owls)[0].Bag.Color)
 
 			is.Nil((*owls)[1].Group)
 			is.NotEmpty((*owls)[1].Packages)
 			is.Len((*owls)[1].Packages, 1)
 			is.Contains((*owls)[1].Packages, *fixtures.Packages[3])
+			is.NotEmpty((*owls)[1].Bag)
+			is.Equal(fixtures.Bags[1].ID, (*owls)[1].Bag.ID)
+			is.Equal(fixtures.Bags[1].Color, (*owls)[1].Bag.Color)
 
 			is.NotNil((*owls)[2].Group)
 			is.Equal(fixtures.Groups[0].ID, (*owls)[2].Group.ID)
@@ -1173,6 +1279,7 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains((*owls)[2].Packages, *fixtures.Packages[6])
 			is.Contains((*owls)[2].Packages, *fixtures.Packages[7])
 			is.Contains((*owls)[2].Packages, *fixtures.Packages[8])
+			is.Empty((*owls)[2].Bag)
 
 			is.NotNil((*owls)[3].Group)
 			is.Equal(fixtures.Groups[1].ID, (*owls)[3].Group.ID)
@@ -1183,11 +1290,17 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains((*owls)[3].Packages, *fixtures.Packages[10])
 			is.Contains((*owls)[3].Packages, *fixtures.Packages[11])
 			is.Contains((*owls)[3].Packages, *fixtures.Packages[12])
+			is.NotEmpty((*owls)[3].Bag)
+			is.Equal(fixtures.Bags[2].ID, (*owls)[3].Bag.ID)
+			is.Equal(fixtures.Bags[2].Color, (*owls)[3].Bag.Color)
 
 			is.NotNil((*owls)[4].Group)
 			is.Equal(fixtures.Groups[2].ID, (*owls)[4].Group.ID)
 			is.Equal(fixtures.Groups[2].Name, (*owls)[4].Group.Name)
 			is.Empty((*owls)[4].Packages)
+			is.NotEmpty((*owls)[4].Bag)
+			is.Equal(fixtures.Bags[3].ID, (*owls)[4].Bag.ID)
+			is.Equal(fixtures.Bags[3].Color, (*owls)[4].Bag.Color)
 
 			is.NotNil((*owls)[5].Group)
 			is.Equal(fixtures.Groups[3].ID, (*owls)[5].Group.ID)
@@ -1197,6 +1310,9 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Contains((*owls)[5].Packages, *fixtures.Packages[13])
 			is.Contains((*owls)[5].Packages, *fixtures.Packages[14])
 			is.Contains((*owls)[5].Packages, *fixtures.Packages[15])
+			is.NotEmpty((*owls)[5].Bag)
+			is.Equal(fixtures.Bags[4].ID, (*owls)[5].Bag.ID)
+			is.Equal(fixtures.Bags[4].Color, (*owls)[5].Bag.Color)
 
 		}
 		{
@@ -1206,6 +1322,362 @@ func TestPreload_Owl_Many(t *testing.T) {
 			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Packages")
 			is.NoError(err)
 			is.Len(owls, 0)
+
+		}
+	})
+}
+
+func TestPreload_Bag_One(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		CheckBagFixtures := func(fixtures ZootopiaFixtures) {
+			is.Empty(fixtures.Bags[0].Owl)
+			is.Empty(fixtures.Bags[1].Owl)
+			is.Empty(fixtures.Bags[2].Owl)
+			is.Empty(fixtures.Bags[3].Owl)
+			is.Empty(fixtures.Bags[4].Owl)
+		}
+
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckBagFixtures(fixtures)
+
+			bag1 := fixtures.Bags[0]
+
+			err := sqlxx.Preload(ctx, driver, bag1, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag1.Owl)
+			is.Equal(fixtures.Owls[0].ID, bag1.Owl.ID)
+			is.Equal(fixtures.Owls[0].Name, bag1.Owl.Name)
+			is.Equal(fixtures.Owls[0].FavoriteFood, bag1.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[0].FeatherColor, bag1.Owl.FeatherColor)
+
+			bag2 := fixtures.Bags[1]
+
+			err = sqlxx.Preload(ctx, driver, bag2, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag2.Owl)
+			is.Equal(fixtures.Owls[1].ID, bag2.Owl.ID)
+			is.Equal(fixtures.Owls[1].Name, bag2.Owl.Name)
+			is.Equal(fixtures.Owls[1].FavoriteFood, bag2.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[1].FeatherColor, bag2.Owl.FeatherColor)
+
+			bag3 := fixtures.Bags[2]
+
+			err = sqlxx.Preload(ctx, driver, bag3, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag3.Owl)
+			is.Equal(fixtures.Owls[3].ID, bag3.Owl.ID)
+			is.Equal(fixtures.Owls[3].Name, bag3.Owl.Name)
+			is.Equal(fixtures.Owls[3].FavoriteFood, bag3.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[3].FeatherColor, bag3.Owl.FeatherColor)
+
+			bag4 := fixtures.Bags[3]
+
+			err = sqlxx.Preload(ctx, driver, bag4, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag4.Owl)
+			is.Equal(fixtures.Owls[4].ID, bag4.Owl.ID)
+			is.Equal(fixtures.Owls[4].Name, bag4.Owl.Name)
+			is.Equal(fixtures.Owls[4].FavoriteFood, bag4.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[4].FeatherColor, bag4.Owl.FeatherColor)
+
+			bag5 := fixtures.Bags[4]
+
+			err = sqlxx.Preload(ctx, driver, bag5, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag5.Owl)
+			is.Equal(fixtures.Owls[5].ID, bag5.Owl.ID)
+			is.Equal(fixtures.Owls[5].Name, bag5.Owl.Name)
+			is.Equal(fixtures.Owls[5].FavoriteFood, bag5.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[5].FeatherColor, bag5.Owl.FeatherColor)
+
+		}
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckBagFixtures(fixtures)
+
+			bag1 := fixtures.Bags[0]
+
+			err := sqlxx.Preload(ctx, driver, &bag1, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag1.Owl)
+			is.Equal(fixtures.Owls[0].ID, bag1.Owl.ID)
+			is.Equal(fixtures.Owls[0].Name, bag1.Owl.Name)
+			is.Equal(fixtures.Owls[0].FavoriteFood, bag1.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[0].FeatherColor, bag1.Owl.FeatherColor)
+
+			bag2 := fixtures.Bags[1]
+
+			err = sqlxx.Preload(ctx, driver, &bag2, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag2.Owl)
+			is.Equal(fixtures.Owls[1].ID, bag2.Owl.ID)
+			is.Equal(fixtures.Owls[1].Name, bag2.Owl.Name)
+			is.Equal(fixtures.Owls[1].FavoriteFood, bag2.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[1].FeatherColor, bag2.Owl.FeatherColor)
+
+			bag3 := fixtures.Bags[2]
+
+			err = sqlxx.Preload(ctx, driver, &bag3, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag3.Owl)
+			is.Equal(fixtures.Owls[3].ID, bag3.Owl.ID)
+			is.Equal(fixtures.Owls[3].Name, bag3.Owl.Name)
+			is.Equal(fixtures.Owls[3].FavoriteFood, bag3.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[3].FeatherColor, bag3.Owl.FeatherColor)
+
+			bag4 := fixtures.Bags[3]
+
+			err = sqlxx.Preload(ctx, driver, &bag4, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag4.Owl)
+			is.Equal(fixtures.Owls[4].ID, bag4.Owl.ID)
+			is.Equal(fixtures.Owls[4].Name, bag4.Owl.Name)
+			is.Equal(fixtures.Owls[4].FavoriteFood, bag4.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[4].FeatherColor, bag4.Owl.FeatherColor)
+
+			bag5 := fixtures.Bags[4]
+
+			err = sqlxx.Preload(ctx, driver, &bag5, "Owl")
+			is.NoError(err)
+			is.NotEmpty(bag5.Owl)
+			is.Equal(fixtures.Owls[5].ID, bag5.Owl.ID)
+			is.Equal(fixtures.Owls[5].Name, bag5.Owl.Name)
+			is.Equal(fixtures.Owls[5].FavoriteFood, bag5.Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[5].FeatherColor, bag5.Owl.FeatherColor)
+
+		}
+	})
+}
+
+func TestPreload_Bag_Many(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		CheckBagFixtures := func(fixtures ZootopiaFixtures) {
+			is.Empty(fixtures.Bags[0].Owl)
+			is.Empty(fixtures.Bags[1].Owl)
+			is.Empty(fixtures.Bags[2].Owl)
+			is.Empty(fixtures.Bags[3].Owl)
+			is.Empty(fixtures.Bags[4].Owl)
+		}
+
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckBagFixtures(fixtures)
+
+			bags := []Bag{
+				*fixtures.Bags[0],
+				*fixtures.Bags[1],
+				*fixtures.Bags[2],
+				*fixtures.Bags[3],
+				*fixtures.Bags[4],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &bags, "Owl")
+			is.NoError(err)
+			is.Len(bags, 5)
+			is.Equal(fixtures.Bags[0].ID, bags[0].ID)
+			is.Equal(fixtures.Bags[1].ID, bags[1].ID)
+			is.Equal(fixtures.Bags[2].ID, bags[2].ID)
+			is.Equal(fixtures.Bags[3].ID, bags[3].ID)
+			is.Equal(fixtures.Bags[4].ID, bags[4].ID)
+
+			is.NotEmpty(bags[0].Owl)
+			is.Equal(fixtures.Owls[0].ID, bags[0].Owl.ID)
+			is.Equal(fixtures.Owls[0].Name, bags[0].Owl.Name)
+			is.Equal(fixtures.Owls[0].FavoriteFood, bags[0].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[0].FeatherColor, bags[0].Owl.FeatherColor)
+
+			is.NotEmpty(bags[1].Owl)
+			is.Equal(fixtures.Owls[1].ID, bags[1].Owl.ID)
+			is.Equal(fixtures.Owls[1].Name, bags[1].Owl.Name)
+			is.Equal(fixtures.Owls[1].FavoriteFood, bags[1].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[1].FeatherColor, bags[1].Owl.FeatherColor)
+
+			is.NotEmpty(bags[2].Owl)
+			is.Equal(fixtures.Owls[3].ID, bags[2].Owl.ID)
+			is.Equal(fixtures.Owls[3].Name, bags[2].Owl.Name)
+			is.Equal(fixtures.Owls[3].FavoriteFood, bags[2].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[3].FeatherColor, bags[2].Owl.FeatherColor)
+
+			is.NotEmpty(bags[3].Owl)
+			is.Equal(fixtures.Owls[4].ID, bags[3].Owl.ID)
+			is.Equal(fixtures.Owls[4].Name, bags[3].Owl.Name)
+			is.Equal(fixtures.Owls[4].FavoriteFood, bags[3].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[4].FeatherColor, bags[3].Owl.FeatherColor)
+
+			is.NotEmpty(bags[4].Owl)
+			is.Equal(fixtures.Owls[5].ID, bags[4].Owl.ID)
+			is.Equal(fixtures.Owls[5].Name, bags[4].Owl.Name)
+			is.Equal(fixtures.Owls[5].FavoriteFood, bags[4].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[5].FeatherColor, bags[4].Owl.FeatherColor)
+
+		}
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckBagFixtures(fixtures)
+
+			bags := []*Bag{
+				fixtures.Bags[0],
+				fixtures.Bags[1],
+				fixtures.Bags[2],
+				fixtures.Bags[3],
+				fixtures.Bags[4],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &bags, "Owl")
+			is.NoError(err)
+			is.Len(bags, 5)
+			is.Equal(fixtures.Bags[0].ID, bags[0].ID)
+			is.Equal(fixtures.Bags[1].ID, bags[1].ID)
+			is.Equal(fixtures.Bags[2].ID, bags[2].ID)
+			is.Equal(fixtures.Bags[3].ID, bags[3].ID)
+			is.Equal(fixtures.Bags[4].ID, bags[4].ID)
+
+			is.NotEmpty(bags[0].Owl)
+			is.Equal(fixtures.Owls[0].ID, bags[0].Owl.ID)
+			is.Equal(fixtures.Owls[0].Name, bags[0].Owl.Name)
+			is.Equal(fixtures.Owls[0].FavoriteFood, bags[0].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[0].FeatherColor, bags[0].Owl.FeatherColor)
+
+			is.NotEmpty(bags[1].Owl)
+			is.Equal(fixtures.Owls[1].ID, bags[1].Owl.ID)
+			is.Equal(fixtures.Owls[1].Name, bags[1].Owl.Name)
+			is.Equal(fixtures.Owls[1].FavoriteFood, bags[1].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[1].FeatherColor, bags[1].Owl.FeatherColor)
+
+			is.NotEmpty(bags[2].Owl)
+			is.Equal(fixtures.Owls[3].ID, bags[2].Owl.ID)
+			is.Equal(fixtures.Owls[3].Name, bags[2].Owl.Name)
+			is.Equal(fixtures.Owls[3].FavoriteFood, bags[2].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[3].FeatherColor, bags[2].Owl.FeatherColor)
+
+			is.NotEmpty(bags[3].Owl)
+			is.Equal(fixtures.Owls[4].ID, bags[3].Owl.ID)
+			is.Equal(fixtures.Owls[4].Name, bags[3].Owl.Name)
+			is.Equal(fixtures.Owls[4].FavoriteFood, bags[3].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[4].FeatherColor, bags[3].Owl.FeatherColor)
+
+			is.NotEmpty(bags[4].Owl)
+			is.Equal(fixtures.Owls[5].ID, bags[4].Owl.ID)
+			is.Equal(fixtures.Owls[5].Name, bags[4].Owl.Name)
+			is.Equal(fixtures.Owls[5].FavoriteFood, bags[4].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[5].FeatherColor, bags[4].Owl.FeatherColor)
+
+		}
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckBagFixtures(fixtures)
+
+			bags := &[]Bag{
+				*fixtures.Bags[0],
+				*fixtures.Bags[1],
+				*fixtures.Bags[2],
+				*fixtures.Bags[3],
+				*fixtures.Bags[4],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &bags, "Owl")
+			is.NoError(err)
+			is.Len((*bags), 5)
+			is.Equal(fixtures.Bags[0].ID, (*bags)[0].ID)
+			is.Equal(fixtures.Bags[1].ID, (*bags)[1].ID)
+			is.Equal(fixtures.Bags[2].ID, (*bags)[2].ID)
+			is.Equal(fixtures.Bags[3].ID, (*bags)[3].ID)
+			is.Equal(fixtures.Bags[4].ID, (*bags)[4].ID)
+
+			is.NotEmpty((*bags)[0].Owl)
+			is.Equal(fixtures.Owls[0].ID, (*bags)[0].Owl.ID)
+			is.Equal(fixtures.Owls[0].Name, (*bags)[0].Owl.Name)
+			is.Equal(fixtures.Owls[0].FavoriteFood, (*bags)[0].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[0].FeatherColor, (*bags)[0].Owl.FeatherColor)
+
+			is.NotEmpty((*bags)[1].Owl)
+			is.Equal(fixtures.Owls[1].ID, (*bags)[1].Owl.ID)
+			is.Equal(fixtures.Owls[1].Name, (*bags)[1].Owl.Name)
+			is.Equal(fixtures.Owls[1].FavoriteFood, (*bags)[1].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[1].FeatherColor, (*bags)[1].Owl.FeatherColor)
+
+			is.NotEmpty((*bags)[2].Owl)
+			is.Equal(fixtures.Owls[3].ID, (*bags)[2].Owl.ID)
+			is.Equal(fixtures.Owls[3].Name, (*bags)[2].Owl.Name)
+			is.Equal(fixtures.Owls[3].FavoriteFood, (*bags)[2].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[3].FeatherColor, (*bags)[2].Owl.FeatherColor)
+
+			is.NotEmpty((*bags)[3].Owl)
+			is.Equal(fixtures.Owls[4].ID, (*bags)[3].Owl.ID)
+			is.Equal(fixtures.Owls[4].Name, (*bags)[3].Owl.Name)
+			is.Equal(fixtures.Owls[4].FavoriteFood, (*bags)[3].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[4].FeatherColor, (*bags)[3].Owl.FeatherColor)
+
+			is.NotEmpty((*bags)[4].Owl)
+			is.Equal(fixtures.Owls[5].ID, (*bags)[4].Owl.ID)
+			is.Equal(fixtures.Owls[5].Name, (*bags)[4].Owl.Name)
+			is.Equal(fixtures.Owls[5].FavoriteFood, (*bags)[4].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[5].FeatherColor, (*bags)[4].Owl.FeatherColor)
+
+		}
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckBagFixtures(fixtures)
+
+			bags := &[]*Bag{
+				fixtures.Bags[0],
+				fixtures.Bags[1],
+				fixtures.Bags[2],
+				fixtures.Bags[3],
+				fixtures.Bags[4],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &bags, "Owl")
+			is.NoError(err)
+			is.Len((*bags), 5)
+			is.Equal(fixtures.Bags[0].ID, (*bags)[0].ID)
+			is.Equal(fixtures.Bags[1].ID, (*bags)[1].ID)
+			is.Equal(fixtures.Bags[2].ID, (*bags)[2].ID)
+			is.Equal(fixtures.Bags[3].ID, (*bags)[3].ID)
+			is.Equal(fixtures.Bags[4].ID, (*bags)[4].ID)
+
+			is.NotEmpty((*bags)[0].Owl)
+			is.Equal(fixtures.Owls[0].ID, (*bags)[0].Owl.ID)
+			is.Equal(fixtures.Owls[0].Name, (*bags)[0].Owl.Name)
+			is.Equal(fixtures.Owls[0].FavoriteFood, (*bags)[0].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[0].FeatherColor, (*bags)[0].Owl.FeatherColor)
+
+			is.NotEmpty((*bags)[1].Owl)
+			is.Equal(fixtures.Owls[1].ID, (*bags)[1].Owl.ID)
+			is.Equal(fixtures.Owls[1].Name, (*bags)[1].Owl.Name)
+			is.Equal(fixtures.Owls[1].FavoriteFood, (*bags)[1].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[1].FeatherColor, (*bags)[1].Owl.FeatherColor)
+
+			is.NotEmpty((*bags)[2].Owl)
+			is.Equal(fixtures.Owls[3].ID, (*bags)[2].Owl.ID)
+			is.Equal(fixtures.Owls[3].Name, (*bags)[2].Owl.Name)
+			is.Equal(fixtures.Owls[3].FavoriteFood, (*bags)[2].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[3].FeatherColor, (*bags)[2].Owl.FeatherColor)
+
+			is.NotEmpty((*bags)[3].Owl)
+			is.Equal(fixtures.Owls[4].ID, (*bags)[3].Owl.ID)
+			is.Equal(fixtures.Owls[4].Name, (*bags)[3].Owl.Name)
+			is.Equal(fixtures.Owls[4].FavoriteFood, (*bags)[3].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[4].FeatherColor, (*bags)[3].Owl.FeatherColor)
+
+			is.NotEmpty((*bags)[4].Owl)
+			is.Equal(fixtures.Owls[5].ID, (*bags)[4].Owl.ID)
+			is.Equal(fixtures.Owls[5].Name, (*bags)[4].Owl.Name)
+			is.Equal(fixtures.Owls[5].FavoriteFood, (*bags)[4].Owl.FavoriteFood)
+			is.Equal(fixtures.Owls[5].FeatherColor, (*bags)[4].Owl.FeatherColor)
 
 		}
 	})
