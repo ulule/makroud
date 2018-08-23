@@ -7,7 +7,7 @@ import (
 )
 
 type Preloader interface {
-	ForEach(callback func(element reflect.Value) error) error
+	ForEach(name string, callback func(element reflect.Value) error) error
 	OnExecute(kind reflect.Type, callback func(element interface{}) error) error
 	OnUpdate(callback func(element interface{}) error) error
 
@@ -47,19 +47,37 @@ func NewPreloader(value interface{}) Preloader {
 	}
 }
 
-func (w *preloader) ForEach(callback func(element reflect.Value) error) error {
-	if IsSlice(w.value) {
-		return w.forEach(callback)
+func (p *preloader) ForEach(name string, callback func(element reflect.Value) error) error {
+	if IsSlice(p.value) {
+		return p.forEach(name, callback)
 	}
-	return w.forOne(callback)
+	return p.forOne(name, callback)
 }
 
-func (w *preloader) forOne(callback func(element reflect.Value) error) error {
-	return callback(CreateReflectPointer(w.value))
+func (p *preloader) makeZeroValue(element interface{}, name string) error {
+	value, err := getDestinationReflectValue(element, name)
+	if err != nil {
+		return err
+	}
+
+	if value.Kind() == reflect.Ptr && value.IsNil() && IsSlice(value) {
+		value.Set(NewReflectSlice(GetSliceType(value)))
+	}
+
+	return nil
 }
 
-func (w *preloader) forEach(callback func(element reflect.Value) error) error {
-	slice := GetIndirectValue(w.value)
+func (p *preloader) forOne(name string, callback func(element reflect.Value) error) error {
+	err := p.makeZeroValue(p.value, name)
+	if err != nil {
+		return err
+	}
+
+	return callback(CreateReflectPointer(p.value))
+}
+
+func (p *preloader) forEach(name string, callback func(element reflect.Value) error) error {
+	slice := GetIndirectValue(p.value)
 
 	for i := 0; i < slice.Len(); i++ {
 		value := slice.Index(i)
@@ -75,7 +93,12 @@ func (w *preloader) forEach(callback func(element reflect.Value) error) error {
 			value = value.Addr()
 		}
 
-		err := callback(value)
+		err := p.makeZeroValue(value.Interface(), name)
+		if err != nil {
+			return err
+		}
+
+		err = callback(value)
 		if err != nil {
 			return err
 		}
@@ -84,7 +107,7 @@ func (w *preloader) forEach(callback func(element reflect.Value) error) error {
 	return nil
 }
 
-func (w *preloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
+func (p *preloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
 	elem := kind
 
 	if elem.Kind() == reflect.Slice {
@@ -117,17 +140,17 @@ func (w *preloader) OnExecute(kind reflect.Type, callback func(element interface
 		return errors.Errorf("cannot execute a preload this type: %s", kind)
 	}
 
-	w.relations = NewReflectSlice(elem)
-	return callback(w.relations.Interface())
+	p.relations = NewReflectSlice(elem)
+	return callback(p.relations.Interface())
 }
 
-func (w *preloader) OnUpdate(callback func(element interface{}) error) error {
-	if w.relations.Kind() == reflect.Ptr {
-		w.relations = w.relations.Elem()
+func (p *preloader) OnUpdate(callback func(element interface{}) error) error {
+	if p.relations.Kind() == reflect.Ptr {
+		p.relations = p.relations.Elem()
 	}
 
-	for i := 0; i < w.relations.Len(); i++ {
-		val := w.relations.Index(i).Addr()
+	for i := 0; i < p.relations.Len(); i++ {
+		val := p.relations.Index(i).Addr()
 
 		err := callback(val.Interface())
 		if err != nil {
@@ -138,29 +161,29 @@ func (w *preloader) OnUpdate(callback func(element interface{}) error) error {
 	return nil
 }
 
-func (w *preloader) StringIndexes() []string {
-	list := make([]string, 0, len(w.mapString))
-	for id := range w.mapString {
+func (p *preloader) StringIndexes() []string {
+	list := make([]string, 0, len(p.mapString))
+	for id := range p.mapString {
 		list = append(list, id)
 	}
 
 	return list
 }
 
-func (w *preloader) AddStringIndex(id string, element reflect.Value) error {
-	list, ok := w.mapString[id]
+func (p *preloader) AddStringIndex(id string, element reflect.Value) error {
+	list, ok := p.mapString[id]
 	if !ok {
 		list = []reflect.Value{}
 	}
 
 	list = append(list, element)
-	w.mapString[id] = list
+	p.mapString[id] = list
 
 	return nil
 }
 
-func (w *preloader) UpdateValueForStringIndex(name string, id string, element interface{}) error {
-	values, ok := w.mapString[id]
+func (p *preloader) UpdateValueForStringIndex(name string, id string, element interface{}) error {
+	values, ok := p.mapString[id]
 	if !ok {
 		return errors.Errorf("cannot find element with primary key: '%s'", id)
 	}
@@ -175,29 +198,29 @@ func (w *preloader) UpdateValueForStringIndex(name string, id string, element in
 	return nil
 }
 
-func (w *preloader) Int64Indexes() []int64 {
-	list := make([]int64, 0, len(w.mapInt64))
-	for id := range w.mapInt64 {
+func (p *preloader) Int64Indexes() []int64 {
+	list := make([]int64, 0, len(p.mapInt64))
+	for id := range p.mapInt64 {
 		list = append(list, id)
 	}
 
 	return list
 }
 
-func (w *preloader) AddInt64Index(id int64, element reflect.Value) error {
-	list, ok := w.mapInt64[id]
+func (p *preloader) AddInt64Index(id int64, element reflect.Value) error {
+	list, ok := p.mapInt64[id]
 	if !ok {
 		list = []reflect.Value{}
 	}
 
 	list = append(list, element)
-	w.mapInt64[id] = list
+	p.mapInt64[id] = list
 
 	return nil
 }
 
-func (w *preloader) UpdateValueForInt64Index(name string, id int64, element interface{}) error {
-	values, ok := w.mapInt64[id]
+func (p *preloader) UpdateValueForInt64Index(name string, id int64, element interface{}) error {
+	values, ok := p.mapInt64[id]
 	if !ok {
 		return errors.Errorf("cannot find element with primary key: '%d'", id)
 	}

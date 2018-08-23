@@ -33,7 +33,13 @@ func NewSliceValue(instance interface{}) interface{} {
 func NewReflectSlice(instance interface{}) reflect.Value {
 	t, ok := instance.(reflect.Type)
 	if !ok {
-		t = reflect.TypeOf(instance)
+
+		v, ok := instance.(reflect.Value)
+		if ok {
+			t = v.Type()
+		} else {
+			t = reflect.TypeOf(instance)
+		}
 	}
 
 	return reflect.New(reflect.SliceOf(t))

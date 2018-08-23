@@ -184,7 +184,7 @@ func (handler *preloadHandler) preloadOneLocalString(preloader reflectx.Preloade
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(func(element reflect.Value) error {
+	err := preloader.ForEach(reference.FieldName(), func(element reflect.Value) error {
 		pk, err := handler.fetchLocalForeignKeyString(reference, element.Interface())
 		if err != nil {
 			return err
@@ -236,7 +236,7 @@ func (handler *preloadHandler) preloadOneLocalInteger(preloader reflectx.Preload
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(func(element reflect.Value) error {
+	err := preloader.ForEach(reference.FieldName(), func(element reflect.Value) error {
 		pk, err := handler.fetchLocalForeignKeyInteger(reference, element.Interface())
 		if err != nil {
 			return err
@@ -288,7 +288,7 @@ func (handler *preloadHandler) preloadOneLocalOptionalString(preloader reflectx.
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(func(element reflect.Value) error {
+	err := preloader.ForEach(reference.FieldName(), func(element reflect.Value) error {
 		pk, err := handler.fetchLocalForeignKeyOptionalString(reference, element.Interface())
 		if err != nil {
 			return err
@@ -343,7 +343,7 @@ func (handler *preloadHandler) preloadOneLocalOptionalInteger(preloader reflectx
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(func(element reflect.Value) error {
+	err := preloader.ForEach(reference.FieldName(), func(element reflect.Value) error {
 		pk, err := handler.fetchLocalForeignKeyOptionalInteger(reference, element.Interface())
 		if err != nil {
 			return err
@@ -426,7 +426,7 @@ func (handler *preloadHandler) preloadOneRemoteString(preloader reflectx.Preload
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(func(element reflect.Value) error {
+	err := preloader.ForEach(reference.FieldName(), func(element reflect.Value) error {
 		pk, err := handler.fetchRemoteForeignKeyString(reference, element.Interface())
 		if err != nil {
 			return err
@@ -479,7 +479,7 @@ func (handler *preloadHandler) preloadOneRemoteInteger(preloader reflectx.Preloa
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(func(element reflect.Value) error {
+	err := preloader.ForEach(reference.FieldName(), func(element reflect.Value) error {
 		pk, err := handler.fetchRemoteForeignKeyInteger(reference, element.Interface())
 		if err != nil {
 			return err
@@ -559,7 +559,7 @@ func (handler *preloadHandler) preloadManyString(preloader reflectx.Preloader,
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(func(element reflect.Value) error {
+	err := preloader.ForEach(reference.FieldName(), func(element reflect.Value) error {
 		pk, err := handler.fetchRemoteForeignKeyString(reference, element.Interface())
 		if err != nil {
 			return err
@@ -612,7 +612,7 @@ func (handler *preloadHandler) preloadManyInteger(preloader reflectx.Preloader,
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(func(element reflect.Value) error {
+	err := preloader.ForEach(reference.FieldName(), func(element reflect.Value) error {
 		pk, err := handler.fetchRemoteForeignKeyInteger(reference, element.Interface())
 		if err != nil {
 			return err

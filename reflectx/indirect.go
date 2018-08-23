@@ -7,6 +7,12 @@ import (
 // GetIndirectType returns indirect type for the given element.
 func GetIndirectType(element interface{}) reflect.Type {
 	value := element
+
+	v, ok := value.(reflect.Value)
+	if ok {
+		value = v.Type()
+	}
+
 	for {
 		t, ok := value.(reflect.Type)
 		if !ok {
