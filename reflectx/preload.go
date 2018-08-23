@@ -139,11 +139,24 @@ func (w *preloader) OnUpdate(callback func(element interface{}) error) error {
 }
 
 func (w *preloader) StringIndexes() []string {
-	return getStringIndexes(w.mapString)
+	list := make([]string, 0, len(w.mapString))
+	for id := range w.mapString {
+		list = append(list, id)
+	}
+
+	return list
 }
 
 func (w *preloader) AddStringIndex(id string, element reflect.Value) error {
-	return addStringIndex(w.mapString, id, element)
+	list, ok := w.mapString[id]
+	if !ok {
+		list = []reflect.Value{}
+	}
+
+	list = append(list, element)
+	w.mapString[id] = list
+
+	return nil
 }
 
 func (w *preloader) UpdateValueForStringIndex(name string, id string, element interface{}) error {
@@ -163,11 +176,24 @@ func (w *preloader) UpdateValueForStringIndex(name string, id string, element in
 }
 
 func (w *preloader) Int64Indexes() []int64 {
-	return getInt64Indexes(w.mapInt64)
+	list := make([]int64, 0, len(w.mapInt64))
+	for id := range w.mapInt64 {
+		list = append(list, id)
+	}
+
+	return list
 }
 
 func (w *preloader) AddInt64Index(id int64, element reflect.Value) error {
-	return addInt64Index(w.mapInt64, id, element)
+	list, ok := w.mapInt64[id]
+	if !ok {
+		list = []reflect.Value{}
+	}
+
+	list = append(list, element)
+	w.mapInt64[id] = list
+
+	return nil
 }
 
 func (w *preloader) UpdateValueForInt64Index(name string, id int64, element interface{}) error {
@@ -182,46 +208,6 @@ func (w *preloader) UpdateValueForInt64Index(name string, id int64, element inte
 			return err
 		}
 	}
-
-	return nil
-}
-
-func getInt64Indexes(values map[int64][]reflect.Value) []int64 {
-	list := make([]int64, 0, len(values))
-	for id := range values {
-		list = append(list, id)
-	}
-	return list
-}
-
-func getStringIndexes(values map[string][]reflect.Value) []string {
-	list := make([]string, 0, len(values))
-	for id := range values {
-		list = append(list, id)
-	}
-	return list
-}
-
-func addInt64Index(values map[int64][]reflect.Value, id int64, element reflect.Value) error {
-	list, ok := values[id]
-	if !ok {
-		list = []reflect.Value{}
-	}
-
-	list = append(list, element)
-	values[id] = list
-
-	return nil
-}
-
-func addStringIndex(values map[string][]reflect.Value, id string, element reflect.Value) error {
-	list, ok := values[id]
-	if !ok {
-		list = []reflect.Value{}
-	}
-
-	list = append(list, element)
-	values[id] = list
 
 	return nil
 }
