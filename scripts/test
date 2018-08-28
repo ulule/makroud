@@ -16,4 +16,4 @@ if [ -n "$1" ]; then
     OPTIONS="$@"
 fi
 
-go test -v -count=1 ${OPTIONS}
+go test -v -count=1 -parallel=1 ${OPTIONS}
