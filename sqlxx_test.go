@@ -45,19 +45,26 @@ func (Elements) TableName() string {
 // ----------------------------------------------------------------------------
 
 type ExoCloudFixtures struct {
-	Regions    []*ExoRegion
-	Buckets    []*ExoBucket
-	Modes      []*ExoChunkMode
-	Chunks     []*ExoChunk
-	Signatures []*ExoChunkSignature
+	Regions       []*ExoRegion
+	Organizations []*ExoOrganization
+	Buckets       []*ExoBucket
+	Directories   []*ExoDirectory
+	Files         []*ExoFile
+	Modes         []*ExoChunkMode
+	Chunks        []*ExoChunk
+	Signatures    []*ExoChunkSignature
 }
 
 func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *require.Assertions) ExoCloudFixtures {
 	fixtures := ExoCloudFixtures{
-		Regions:    []*ExoRegion{},
-		Modes:      []*ExoChunkMode{},
-		Chunks:     []*ExoChunk{},
-		Signatures: []*ExoChunkSignature{},
+		Regions:       []*ExoRegion{},
+		Organizations: []*ExoOrganization{},
+		Buckets:       []*ExoBucket{},
+		Directories:   []*ExoDirectory{},
+		Files:         []*ExoFile{},
+		Modes:         []*ExoChunkMode{},
+		Chunks:        []*ExoChunk{},
+		Signatures:    []*ExoChunkSignature{},
 	}
 
 	region1 := &ExoRegion{
@@ -87,10 +94,38 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	is.NotEmpty(region3.ID)
 	fixtures.Regions = append(fixtures.Regions, region3)
 
+	organization1 := &ExoOrganization{
+		Name:    "Nemo World",
+		Website: "https://www.nemoworld.com",
+	}
+	err = sqlxx.Save(ctx, driver, organization1)
+	is.NoError(err)
+	is.NotEmpty(organization1.ID)
+	fixtures.Organizations = append(fixtures.Organizations, organization1)
+
+	organization2 := &ExoOrganization{
+		Name:    "Shadow Navigations",
+		Website: "https://www.shadow-navigations.co.uk",
+	}
+	err = sqlxx.Save(ctx, driver, organization2)
+	is.NoError(err)
+	is.NotEmpty(organization2.ID)
+	fixtures.Organizations = append(fixtures.Organizations, organization2)
+
+	organization3 := &ExoOrganization{
+		Name:    "Ansoft",
+		Website: "https://ansoft.io",
+	}
+	err = sqlxx.Save(ctx, driver, organization3)
+	is.NoError(err)
+	is.NotEmpty(organization3.ID)
+	fixtures.Organizations = append(fixtures.Organizations, organization3)
+
 	bucket1 := &ExoBucket{
-		Name:        "com.nemoworld.sandbox.media",
-		Description: "Media bucket for sandbox env",
-		RegionID:    region1.ID,
+		Name:           "com.nemoworld.sandbox.media",
+		Description:    "Media bucket for sandbox env",
+		RegionID:       region1.ID,
+		OrganizationID: organization1.ID,
 	}
 	err = sqlxx.Save(ctx, driver, bucket1)
 	is.NoError(err)
@@ -98,9 +133,10 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Buckets = append(fixtures.Buckets, bucket1)
 
 	bucket2 := &ExoBucket{
-		Name:        "com.nemoworld.production.media",
-		Description: "Media bucket for production env",
-		RegionID:    region1.ID,
+		Name:           "com.nemoworld.production.media",
+		Description:    "Media bucket for production env",
+		RegionID:       region1.ID,
+		OrganizationID: organization1.ID,
 	}
 	err = sqlxx.Save(ctx, driver, bucket2)
 	is.NoError(err)
@@ -108,9 +144,10 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Buckets = append(fixtures.Buckets, bucket2)
 
 	bucket3 := &ExoBucket{
-		Name:        "com.nemoworld.sandbox.static",
-		Description: "Assets for sandbox env",
-		RegionID:    region3.ID,
+		Name:           "com.nemoworld.sandbox.static",
+		Description:    "Assets for sandbox env",
+		RegionID:       region3.ID,
+		OrganizationID: organization1.ID,
 	}
 	err = sqlxx.Save(ctx, driver, bucket3)
 	is.NoError(err)
@@ -118,14 +155,253 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Buckets = append(fixtures.Buckets, bucket3)
 
 	bucket4 := &ExoBucket{
-		Name:        "com.nemoworld.production.static",
-		Description: "Assets for production env",
-		RegionID:    region3.ID,
+		Name:           "com.nemoworld.production.static",
+		Description:    "Assets for production env",
+		RegionID:       region3.ID,
+		OrganizationID: organization1.ID,
 	}
 	err = sqlxx.Save(ctx, driver, bucket4)
 	is.NoError(err)
 	is.NotEmpty(bucket4.ID)
 	fixtures.Buckets = append(fixtures.Buckets, bucket4)
+
+	directory1 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		Path:     "A",
+	}
+	err = sqlxx.Save(ctx, driver, directory1)
+	is.NoError(err)
+	is.NotEmpty(directory1.ID)
+	fixtures.Directories = append(fixtures.Directories, directory1)
+
+	directory2 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		Path:     "B",
+	}
+	err = sqlxx.Save(ctx, driver, directory2)
+	is.NoError(err)
+	is.NotEmpty(directory2.ID)
+	fixtures.Directories = append(fixtures.Directories, directory2)
+
+	directory3 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		Path:     "C",
+	}
+	err = sqlxx.Save(ctx, driver, directory3)
+	is.NoError(err)
+	is.NotEmpty(directory3.ID)
+	fixtures.Directories = append(fixtures.Directories, directory3)
+
+	directory4 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		Path:     "D",
+	}
+	err = sqlxx.Save(ctx, driver, directory4)
+	is.NoError(err)
+	is.NotEmpty(directory4.ID)
+	fixtures.Directories = append(fixtures.Directories, directory4)
+
+	directory5 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		Path:     "E",
+	}
+	err = sqlxx.Save(ctx, driver, directory5)
+	is.NoError(err)
+	is.NotEmpty(directory5.ID)
+	fixtures.Directories = append(fixtures.Directories, directory5)
+
+	directory6 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		Path:     "F",
+	}
+	err = sqlxx.Save(ctx, driver, directory6)
+	is.NoError(err)
+	is.NotEmpty(directory6.ID)
+	fixtures.Directories = append(fixtures.Directories, directory6)
+
+	directory7 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		ParentID: sql.NullString{
+			Valid:  true,
+			String: directory1.ID,
+		},
+		Path: "AA",
+	}
+	err = sqlxx.Save(ctx, driver, directory7)
+	is.NoError(err)
+	is.NotEmpty(directory7.ID)
+	fixtures.Directories = append(fixtures.Directories, directory7)
+
+	directory8 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		ParentID: sql.NullString{
+			Valid:  true,
+			String: directory1.ID,
+		},
+		Path: "AB",
+	}
+	err = sqlxx.Save(ctx, driver, directory8)
+	is.NoError(err)
+	is.NotEmpty(directory8.ID)
+	fixtures.Directories = append(fixtures.Directories, directory8)
+
+	directory9 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		ParentID: sql.NullString{
+			Valid:  true,
+			String: directory1.ID,
+		},
+		Path: "AC",
+	}
+	err = sqlxx.Save(ctx, driver, directory9)
+	is.NoError(err)
+	is.NotEmpty(directory9.ID)
+	fixtures.Directories = append(fixtures.Directories, directory9)
+
+	directory10 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		ParentID: sql.NullString{
+			Valid:  true,
+			String: directory1.ID,
+		},
+		Path: "AD",
+	}
+	err = sqlxx.Save(ctx, driver, directory10)
+	is.NoError(err)
+	is.NotEmpty(directory10.ID)
+	fixtures.Directories = append(fixtures.Directories, directory10)
+
+	directory11 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		ParentID: sql.NullString{
+			Valid:  true,
+			String: directory1.ID,
+		},
+		Path: "AE",
+	}
+	err = sqlxx.Save(ctx, driver, directory11)
+	is.NoError(err)
+	is.NotEmpty(directory11.ID)
+	fixtures.Directories = append(fixtures.Directories, directory11)
+
+	directory12 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		ParentID: sql.NullString{
+			Valid:  true,
+			String: directory1.ID,
+		},
+		Path: "AF",
+	}
+	err = sqlxx.Save(ctx, driver, directory12)
+	is.NoError(err)
+	is.NotEmpty(directory12.ID)
+	fixtures.Directories = append(fixtures.Directories, directory12)
+
+	directory13 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		ParentID: sql.NullString{
+			Valid:  true,
+			String: directory3.ID,
+		},
+		Path: "CB",
+	}
+	err = sqlxx.Save(ctx, driver, directory13)
+	is.NoError(err)
+	is.NotEmpty(directory13.ID)
+	fixtures.Directories = append(fixtures.Directories, directory13)
+
+	directory14 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		ParentID: sql.NullString{
+			Valid:  true,
+			String: directory3.ID,
+		},
+		Path: "CC",
+	}
+	err = sqlxx.Save(ctx, driver, directory14)
+	is.NoError(err)
+	is.NotEmpty(directory14.ID)
+	fixtures.Directories = append(fixtures.Directories, directory14)
+
+	directory15 := &ExoDirectory{
+		BucketID: bucket1.ID,
+		ParentID: sql.NullString{
+			Valid:  true,
+			String: directory3.ID,
+		},
+		Path: "CE",
+	}
+	err = sqlxx.Save(ctx, driver, directory15)
+	is.NoError(err)
+	is.NotEmpty(directory15.ID)
+	fixtures.Directories = append(fixtures.Directories, directory15)
+
+	directory16 := &ExoDirectory{
+		BucketID: bucket3.ID,
+		Path:     "css",
+	}
+	err = sqlxx.Save(ctx, driver, directory16)
+	is.NoError(err)
+	is.NotEmpty(directory16.ID)
+	fixtures.Directories = append(fixtures.Directories, directory16)
+
+	directory17 := &ExoDirectory{
+		BucketID: bucket3.ID,
+		Path:     "fonts",
+	}
+	err = sqlxx.Save(ctx, driver, directory17)
+	is.NoError(err)
+	is.NotEmpty(directory17.ID)
+	fixtures.Directories = append(fixtures.Directories, directory17)
+
+	directory18 := &ExoDirectory{
+		BucketID: bucket3.ID,
+		Path:     "js",
+	}
+	err = sqlxx.Save(ctx, driver, directory18)
+	is.NoError(err)
+	is.NotEmpty(directory18.ID)
+	fixtures.Directories = append(fixtures.Directories, directory18)
+
+	file1 := &ExoFile{
+		Path:        "account.css",
+		BucketID:    bucket3.ID,
+		DirectoryID: directory16.ID,
+	}
+	err = sqlxx.Save(ctx, driver, file1)
+	is.NoError(err)
+	is.NotEmpty(file1.ID)
+	fixtures.Files = append(fixtures.Files, file1)
+
+	file2 := &ExoFile{
+		Path:        "account.js",
+		BucketID:    bucket3.ID,
+		DirectoryID: directory18.ID,
+	}
+	err = sqlxx.Save(ctx, driver, file2)
+	is.NoError(err)
+	is.NotEmpty(file2.ID)
+	fixtures.Files = append(fixtures.Files, file2)
+
+	file3 := &ExoFile{
+		Path:        "aae95479d44ea1049741b15a5d0a91.db",
+		BucketID:    bucket3.ID,
+		DirectoryID: directory14.ID,
+	}
+	err = sqlxx.Save(ctx, driver, file3)
+	is.NoError(err)
+	is.NotEmpty(file3.ID)
+	fixtures.Files = append(fixtures.Files, file3)
+
+	file4 := &ExoFile{
+		Path:        "index.js",
+		BucketID:    bucket3.ID,
+		DirectoryID: directory18.ID,
+	}
+	err = sqlxx.Save(ctx, driver, file4)
+	is.NoError(err)
+	is.NotEmpty(file4.ID)
+	fixtures.Files = append(fixtures.Files, file4)
 
 	mode1 := &ExoChunkMode{
 		Mode: "rwx",
@@ -176,6 +452,7 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Modes = append(fixtures.Modes, mode6)
 
 	chunk1 := &ExoChunk{
+		FileID: file3.ID,
 		ModeID: mode1.ID,
 		Bytes: fmt.Sprint(
 			"4e919ca20b565bb5b03c65130e018ad23d489412352ac8f25f3d0f8dd64905bd",
@@ -189,6 +466,7 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Chunks = append(fixtures.Chunks, chunk1)
 
 	chunk2 := &ExoChunk{
+		FileID: file3.ID,
 		ModeID: mode1.ID,
 		Bytes: fmt.Sprint(
 			"455a9ccb2316fbbeefc621809bdb020986337fcd99a2e497f39aa76b67840a21",
@@ -202,6 +480,7 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Chunks = append(fixtures.Chunks, chunk2)
 
 	chunk3 := &ExoChunk{
+		FileID: file3.ID,
 		ModeID: mode1.ID,
 		Bytes: fmt.Sprint(
 			"5c4ff25049b5f36621f4c9e1e3723b43fc21d9008b1fb7bb90ce7e7d2dec11c9",
@@ -215,6 +494,7 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Chunks = append(fixtures.Chunks, chunk3)
 
 	chunk4 := &ExoChunk{
+		FileID: file2.ID,
 		ModeID: mode2.ID,
 		Bytes: fmt.Sprint(
 			"d9c234d4934ba063bf9c80fda227529f344580ef237a53419b6710d3184dfb3f",
@@ -228,6 +508,7 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Chunks = append(fixtures.Chunks, chunk4)
 
 	chunk5 := &ExoChunk{
+		FileID: file2.ID,
 		ModeID: mode2.ID,
 		Bytes: fmt.Sprint(
 			"f1676c02af03cfe8485f82825d71afa09184ba49d0304a8988dd2c75fb593858",
@@ -241,6 +522,7 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Chunks = append(fixtures.Chunks, chunk5)
 
 	chunk6 := &ExoChunk{
+		FileID: file4.ID,
 		ModeID: mode3.ID,
 		Bytes: fmt.Sprint(
 			"52a5b98773dc9adc76eb1813c8766a27ac300bee2941c84947592fb75b65de10",
@@ -254,6 +536,7 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	fixtures.Chunks = append(fixtures.Chunks, chunk6)
 
 	chunk7 := &ExoChunk{
+		FileID: file1.ID,
 		ModeID: mode4.ID,
 		Bytes: fmt.Sprint(
 			"3d394c85e961e8ec976162377f46287d47a76968edcc2c1aa08d6667e73cbaf6",
@@ -329,6 +612,78 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	return fixtures
 }
 
+type ExoOrganization struct {
+	// Columns
+	ID      string `sqlxx:"column:id,pk:ulid"`
+	Name    string `sqlxx:"column:name"`
+	Website string `sqlxx:"column:website"`
+}
+
+func (ExoOrganization) TableName() string {
+	return "exo_organization"
+}
+
+type ExoUser struct {
+	// Columns
+	ID        string `sqlxx:"column:id,pk:ulid"`
+	Email     string `sqlxx:"column:email"`
+	Password  string `sqlxx:"column:password"`
+	Country   string `sqlxx:"column:country"`
+	Locale    string `sqlxx:"column:locale"`
+	ProfileID string `sqlxx:"column:exo_profile,fk:exo_profile"`
+	// Relationships
+	Group        *ExoGroup
+	Organization *ExoOrganization
+}
+
+func (ExoUser) TableName() string {
+	return "exo_user"
+}
+
+type ExoGroup struct {
+	// Columns
+	ID             string `sqlxx:"column:id,pk:ulid"`
+	Role           string `sqlxx:"column:role"`
+	UserID         string `sqlxx:"column:user_id,fk:exo_user"`
+	OrganizationID string `sqlxx:"column:organization_id,fk:exo_organization"`
+	// Relationships
+	User         *ExoUser
+	Organization *ExoOrganization
+}
+
+func (ExoGroup) TableName() string {
+	return "exo_group"
+}
+
+type ExoProfile struct {
+	// Columns
+	ID          string         `sqlxx:"column:id,pk:ulid"`
+	FirstName   string         `sqlxx:"column:first_name"`
+	LastName    string         `sqlxx:"column:last_name"`
+	AvatarID    sql.NullString `sqlxx:"column:avatar_id,fk:exo_avatar"`
+	DisplayName sql.NullString `sqlxx:"column:display_name"`
+	Description sql.NullString `sqlxx:"column:description"`
+	Website     sql.NullString `sqlxx:"column:website"`
+	// Relationships
+	Avatar *ExoAvatar
+}
+
+func (ExoProfile) TableName() string {
+	return "exo_profile"
+}
+
+type ExoAvatar struct {
+	// Columns
+	ID       string `sqlxx:"column:id,pk:ulid"`
+	URL      string `sqlxx:"column:url"`
+	Path     string `sqlxx:"column:path"`
+	MimeType string `sqlxx:"column:mime_type"`
+}
+
+func (ExoAvatar) TableName() string {
+	return "exo_avatar"
+}
+
 type ExoRegion struct {
 	// Columns
 	ID       string `sqlxx:"column:id,pk:ulid"`
@@ -344,10 +699,11 @@ func (ExoRegion) TableName() string {
 
 type ExoBucket struct {
 	// Columns
-	ID          string `sqlxx:"column:id,pk:ulid"`
-	Name        string `sqlxx:"column:name"`
-	Description string `sqlxx:"column:description"`
-	RegionID    string `sqlxx:"column:region_id,fk:exo_region"`
+	ID             string `sqlxx:"column:id,pk:ulid"`
+	Name           string `sqlxx:"column:name"`
+	Description    string `sqlxx:"column:description"`
+	RegionID       string `sqlxx:"column:region_id,fk:exo_region"`
+	OrganizationID string `sqlxx:"column:organization_id,fk:exo_region"`
 	// Relationships
 	Region ExoRegion
 }
@@ -356,36 +712,43 @@ func (ExoBucket) TableName() string {
 	return "exo_bucket"
 }
 
-// type ExoFile struct {
-// 	// Columns
-// 	ID   string `sqlxx:"column:id,pk:ulid"`
-// 	Name string `sqlxx:"column:name"`
-// 	Path string `sqlxx:"column:path"`
-// 	// Relationships
-// 	Chunk []ExoChunk
-// }
-//
-// func (ExoFile) TableName() string {
-// 	return "exo_file"
-// }
-//
-// type ExoFileChunk struct {
-// 	// Columns
-// 	ID      string `sqlxx:"column:id,pk:ulid"`
-// 	FileID  string `sqlxx:"column:file_id,fk:exo_file"`
-// 	ChunkID string `sqlxx:"column:chunk_id,fk:exo_chunk"`
-// }
-//
-// func (ExoFileChunk) TableName() string {
-// 	return "exo_file_chunk"
-// }
+type ExoDirectory struct {
+	// Columns
+	ID       string         `sqlxx:"column:id,pk:ulid"`
+	Path     string         `sqlxx:"column:path"`
+	BucketID string         `sqlxx:"column:bucket_id,fk:exo_bucket"`
+	ParentID sql.NullString `sqlxx:"column:parent_id,fk:exo_directory"`
+	// Relationships
+	Directories []*ExoDirectory
+	Files       []*ExoFile
+}
+
+func (ExoDirectory) TableName() string {
+	return "exo_directory"
+}
+
+type ExoFile struct {
+	// Columns
+	ID          string `sqlxx:"column:id,pk:ulid"`
+	Path        string `sqlxx:"column:path"`
+	BucketID    string `sqlxx:"column:bucket_id,fk:exo_bucket"`
+	DirectoryID string `sqlxx:"column:directory_id,fk:exo_directory"`
+	// Relationships
+	Chunk []ExoChunk
+}
+
+func (ExoFile) TableName() string {
+	return "exo_file"
+}
 
 type ExoChunk struct {
 	// Columns
 	Hash   string `sqlxx:"column:hash,pk:ulid"`
 	Bytes  string `sqlxx:"column:bytes"`
 	ModeID string `sqlxx:"column:mode_id,fk:exo_chunk_mode"`
+	FileID string `sqlxx:"column:file_id,fk:exo_file"`
 	// Relationships
+	File      *ExoFile
 	Signature *ExoChunkSignature
 	Mode      *ExoChunkMode
 }
@@ -1364,7 +1727,11 @@ func Setup(t require.TestingT, options ...sqlxx.Option) SetupCallback {
 
 func DropTables(ctx context.Context, db *sqlxx.Client) {
 	db.MustExec(ctx, `
-		-- Simple schema
+
+		--
+		-- Zootopia schema
+		--
+
 		DROP TABLE IF EXISTS ztp_human CASCADE;
 		DROP TABLE IF EXISTS ztp_package CASCADE;
 		DROP TABLE IF EXISTS ztp_bag CASCADE;
@@ -1374,12 +1741,22 @@ func DropTables(ctx context.Context, db *sqlxx.Client) {
 		DROP TABLE IF EXISTS ztp_group CASCADE;
 		DROP TABLE IF EXISTS ztp_center CASCADE;
 
+		--
 		-- Object storage application
+		--
+
 		DROP TABLE IF EXISTS exo_chunk_signature CASCADE;
 		DROP TABLE IF EXISTS exo_chunk CASCADE;
 		DROP TABLE IF EXISTS exo_chunk_mode CASCADE;
+		DROP TABLE IF EXISTS exo_file CASCADE;
+		DROP TABLE IF EXISTS exo_directory CASCADE;
 		DROP TABLE IF EXISTS exo_bucket CASCADE;
 		DROP TABLE IF EXISTS exo_region CASCADE;
+		DROP TABLE IF EXISTS exo_group CASCADE;
+		DROP TABLE IF EXISTS exo_user CASCADE;
+		DROP TABLE IF EXISTS exo_profile CASCADE;
+		DROP TABLE IF EXISTS exo_avatar CASCADE;
+		DROP TABLE IF EXISTS exo_organization CASCADE;
 
 	`)
 }
@@ -1447,37 +1824,79 @@ func CreateTables(ctx context.Context, db *sqlxx.Client) {
 		-- Object storage application
 		--
 
+		CREATE TABLE exo_organization (
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			name               VARCHAR(255) NOT NULL,
+			website            VARCHAR(2048) NOT NULL
+		);
+		CREATE TABLE exo_avatar (
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			url                VARCHAR(2048) NOT NULL,
+			path               VARCHAR(255) NOT NULL,
+			mime_type          VARCHAR(64) NOT NULL
+		);
+		CREATE TABLE exo_profile (
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			first_name         VARCHAR(255) NOT NULL,
+			last_name          VARCHAR(255) NOT NULL,
+			avatar_id          VARCHAR(26) REFERENCES exo_avatar(id),
+			display_name       VARCHAR(255),
+			description        VARCHAR(2048),
+			website            VARCHAR(2048)
+		);
+		CREATE TABLE exo_user (
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			email              VARCHAR(255) NOT NULL,
+			password           VARCHAR(128) NOT NULL,
+			country            VARCHAR(2) NOT NULL,
+			locale             VARCHAR(5) NOT NULL,
+			profile_id         VARCHAR(26) NOT NULL REFERENCES exo_profile(id)
+		);
+		CREATE TABLE exo_group (
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			role               VARCHAR(5) NOT NULL,
+			user_id            VARCHAR(26) NOT NULL REFERENCES exo_user(id),
+			organization_id    VARCHAR(26) NOT NULL REFERENCES exo_organization(id)
+		);
 		CREATE TABLE exo_region (
-			id              VARCHAR(26) PRIMARY KEY NOT NULL,
-			name            VARCHAR(255) NOT NULL,
-			hostname        VARCHAR(2048) NOT NULL
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			name               VARCHAR(255) NOT NULL,
+			hostname           VARCHAR(2048) NOT NULL
 		);
 		CREATE TABLE exo_bucket (
-			id              VARCHAR(26) PRIMARY KEY NOT NULL,
-			name            VARCHAR(512) NOT NULL,
-			description     VARCHAR(2048) NOT NULL,
-			region_id       VARCHAR(26) NOT NULL REFERENCES exo_region(id)
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			name               VARCHAR(512) NOT NULL,
+			description        VARCHAR(2048) NOT NULL,
+			region_id          VARCHAR(26) NOT NULL REFERENCES exo_region(id),
+			organization_id    VARCHAR(26) NOT NULL REFERENCES exo_organization(id)
+		);
+		CREATE TABLE exo_directory (
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			path               VARCHAR(512) NOT NULL,
+			bucket_id          VARCHAR(26) NOT NULL REFERENCES exo_bucket(id),
+			parent_id          VARCHAR(26) REFERENCES exo_directory(id)
+		);
+		CREATE TABLE exo_file (
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			path               VARCHAR(512) NOT NULL,
+			bucket_id          VARCHAR(26) NOT NULL REFERENCES exo_bucket(id),
+			directory_id       VARCHAR(26) NOT NULL REFERENCES exo_directory(id)
 		);
 		CREATE TABLE exo_chunk_mode (
-			id              VARCHAR(26) PRIMARY KEY NOT NULL,
-			mode            VARCHAR(255) NOT NULL
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			mode               VARCHAR(255) NOT NULL
 		);
 		CREATE TABLE exo_chunk (
-			hash            VARCHAR(26) PRIMARY KEY NOT NULL,
-			bytes           VARCHAR(2048) NOT NULL,
-			mode_id         VARCHAR(26) NOT NULL REFERENCES exo_chunk_mode(id) ON DELETE RESTRICT
+			hash               VARCHAR(26) PRIMARY KEY NOT NULL,
+			bytes              VARCHAR(2048) NOT NULL,
+			mode_id            VARCHAR(26) NOT NULL REFERENCES exo_chunk_mode(id) ON DELETE RESTRICT,
+			file_id            VARCHAR(26) NOT NULL REFERENCES exo_file(id) ON DELETE RESTRICT
 		);
 		CREATE TABLE exo_chunk_signature (
-			id              VARCHAR(26) PRIMARY KEY NOT NULL,
-			chunk_id        VARCHAR(26) NOT NULL REFERENCES exo_chunk(hash),
-			bytes           VARCHAR(2048) NOT NULL
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			chunk_id           VARCHAR(26) NOT NULL REFERENCES exo_chunk(hash),
+			bytes              VARCHAR(2048) NOT NULL
 		);
-
-		--
-		-- Application schema
-		--
-
-		-- TODO
 
 	`)
 }
