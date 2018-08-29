@@ -9,7 +9,7 @@ export PGDATABASE='postgres'
 DOCKER_DB_PORT=${DOCKER_DB_PORT:-5432}
 
 CONTAINER_NAME="sqlxx-db"
-CONTAINER_IMAGE="postgres:10.4"
+CONTAINER_IMAGE="postgres:10.5"
 
 create_database() {
     declare dbname="$1"
