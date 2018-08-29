@@ -47,7 +47,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckRegionFixtures := func(fixtures ExoCloudFixtures) {
+		CheckRegionFixtures := func(fixtures *ExoCloudFixtures) {
 			is.Empty(fixtures.Regions[0].Buckets)
 			is.Empty(fixtures.Regions[1].Buckets)
 			is.Empty(fixtures.Regions[2].Buckets)
@@ -128,7 +128,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckRegionFixtures := func(fixtures ExoCloudFixtures) {
+		CheckRegionFixtures := func(fixtures *ExoCloudFixtures) {
 			is.Empty(fixtures.Regions[0].Buckets)
 			is.Empty(fixtures.Regions[1].Buckets)
 			is.Empty(fixtures.Regions[2].Buckets)
@@ -282,7 +282,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckBucketFixtures := func(fixtures ExoCloudFixtures) {
+		CheckBucketFixtures := func(fixtures *ExoCloudFixtures) {
 			is.Empty(fixtures.Buckets[0].Region)
 			is.Empty(fixtures.Buckets[1].Region)
 			is.Empty(fixtures.Buckets[2].Region)
@@ -381,7 +381,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckBucketFixtures := func(fixtures ExoCloudFixtures) {
+		CheckBucketFixtures := func(fixtures *ExoCloudFixtures) {
 			is.Empty(fixtures.Buckets[0].Region)
 			is.Empty(fixtures.Buckets[1].Region)
 			is.Empty(fixtures.Buckets[2].Region)
@@ -560,21 +560,19 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckExoCloudFixtures := func(fixtures ExoCloudFixtures) {
-			is.Nil(fixtures.Chunks[0].Mode)
-			is.Nil(fixtures.Chunks[1].Mode)
-			is.Nil(fixtures.Chunks[2].Mode)
-			is.Nil(fixtures.Chunks[3].Mode)
-			is.Nil(fixtures.Chunks[4].Mode)
-			is.Nil(fixtures.Chunks[5].Mode)
-			is.Nil(fixtures.Chunks[6].Mode)
-			is.Nil(fixtures.Chunks[0].Signature)
-			is.Nil(fixtures.Chunks[1].Signature)
-			is.Nil(fixtures.Chunks[2].Signature)
-			is.Nil(fixtures.Chunks[3].Signature)
-			is.Nil(fixtures.Chunks[4].Signature)
-			is.Nil(fixtures.Chunks[5].Signature)
-			is.Nil(fixtures.Chunks[6].Signature)
+		CheckExoCloudFixtures := func(fixtures *ExoCloudFixtures) {
+			is.Nil(fixtures.Chunks[23].Mode)
+			is.Nil(fixtures.Chunks[24].Mode)
+			is.Nil(fixtures.Chunks[25].Mode)
+			is.Nil(fixtures.Chunks[26].Mode)
+			is.Nil(fixtures.Chunks[27].Mode)
+			is.Nil(fixtures.Chunks[28].Mode)
+			is.Nil(fixtures.Chunks[23].Signature)
+			is.Nil(fixtures.Chunks[24].Signature)
+			is.Nil(fixtures.Chunks[25].Signature)
+			is.Nil(fixtures.Chunks[26].Signature)
+			is.Nil(fixtures.Chunks[27].Signature)
+			is.Nil(fixtures.Chunks[28].Signature)
 		}
 
 		{
@@ -582,7 +580,7 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
 			CheckExoCloudFixtures(fixtures)
 
-			chunk1 := fixtures.Chunks[0]
+			chunk1 := fixtures.Chunks[24]
 
 			err := sqlxx.Preload(ctx, driver, chunk1, "Mode")
 			is.NoError(err)
@@ -598,7 +596,7 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 			is.Equal(fixtures.Signatures[0].ChunkID, chunk1.Signature.ChunkID)
 			is.Equal(fixtures.Signatures[0].Bytes, chunk1.Signature.Bytes)
 
-			chunk2 := fixtures.Chunks[1]
+			chunk2 := fixtures.Chunks[25]
 
 			err = sqlxx.Preload(ctx, driver, chunk2, "Mode", "Signature")
 			is.NoError(err)
@@ -610,14 +608,47 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 			is.Equal(fixtures.Signatures[1].ChunkID, chunk2.Signature.ChunkID)
 			is.Equal(fixtures.Signatures[1].Bytes, chunk2.Signature.Bytes)
 
-			chunk4 := fixtures.Chunks[3]
+			chunk3 := fixtures.Chunks[26]
+
+			err = sqlxx.Preload(ctx, driver, chunk3, "Mode", "Signature")
+			is.NoError(err)
+			is.NotNil(chunk3.Mode)
+			is.Equal(fixtures.Modes[0].ID, chunk3.Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunk3.Mode.Mode)
+			is.NotNil(chunk3.Signature)
+			is.Equal(fixtures.Signatures[2].ID, chunk3.Signature.ID)
+			is.Equal(fixtures.Signatures[2].ChunkID, chunk3.Signature.ChunkID)
+			is.Equal(fixtures.Signatures[2].Bytes, chunk3.Signature.Bytes)
+
+			chunk4 := fixtures.Chunks[27]
 
 			err = sqlxx.Preload(ctx, driver, chunk4, "Mode", "Signature")
 			is.NoError(err)
 			is.NotNil(chunk4.Mode)
-			is.Equal(fixtures.Modes[1].ID, chunk4.Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, chunk4.Mode.Mode)
-			is.Nil(chunk4.Signature)
+			is.Equal(fixtures.Modes[0].ID, chunk4.Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunk4.Mode.Mode)
+			is.NotNil(chunk4.Signature)
+			is.Equal(fixtures.Signatures[3].ID, chunk4.Signature.ID)
+			is.Equal(fixtures.Signatures[3].ChunkID, chunk4.Signature.ChunkID)
+			is.Equal(fixtures.Signatures[3].Bytes, chunk4.Signature.Bytes)
+
+			chunk5 := fixtures.Chunks[28]
+
+			err = sqlxx.Preload(ctx, driver, chunk5, "Mode", "Signature")
+			is.NoError(err)
+			is.NotNil(chunk5.Mode)
+			is.Equal(fixtures.Modes[2].ID, chunk5.Mode.ID)
+			is.Equal(fixtures.Modes[2].Mode, chunk5.Mode.Mode)
+			is.Nil(chunk5.Signature)
+
+			chunk6 := fixtures.Chunks[23]
+
+			err = sqlxx.Preload(ctx, driver, chunk6, "Mode", "Signature")
+			is.NoError(err)
+			is.NotNil(chunk6.Mode)
+			is.Equal(fixtures.Modes[3].ID, chunk6.Mode.ID)
+			is.Equal(fixtures.Modes[3].Mode, chunk6.Mode.Mode)
+			is.Nil(chunk6.Signature)
 
 		}
 		{
@@ -625,7 +656,7 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
 			CheckExoCloudFixtures(fixtures)
 
-			chunk1 := fixtures.Chunks[0]
+			chunk1 := fixtures.Chunks[24]
 
 			err := sqlxx.Preload(ctx, driver, &chunk1, "Mode")
 			is.NoError(err)
@@ -641,7 +672,7 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 			is.Equal(fixtures.Signatures[0].ChunkID, chunk1.Signature.ChunkID)
 			is.Equal(fixtures.Signatures[0].Bytes, chunk1.Signature.Bytes)
 
-			chunk2 := fixtures.Chunks[1]
+			chunk2 := fixtures.Chunks[25]
 
 			err = sqlxx.Preload(ctx, driver, &chunk2, "Mode", "Signature")
 			is.NoError(err)
@@ -653,14 +684,47 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 			is.Equal(fixtures.Signatures[1].ChunkID, chunk2.Signature.ChunkID)
 			is.Equal(fixtures.Signatures[1].Bytes, chunk2.Signature.Bytes)
 
-			chunk4 := fixtures.Chunks[3]
+			chunk3 := fixtures.Chunks[26]
+
+			err = sqlxx.Preload(ctx, driver, &chunk3, "Mode", "Signature")
+			is.NoError(err)
+			is.NotNil(chunk3.Mode)
+			is.Equal(fixtures.Modes[0].ID, chunk3.Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunk3.Mode.Mode)
+			is.NotNil(chunk3.Signature)
+			is.Equal(fixtures.Signatures[2].ID, chunk3.Signature.ID)
+			is.Equal(fixtures.Signatures[2].ChunkID, chunk3.Signature.ChunkID)
+			is.Equal(fixtures.Signatures[2].Bytes, chunk3.Signature.Bytes)
+
+			chunk4 := fixtures.Chunks[27]
 
 			err = sqlxx.Preload(ctx, driver, &chunk4, "Mode", "Signature")
 			is.NoError(err)
 			is.NotNil(chunk4.Mode)
-			is.Equal(fixtures.Modes[1].ID, chunk4.Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, chunk4.Mode.Mode)
-			is.Nil(chunk4.Signature)
+			is.Equal(fixtures.Modes[0].ID, chunk4.Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunk4.Mode.Mode)
+			is.NotNil(chunk4.Signature)
+			is.Equal(fixtures.Signatures[3].ID, chunk4.Signature.ID)
+			is.Equal(fixtures.Signatures[3].ChunkID, chunk4.Signature.ChunkID)
+			is.Equal(fixtures.Signatures[3].Bytes, chunk4.Signature.Bytes)
+
+			chunk5 := fixtures.Chunks[28]
+
+			err = sqlxx.Preload(ctx, driver, &chunk5, "Mode", "Signature")
+			is.NoError(err)
+			is.NotNil(chunk5.Mode)
+			is.Equal(fixtures.Modes[2].ID, chunk5.Mode.ID)
+			is.Equal(fixtures.Modes[2].Mode, chunk5.Mode.Mode)
+			is.Nil(chunk5.Signature)
+
+			chunk6 := fixtures.Chunks[23]
+
+			err = sqlxx.Preload(ctx, driver, &chunk6, "Mode", "Signature")
+			is.NoError(err)
+			is.NotNil(chunk6.Mode)
+			is.Equal(fixtures.Modes[3].ID, chunk6.Mode.ID)
+			is.Equal(fixtures.Modes[3].Mode, chunk6.Mode.Mode)
+			is.Nil(chunk6.Signature)
 
 		}
 	})
@@ -671,21 +735,19 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckExoCloudFixtures := func(fixtures ExoCloudFixtures) {
-			is.Nil(fixtures.Chunks[0].Mode)
-			is.Nil(fixtures.Chunks[1].Mode)
-			is.Nil(fixtures.Chunks[2].Mode)
-			is.Nil(fixtures.Chunks[3].Mode)
-			is.Nil(fixtures.Chunks[4].Mode)
-			is.Nil(fixtures.Chunks[5].Mode)
-			is.Nil(fixtures.Chunks[6].Mode)
-			is.Nil(fixtures.Chunks[0].Signature)
-			is.Nil(fixtures.Chunks[1].Signature)
-			is.Nil(fixtures.Chunks[2].Signature)
-			is.Nil(fixtures.Chunks[3].Signature)
-			is.Nil(fixtures.Chunks[4].Signature)
-			is.Nil(fixtures.Chunks[5].Signature)
-			is.Nil(fixtures.Chunks[6].Signature)
+		CheckExoCloudFixtures := func(fixtures *ExoCloudFixtures) {
+			is.Nil(fixtures.Chunks[23].Mode)
+			is.Nil(fixtures.Chunks[24].Mode)
+			is.Nil(fixtures.Chunks[25].Mode)
+			is.Nil(fixtures.Chunks[26].Mode)
+			is.Nil(fixtures.Chunks[27].Mode)
+			is.Nil(fixtures.Chunks[28].Mode)
+			is.Nil(fixtures.Chunks[23].Signature)
+			is.Nil(fixtures.Chunks[24].Signature)
+			is.Nil(fixtures.Chunks[25].Signature)
+			is.Nil(fixtures.Chunks[26].Signature)
+			is.Nil(fixtures.Chunks[27].Signature)
+			is.Nil(fixtures.Chunks[28].Signature)
 		}
 
 		{
