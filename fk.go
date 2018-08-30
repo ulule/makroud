@@ -254,8 +254,7 @@ func NewReference(driver Driver, local *Schema, field *Field) (*Reference, error
 		return newReferenceAsMany(driver, local, remote, field)
 
 	default:
-		panic("TODO")
-		return nil, nil
+		return nil, errors.Errorf("unsupported association type: %s", field.associationType)
 	}
 }
 

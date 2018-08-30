@@ -69,8 +69,6 @@ func (e PrimaryKeyDefault) String() string {
 	}
 }
 
-// TODO Add unit test
-
 // PrimaryKey is a composite object that define a primary key for a model.
 //
 // For example: If we have an User, we could have this primary key defined in User's schema.

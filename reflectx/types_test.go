@@ -142,9 +142,3 @@ func TestReflectx_ToString(t *testing.T) {
 		is.Equal("", v, fmt.Sprintf("loop #%d", i))
 	}
 }
-
-// TODO
-//
-//  * GetType
-//  * ToOptionalInt64
-//  * ToOptionalString
