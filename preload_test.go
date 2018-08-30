@@ -756,75 +756,65 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 			CheckExoCloudFixtures(fixtures)
 
 			chunks := []ExoChunk{
-				*fixtures.Chunks[0],
-				*fixtures.Chunks[1],
-				*fixtures.Chunks[2],
-				*fixtures.Chunks[3],
-				*fixtures.Chunks[4],
-				*fixtures.Chunks[5],
-				*fixtures.Chunks[6],
+				*fixtures.Chunks[23],
+				*fixtures.Chunks[24],
+				*fixtures.Chunks[25],
+				*fixtures.Chunks[26],
+				*fixtures.Chunks[27],
+				*fixtures.Chunks[28],
 			}
 
 			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
 			is.NoError(err)
-			is.Len(chunks, 7)
-			is.Equal(fixtures.Chunks[0].Hash, chunks[0].Hash)
-			is.Equal(fixtures.Chunks[1].Hash, chunks[1].Hash)
-			is.Equal(fixtures.Chunks[2].Hash, chunks[2].Hash)
-			is.Equal(fixtures.Chunks[3].Hash, chunks[3].Hash)
-			is.Equal(fixtures.Chunks[4].Hash, chunks[4].Hash)
-			is.Equal(fixtures.Chunks[5].Hash, chunks[5].Hash)
-			is.Equal(fixtures.Chunks[6].Hash, chunks[6].Hash)
+			is.Len(chunks, 6)
+			is.Equal(fixtures.Chunks[23].Hash, chunks[0].Hash)
+			is.Equal(fixtures.Chunks[24].Hash, chunks[1].Hash)
+			is.Equal(fixtures.Chunks[25].Hash, chunks[2].Hash)
+			is.Equal(fixtures.Chunks[26].Hash, chunks[3].Hash)
+			is.Equal(fixtures.Chunks[27].Hash, chunks[4].Hash)
+			is.Equal(fixtures.Chunks[28].Hash, chunks[5].Hash)
 
 			is.NotNil(chunks[0].Mode)
-			is.Equal(fixtures.Modes[0].ID, chunks[0].Mode.ID)
-			is.Equal(fixtures.Modes[0].Mode, chunks[0].Mode.Mode)
-			is.NotNil(chunks[0].Signature)
-			is.Equal(fixtures.Signatures[0].ID, chunks[0].Signature.ID)
-			is.Equal(fixtures.Signatures[0].ChunkID, chunks[0].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[0].Bytes, chunks[0].Signature.Bytes)
+			is.Equal(fixtures.Modes[3].ID, chunks[0].Mode.ID)
+			is.Equal(fixtures.Modes[3].Mode, chunks[0].Mode.Mode)
+			is.Nil(chunks[0].Signature)
 
 			is.NotNil(chunks[1].Mode)
 			is.Equal(fixtures.Modes[0].ID, chunks[1].Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, chunks[1].Mode.Mode)
 			is.NotNil(chunks[1].Signature)
-			is.Equal(fixtures.Signatures[1].ID, chunks[1].Signature.ID)
-			is.Equal(fixtures.Signatures[1].ChunkID, chunks[1].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[1].Bytes, chunks[1].Signature.Bytes)
+			is.Equal(fixtures.Signatures[0].ID, chunks[1].Signature.ID)
+			is.Equal(fixtures.Signatures[0].ChunkID, chunks[1].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[0].Bytes, chunks[1].Signature.Bytes)
 
 			is.NotNil(chunks[2].Mode)
 			is.Equal(fixtures.Modes[0].ID, chunks[2].Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, chunks[2].Mode.Mode)
 			is.NotNil(chunks[2].Signature)
-			is.Equal(fixtures.Signatures[2].ID, chunks[2].Signature.ID)
-			is.Equal(fixtures.Signatures[2].ChunkID, chunks[2].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[2].Bytes, chunks[2].Signature.Bytes)
+			is.Equal(fixtures.Signatures[1].ID, chunks[2].Signature.ID)
+			is.Equal(fixtures.Signatures[1].ChunkID, chunks[2].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[1].Bytes, chunks[2].Signature.Bytes)
 
 			is.NotNil(chunks[3].Mode)
-			is.Equal(fixtures.Modes[1].ID, chunks[3].Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, chunks[3].Mode.Mode)
-			is.Nil(chunks[3].Signature)
+			is.Equal(fixtures.Modes[0].ID, chunks[3].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[3].Mode.Mode)
+			is.NotNil(chunks[3].Signature)
+			is.Equal(fixtures.Signatures[2].ID, chunks[3].Signature.ID)
+			is.Equal(fixtures.Signatures[2].ChunkID, chunks[3].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[2].Bytes, chunks[3].Signature.Bytes)
 
 			is.NotNil(chunks[4].Mode)
-			is.Equal(fixtures.Modes[1].ID, chunks[4].Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, chunks[4].Mode.Mode)
-			is.Nil(chunks[4].Signature)
+			is.Equal(fixtures.Modes[0].ID, chunks[4].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[4].Mode.Mode)
+			is.NotNil(chunks[4].Signature)
+			is.Equal(fixtures.Signatures[3].ID, chunks[4].Signature.ID)
+			is.Equal(fixtures.Signatures[3].ChunkID, chunks[4].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[3].Bytes, chunks[4].Signature.Bytes)
 
 			is.NotNil(chunks[5].Mode)
 			is.Equal(fixtures.Modes[2].ID, chunks[5].Mode.ID)
 			is.Equal(fixtures.Modes[2].Mode, chunks[5].Mode.Mode)
-			is.NotNil(chunks[5].Signature)
-			is.Equal(fixtures.Signatures[3].ID, chunks[5].Signature.ID)
-			is.Equal(fixtures.Signatures[3].ChunkID, chunks[5].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[3].Bytes, chunks[5].Signature.Bytes)
-
-			is.NotNil(chunks[6].Mode)
-			is.Equal(fixtures.Modes[3].ID, chunks[6].Mode.ID)
-			is.Equal(fixtures.Modes[3].Mode, chunks[6].Mode.Mode)
-			is.NotNil(chunks[6].Signature)
-			is.Equal(fixtures.Signatures[4].ID, chunks[6].Signature.ID)
-			is.Equal(fixtures.Signatures[4].ChunkID, chunks[6].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[4].Bytes, chunks[6].Signature.Bytes)
+			is.Nil(chunks[5].Signature)
 
 		}
 		{
@@ -833,75 +823,65 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 			CheckExoCloudFixtures(fixtures)
 
 			chunks := []*ExoChunk{
-				fixtures.Chunks[0],
-				fixtures.Chunks[1],
-				fixtures.Chunks[2],
-				fixtures.Chunks[3],
-				fixtures.Chunks[4],
-				fixtures.Chunks[5],
-				fixtures.Chunks[6],
+				fixtures.Chunks[23],
+				fixtures.Chunks[24],
+				fixtures.Chunks[25],
+				fixtures.Chunks[26],
+				fixtures.Chunks[27],
+				fixtures.Chunks[28],
 			}
 
 			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
 			is.NoError(err)
-			is.Len(chunks, 7)
-			is.Equal(fixtures.Chunks[0].Hash, chunks[0].Hash)
-			is.Equal(fixtures.Chunks[1].Hash, chunks[1].Hash)
-			is.Equal(fixtures.Chunks[2].Hash, chunks[2].Hash)
-			is.Equal(fixtures.Chunks[3].Hash, chunks[3].Hash)
-			is.Equal(fixtures.Chunks[4].Hash, chunks[4].Hash)
-			is.Equal(fixtures.Chunks[5].Hash, chunks[5].Hash)
-			is.Equal(fixtures.Chunks[6].Hash, chunks[6].Hash)
+			is.Len(chunks, 6)
+			is.Equal(fixtures.Chunks[23].Hash, chunks[0].Hash)
+			is.Equal(fixtures.Chunks[24].Hash, chunks[1].Hash)
+			is.Equal(fixtures.Chunks[25].Hash, chunks[2].Hash)
+			is.Equal(fixtures.Chunks[26].Hash, chunks[3].Hash)
+			is.Equal(fixtures.Chunks[27].Hash, chunks[4].Hash)
+			is.Equal(fixtures.Chunks[28].Hash, chunks[5].Hash)
 
 			is.NotNil(chunks[0].Mode)
-			is.Equal(fixtures.Modes[0].ID, chunks[0].Mode.ID)
-			is.Equal(fixtures.Modes[0].Mode, chunks[0].Mode.Mode)
-			is.NotNil(chunks[0].Signature)
-			is.Equal(fixtures.Signatures[0].ID, chunks[0].Signature.ID)
-			is.Equal(fixtures.Signatures[0].ChunkID, chunks[0].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[0].Bytes, chunks[0].Signature.Bytes)
+			is.Equal(fixtures.Modes[3].ID, chunks[0].Mode.ID)
+			is.Equal(fixtures.Modes[3].Mode, chunks[0].Mode.Mode)
+			is.Nil(chunks[0].Signature)
 
 			is.NotNil(chunks[1].Mode)
 			is.Equal(fixtures.Modes[0].ID, chunks[1].Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, chunks[1].Mode.Mode)
 			is.NotNil(chunks[1].Signature)
-			is.Equal(fixtures.Signatures[1].ID, chunks[1].Signature.ID)
-			is.Equal(fixtures.Signatures[1].ChunkID, chunks[1].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[1].Bytes, chunks[1].Signature.Bytes)
+			is.Equal(fixtures.Signatures[0].ID, chunks[1].Signature.ID)
+			is.Equal(fixtures.Signatures[0].ChunkID, chunks[1].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[0].Bytes, chunks[1].Signature.Bytes)
 
 			is.NotNil(chunks[2].Mode)
 			is.Equal(fixtures.Modes[0].ID, chunks[2].Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, chunks[2].Mode.Mode)
 			is.NotNil(chunks[2].Signature)
-			is.Equal(fixtures.Signatures[2].ID, chunks[2].Signature.ID)
-			is.Equal(fixtures.Signatures[2].ChunkID, chunks[2].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[2].Bytes, chunks[2].Signature.Bytes)
+			is.Equal(fixtures.Signatures[1].ID, chunks[2].Signature.ID)
+			is.Equal(fixtures.Signatures[1].ChunkID, chunks[2].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[1].Bytes, chunks[2].Signature.Bytes)
 
 			is.NotNil(chunks[3].Mode)
-			is.Equal(fixtures.Modes[1].ID, chunks[3].Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, chunks[3].Mode.Mode)
-			is.Nil(chunks[3].Signature)
+			is.Equal(fixtures.Modes[0].ID, chunks[3].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[3].Mode.Mode)
+			is.NotNil(chunks[3].Signature)
+			is.Equal(fixtures.Signatures[2].ID, chunks[3].Signature.ID)
+			is.Equal(fixtures.Signatures[2].ChunkID, chunks[3].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[2].Bytes, chunks[3].Signature.Bytes)
 
 			is.NotNil(chunks[4].Mode)
-			is.Equal(fixtures.Modes[1].ID, chunks[4].Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, chunks[4].Mode.Mode)
-			is.Nil(chunks[4].Signature)
+			is.Equal(fixtures.Modes[0].ID, chunks[4].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[4].Mode.Mode)
+			is.NotNil(chunks[4].Signature)
+			is.Equal(fixtures.Signatures[3].ID, chunks[4].Signature.ID)
+			is.Equal(fixtures.Signatures[3].ChunkID, chunks[4].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[3].Bytes, chunks[4].Signature.Bytes)
 
 			is.NotNil(chunks[5].Mode)
 			is.Equal(fixtures.Modes[2].ID, chunks[5].Mode.ID)
 			is.Equal(fixtures.Modes[2].Mode, chunks[5].Mode.Mode)
-			is.NotNil(chunks[5].Signature)
-			is.Equal(fixtures.Signatures[3].ID, chunks[5].Signature.ID)
-			is.Equal(fixtures.Signatures[3].ChunkID, chunks[5].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[3].Bytes, chunks[5].Signature.Bytes)
-
-			is.NotNil(chunks[6].Mode)
-			is.Equal(fixtures.Modes[3].ID, chunks[6].Mode.ID)
-			is.Equal(fixtures.Modes[3].Mode, chunks[6].Mode.Mode)
-			is.NotNil(chunks[6].Signature)
-			is.Equal(fixtures.Signatures[4].ID, chunks[6].Signature.ID)
-			is.Equal(fixtures.Signatures[4].ChunkID, chunks[6].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[4].Bytes, chunks[6].Signature.Bytes)
+			is.Nil(chunks[5].Signature)
 
 		}
 		{
@@ -910,75 +890,65 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 			CheckExoCloudFixtures(fixtures)
 
 			chunks := &[]ExoChunk{
-				*fixtures.Chunks[0],
-				*fixtures.Chunks[1],
-				*fixtures.Chunks[2],
-				*fixtures.Chunks[3],
-				*fixtures.Chunks[4],
-				*fixtures.Chunks[5],
-				*fixtures.Chunks[6],
+				*fixtures.Chunks[23],
+				*fixtures.Chunks[24],
+				*fixtures.Chunks[25],
+				*fixtures.Chunks[26],
+				*fixtures.Chunks[27],
+				*fixtures.Chunks[28],
 			}
 
 			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
 			is.NoError(err)
-			is.Len((*chunks), 7)
-			is.Equal(fixtures.Chunks[0].Hash, (*chunks)[0].Hash)
-			is.Equal(fixtures.Chunks[1].Hash, (*chunks)[1].Hash)
-			is.Equal(fixtures.Chunks[2].Hash, (*chunks)[2].Hash)
-			is.Equal(fixtures.Chunks[3].Hash, (*chunks)[3].Hash)
-			is.Equal(fixtures.Chunks[4].Hash, (*chunks)[4].Hash)
-			is.Equal(fixtures.Chunks[5].Hash, (*chunks)[5].Hash)
-			is.Equal(fixtures.Chunks[6].Hash, (*chunks)[6].Hash)
+			is.Len((*chunks), 6)
+			is.Equal(fixtures.Chunks[23].Hash, (*chunks)[0].Hash)
+			is.Equal(fixtures.Chunks[24].Hash, (*chunks)[1].Hash)
+			is.Equal(fixtures.Chunks[25].Hash, (*chunks)[2].Hash)
+			is.Equal(fixtures.Chunks[26].Hash, (*chunks)[3].Hash)
+			is.Equal(fixtures.Chunks[27].Hash, (*chunks)[4].Hash)
+			is.Equal(fixtures.Chunks[28].Hash, (*chunks)[5].Hash)
 
 			is.NotNil((*chunks)[0].Mode)
-			is.Equal(fixtures.Modes[0].ID, (*chunks)[0].Mode.ID)
-			is.Equal(fixtures.Modes[0].Mode, (*chunks)[0].Mode.Mode)
-			is.NotNil((*chunks)[0].Signature)
-			is.Equal(fixtures.Signatures[0].ID, (*chunks)[0].Signature.ID)
-			is.Equal(fixtures.Signatures[0].ChunkID, (*chunks)[0].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[0].Bytes, (*chunks)[0].Signature.Bytes)
+			is.Equal(fixtures.Modes[3].ID, (*chunks)[0].Mode.ID)
+			is.Equal(fixtures.Modes[3].Mode, (*chunks)[0].Mode.Mode)
+			is.Nil((*chunks)[0].Signature)
 
 			is.NotNil((*chunks)[1].Mode)
 			is.Equal(fixtures.Modes[0].ID, (*chunks)[1].Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, (*chunks)[1].Mode.Mode)
 			is.NotNil((*chunks)[1].Signature)
-			is.Equal(fixtures.Signatures[1].ID, (*chunks)[1].Signature.ID)
-			is.Equal(fixtures.Signatures[1].ChunkID, (*chunks)[1].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[1].Bytes, (*chunks)[1].Signature.Bytes)
+			is.Equal(fixtures.Signatures[0].ID, (*chunks)[1].Signature.ID)
+			is.Equal(fixtures.Signatures[0].ChunkID, (*chunks)[1].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[0].Bytes, (*chunks)[1].Signature.Bytes)
 
 			is.NotNil((*chunks)[2].Mode)
 			is.Equal(fixtures.Modes[0].ID, (*chunks)[2].Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, (*chunks)[2].Mode.Mode)
 			is.NotNil((*chunks)[2].Signature)
-			is.Equal(fixtures.Signatures[2].ID, (*chunks)[2].Signature.ID)
-			is.Equal(fixtures.Signatures[2].ChunkID, (*chunks)[2].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[2].Bytes, (*chunks)[2].Signature.Bytes)
+			is.Equal(fixtures.Signatures[1].ID, (*chunks)[2].Signature.ID)
+			is.Equal(fixtures.Signatures[1].ChunkID, (*chunks)[2].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[1].Bytes, (*chunks)[2].Signature.Bytes)
 
 			is.NotNil((*chunks)[3].Mode)
-			is.Equal(fixtures.Modes[1].ID, (*chunks)[3].Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, (*chunks)[3].Mode.Mode)
-			is.Nil((*chunks)[3].Signature)
+			is.Equal(fixtures.Modes[0].ID, (*chunks)[3].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, (*chunks)[3].Mode.Mode)
+			is.NotNil((*chunks)[3].Signature)
+			is.Equal(fixtures.Signatures[2].ID, (*chunks)[3].Signature.ID)
+			is.Equal(fixtures.Signatures[2].ChunkID, (*chunks)[3].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[2].Bytes, (*chunks)[3].Signature.Bytes)
 
 			is.NotNil((*chunks)[4].Mode)
-			is.Equal(fixtures.Modes[1].ID, (*chunks)[4].Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, (*chunks)[4].Mode.Mode)
-			is.Nil((*chunks)[4].Signature)
+			is.Equal(fixtures.Modes[0].ID, (*chunks)[4].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, (*chunks)[4].Mode.Mode)
+			is.NotNil((*chunks)[4].Signature)
+			is.Equal(fixtures.Signatures[3].ID, (*chunks)[4].Signature.ID)
+			is.Equal(fixtures.Signatures[3].ChunkID, (*chunks)[4].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[3].Bytes, (*chunks)[4].Signature.Bytes)
 
 			is.NotNil((*chunks)[5].Mode)
 			is.Equal(fixtures.Modes[2].ID, (*chunks)[5].Mode.ID)
 			is.Equal(fixtures.Modes[2].Mode, (*chunks)[5].Mode.Mode)
-			is.NotNil((*chunks)[5].Signature)
-			is.Equal(fixtures.Signatures[3].ID, (*chunks)[5].Signature.ID)
-			is.Equal(fixtures.Signatures[3].ChunkID, (*chunks)[5].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[3].Bytes, (*chunks)[5].Signature.Bytes)
-
-			is.NotNil((*chunks)[6].Mode)
-			is.Equal(fixtures.Modes[3].ID, (*chunks)[6].Mode.ID)
-			is.Equal(fixtures.Modes[3].Mode, (*chunks)[6].Mode.Mode)
-			is.NotNil((*chunks)[6].Signature)
-			is.Equal(fixtures.Signatures[4].ID, (*chunks)[6].Signature.ID)
-			is.Equal(fixtures.Signatures[4].ChunkID, (*chunks)[6].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[4].Bytes, (*chunks)[6].Signature.Bytes)
+			is.Nil((*chunks)[5].Signature)
 
 		}
 		{
@@ -987,75 +957,65 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 			CheckExoCloudFixtures(fixtures)
 
 			chunks := &[]*ExoChunk{
-				fixtures.Chunks[0],
-				fixtures.Chunks[1],
-				fixtures.Chunks[2],
-				fixtures.Chunks[3],
-				fixtures.Chunks[4],
-				fixtures.Chunks[5],
-				fixtures.Chunks[6],
+				fixtures.Chunks[23],
+				fixtures.Chunks[24],
+				fixtures.Chunks[25],
+				fixtures.Chunks[26],
+				fixtures.Chunks[27],
+				fixtures.Chunks[28],
 			}
 
 			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
 			is.NoError(err)
-			is.Len((*chunks), 7)
-			is.Equal(fixtures.Chunks[0].Hash, (*chunks)[0].Hash)
-			is.Equal(fixtures.Chunks[1].Hash, (*chunks)[1].Hash)
-			is.Equal(fixtures.Chunks[2].Hash, (*chunks)[2].Hash)
-			is.Equal(fixtures.Chunks[3].Hash, (*chunks)[3].Hash)
-			is.Equal(fixtures.Chunks[4].Hash, (*chunks)[4].Hash)
-			is.Equal(fixtures.Chunks[5].Hash, (*chunks)[5].Hash)
-			is.Equal(fixtures.Chunks[6].Hash, (*chunks)[6].Hash)
+			is.Len((*chunks), 6)
+			is.Equal(fixtures.Chunks[23].Hash, (*chunks)[0].Hash)
+			is.Equal(fixtures.Chunks[24].Hash, (*chunks)[1].Hash)
+			is.Equal(fixtures.Chunks[25].Hash, (*chunks)[2].Hash)
+			is.Equal(fixtures.Chunks[26].Hash, (*chunks)[3].Hash)
+			is.Equal(fixtures.Chunks[27].Hash, (*chunks)[4].Hash)
+			is.Equal(fixtures.Chunks[28].Hash, (*chunks)[5].Hash)
 
 			is.NotNil((*chunks)[0].Mode)
-			is.Equal(fixtures.Modes[0].ID, (*chunks)[0].Mode.ID)
-			is.Equal(fixtures.Modes[0].Mode, (*chunks)[0].Mode.Mode)
-			is.NotNil((*chunks)[0].Signature)
-			is.Equal(fixtures.Signatures[0].ID, (*chunks)[0].Signature.ID)
-			is.Equal(fixtures.Signatures[0].ChunkID, (*chunks)[0].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[0].Bytes, (*chunks)[0].Signature.Bytes)
+			is.Equal(fixtures.Modes[3].ID, (*chunks)[0].Mode.ID)
+			is.Equal(fixtures.Modes[3].Mode, (*chunks)[0].Mode.Mode)
+			is.Nil((*chunks)[0].Signature)
 
 			is.NotNil((*chunks)[1].Mode)
 			is.Equal(fixtures.Modes[0].ID, (*chunks)[1].Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, (*chunks)[1].Mode.Mode)
 			is.NotNil((*chunks)[1].Signature)
-			is.Equal(fixtures.Signatures[1].ID, (*chunks)[1].Signature.ID)
-			is.Equal(fixtures.Signatures[1].ChunkID, (*chunks)[1].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[1].Bytes, (*chunks)[1].Signature.Bytes)
+			is.Equal(fixtures.Signatures[0].ID, (*chunks)[1].Signature.ID)
+			is.Equal(fixtures.Signatures[0].ChunkID, (*chunks)[1].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[0].Bytes, (*chunks)[1].Signature.Bytes)
 
 			is.NotNil((*chunks)[2].Mode)
 			is.Equal(fixtures.Modes[0].ID, (*chunks)[2].Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, (*chunks)[2].Mode.Mode)
 			is.NotNil((*chunks)[2].Signature)
-			is.Equal(fixtures.Signatures[2].ID, (*chunks)[2].Signature.ID)
-			is.Equal(fixtures.Signatures[2].ChunkID, (*chunks)[2].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[2].Bytes, (*chunks)[2].Signature.Bytes)
+			is.Equal(fixtures.Signatures[1].ID, (*chunks)[2].Signature.ID)
+			is.Equal(fixtures.Signatures[1].ChunkID, (*chunks)[2].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[1].Bytes, (*chunks)[2].Signature.Bytes)
 
 			is.NotNil((*chunks)[3].Mode)
-			is.Equal(fixtures.Modes[1].ID, (*chunks)[3].Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, (*chunks)[3].Mode.Mode)
-			is.Nil((*chunks)[3].Signature)
+			is.Equal(fixtures.Modes[0].ID, (*chunks)[3].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, (*chunks)[3].Mode.Mode)
+			is.NotNil((*chunks)[3].Signature)
+			is.Equal(fixtures.Signatures[2].ID, (*chunks)[3].Signature.ID)
+			is.Equal(fixtures.Signatures[2].ChunkID, (*chunks)[3].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[2].Bytes, (*chunks)[3].Signature.Bytes)
 
 			is.NotNil((*chunks)[4].Mode)
-			is.Equal(fixtures.Modes[1].ID, (*chunks)[4].Mode.ID)
-			is.Equal(fixtures.Modes[1].Mode, (*chunks)[4].Mode.Mode)
-			is.Nil((*chunks)[4].Signature)
+			is.Equal(fixtures.Modes[0].ID, (*chunks)[4].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, (*chunks)[4].Mode.Mode)
+			is.NotNil((*chunks)[4].Signature)
+			is.Equal(fixtures.Signatures[3].ID, (*chunks)[4].Signature.ID)
+			is.Equal(fixtures.Signatures[3].ChunkID, (*chunks)[4].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[3].Bytes, (*chunks)[4].Signature.Bytes)
 
 			is.NotNil((*chunks)[5].Mode)
 			is.Equal(fixtures.Modes[2].ID, (*chunks)[5].Mode.ID)
 			is.Equal(fixtures.Modes[2].Mode, (*chunks)[5].Mode.Mode)
-			is.NotNil((*chunks)[5].Signature)
-			is.Equal(fixtures.Signatures[3].ID, (*chunks)[5].Signature.ID)
-			is.Equal(fixtures.Signatures[3].ChunkID, (*chunks)[5].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[3].Bytes, (*chunks)[5].Signature.Bytes)
-
-			is.NotNil((*chunks)[6].Mode)
-			is.Equal(fixtures.Modes[3].ID, (*chunks)[6].Mode.ID)
-			is.Equal(fixtures.Modes[3].Mode, (*chunks)[6].Mode.Mode)
-			is.NotNil((*chunks)[6].Signature)
-			is.Equal(fixtures.Signatures[4].ID, (*chunks)[6].Signature.ID)
-			is.Equal(fixtures.Signatures[4].ChunkID, (*chunks)[6].Signature.ChunkID)
-			is.Equal(fixtures.Signatures[4].Bytes, (*chunks)[6].Signature.Bytes)
+			is.Nil((*chunks)[5].Signature)
 
 		}
 		{
