@@ -11,24 +11,6 @@ import (
 	"github.com/ulule/sqlxx/reflectx"
 )
 
-import "fmt"
-
-// TODO:
-//
-//     |--------------|--------------|-----------------|----------------|
-//     |    Source    |    Action    |    Reference    |     Status     |
-//     |--------------|--------------|-----------------|----------------|
-//     |      1       |      ->      |        1        |       Ok       |
-//     |      1       |      <-      |        1        |       Ok       |
-//     |      1?      |      ->      |        1        |       Ok       |
-//     |      1       |      <-      |        1?       |       Ok       |
-//     |      1       |      ->      |        N        |       Ok       |
-//     |      N       |      ->      |        1        |                |
-//     |      N       |      <-      |        1        |                |
-//     |      N       |      ->      |        N        |                |
-//     |      N       |      <-      |        N        |                |
-//     |--------------|--------------|-----------------|----------------|
-
 // Preload preloads related fields.
 func Preload(ctx context.Context, driver Driver, out interface{}, paths ...string) error {
 	_, err := PreloadWithQueries(ctx, driver, out, paths...)
@@ -449,7 +431,6 @@ func (handler *preloadHandler) preloadOneRemoteString(preloader reflectx.Preload
 		if err != nil && !IsErrNoRows(err) {
 			return err
 		}
-		fmt.Printf("555-1 %+v\n", relation)
 		return nil
 	})
 	if err != nil {
@@ -582,7 +563,6 @@ func (handler *preloadHandler) preloadManyString(preloader reflectx.Preloader,
 		if err != nil && !IsErrNoRows(err) {
 			return err
 		}
-		fmt.Printf("555-2 %+v\n", relation)
 		return nil
 	})
 	if err != nil {
@@ -617,7 +597,6 @@ func (handler *preloadHandler) preloadManyInteger(preloader reflectx.Preloader,
 		if err != nil {
 			return err
 		}
-		fmt.Printf("555-3-5 %v %v\n", pk, element.Type())
 		return preloader.AddInt64Index(pk, element)
 	})
 	if err != nil {
@@ -636,7 +615,6 @@ func (handler *preloadHandler) preloadManyInteger(preloader reflectx.Preloader,
 		if err != nil && !IsErrNoRows(err) {
 			return err
 		}
-		fmt.Printf("555-3-4 %+v\n", relation)
 		return nil
 	})
 	if err != nil {
@@ -651,10 +629,6 @@ func (handler *preloadHandler) preloadManyInteger(preloader reflectx.Preloader,
 		if fk == 0 {
 			return errors.Wrap(ErrPreloadInvalidModel, "foreign key has a zero value")
 		}
-
-		fmt.Printf("555-3-1 %+v\n", fk)
-		fmt.Printf("555-3-2 %+v\n", reference.FieldName())
-		fmt.Printf("555-3-3 %+v\n", element)
 
 		return preloader.UpdateValueForInt64Index(reference.FieldName(), fk, element)
 	})
