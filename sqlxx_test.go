@@ -848,8 +848,8 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 
 	group29 := &ExoGroup{
 		Role:           "user",
-		UserID:         user1.ID,
-		OrganizationID: organization2.ID,
+		UserID:         user13.ID,
+		OrganizationID: organization3.ID,
 	}
 	fixtures.Groups = append(fixtures.Groups, group29)
 
@@ -859,13 +859,6 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		OrganizationID: organization2.ID,
 	}
 	fixtures.Groups = append(fixtures.Groups, group30)
-
-	group31 := &ExoGroup{
-		Role:           "user",
-		UserID:         user13.ID,
-		OrganizationID: organization3.ID,
-	}
-	fixtures.Groups = append(fixtures.Groups, group31)
 
 	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
 		for i := range fixtures.Groups {
@@ -2187,7 +2180,6 @@ type ExoUser struct {
 	ProfileID string `sqlxx:"column:profile_id,fk:exo_profile"`
 	// Relationships
 	Group *ExoGroup
-	//Organization *ExoOrganization TODO Later...
 }
 
 func (ExoUser) TableName() string {

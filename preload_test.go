@@ -47,7 +47,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckRegionFixtures := func(fixtures *ExoCloudFixtures) {
+		CheckExoCloudFixtures := func(fixtures *ExoCloudFixtures) {
 			is.Empty(fixtures.Regions[0].Buckets)
 			is.Empty(fixtures.Regions[1].Buckets)
 			is.Empty(fixtures.Regions[2].Buckets)
@@ -56,7 +56,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckRegionFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			region1 := fixtures.Regions[0]
 
@@ -90,7 +90,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckRegionFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			region1 := fixtures.Regions[0]
 
@@ -128,7 +128,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckRegionFixtures := func(fixtures *ExoCloudFixtures) {
+		CheckExoCloudFixtures := func(fixtures *ExoCloudFixtures) {
 			is.Empty(fixtures.Regions[0].Buckets)
 			is.Empty(fixtures.Regions[1].Buckets)
 			is.Empty(fixtures.Regions[2].Buckets)
@@ -137,7 +137,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckRegionFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			regions := []ExoRegion{
 				*fixtures.Regions[0],
@@ -172,7 +172,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckRegionFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			regions := []*ExoRegion{
 				fixtures.Regions[0],
@@ -207,7 +207,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckRegionFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			regions := &[]ExoRegion{
 				*fixtures.Regions[0],
@@ -242,7 +242,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckRegionFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			regions := &[]*ExoRegion{
 				fixtures.Regions[0],
@@ -282,7 +282,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckBucketFixtures := func(fixtures *ExoCloudFixtures) {
+		CheckExoCloudFixtures := func(fixtures *ExoCloudFixtures) {
 			is.Empty(fixtures.Buckets[0].Region)
 			is.Empty(fixtures.Buckets[1].Region)
 			is.Empty(fixtures.Buckets[2].Region)
@@ -292,7 +292,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckBucketFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			bucket1 := fixtures.Buckets[0]
 
@@ -334,7 +334,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckBucketFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			bucket1 := fixtures.Buckets[0]
 
@@ -381,7 +381,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 		ctx := context.Background()
 		is := require.New(t)
 
-		CheckBucketFixtures := func(fixtures *ExoCloudFixtures) {
+		CheckExoCloudFixtures := func(fixtures *ExoCloudFixtures) {
 			is.Empty(fixtures.Buckets[0].Region)
 			is.Empty(fixtures.Buckets[1].Region)
 			is.Empty(fixtures.Buckets[2].Region)
@@ -391,7 +391,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckBucketFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			buckets := []ExoBucket{
 				*fixtures.Buckets[0],
@@ -432,7 +432,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckBucketFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			buckets := []*ExoBucket{
 				fixtures.Buckets[0],
@@ -473,7 +473,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckBucketFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			buckets := &[]ExoBucket{
 				*fixtures.Buckets[0],
@@ -514,7 +514,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 		{
 
 			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
-			CheckBucketFixtures(fixtures)
+			CheckExoCloudFixtures(fixtures)
 
 			buckets := &[]*ExoBucket{
 				fixtures.Buckets[0],
