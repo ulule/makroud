@@ -2251,7 +2251,8 @@ type ExoBucket struct {
 	RegionID       string `sqlxx:"column:region_id,fk:exo_region"`
 	OrganizationID string `sqlxx:"column:organization_id,fk:exo_organization"`
 	// Relationships
-	Region ExoRegion
+	Region      ExoRegion
+	Directories []ExoDirectory
 }
 
 func (ExoBucket) TableName() string {

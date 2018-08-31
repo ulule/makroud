@@ -13,8 +13,11 @@ import (
 
 // Preload preloads related fields.
 func Preload(ctx context.Context, driver Driver, out interface{}, paths ...string) error {
-	_, err := PreloadWithQueries(ctx, driver, out, paths...)
-	return err
+	_, err := preload(ctx, driver, out, paths...)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute preload")
+	}
+	return nil
 }
 
 // PreloadWithQueries preloads related fields and returns performed queries.
