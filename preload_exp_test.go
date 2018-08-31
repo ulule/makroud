@@ -115,30 +115,102 @@ func TestPreload_ExoRegion_MultiLevel(t *testing.T) {
 			err = sqlxx.Preload(ctx, driver, slice.Interface(), "Directories")
 			is.NoError(err)
 
-			fmt.Printf("::1 %+v\n", region1)
-			for _, bucket := range *region1.Buckets {
-				fmt.Printf("::2 %+v\n", bucket)
-				for _, directory := range bucket.Directories {
-					fmt.Printf("::3 %+v\n", directory)
-				}
-			}
+			{
+				val1, err := reflectx.GetFieldValue(region1, "Buckets")
+				is.NoError(err)
+				is.NotNil(val1)
 
-			fmt.Printf("::4 %+v\n", region2)
-			for _, bucket := range *region2.Buckets {
-				fmt.Printf("::5 %+v\n", bucket)
-				for _, directory := range bucket.Directories {
-					fmt.Printf("::6 %+v\n", directory)
-				}
-			}
+				val3 := reflectx.GetIndirectValue(val1)
+				for i := 0; i < val3.Len(); i++ {
+					val4 := val3.Index(i)
 
-			fmt.Printf("::7 %+v\n", region3)
-			for _, bucket := range *region3.Buckets {
-				fmt.Printf("::8 %+v\n", bucket)
-				for _, directory := range bucket.Directories {
-					fmt.Printf("::9 %+v\n", directory)
-				}
-			}
+					if val4.Kind() == reflect.Interface {
+						val4 = reflect.ValueOf(val4.Interface())
+						if val4.IsNil() {
+							continue
+						}
+					}
 
+					if val4.Kind() != reflect.Ptr && val4.CanAddr() {
+						val4 = val4.Addr()
+					}
+
+					val2, err := reflectx.GetFieldValue(val4, "Directories")
+					is.NoError(err)
+					if val2 != nil {
+						fmt.Printf("::10 %+v\n", val2)
+
+						if reflectx.IsSlice(val2) {
+
+							val5 := reflectx.GetIndirectValue(val2)
+							for i := 0; i < val5.Len(); i++ {
+								val6 := val5.Index(i)
+
+								if val6.Kind() == reflect.Interface {
+									val6 = reflect.ValueOf(val6.Interface())
+									if val6.IsNil() {
+										continue
+									}
+								}
+
+								if val6.Kind() != reflect.Ptr && val6.CanAddr() {
+									val6 = val6.Addr()
+								}
+
+								err := sqlxx.Preload(ctx, driver, val6.Interface(), "Files")
+								is.NoError(err)
+
+								val7, err := reflectx.GetFieldValue(val6, "Files")
+								is.NoError(err)
+								fmt.Printf("::1 %+v\n", val7)
+
+							}
+
+						} else {
+
+							val7, err := reflectx.GetFieldValue(val2, "Files")
+							is.NoError(err)
+							fmt.Printf("::1 %+v\n", val7)
+
+						}
+
+					}
+				}
+
+				fmt.Printf("::region %+v\n", region1)
+				for _, bucket := range *region1.Buckets {
+					fmt.Printf("::bucket %+v\n", bucket)
+					for _, directory := range bucket.Directories {
+						fmt.Printf("::directory %+v\n", directory)
+						for _, file := range directory.Files {
+							fmt.Printf("::file %+v\n", file)
+						}
+					}
+				}
+
+				fmt.Printf("::region %+v\n", region2)
+				for _, bucket := range *region2.Buckets {
+					fmt.Printf("::bucket %+v\n", bucket)
+					for _, directory := range bucket.Directories {
+						fmt.Printf("::directory %+v\n", directory)
+						for _, file := range directory.Files {
+							fmt.Printf("::file %+v\n", file)
+						}
+					}
+				}
+
+				fmt.Printf("::region %+v\n", region3)
+				for _, bucket := range *region3.Buckets {
+					fmt.Printf("::bucket %+v\n", bucket)
+					for _, directory := range bucket.Directories {
+						fmt.Printf("::directory %+v\n", directory)
+						for _, file := range directory.Files {
+							fmt.Printf("::file %+v\n", file)
+						}
+					}
+				}
+
+			}
 		}
 	})
 }
