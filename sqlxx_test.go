@@ -2179,7 +2179,8 @@ type ExoUser struct {
 	Locale    string `sqlxx:"column:locale"`
 	ProfileID string `sqlxx:"column:profile_id,fk:exo_profile"`
 	// Relationships
-	Group *ExoGroup
+	Group   *ExoGroup
+	Profile *ExoProfile
 }
 
 func (ExoUser) TableName() string {

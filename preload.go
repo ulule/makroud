@@ -3,6 +3,7 @@ package sqlxx
 import (
 	"context"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/ulule/loukoum"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/ulule/sqlxx/reflectx"
 )
+
+import "fmt"
 
 // Preload preloads related fields.
 func Preload(ctx context.Context, driver Driver, out interface{}, paths ...string) error {
@@ -39,15 +42,49 @@ func preload(ctx context.Context, driver Driver, dest interface{}, paths ...stri
 		return nil, errors.Wrapf(ErrPointerRequired, "cannot preload %T", dest)
 	}
 
-	if reflectx.IsSlice(dest) {
-		return preloadMany(ctx, driver, dest, paths)
+	levels := computePreloadLevelPath(paths)
+	if len(levels) == 0 {
+		return nil, nil
 	}
 
-	return preloadOne(ctx, driver, dest, paths)
+	if reflectx.IsSlice(dest) {
+		return preloadMany(ctx, driver, dest, levels)
+	}
+
+	return preloadOne(ctx, driver, dest, levels)
+}
+
+func computePreloadLevelPath(paths []string) []map[string]struct{} {
+	levels := []map[string]struct{}{}
+
+	for i := range paths {
+
+		// Clean up preload path and create a slice of it's level.
+		// "User.Profile.Avatar" -> ["User", "Profile", "Avatar"]
+		path := strings.Trim(paths[i], ".")
+		lpath := strings.Split(path, ".")
+
+		// Increase levels slice length if required.
+		for len(lpath) > len(levels) {
+			levels = append(levels, map[string]struct{}{})
+		}
+
+		// Fill preload path to ensure we have a sequential walkthrough.
+		// [0] -> "User"
+		// [1] -> "User.Profile"
+		// [2] -> "User.Profile.Avatar"
+		for i := 0; i < len(lpath); i++ {
+			n := i + 1
+			path := strings.Join(lpath[0:n], ".")
+			levels[i][path] = struct{}{}
+		}
+	}
+
+	return levels
 }
 
 // preloadOne preloads a single instance.
-func preloadOne(ctx context.Context, driver Driver, dest interface{}, paths []string) (Queries, error) {
+func preloadOne(ctx context.Context, driver Driver, dest interface{}, levels []map[string]struct{}) (Queries, error) {
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
 		return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
@@ -65,11 +102,11 @@ func preloadOne(ctx context.Context, driver Driver, dest interface{}, paths []st
 		dest:   dest,
 	}
 
-	return executePreload(handler, schema, paths)
+	return executePreload(handler, schema, levels)
 }
 
 // preloadMany preloads a slice of instance.
-func preloadMany(ctx context.Context, driver Driver, dest interface{}, paths []string) (Queries, error) {
+func preloadMany(ctx context.Context, driver Driver, dest interface{}, levels []map[string]struct{}) (Queries, error) {
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
 		return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
@@ -87,19 +124,35 @@ func preloadMany(ctx context.Context, driver Driver, dest interface{}, paths []s
 		dest:   dest,
 	}
 
-	return executePreload(handler, schema, paths)
+	return executePreload(handler, schema, levels)
 }
 
-func executePreload(handler *preloadHandler, schema *Schema, paths []string) (Queries, error) {
-	for _, path := range paths {
-		reference, ok := schema.associations[path]
-		if !ok {
-			return nil, errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", path)
+func executePreload(handler *preloadHandler, schema *Schema, levels []map[string]struct{}) (Queries, error) {
+	for i, paths := range levels {
+		// fmt.Println(i)
+		// fmt.Println(levels)
+		// fmt.Println(levels[1])
+		// fmt.Println(len(levels))
+		// fmt.Println(cap(levels))
+
+		if i != 0 {
+			return nil, errors.Errorf("level %d for preload is unsupported", i)
 		}
 
-		err := handler.preload(reference)
-		if err != nil {
-			return nil, err
+		for path := range paths {
+			// TODO Optimize using goroutine
+			fmt.Println(path)
+
+			reference, ok := schema.associations[path]
+			if !ok {
+				return nil, errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", path)
+			}
+
+			err := handler.preload(reference)
+			if err != nil {
+				return nil, err
+			}
+
 		}
 	}
 

@@ -12,7 +12,30 @@ import (
 	"github.com/ulule/sqlxx/reflectx"
 )
 
-func TestPreload_ExoRegion_MultiLevel(t *testing.T) {
+func TestPreloadX_ExoUser_MultiLevel(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+
+		user1 := fixtures.Users[1]
+
+		err := sqlxx.Preload(ctx, driver, user1,
+			"Profile",
+			"Profile.Avatar",
+		)
+		is.Error(err)
+
+		fmt.Println("::1-1", user1.ProfileID)
+		fmt.Println("::1-2", user1.Profile.ID)
+		fmt.Println("::1-1", user1.Profile.AvatarID)
+		fmt.Println("::1-2", user1.Profile.Avatar)
+
+	})
+}
+
+func TestPreloadX_ExoRegion_MultiLevel(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
@@ -43,13 +66,13 @@ func TestPreload_ExoRegion_MultiLevel(t *testing.T) {
 			is.NoError(err)
 			is.NotNil(region3.Buckets)
 
-			slice := reflectx.NewReflectSlice(reflect.PtrTo(reflectx.GetIndirectType(ExoBucket{})))
-
 			buckets, err := reflectx.GetFieldValue(region1, "Buckets")
 			is.NoError(err)
 			is.True(reflectx.IsSlice(buckets))
 
 			val1 := reflectx.GetIndirectValue(buckets)
+
+			slice := reflectx.NewReflectSlice(reflect.PtrTo(reflectx.GetIndirectType(reflectx.GetSliceType(val1))))
 
 			for i := 0; i < val1.Len(); i++ {
 				val2 := val1.Index(i)

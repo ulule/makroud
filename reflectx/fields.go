@@ -36,6 +36,34 @@ func GetFieldByName(element interface{}, name string) (reflect.StructField, bool
 	return reflect.Indirect(reflect.ValueOf(element)).Type().FieldByName(name)
 }
 
+// GetFieldReflectValue returns the field's value with given name.
+func GetFieldReflectValue(element interface{}, name string) (*reflect.Value, error) {
+	value, ok := element.(reflect.Value)
+	if !ok {
+		value = reflect.Indirect(reflect.ValueOf(element))
+	}
+
+	if value.Kind() == reflect.Interface {
+		value = reflect.ValueOf(value.Interface())
+	}
+
+	// Avoid calling FieldByName on pointer.
+	value = reflect.Indirect(value)
+
+	field := value.FieldByName(name)
+	if !field.IsValid() {
+		return nil, errors.Errorf("sqlxx: no such field %s in %T", name, element)
+	}
+	if field.Kind() == reflect.Ptr && field.IsNil() {
+		return nil, nil
+	}
+	if !field.CanInterface() {
+		return nil, errors.Errorf("sqlxx: cannot find field %s in %T", name, element)
+	}
+
+	return &field, nil
+}
+
 // GetFieldValue returns the field's value with given name.
 func GetFieldValue(element interface{}, name string) (interface{}, error) {
 	value, ok := element.(reflect.Value)
