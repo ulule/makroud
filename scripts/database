@@ -32,9 +32,9 @@ do_start() {
     fi
 
     if [[ -n "$(docker ps -a -q -f name="${CONTAINER_NAME}" 2> /dev/null)" ]]; then
-        echo "[database] start ${CONTAINER_NAME}"
-        docker start "${CONTAINER_NAME}"
-        return 0
+        echo "[database] erase previous configuration"
+        docker stop "${CONTAINER_NAME}" >/dev/null 2>&1 || true
+        docker rm "${CONTAINER_NAME}" >/dev/null 2>&1 || true
     fi
 
     echo "[database] update postgres images"
