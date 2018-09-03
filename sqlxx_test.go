@@ -2254,6 +2254,7 @@ type ExoBucket struct {
 	// Relationships
 	Region      ExoRegion
 	Directories []ExoDirectory
+	Files       []ExoFile
 }
 
 func (ExoBucket) TableName() string {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/ulule/loukoum"
@@ -11,8 +12,6 @@ import (
 
 	"github.com/ulule/sqlxx/reflectx"
 )
-
-import "fmt"
 
 // Preload preloads related fields.
 func Preload(ctx context.Context, driver Driver, out interface{}, paths ...string) error {
@@ -210,38 +209,47 @@ func executePreloadHandler(ctx context.Context, driver Driver,
 
 // executePreloadWalker will executes a preload from the second level and beyond...
 func executePreloadWalker(ctx context.Context, driver Driver,
-	dest interface{}, paths map[string]preloadPath) (Queries, error) {
+	dest interface{}, paths map[string]preloadPath) (queries Queries, err error) {
 
-	queries := Queries{}
+	wg := sync.WaitGroup{}
+	mutex := sync.Mutex{}
 
-	// TODO (novln): Optimize using goroutine...
-
+	wg.Add(len(paths))
 	for _, path := range paths {
+		go func(path preloadPath) {
 
-		fmt.Println("level: ", path.Level())
-		fmt.Println("name: ", path.Path())
-		fmt.Println("prefix: ", path.Parent())
-		fmt.Println("elem: ", path.Name())
+			walker := reflectx.NewWalker(dest)
+			defer walker.Close()
 
-		walker := reflectx.NewWalker(dest)
-		defer walker.Close()
+			werr := walker.Find(path.Parent(), func(values interface{}) error {
+				q, perr := preload(ctx, driver, values, path.Name())
+				if perr != nil {
+					return perr
+				}
 
-		err := walker.Find(path.Parent(), func(values interface{}) error {
-			q, err := preload(ctx, driver, values, path.Name())
-			if err != nil {
-				return err
+				mutex.Lock()
+				defer mutex.Unlock()
+
+				queries = append(queries, q...)
+				return nil
+			})
+
+			if werr != nil {
+				mutex.Lock()
+				defer mutex.Unlock()
+				if err != nil {
+					err = werr
+				}
 			}
 
-			queries = append(queries, q...)
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
+			wg.Done()
+
+		}(path)
 	}
 
-	// TODO Handle queries...
-	return queries, nil
+	wg.Wait()
+
+	return queries, err
 }
 
 type preloadHandler struct {
