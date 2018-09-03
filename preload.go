@@ -129,32 +129,27 @@ func getPreloadGroupPath(paths []string) []preloadGroupPath {
 
 // getPreloadHandler returns a preload handler for first level.
 func getPreloadHandler(ctx context.Context, driver Driver, dest interface{}) (*preloadHandler, error) {
-	if reflectx.IsSlice(dest) {
-
-		model, ok := reflectx.NewSliceValue(dest).(Model)
+	getModel := func(dest interface{}) (Model, error) {
+		model, ok := reflectx.GetFlattenValue(dest).(Model)
 		if !ok {
 			return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
 		}
-
-		schema, err := GetSchema(driver, model)
-		if err != nil {
-			return nil, err
-		}
-
-		handler := &preloadHandler{
-			ctx:    ctx,
-			driver: driver,
-			model:  model,
-			schema: schema,
-			dest:   dest,
-		}
-
-		return handler, nil
+		return model, nil
 	}
 
-	model, ok := reflectx.GetFlattenValue(dest).(Model)
-	if !ok {
-		return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
+	if reflectx.IsSlice(dest) {
+		getModel = func(dest interface{}) (Model, error) {
+			model, ok := reflectx.NewSliceValue(dest).(Model)
+			if !ok {
+				return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
+			}
+			return model, nil
+		}
+	}
+
+	model, err := getModel(dest)
+	if err != nil {
+		return nil, err
 	}
 
 	schema, err := GetSchema(driver, model)
@@ -177,34 +172,49 @@ func getPreloadHandler(ctx context.Context, driver Driver, dest interface{}) (*p
 // If you need to execute a preload on the second level (and/or after),
 // please use executePreloadWalker instead.
 func executePreloadHandler(ctx context.Context, driver Driver,
-	dest interface{}, paths map[string]preloadPath) (Queries, error) {
+	dest interface{}, paths map[string]preloadPath) (queries Queries, err error) {
 
 	handler, err := getPreloadHandler(ctx, driver, dest)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO (novln): Optimize using goroutine...
+	wg := sync.WaitGroup{}
+	mutex := sync.Mutex{}
+	associations := handler.schema.associations
 
+	wg.Add(len(paths))
 	for _, path := range paths {
 
 		if path.Level() != 1 {
 			return nil, errors.Wrapf(ErrPreloadInvalidPath, "cannot execute preload of '%s'", path.Path())
 		}
 
-		reference, ok := handler.schema.associations[path.Name()]
+		reference, ok := associations[path.Name()]
 		if !ok {
 			return nil, errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", path.Path())
 		}
 
-		err := handler.preload(reference)
-		if err != nil {
-			return nil, err
-		}
+		go func(path preloadPath) {
+
+			perr := handler.preload(reference)
+			if perr != nil {
+				mutex.Lock()
+				defer mutex.Unlock()
+				if err != nil {
+					err = perr
+				}
+			}
+
+			wg.Done()
+
+		}(path)
 	}
 
+	wg.Wait()
+
 	// TODO Handle queries...
-	return nil, nil
+	return queries, err
 }
 
 // executePreloadWalker will executes a preload from the second level and beyond...
