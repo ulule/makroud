@@ -2285,7 +2285,7 @@ type ExoFile struct {
 	BucketID       string `sqlxx:"column:bucket_id,fk:exo_bucket"`
 	DirectoryID    string `sqlxx:"column:directory_id,fk:exo_directory"`
 	// Relationships
-	Chunk []ExoChunk
+	Chunks []ExoChunk
 }
 
 func (ExoFile) TableName() string {

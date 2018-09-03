@@ -42,49 +42,117 @@ func preload(ctx context.Context, driver Driver, dest interface{}, paths ...stri
 		return nil, errors.Wrapf(ErrPointerRequired, "cannot preload %T", dest)
 	}
 
-	levels := computePreloadLevelPath(paths)
-	if len(levels) == 0 {
+	groups := getPreloadGroupPath(paths)
+	if len(groups) == 0 {
 		return nil, nil
 	}
 
-	if reflectx.IsSlice(dest) {
-		return preloadMany(ctx, driver, dest, levels)
+	queries := Queries{}
+
+	for i, paths := range groups {
+		if i == 0 {
+
+			// Execute a preload of first level.
+			q, err := executePreloadHandler(ctx, driver, dest, paths)
+			if err != nil {
+				return nil, err
+			}
+			queries = append(queries, q...)
+
+		} else {
+
+			// Otherwise, execute a preload with a walker for other levels.
+			q, err := executePreloadWalker(ctx, driver, dest, paths)
+			if err != nil {
+				return nil, err
+			}
+			queries = append(queries, q...)
+
+		}
 	}
 
-	return preloadOne(ctx, driver, dest, levels)
+	return queries, nil
 }
 
-func computePreloadLevelPath(paths []string) []map[string]struct{} {
-	levels := []map[string]struct{}{}
+type preloadGroupPath map[string]preloadPath
+
+type preloadPath []string
+
+func (p preloadPath) Level() int {
+	return len(p)
+}
+
+func (p preloadPath) Path() string {
+	return strings.Join(p, ".")
+}
+
+func (p preloadPath) Parent() string {
+	l := len(p) - 1
+	return strings.Join(p[0:l], ".")
+}
+
+func (p preloadPath) Name() string {
+	l := len(p) - 1
+	if l < 0 {
+		return ""
+	}
+	return p[l]
+}
+
+func getPreloadGroupPath(paths []string) []preloadGroupPath {
+	groups := []preloadGroupPath{}
 
 	for i := range paths {
 
 		// Clean up preload path and create a slice of it's level.
 		// "User.Profile.Avatar" -> ["User", "Profile", "Avatar"]
 		path := strings.Trim(paths[i], ".")
-		lpath := strings.Split(path, ".")
+		list := strings.Split(path, ".")
 
 		// Increase levels slice length if required.
-		for len(lpath) > len(levels) {
-			levels = append(levels, map[string]struct{}{})
+		for len(list) > len(groups) {
+			groups = append(groups, preloadGroupPath{})
 		}
 
 		// Fill preload path to ensure we have a sequential walkthrough.
 		// [0] -> "User"
 		// [1] -> "User.Profile"
 		// [2] -> "User.Profile.Avatar"
-		for i := 0; i < len(lpath); i++ {
+		for i := 0; i < len(list); i++ {
 			n := i + 1
-			path := strings.Join(lpath[0:n], ".")
-			levels[i][path] = struct{}{}
+			path := preloadPath(list[0:n])
+			groups[i][path.Path()] = path
 		}
 	}
 
-	return levels
+	return groups
 }
 
-// preloadOne preloads a single instance.
-func preloadOne(ctx context.Context, driver Driver, dest interface{}, levels []map[string]struct{}) (Queries, error) {
+// getPreloadHandler returns a preload handler for first level.
+func getPreloadHandler(ctx context.Context, driver Driver, dest interface{}) (*preloadHandler, error) {
+	if reflectx.IsSlice(dest) {
+
+		model, ok := reflectx.NewSliceValue(dest).(Model)
+		if !ok {
+			return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
+		}
+
+		schema, err := GetSchema(driver, model)
+		if err != nil {
+			return nil, err
+		}
+
+		handler := &preloadHandler{
+			ctx:    ctx,
+			driver: driver,
+			model:  model,
+			schema: schema,
+			dest:   dest,
+		}
+
+		return handler, nil
+	}
+
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
 		return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
@@ -99,60 +167,40 @@ func preloadOne(ctx context.Context, driver Driver, dest interface{}, levels []m
 		ctx:    ctx,
 		driver: driver,
 		model:  model,
+		schema: schema,
 		dest:   dest,
 	}
 
-	return executePreload(handler, schema, levels)
+	return handler, nil
 }
 
-// preloadMany preloads a slice of instance.
-func preloadMany(ctx context.Context, driver Driver, dest interface{}, levels []map[string]struct{}) (Queries, error) {
-	model, ok := reflectx.NewSliceValue(dest).(Model)
-	if !ok {
-		return nil, errors.Wrap(ErrPreloadInvalidSchema, "a model is required")
-	}
+// executePreloadHandler will executes a preload on first level.
+// If you need to execute a preload on the second level (and/or after),
+// please use executePreloadWalker instead.
+func executePreloadHandler(ctx context.Context, driver Driver,
+	dest interface{}, paths map[string]preloadPath) (Queries, error) {
 
-	schema, err := GetSchema(driver, model)
+	handler, err := getPreloadHandler(ctx, driver, dest)
 	if err != nil {
 		return nil, err
 	}
 
-	handler := &preloadHandler{
-		ctx:    ctx,
-		driver: driver,
-		model:  model,
-		dest:   dest,
-	}
+	// TODO (novln): Optimize using goroutine...
 
-	return executePreload(handler, schema, levels)
-}
+	for _, path := range paths {
 
-func executePreload(handler *preloadHandler, schema *Schema, levels []map[string]struct{}) (Queries, error) {
-	for i, paths := range levels {
-		// fmt.Println(i)
-		// fmt.Println(levels)
-		// fmt.Println(levels[1])
-		// fmt.Println(len(levels))
-		// fmt.Println(cap(levels))
-
-		if i != 0 {
-			return nil, errors.Errorf("level %d for preload is unsupported", i)
+		if path.Level() != 1 {
+			return nil, errors.Wrapf(ErrPreloadInvalidPath, "cannot execute preload of '%s'", path.Path())
 		}
 
-		for path := range paths {
-			// TODO Optimize using goroutine
-			fmt.Println(path)
+		reference, ok := handler.schema.associations[path.Name()]
+		if !ok {
+			return nil, errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", path.Path())
+		}
 
-			reference, ok := schema.associations[path]
-			if !ok {
-				return nil, errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", path)
-			}
-
-			err := handler.preload(reference)
-			if err != nil {
-				return nil, err
-			}
-
+		err := handler.preload(reference)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -160,10 +208,47 @@ func executePreload(handler *preloadHandler, schema *Schema, levels []map[string
 	return nil, nil
 }
 
+// executePreloadWalker will executes a preload from the second level and beyond...
+func executePreloadWalker(ctx context.Context, driver Driver,
+	dest interface{}, paths map[string]preloadPath) (Queries, error) {
+
+	queries := Queries{}
+
+	// TODO (novln): Optimize using goroutine...
+
+	for _, path := range paths {
+
+		fmt.Println("level: ", path.Level())
+		fmt.Println("name: ", path.Path())
+		fmt.Println("prefix: ", path.Parent())
+		fmt.Println("elem: ", path.Name())
+
+		walker := reflectx.NewWalker(dest)
+		defer walker.Close()
+
+		err := walker.Find(path.Parent(), func(values interface{}) error {
+			q, err := preload(ctx, driver, values, path.Name())
+			if err != nil {
+				return err
+			}
+
+			queries = append(queries, q...)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// TODO Handle queries...
+	return queries, nil
+}
+
 type preloadHandler struct {
 	ctx    context.Context
 	driver Driver
 	model  Model
+	schema *Schema
 	dest   interface{}
 }
 
