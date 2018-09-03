@@ -48,3 +48,15 @@ func MakeReflectPointer(instance reflect.Value) reflect.Value {
 func CreateReflectPointer(instance interface{}) reflect.Value {
 	return MakeReflectPointer(reflect.ValueOf(instance))
 }
+
+// GetReflectPointerType returns a reflect pointer from given value of first level.
+//
+// For example:
+//
+//  * Type "Foo" will returns "*Foo"
+//  * Type "*Foo" will returns "*Foo"
+//  * Type "**Foo" will returns "*Foo"
+//
+func GetReflectPointerType(instance reflect.Value) reflect.Type {
+	return reflect.PtrTo(GetIndirectType(instance))
+}
