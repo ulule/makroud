@@ -12,6 +12,7 @@ import (
 	"github.com/ulule/sqlxx/reflectx"
 )
 
+// nolint: structcheck,megacheck
 type Elements struct {
 	Spirit     bool
 	Air        uint8
@@ -204,6 +205,22 @@ func TestReflectx_GetFieldByName(t *testing.T) {
 	is.False(field.Anonymous)
 	is.NotEmpty(field.PkgPath)
 	is.Equal(reflect.Bool, field.Type.Kind())
+
+	field, ok = reflectx.GetFieldByName(Elements{}, "xC")
+	is.True(ok)
+	is.NotEmpty(field)
+	is.Equal("xC", field.Name)
+	is.False(field.Anonymous)
+	is.NotEmpty(field.PkgPath)
+	is.Equal(reflect.String, field.Type.Kind())
+
+	field, ok = reflectx.GetFieldByName(Elements{}, "xD")
+	is.True(ok)
+	is.NotEmpty(field)
+	is.Equal("xD", field.Name)
+	is.False(field.Anonymous)
+	is.NotEmpty(field.PkgPath)
+	is.Equal(reflect.Int64, field.Type.Kind())
 
 	field, ok = reflectx.GetFieldByName(Elements{}, "xE")
 	is.False(ok)

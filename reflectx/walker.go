@@ -84,14 +84,13 @@ func (w *Walker) onEach(levels []string) error {
 			if err != nil {
 				return err
 			}
-
 		}
 
 		return nil
 
-	} else {
-		return w.find(w.value, levels)
 	}
+
+	return w.find(w.value, levels)
 }
 
 func (w *Walker) find(value interface{}, levels []string) error {
@@ -107,46 +106,47 @@ func (w *Walker) find(value interface{}, levels []string) error {
 	}
 
 	if IsSlice(leaf) {
+		return w.findMany(leaf, levels)
+	}
 
-		slice := GetIndirectValue(leaf)
-		for i := 0; i < slice.Len(); i++ {
+	return w.findOne(leaf, levels)
+}
 
-			item, ok := w.normalizeReflectValue(slice.Index(i))
-			if !ok {
-				continue
-			}
+func (w *Walker) findMany(value interface{}, levels []string) error {
+	slice := GetIndirectValue(value)
+	for i := 0; i < slice.Len(); i++ {
 
-			if len(levels) >= 2 {
-				err = w.find(item.Interface(), levels[1:])
-				if err != nil {
-					return err
-				}
-			} else {
-				w.push(item)
-			}
-		}
-
-		return nil
-
-	} else {
-
-		item, ok := w.normalizeReflectValue(GetFlattenReflectValue(leaf))
+		item, ok := w.normalizeReflectValue(slice.Index(i))
 		if !ok {
-			return nil
+			continue
 		}
 
 		if len(levels) >= 2 {
-			err = w.find(item.Interface(), levels[1:])
+			err := w.find(item.Interface(), levels[1:])
 			if err != nil {
 				return err
 			}
 		} else {
-			w.push(item)
+			err := w.push(item)
+			if err != nil {
+				return err
+			}
 		}
-
-		return nil
-
 	}
+	return nil
+}
+
+func (w *Walker) findOne(value interface{}, levels []string) error {
+	item, ok := w.normalizeReflectValue(GetFlattenReflectValue(value))
+	if !ok {
+		return nil
+	}
+
+	if len(levels) >= 2 {
+		return w.find(item.Interface(), levels[1:])
+	}
+
+	return w.push(item)
 }
 
 func (w *Walker) push(value reflect.Value) error {
