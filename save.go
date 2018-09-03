@@ -84,7 +84,10 @@ func save(ctx context.Context, driver Driver, model Model) (Queries, error) {
 				pk.ColumnName(): ulid,
 			}
 			values[pk.ColumnName()] = ulid
-			schema.WriteModel(mapper, model)
+			err = schema.WriteModel(mapper, model)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		builder = loukoum.Insert(schema.TableName()).

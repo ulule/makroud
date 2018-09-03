@@ -3,6 +3,7 @@ package sqlxx
 import (
 	"context"
 	"database/sql"
+	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
@@ -61,9 +62,8 @@ func exec(ctx context.Context, driver Driver, query string, args map[string]inte
 	if len(dest) > 0 {
 		if reflectx.IsSlice(dest[0]) {
 			return execRows(ctx, driver, stmt, args, dest[0])
-		} else {
-			return execRow(ctx, driver, stmt, args, dest[0])
 		}
+		return execRow(ctx, driver, stmt, args, dest[0])
 	}
 
 	return stmt.Exec(ctx, args)
@@ -176,4 +176,20 @@ func IsErrNoRows(err error) bool {
 	}
 	err = errors.Cause(err)
 	return err == sql.ErrNoRows || err == ErrNoRows
+}
+
+// toModel converts the given type to a Model instance.
+func toModel(value reflect.Type) Model {
+	if value.Kind() == reflect.Slice {
+		value = reflectx.GetIndirectType(value.Elem())
+	} else {
+		value = reflectx.GetIndirectType(value)
+	}
+
+	model, ok := reflect.New(value).Elem().Interface().(Model)
+	if ok {
+		return model
+	}
+
+	return nil
 }

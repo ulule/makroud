@@ -236,7 +236,7 @@ func (object ReferenceObject) DeletedKeyPath() string {
 
 // NewReference creates a reference from a field instance.
 func NewReference(driver Driver, local *Schema, field *Field) (*Reference, error) {
-	reference := ToModel(field.rtype)
+	reference := toModel(field.rtype)
 	if reference == nil {
 		return nil, errors.Errorf("invalid model: %s", field.rtype.String())
 	}

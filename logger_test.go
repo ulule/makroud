@@ -69,7 +69,7 @@ func TestLogger(t *testing.T) {
 		is.NoError(err)
 		is.Equal(expected, log)
 
-		sqlxx.Delete(ctx, driver, owl)
+		err = sqlxx.Delete(ctx, driver, owl)
 		is.NoError(err)
 		expected = fmt.Sprint(`DELETE FROM ztp_owl WHERE (id = `, format.Int(owl.ID), `);`, EOL)
 

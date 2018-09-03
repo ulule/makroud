@@ -171,10 +171,6 @@ func (schema Schema) WriteModel(mapper Mapper, model Model) error {
 	return nil
 }
 
-func (schema Schema) writeField(model Model, field Field, value interface{}) error {
-	return reflectx.UpdateFieldValue(model, field.FieldName(), value)
-}
-
 // ----------------------------------------------------------------------------
 // Initializers
 // ----------------------------------------------------------------------------

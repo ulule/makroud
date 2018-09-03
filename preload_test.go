@@ -105,6 +105,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 			region2 := fixtures.Regions[1]
 
 			err = sqlxx.Preload(ctx, driver, &region2, "Buckets")
+			is.NoError(err)
 			is.NotNil(region2.Buckets)
 			is.Empty((*region2.Buckets))
 			is.Len((*region2.Buckets), 0)

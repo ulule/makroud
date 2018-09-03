@@ -207,7 +207,7 @@ func NewField(driver Driver, schema *Schema, model Model, name string, args ...M
 	}
 
 	// Early return if the field type is not an association.
-	reference := ToModel(rtype)
+	reference := toModel(rtype)
 	if reference == nil {
 		return instance, nil
 	}
