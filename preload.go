@@ -804,7 +804,7 @@ func (handler *preloadHandler) fetchLocalForeignKeyString(reference Reference,
 	local := reference.Local()
 
 	if local.ForeignKeyType() != FKStringType {
-		return "", errors.Errorf("invalid type: %s", local)
+		return "", errors.Errorf("invalid type: %s", local.ForeignKeyType())
 	}
 
 	pk, err := reflectx.GetFieldValueString(value, local.FieldName())
@@ -824,7 +824,7 @@ func (handler *preloadHandler) fetchLocalForeignKeyInteger(reference Reference,
 	local := reference.Local()
 
 	if local.ForeignKeyType() != FKIntegerType {
-		return 0, errors.Errorf("invalid type: %s", local)
+		return 0, errors.Errorf("invalid type: %s", local.ForeignKeyType())
 	}
 
 	pk, err := reflectx.GetFieldValueInt64(value, local.FieldName())
@@ -844,7 +844,7 @@ func (handler *preloadHandler) fetchLocalForeignKeyOptionalString(reference Refe
 	local := reference.Local()
 
 	if local.ForeignKeyType() != FKOptionalStringType {
-		return "", errors.Errorf("invalid type: %s", local)
+		return "", errors.Errorf("invalid type: %s", local.ForeignKeyType())
 	}
 
 	fk, ok, err := reflectx.GetFieldOptionalValueString(value, local.FieldName())
@@ -864,7 +864,7 @@ func (handler *preloadHandler) fetchLocalForeignKeyOptionalInteger(reference Ref
 	local := reference.Local()
 
 	if local.ForeignKeyType() != FKOptionalIntegerType {
-		return 0, errors.Errorf("invalid type: %s", local)
+		return 0, errors.Errorf("invalid type: %s", local.ForeignKeyType())
 	}
 
 	fk, ok, err := reflectx.GetFieldOptionalValueInt64(value, local.FieldName())
@@ -884,7 +884,7 @@ func (handler *preloadHandler) fetchRemoteForeignKeyString(reference Reference,
 	local := reference.Local()
 
 	if local.PrimaryKeyType() != PKStringType {
-		return "", errors.Errorf("invalid type: %s", local)
+		return "", errors.Errorf("invalid type: %s", local.ForeignKeyType())
 	}
 
 	pk, err := reflectx.GetFieldValueString(value, local.FieldName())
@@ -904,7 +904,7 @@ func (handler *preloadHandler) fetchRemoteForeignKeyInteger(reference Reference,
 	local := reference.Local()
 
 	if local.PrimaryKeyType() != PKIntegerType {
-		return 0, errors.Errorf("invalid type: %s", local)
+		return 0, errors.Errorf("invalid type: %s", local.ForeignKeyType())
 	}
 
 	pk, err := reflectx.GetFieldValueInt64(value, local.FieldName())
