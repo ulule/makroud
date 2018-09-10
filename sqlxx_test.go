@@ -2159,6 +2159,40 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	return fixtures
 }
 
+func SortExoCloudDirectories1(source []*ExoDirectory, directories *[]ExoDirectory) {
+	values := make([]ExoDirectory, 0, len(*directories))
+
+	for x := range source {
+		for y := range *directories {
+			if source[x].ID == (*directories)[y].ID {
+				values = append(values, (*directories)[y])
+				break
+			}
+		}
+	}
+
+	if len(*directories) == len(values) {
+		*directories = values
+	}
+}
+
+func SortExoCloudDirectories2(source []*ExoDirectory, directories *[]*ExoDirectory) {
+	values := make([]*ExoDirectory, 0, len(*directories))
+
+	for x := range source {
+		for y := range *directories {
+			if source[x].ID == (*directories)[y].ID {
+				values = append(values, (*directories)[y])
+				break
+			}
+		}
+	}
+
+	if len(*directories) == len(values) {
+		*directories = values
+	}
+}
+
 type ExoOrganization struct {
 	// Columns
 	ID      string `sqlxx:"column:id,pk:ulid"`
@@ -2179,7 +2213,7 @@ type ExoUser struct {
 	Locale    string `sqlxx:"column:locale"`
 	ProfileID string `sqlxx:"column:profile_id,fk:exo_profile"`
 	// Relationships
-	Group   *ExoGroup
+	Group   []ExoGroup
 	Profile *ExoProfile
 }
 
@@ -2287,6 +2321,7 @@ type ExoFile struct {
 	DirectoryID    string `sqlxx:"column:directory_id,fk:exo_directory"`
 	// Relationships
 	Chunks []ExoChunk
+	Owner  *ExoUser
 }
 
 func (ExoFile) TableName() string {
