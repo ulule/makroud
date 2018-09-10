@@ -57,6 +57,10 @@ func (w *Walker) Find(path string, callback func(values interface{}) error) erro
 		return errors.Wrapf(err, "cannot find values from path: %s", path)
 	}
 
+	if w.slice == nil {
+		return nil
+	}
+
 	return callback(w.slice.Interface())
 }
 
