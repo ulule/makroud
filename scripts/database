@@ -38,7 +38,7 @@ do_start() {
     fi
 
     echo "[database] update postgres images"
-    docker pull ${CONTAINER_IMAGE}
+    docker pull ${CONTAINER_IMAGE} || true
 
     echo "[database] start new ${CONTAINER_NAME} container"
     docker run --name "${CONTAINER_NAME}" \
