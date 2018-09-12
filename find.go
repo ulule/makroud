@@ -160,3 +160,13 @@ func (b *QueryBuilder) Execute(value interface{}) error {
 }
 
 // TODO Sort, Pagination (?)
+
+// GetSort returns query sort.
+func (b *QueryBuilder) GetSort() string {
+	return b.sort
+}
+
+// GetCursor returns query cursor.
+func (b *QueryBuilder) GetCursor() string {
+	return b.cursor
+}

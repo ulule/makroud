@@ -272,17 +272,15 @@ type preloadHandler struct {
 func (handler *preloadHandler) preload(reference Reference) error {
 	if reference.IsAssociationType(AssociationTypeOne) {
 		return handler.preloadOne(reference)
-	} else {
-		return handler.preloadMany(reference)
 	}
+	return handler.preloadMany(reference)
 }
 
 func (handler *preloadHandler) preloadOne(reference Reference) error {
 	if reference.IsLocal() {
 		return handler.preloadOneLocal(reference)
-	} else {
-		return handler.preloadOneRemote(reference)
 	}
+	return handler.preloadOneRemote(reference)
 }
 
 func (handler *preloadHandler) preloadOneLocal(reference Reference) error {
@@ -301,22 +299,22 @@ func (handler *preloadHandler) preloadOneLocal(reference Reference) error {
 
 	switch local.ForeignKeyType() {
 	case FKStringType:
-		preloader := reflectx.NewStringPreloader(handler.dest)
+		preloader := reflectx.NewStringPreloader(reference.FieldName(), reference.Type(), handler.dest)
 		return handler.preloadString(preloader, reference, builder,
 			getPreloadForEachCallbackLocalString(preloader, reference))
 
 	case FKIntegerType:
-		preloader := reflectx.NewIntegerPreloader(handler.dest)
+		preloader := reflectx.NewIntegerPreloader(reference.FieldName(), reference.Type(), handler.dest)
 		return handler.preloadInteger(preloader, reference, builder,
 			getPreloadForEachCallbackLocalInteger(preloader, reference))
 
 	case FKOptionalStringType:
-		preloader := reflectx.NewStringPreloader(handler.dest)
+		preloader := reflectx.NewStringPreloader(reference.FieldName(), reference.Type(), handler.dest)
 		return handler.preloadString(preloader, reference, builder,
 			getPreloadForEachCallbackLocalOptionalString(preloader, reference))
 
 	case FKOptionalIntegerType:
-		preloader := reflectx.NewIntegerPreloader(handler.dest)
+		preloader := reflectx.NewIntegerPreloader(reference.FieldName(), reference.Type(), handler.dest)
 		return handler.preloadInteger(preloader, reference, builder,
 			getPreloadForEachCallbackLocalOptionalInteger(preloader, reference))
 
@@ -341,12 +339,12 @@ func (handler *preloadHandler) preloadOneRemote(reference Reference) error {
 
 	switch local.PrimaryKeyType() {
 	case PKStringType:
-		preloader := reflectx.NewStringPreloader(handler.dest)
+		preloader := reflectx.NewStringPreloader(reference.FieldName(), reference.Type(), handler.dest)
 		return handler.preloadString(preloader, reference, builder,
 			getPreloadForEachCallbackRemoteString(preloader, reference))
 
 	case PKIntegerType:
-		preloader := reflectx.NewIntegerPreloader(handler.dest)
+		preloader := reflectx.NewIntegerPreloader(reference.FieldName(), reference.Type(), handler.dest)
 		return handler.preloadInteger(preloader, reference, builder,
 			getPreloadForEachCallbackRemoteInteger(preloader, reference))
 
@@ -371,12 +369,12 @@ func (handler *preloadHandler) preloadMany(reference Reference) error {
 
 	switch local.PrimaryKeyType() {
 	case PKStringType:
-		preloader := reflectx.NewStringPreloader(handler.dest)
+		preloader := reflectx.NewStringPreloader(reference.FieldName(), reference.Type(), handler.dest)
 		return handler.preloadString(preloader, reference, builder,
 			getPreloadForEachCallbackRemoteString(preloader, reference))
 
 	case PKIntegerType:
-		preloader := reflectx.NewIntegerPreloader(handler.dest)
+		preloader := reflectx.NewIntegerPreloader(reference.FieldName(), reference.Type(), handler.dest)
 		return handler.preloadInteger(preloader, reference, builder,
 			getPreloadForEachCallbackRemoteInteger(preloader, reference))
 
@@ -385,7 +383,7 @@ func (handler *preloadHandler) preloadMany(reference Reference) error {
 	}
 }
 
-func getPreloadForEachCallbackRemoteString(preloader reflectx.StringPreloader,
+func getPreloadForEachCallbackRemoteString(preloader *reflectx.StringPreloader,
 	reference Reference) func(element reflectx.PreloadValue) error {
 
 	return func(element reflectx.PreloadValue) error {
@@ -397,7 +395,7 @@ func getPreloadForEachCallbackRemoteString(preloader reflectx.StringPreloader,
 	}
 }
 
-func getPreloadForEachCallbackLocalString(preloader reflectx.StringPreloader,
+func getPreloadForEachCallbackLocalString(preloader *reflectx.StringPreloader,
 	reference Reference) func(element reflectx.PreloadValue) error {
 
 	return func(element reflectx.PreloadValue) error {
@@ -409,7 +407,7 @@ func getPreloadForEachCallbackLocalString(preloader reflectx.StringPreloader,
 	}
 }
 
-func getPreloadForEachCallbackLocalOptionalString(preloader reflectx.StringPreloader,
+func getPreloadForEachCallbackLocalOptionalString(preloader *reflectx.StringPreloader,
 	reference Reference) func(element reflectx.PreloadValue) error {
 
 	return func(element reflectx.PreloadValue) error {
@@ -424,7 +422,7 @@ func getPreloadForEachCallbackLocalOptionalString(preloader reflectx.StringPrelo
 	}
 }
 
-func getPreloadForEachCallbackRemoteInteger(preloader reflectx.IntegerPreloader,
+func getPreloadForEachCallbackRemoteInteger(preloader *reflectx.IntegerPreloader,
 	reference Reference) func(element reflectx.PreloadValue) error {
 
 	return func(element reflectx.PreloadValue) error {
@@ -436,7 +434,7 @@ func getPreloadForEachCallbackRemoteInteger(preloader reflectx.IntegerPreloader,
 	}
 }
 
-func getPreloadForEachCallbackLocalInteger(preloader reflectx.IntegerPreloader,
+func getPreloadForEachCallbackLocalInteger(preloader *reflectx.IntegerPreloader,
 	reference Reference) func(element reflectx.PreloadValue) error {
 
 	return func(element reflectx.PreloadValue) error {
@@ -448,7 +446,7 @@ func getPreloadForEachCallbackLocalInteger(preloader reflectx.IntegerPreloader,
 	}
 }
 
-func getPreloadForEachCallbackLocalOptionalInteger(preloader reflectx.IntegerPreloader,
+func getPreloadForEachCallbackLocalOptionalInteger(preloader *reflectx.IntegerPreloader,
 	reference Reference) func(element reflectx.PreloadValue) error {
 
 	return func(element reflectx.PreloadValue) error {
@@ -463,12 +461,12 @@ func getPreloadForEachCallbackLocalOptionalInteger(preloader reflectx.IntegerPre
 	}
 }
 
-func (handler *preloadHandler) preloadString(preloader reflectx.StringPreloader, reference Reference,
-	builder builder.Select, preloadForEachCallback func(element reflectx.PreloadValue) error) error {
+func (handler *preloadHandler) preloadString(preloader *reflectx.StringPreloader, reference Reference,
+	builder builder.Select, preloadCallback func(element reflectx.PreloadValue) error) error {
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(reference.FieldName(), preloadForEachCallback)
+	err := preloader.ForEach(preloadCallback)
 	if err != nil {
 		return err
 	}
@@ -480,7 +478,7 @@ func (handler *preloadHandler) preloadString(preloader reflectx.StringPreloader,
 
 	builder = builder.Where(loukoum.Condition(remote.ColumnPath()).In(list))
 
-	err = preloader.OnExecute(reference.Type(), func(relation interface{}) error {
+	err = preloader.OnExecute(func(relation interface{}) error {
 		err := Exec(handler.ctx, handler.driver, builder, relation)
 		if err != nil && !IsErrNoRows(err) {
 			return err
@@ -500,7 +498,7 @@ func (handler *preloadHandler) preloadString(preloader reflectx.StringPreloader,
 			return errors.Wrap(ErrPreloadInvalidModel, "foreign key has a zero value")
 		}
 
-		return preloader.UpdateValueOnIndex(reference.FieldName(), fk, element)
+		return preloader.UpdateValueOnIndex(fk, element)
 	})
 	if err != nil {
 		return err
@@ -509,12 +507,12 @@ func (handler *preloadHandler) preloadString(preloader reflectx.StringPreloader,
 	return nil
 }
 
-func (handler *preloadHandler) preloadInteger(preloader reflectx.IntegerPreloader,
-	reference Reference, builder builder.Select, preloadForEachCallback func(element reflectx.PreloadValue) error) error {
+func (handler *preloadHandler) preloadInteger(preloader *reflectx.IntegerPreloader,
+	reference Reference, builder builder.Select, preloadCallback func(element reflectx.PreloadValue) error) error {
 
 	remote := reference.Remote()
 
-	err := preloader.ForEach(reference.FieldName(), preloadForEachCallback)
+	err := preloader.ForEach(preloadCallback)
 	if err != nil {
 		return err
 	}
@@ -526,7 +524,7 @@ func (handler *preloadHandler) preloadInteger(preloader reflectx.IntegerPreloade
 
 	builder = builder.Where(loukoum.Condition(remote.ColumnPath()).In(list))
 
-	err = preloader.OnExecute(reference.Type(), func(relation interface{}) error {
+	err = preloader.OnExecute(func(relation interface{}) error {
 		err := Exec(handler.ctx, handler.driver, builder, relation)
 		if err != nil && !IsErrNoRows(err) {
 			return err
@@ -546,7 +544,7 @@ func (handler *preloadHandler) preloadInteger(preloader reflectx.IntegerPreloade
 			return errors.Wrap(ErrPreloadInvalidModel, "foreign key has a zero value")
 		}
 
-		return preloader.UpdateValueOnIndex(reference.FieldName(), fk, element)
+		return preloader.UpdateValueOnIndex(fk, element)
 	})
 	if err != nil {
 		return err

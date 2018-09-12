@@ -6,65 +6,48 @@ import (
 	"github.com/pkg/errors"
 )
 
+// A PreloadValue is an alias type to reflect.Value used to manipulate a reference while executing a preload.
 type PreloadValue reflect.Value
 
+// Unwrap returns underlying value.
 func (v PreloadValue) Unwrap() interface{} {
 	return reflect.Value(v).Interface()
 }
 
-type Preloader interface {
-	ForEach(name string, callback func(element PreloadValue) error) error
-	OnExecute(kind reflect.Type, callback func(element interface{}) error) error
-	OnUpdate(callback func(element interface{}) error) error
-
-	StringIndexes() []string
-	AddStringIndex(id string, element PreloadValue) error
-	UpdateValueForStringIndex(name string, id string, element interface{}) error
-
-	Int64Indexes() []int64
-	AddInt64Index(id int64, element PreloadValue) error
-	UpdateValueForInt64Index(name string, id int64, element interface{}) error
-}
-
-type StringPreloader interface {
-	ForEach(name string, callback func(element PreloadValue) error) error
-	OnExecute(kind reflect.Type, callback func(element interface{}) error) error
-	OnUpdate(callback func(element interface{}) error) error
-
-	Indexes() []string
-	AddIndex(id string, element PreloadValue) error
-	UpdateValueOnIndex(name string, id string, element interface{}) error
-}
-
-type IntegerPreloader interface {
-	ForEach(name string, callback func(element PreloadValue) error) error
-	OnExecute(kind reflect.Type, callback func(element interface{}) error) error
-	OnUpdate(callback func(element interface{}) error) error
-
-	Indexes() []int64
-	AddIndex(id int64, element PreloadValue) error
-	UpdateValueOnIndex(name string, id int64, element interface{}) error
-}
-
-type stringPreloader struct {
+// A StringPreloader is used by preload mechanism to attach values received from query to the correct reference.
+// This preloader handles everything related to reflection, that means the query engine is handled on
+// another components. It uses a string mapper internally.
+type StringPreloader struct {
+	name      string
+	kind      reflect.Type
 	value     interface{}
 	relations reflect.Value
 	mapper    map[string][]reflect.Value
 }
 
-func NewStringPreloader(value interface{}) StringPreloader {
-	return &stringPreloader{
+// NewStringPreloader creates a new StringPreloader using given value as root reference and given name as the element
+// to preload on root reference.
+func NewStringPreloader(name string, kind reflect.Type, value interface{}) *StringPreloader {
+	return &StringPreloader{
+		name:   name,
+		kind:   kind,
 		value:  value,
 		mapper: map[string][]reflect.Value{},
 	}
 }
 
-func (p *stringPreloader) ForEach(name string, callback func(element PreloadValue) error) error {
-	return preloadForEach(p.value, name, callback)
+// ForEach will scan every root references (that means a simple struct or a slice of struct) and creates a zero
+// value of the element to preload (identified by name).
+// The given callback should extract the primary, or the foreign key, and call AddIndex() so later we can find what
+// element should be linked to the parent references using UpdateValueOnIndex().
+func (p *StringPreloader) ForEach(callback func(element PreloadValue) error) error {
+	return preloadForEach(p.value, p.name, callback)
 }
 
-func (p *stringPreloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
-	elem, err := preloadOnExecuteGetType(kind)
+// OnExecute creates a slice of the element to preload and execute the given callback.
+// The callback must populate the slice with required elements so we can use the results with OnUpdate() later.
+func (p *StringPreloader) OnExecute(callback func(element interface{}) error) error {
+	elem, err := preloadOnExecuteGetType(p.kind)
 	if err != nil {
 		return err
 	}
@@ -73,11 +56,15 @@ func (p *stringPreloader) OnExecute(kind reflect.Type, callback func(element int
 	return callback(p.relations.Interface())
 }
 
-func (p *stringPreloader) OnUpdate(callback func(element interface{}) error) error {
+// OnUpdate executes given callback on each elements found by OnExecute().
+// The callback must use UpdateValueOnIndex() with the correct primary key or foreign key so we can link
+// the element to the correct parent.
+func (p *StringPreloader) OnUpdate(callback func(element interface{}) error) error {
 	return preloadOnUpdate(p.relations, callback)
 }
 
-func (p *stringPreloader) Indexes() []string {
+// Indexes returns a list of keys.
+func (p *StringPreloader) Indexes() []string {
 	list := make([]string, 0, len(p.mapper))
 	for id := range p.mapper {
 		list = append(list, id)
@@ -86,7 +73,8 @@ func (p *stringPreloader) Indexes() []string {
 	return list
 }
 
-func (p *stringPreloader) AddIndex(id string, element PreloadValue) error {
+// AddIndex appends given element to be updated if a value is found with this id.
+func (p *StringPreloader) AddIndex(id string, element PreloadValue) error {
 	list, ok := p.mapper[id]
 	if !ok {
 		list = []reflect.Value{}
@@ -98,14 +86,15 @@ func (p *stringPreloader) AddIndex(id string, element PreloadValue) error {
 	return nil
 }
 
-func (p *stringPreloader) UpdateValueOnIndex(name string, id string, element interface{}) error {
+// UpdateValueOnIndex adds given element on its parent.
+func (p *StringPreloader) UpdateValueOnIndex(id string, element interface{}) error {
 	values, ok := p.mapper[id]
 	if !ok {
 		return errors.Errorf("cannot find element with primary key: '%s'", id)
 	}
 
 	for i := range values {
-		err := PushFieldValue(values[i].Interface(), name, element, false)
+		err := PushFieldValue(values[i].Interface(), p.name, element, false)
 		if err != nil {
 			return err
 		}
@@ -114,25 +103,40 @@ func (p *stringPreloader) UpdateValueOnIndex(name string, id string, element int
 	return nil
 }
 
-type integerPreloader struct {
+// A IntegerPreloader is used by preload mechanism to attach values received from query to the correct reference.
+// This preloader handles everything related to reflection, that means the query engine is handled on
+// another components. It uses a integer mapper internally.
+type IntegerPreloader struct {
+	name      string
+	kind      reflect.Type
 	value     interface{}
 	relations reflect.Value
 	mapper    map[int64][]reflect.Value
 }
 
-func NewIntegerPreloader(value interface{}) IntegerPreloader {
-	return &integerPreloader{
+// NewIntegerPreloader creates a new IntegerPreloader using given value as root reference and given name as the element
+// to preload on root reference.
+func NewIntegerPreloader(name string, kind reflect.Type, value interface{}) *IntegerPreloader {
+	return &IntegerPreloader{
+		name:   name,
+		kind:   kind,
 		value:  value,
 		mapper: map[int64][]reflect.Value{},
 	}
 }
 
-func (p *integerPreloader) ForEach(name string, callback func(element PreloadValue) error) error {
-	return preloadForEach(p.value, name, callback)
+// ForEach will scan every root references (that means a simple struct or a slice of struct) and creates a zero
+// value of the element to preload (identified by name).
+// The given callback should extract the primary, or the foreign key, and call AddIndex() so later we can find what
+// element should be linked to the parent references using UpdateValueOnIndex().
+func (p *IntegerPreloader) ForEach(callback func(element PreloadValue) error) error {
+	return preloadForEach(p.value, p.name, callback)
 }
 
-func (p *integerPreloader) OnExecute(kind reflect.Type, callback func(element interface{}) error) error {
-	elem, err := preloadOnExecuteGetType(kind)
+// OnExecute creates a slice of the element to preload and execute the given callback.
+// The callback must populate the slice with required elements so we can use the results with OnUpdate() later.
+func (p *IntegerPreloader) OnExecute(callback func(element interface{}) error) error {
+	elem, err := preloadOnExecuteGetType(p.kind)
 	if err != nil {
 		return err
 	}
@@ -141,11 +145,15 @@ func (p *integerPreloader) OnExecute(kind reflect.Type, callback func(element in
 	return callback(p.relations.Interface())
 }
 
-func (p *integerPreloader) OnUpdate(callback func(element interface{}) error) error {
+// OnUpdate executes given callback on each elements found by OnExecute().
+// The callback must use UpdateValueOnIndex() with the correct primary key or foreign key so we can link
+// the element to the correct parent.
+func (p *IntegerPreloader) OnUpdate(callback func(element interface{}) error) error {
 	return preloadOnUpdate(p.relations, callback)
 }
 
-func (p *integerPreloader) Indexes() []int64 {
+// Indexes returns a list of keys.
+func (p *IntegerPreloader) Indexes() []int64 {
 	list := make([]int64, 0, len(p.mapper))
 	for id := range p.mapper {
 		list = append(list, id)
@@ -154,7 +162,8 @@ func (p *integerPreloader) Indexes() []int64 {
 	return list
 }
 
-func (p *integerPreloader) AddIndex(id int64, element PreloadValue) error {
+// AddIndex appends given element to be updated if a value is found with this id.
+func (p *IntegerPreloader) AddIndex(id int64, element PreloadValue) error {
 	list, ok := p.mapper[id]
 	if !ok {
 		list = []reflect.Value{}
@@ -166,14 +175,15 @@ func (p *integerPreloader) AddIndex(id int64, element PreloadValue) error {
 	return nil
 }
 
-func (p *integerPreloader) UpdateValueOnIndex(name string, id int64, element interface{}) error {
+// UpdateValueOnIndex adds given element on its parent.
+func (p *IntegerPreloader) UpdateValueOnIndex(id int64, element interface{}) error {
 	values, ok := p.mapper[id]
 	if !ok {
 		return errors.Errorf("cannot find element with primary key: '%d'", id)
 	}
 
 	for i := range values {
-		err := PushFieldValue(values[i].Interface(), name, element, false)
+		err := PushFieldValue(values[i].Interface(), p.name, element, false)
 		if err != nil {
 			return err
 		}

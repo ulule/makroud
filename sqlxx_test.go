@@ -27,6 +27,7 @@ var dbDefaultOptions = map[string]sqlxx.Option{
 // Miscellaneous models
 // ----------------------------------------------------------------------------
 
+// nolint: structcheck,megacheck
 type Elements struct {
 	Air     string `db:"air"`
 	Fire    string `sqlxx:"column:fire"`
