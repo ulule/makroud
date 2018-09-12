@@ -11,6 +11,42 @@ import (
 	"github.com/ulule/sqlxx"
 )
 
+func TestCount(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		cats := []Cat{
+			Cat{Name: "Radio"},
+			Cat{Name: "Radish"},
+			Cat{Name: "Radium"},
+			Cat{Name: "Radix"},
+			Cat{Name: "Radman"},
+			Cat{Name: "Radmilla"},
+		}
+
+		for i := range cats {
+			err := sqlxx.Save(ctx, driver, &cats[i])
+			is.NoError(err)
+		}
+
+		query := loukoum.Select("COUNT(*)").From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("Rad%"))
+
+		{
+			count, err := sqlxx.Count(ctx, driver, query)
+			is.NoError(err)
+			is.Equal(int64(6), count)
+		}
+		{
+			count, err := sqlxx.FloatCount(ctx, driver, query)
+			is.NoError(err)
+			is.Equal(float64(6), count)
+		}
+
+	})
+}
+
 func TestExec_List(t *testing.T) {
 	Setup(t)(func(driver sqlxx.Driver) {
 		ctx := context.Background()
