@@ -4801,7 +4801,7 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 			is.Equal((*fixtures.Buckets[1]).ID, (*regions[0].Buckets)[1].ID)
 			is.Len((*regions[0].Buckets)[0].Directories, 16)
 			is.Len((*regions[0].Buckets)[1].Directories, 0)
-			SortExoCloudDirectories1(fixtures.Directories, &(*regions[0].Buckets)[0].Directories)
+			sortExoCloudDirectories1(fixtures.Directories, &(*regions[0].Buckets)[0].Directories)
 			is.Equal((*fixtures.Directories[0]).ID, (*regions[0].Buckets)[0].Directories[0].ID)
 			is.Equal((*fixtures.Directories[1]).ID, (*regions[0].Buckets)[0].Directories[1].ID)
 			is.Equal((*fixtures.Directories[2]).ID, (*regions[0].Buckets)[0].Directories[2].ID)
@@ -4819,7 +4819,7 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 			is.Equal((*fixtures.Directories[14]).ID, (*regions[0].Buckets)[0].Directories[14].ID)
 			is.Equal((*fixtures.Directories[15]).ID, (*regions[0].Buckets)[0].Directories[15].ID)
 			is.Len((*regions[0].Buckets)[0].Directories[0].Directories, 6)
-			SortExoCloudDirectories2(fixtures.Directories, &(*regions[0].Buckets)[0].Directories[0].Directories)
+			sortExoCloudDirectories2(fixtures.Directories, &(*regions[0].Buckets)[0].Directories[0].Directories)
 			is.Equal((*fixtures.Directories[6]).ID, (*regions[0].Buckets)[0].Directories[0].Directories[0].ID)
 			is.Equal((*fixtures.Directories[7]).ID, (*regions[0].Buckets)[0].Directories[0].Directories[1].ID)
 			is.Equal((*fixtures.Directories[8]).ID, (*regions[0].Buckets)[0].Directories[0].Directories[2].ID)
@@ -4834,7 +4834,7 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 			is.Len((*regions[0].Buckets)[0].Directories[0].Directories[5].Directories, 0)
 			is.Len((*regions[0].Buckets)[0].Directories[1].Directories, 0)
 			is.Len((*regions[0].Buckets)[0].Directories[2].Directories, 3)
-			SortExoCloudDirectories2(fixtures.Directories, &(*regions[0].Buckets)[0].Directories[2].Directories)
+			sortExoCloudDirectories2(fixtures.Directories, &(*regions[0].Buckets)[0].Directories[2].Directories)
 			is.Equal((*fixtures.Directories[12]).ID, (*regions[0].Buckets)[0].Directories[2].Directories[0].ID)
 			is.Equal((*fixtures.Directories[13]).ID, (*regions[0].Buckets)[0].Directories[2].Directories[1].ID)
 			is.Equal((*fixtures.Directories[14]).ID, (*regions[0].Buckets)[0].Directories[2].Directories[2].ID)
@@ -4934,7 +4934,7 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 			is.Equal((*fixtures.Buckets[3]).ID, (*regions[2].Buckets)[1].ID)
 			is.Len((*regions[2].Buckets)[0].Directories, 3)
 			is.Len((*regions[2].Buckets)[1].Directories, 0)
-			SortExoCloudDirectories1(fixtures.Directories, &(*regions[2].Buckets)[0].Directories)
+			sortExoCloudDirectories1(fixtures.Directories, &(*regions[2].Buckets)[0].Directories)
 			is.Equal((*fixtures.Directories[16]).ID, (*regions[2].Buckets)[0].Directories[0].ID)
 			is.Equal((*fixtures.Directories[17]).ID, (*regions[2].Buckets)[0].Directories[1].ID)
 			is.Equal((*fixtures.Directories[18]).ID, (*regions[2].Buckets)[0].Directories[2].ID)
@@ -4969,6 +4969,79 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 			is.Equal((*fixtures.Files[16]).ID, (*regions[2].Buckets)[0].Directories[2].Files[1].ID)
 			is.Equal((*fixtures.Files[17]).ID, (*regions[2].Buckets)[0].Directories[2].Files[2].ID)
 			is.Equal((*fixtures.Files[18]).ID, (*regions[2].Buckets)[0].Directories[2].Files[3].ID)
+
+		}
+	})
+}
+
+func TestPreload_Zootopia_MultiLevel(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		CheckHumanFixtures := func(fixtures ZootopiaFixtures) {
+			is.Nil(fixtures.Humans[0].Cat)
+			is.Nil(fixtures.Humans[1].Cat)
+			is.Nil(fixtures.Humans[2].Cat)
+			is.Nil(fixtures.Humans[3].Cat)
+			is.Nil(fixtures.Humans[4].Cat)
+			is.Nil(fixtures.Humans[5].Cat)
+			is.Nil(fixtures.Humans[6].Cat)
+		}
+
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckHumanFixtures(fixtures)
+
+			humans := []Human{
+				*fixtures.Humans[0],
+				*fixtures.Humans[1],
+				*fixtures.Humans[2],
+				*fixtures.Humans[3],
+				*fixtures.Humans[4],
+				*fixtures.Humans[5],
+				*fixtures.Humans[6],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &humans, "Cat.Meows")
+			is.NoError(err)
+			is.Len(humans, 7)
+			is.Equal(fixtures.Humans[0].ID, humans[0].ID)
+			is.Equal(fixtures.Humans[1].ID, humans[1].ID)
+			is.Equal(fixtures.Humans[2].ID, humans[2].ID)
+			is.Equal(fixtures.Humans[3].ID, humans[3].ID)
+			is.Equal(fixtures.Humans[4].ID, humans[4].ID)
+			is.Equal(fixtures.Humans[5].ID, humans[5].ID)
+			is.Equal(fixtures.Humans[6].ID, humans[6].ID)
+
+			is.NotNil(humans[0].Cat)
+			is.Equal(humans[0].Cat.ID, fixtures.Cats[0].ID)
+			is.NotNil(humans[1].Cat)
+			is.Equal(humans[1].Cat.ID, fixtures.Cats[1].ID)
+			is.Nil(humans[2].Cat)
+			is.NotNil(humans[3].Cat)
+			is.Equal(humans[3].Cat.ID, fixtures.Cats[3].ID)
+			is.Nil(humans[4].Cat)
+			is.Nil(humans[5].Cat)
+			is.NotNil(humans[6].Cat)
+			is.Equal(humans[6].Cat.ID, fixtures.Cats[6].ID)
+
+			is.NotEmpty(humans[0].Cat.Meows)
+			is.Len(humans[0].Cat.Meows, 3)
+			is.Contains(humans[0].Cat.Meows, fixtures.Meows[0])
+			is.Contains(humans[0].Cat.Meows, fixtures.Meows[1])
+			is.Contains(humans[0].Cat.Meows, fixtures.Meows[2])
+			is.Empty(humans[1].Cat.Meows)
+			is.NotEmpty(humans[3].Cat.Meows)
+			is.Len(humans[3].Cat.Meows, 3)
+			is.Contains(humans[3].Cat.Meows, fixtures.Meows[4])
+			is.Contains(humans[3].Cat.Meows, fixtures.Meows[5])
+			is.Contains(humans[3].Cat.Meows, fixtures.Meows[6])
+			is.NotEmpty(humans[6].Cat.Meows)
+			is.Len(humans[6].Cat.Meows, 2)
+			is.Contains(humans[6].Cat.Meows, fixtures.Meows[8])
+			is.Contains(humans[6].Cat.Meows, fixtures.Meows[9])
 
 		}
 	})

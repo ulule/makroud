@@ -2,7 +2,6 @@ package sqlxx
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/ulule/loukoum"
@@ -13,30 +12,21 @@ import (
 
 // Save saves the given instance.
 func Save(ctx context.Context, driver Driver, model Model) error {
-	_, err := SaveWithQueries(ctx, driver, model)
-	return err
-}
-
-// SaveWithQueries saves the given instance and returns performed queries.
-func SaveWithQueries(ctx context.Context, driver Driver, model Model) (Queries, error) {
-	queries, err := save(ctx, driver, model)
+	err := save(ctx, driver, model)
 	if err != nil {
-		return queries, errors.Wrap(err, "sqlxx: cannot execute save")
+		return errors.Wrap(err, "sqlxx: cannot execute save")
 	}
-	return queries, nil
+	return nil
 }
 
-func save(ctx context.Context, driver Driver, model Model) (Queries, error) {
+func save(ctx context.Context, driver Driver, model Model) error {
 	if driver == nil {
-		return nil, errors.WithStack(ErrInvalidDriver)
+		return errors.WithStack(ErrInvalidDriver)
 	}
-
-	start := time.Now()
-	queries := Queries{}
 
 	schema, err := GetSchema(driver, model)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	values := loukoum.Map{}
@@ -47,28 +37,22 @@ func save(ctx context.Context, driver Driver, model Model) (Queries, error) {
 
 	err = generateSaveQuery(schema, model, hasPK, &returning, &values)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	builder, err := getSaveBuilder(driver, schema, model, pk, hasPK, id, &returning, &values)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	queries = append(queries, NewQuery(builder))
-	defer func() {
-		Log(driver, queries, time.Since(start))
-	}()
-
-	query, args := builder.NamedQuery()
-	err = exec(ctx, driver, query, args, model)
+	err = Exec(ctx, driver, builder, model)
 
 	// Ignore no rows error if returning is empty.
 	if IsErrNoRows(err) && len(returning) == 0 {
-		return queries, nil
+		return nil
 	}
 
-	return queries, err
+	return err
 }
 
 func generateSaveQuery(schema *Schema, model Model, hasPK bool, returning *[]string, values *loukoum.Map) error {

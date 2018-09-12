@@ -2,13 +2,11 @@ package sqlxx_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"github.com/ulule/loukoum"
-	"github.com/ulule/loukoum/format"
 
 	"github.com/ulule/sqlxx"
 )
@@ -26,26 +24,23 @@ func TestDelete_DeleteOwl(t *testing.T) {
 
 		err := sqlxx.Save(ctx, driver, owl)
 		is.NoError(err)
+		is.NotEmpty(owl.ID)
+
 		id := owl.ID
 
-		queries, err := sqlxx.DeleteWithQueries(ctx, driver, owl)
+		err = sqlxx.Delete(ctx, driver, owl)
 		is.NoError(err)
-		is.NotNil(queries)
-		is.Len(queries, 1)
-		query := queries[0]
-		expected := fmt.Sprintf("DELETE FROM ztp_owl WHERE (id = %s)", format.Int(owl.ID))
-		is.Equal(expected, query.Raw)
-		expected = "DELETE FROM ztp_owl WHERE (id = :arg_1)"
-		is.Equal(expected, query.Query)
-		is.Len(query.Args, 1)
-		is.Equal(id, query.Args["arg_1"])
 
-		check := loukoum.Select("COUNT(*)").From("ztp_owl").Where(loukoum.Condition("name").Equal("Blake"))
-		count := -1
-		err = sqlxx.Exec(ctx, driver, check, &count)
+		query := loukoum.Select("COUNT(*)").From("ztp_owl").Where(loukoum.Condition("id").Equal(id))
+		count, err := sqlxx.Count(ctx, driver, query)
+		is.NoError(err)
+		is.Equal(int64(0), count)
+
+		query = loukoum.Select("COUNT(*)").From("ztp_owl").Where(loukoum.Condition("name").Equal("Blake"))
+		count, err = sqlxx.Count(ctx, driver, query)
 		is.NoError(err)
 		is.NoError(err)
-		is.Equal(0, count)
+		is.Equal(int64(0), count)
 
 	})
 }
@@ -63,10 +58,10 @@ func TestDelete_ArchiveOwl(t *testing.T) {
 
 		err := sqlxx.Save(ctx, driver, owl)
 		is.NoError(err)
+		is.NotEmpty(owl.ID)
 
-		queries, err := sqlxx.ArchiveWithQueries(ctx, driver, owl)
+		err = sqlxx.Archive(ctx, driver, owl)
 		is.Error(err)
-		is.Nil(queries)
 		is.Equal(sqlxx.ErrSchemaDeletedKey, errors.Cause(err))
 
 	})
@@ -80,8 +75,10 @@ func TestDelete_DeleteMeow(t *testing.T) {
 		cat := &Cat{
 			Name: "Wolfram",
 		}
+
 		err := sqlxx.Save(ctx, driver, cat)
 		is.NoError(err)
+		is.NotEmpty(cat.ID)
 
 		meow := &Meow{
 			Body:  "meow meow meow?",
@@ -90,26 +87,17 @@ func TestDelete_DeleteMeow(t *testing.T) {
 
 		err = sqlxx.Save(ctx, driver, meow)
 		is.NoError(err)
+		is.NotEmpty(meow.Hash)
+
 		id := meow.Hash
 
-		queries, err := sqlxx.DeleteWithQueries(ctx, driver, meow)
+		err = sqlxx.Delete(ctx, driver, meow)
 		is.NoError(err)
-		is.NotNil(queries)
-		is.Len(queries, 1)
-		query := queries[0]
-		expected := fmt.Sprintf("DELETE FROM ztp_meow WHERE (hash = %s)", format.String(meow.Hash))
-		is.Equal(expected, query.Raw)
-		expected = "DELETE FROM ztp_meow WHERE (hash = :arg_1)"
-		is.Equal(expected, query.Query)
-		is.Len(query.Args, 1)
-		is.Equal(id, query.Args["arg_1"])
 
-		check := loukoum.Select("COUNT(*)").From("ztp_meow").Where(loukoum.Condition("hash").Equal(id))
-		count := -1
-		err = sqlxx.Exec(ctx, driver, check, &count)
+		query := loukoum.Select("COUNT(*)").From("ztp_meow").Where(loukoum.Condition("hash").Equal(id))
+		count, err := sqlxx.Count(ctx, driver, query)
 		is.NoError(err)
-		is.NoError(err)
-		is.Equal(0, count)
+		is.Equal(int64(0), count)
 
 	})
 }
@@ -122,8 +110,10 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 		cat := &Cat{
 			Name: "Wolfram",
 		}
+
 		err := sqlxx.Save(ctx, driver, cat)
 		is.NoError(err)
+		is.NotEmpty(cat.ID)
 
 		meow := &Meow{
 			Body:  "meow! meow meow meow ?!",
@@ -132,38 +122,23 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 
 		err = sqlxx.Save(ctx, driver, meow)
 		is.NoError(err)
+		is.NotEmpty(meow.Hash)
+
 		id := meow.Hash
 
-		queries, err := sqlxx.ArchiveWithQueries(ctx, driver, meow)
+		err = sqlxx.Archive(ctx, driver, meow)
 		is.NoError(err)
-		is.NotNil(queries)
-		is.Len(queries, 1)
-		query := queries[0]
-		expected := fmt.Sprintf(
-			"UPDATE ztp_meow SET deleted = NOW() WHERE (hash = %s) RETURNING deleted",
-			format.String(meow.Hash),
-		)
-		is.Equal(expected, query.Raw)
-		expected = "UPDATE ztp_meow SET deleted = NOW() WHERE (hash = :arg_1) RETURNING deleted"
-		is.Equal(expected, query.Query)
-		is.Len(query.Args, 1)
-		is.Equal(id, query.Args["arg_1"])
 
-		count := -1
-		check := loukoum.Select("COUNT(*)").From("ztp_meow").
-			Where(loukoum.Condition("hash").Equal(id))
-		err = sqlxx.Exec(ctx, driver, check, &count)
+		query := loukoum.Select("COUNT(*)").From("ztp_meow").Where(loukoum.Condition("hash").Equal(id))
+		count, err := sqlxx.Count(ctx, driver, query)
 		is.NoError(err)
-		is.NoError(err)
-		is.Equal(1, count)
+		is.Equal(int64(1), count)
 
-		count = -1
-		check = loukoum.Select("COUNT(*)").From("ztp_meow").
+		query = loukoum.Select("COUNT(*)").From("ztp_meow").
 			Where(loukoum.Condition("hash").Equal(id)).And(loukoum.Condition("deleted").IsNull(true))
-		err = sqlxx.Exec(ctx, driver, check, &count)
+		count, err = sqlxx.Count(ctx, driver, query)
 		is.NoError(err)
-		is.NoError(err)
-		is.Equal(0, count)
+		is.Equal(int64(0), count)
 
 	})
 }

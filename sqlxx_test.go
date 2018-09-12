@@ -2161,7 +2161,7 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	return fixtures
 }
 
-func SortExoCloudDirectories1(source []*ExoDirectory, directories *[]ExoDirectory) {
+func sortExoCloudDirectories1(source []*ExoDirectory, directories *[]ExoDirectory) {
 	values := make([]ExoDirectory, 0, len(*directories))
 
 	for x := range source {
@@ -2178,7 +2178,7 @@ func SortExoCloudDirectories1(source []*ExoDirectory, directories *[]ExoDirector
 	}
 }
 
-func SortExoCloudDirectories2(source []*ExoDirectory, directories *[]*ExoDirectory) {
+func sortExoCloudDirectories2(source []*ExoDirectory, directories *[]*ExoDirectory) {
 	values := make([]*ExoDirectory, 0, len(*directories))
 
 	for x := range source {

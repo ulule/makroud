@@ -14,62 +14,45 @@ import (
 
 // Preload preloads related fields.
 func Preload(ctx context.Context, driver Driver, out interface{}, paths ...string) error {
-	_, err := preload(ctx, driver, out, paths...)
+	err := preload(ctx, driver, out, paths...)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot execute preload")
 	}
 	return nil
 }
 
-// PreloadWithQueries preloads related fields and returns performed queries.
-func PreloadWithQueries(ctx context.Context, driver Driver, out interface{}, paths ...string) (Queries, error) {
-	queries, err := preload(ctx, driver, out, paths...)
-	if err != nil {
-		return queries, errors.Wrap(err, "sqlxx: cannot execute preload")
-	}
-	return queries, nil
-}
-
 // preload preloads related fields.
-func preload(ctx context.Context, driver Driver, dest interface{}, paths ...string) (Queries, error) {
+func preload(ctx context.Context, driver Driver, dest interface{}, paths ...string) error {
 	if driver == nil {
-		return nil, errors.WithStack(ErrInvalidDriver)
+		return errors.WithStack(ErrInvalidDriver)
 	}
 
 	if !reflectx.IsPointer(dest) {
-		return nil, errors.Wrapf(ErrPointerRequired, "cannot preload %T", dest)
+		return errors.Wrapf(ErrPointerRequired, "cannot preload %T", dest)
 	}
 
 	groups := getPreloadGroupPath(paths)
 	if len(groups) == 0 {
-		return nil, nil
+		return nil
 	}
-
-	queries := Queries{}
 
 	for i, paths := range groups {
 		if i == 0 {
-
 			// Execute a preload of first level.
-			q, err := executePreloadHandler(ctx, driver, dest, paths)
+			err := executePreloadHandler(ctx, driver, dest, paths)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			queries = append(queries, q...)
-
 		} else {
-
 			// Otherwise, execute a preload with a walker for other levels.
-			q, err := executePreloadWalker(ctx, driver, dest, paths)
+			err := executePreloadWalker(ctx, driver, dest, paths)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			queries = append(queries, q...)
-
 		}
 	}
 
-	return queries, nil
+	return nil
 }
 
 type preloadGroupPath map[string]preloadPath
@@ -171,11 +154,11 @@ func getPreloadHandler(ctx context.Context, driver Driver, dest interface{}) (*p
 // If you need to execute a preload on the second level (and/or after),
 // please use executePreloadWalker instead.
 func executePreloadHandler(ctx context.Context, driver Driver,
-	dest interface{}, paths map[string]preloadPath) (queries Queries, err error) {
+	dest interface{}, paths map[string]preloadPath) (err error) {
 
 	handler, err := getPreloadHandler(ctx, driver, dest)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	wg := sync.WaitGroup{}
@@ -186,16 +169,15 @@ func executePreloadHandler(ctx context.Context, driver Driver,
 	for _, path := range paths {
 
 		if path.Level() != 1 {
-			return nil, errors.Wrapf(ErrPreloadInvalidPath, "cannot execute preload of '%s'", path.Path())
+			return errors.Wrapf(ErrPreloadInvalidPath, "cannot execute preload of '%s'", path.Path())
 		}
 
 		reference, ok := associations[path.Name()]
 		if !ok {
-			return nil, errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", path.Path())
+			return errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", path.Path())
 		}
 
 		go func(path preloadPath) {
-
 			perr := handler.preload(reference)
 			if perr != nil {
 				mutex.Lock()
@@ -204,21 +186,18 @@ func executePreloadHandler(ctx context.Context, driver Driver,
 					err = perr
 				}
 			}
-
 			wg.Done()
-
 		}(path)
 	}
 
 	wg.Wait()
 
-	// TODO Handle queries...
-	return queries, err
+	return err
 }
 
 // executePreloadWalker will executes a preload from the second level and beyond...
 func executePreloadWalker(ctx context.Context, driver Driver,
-	dest interface{}, paths map[string]preloadPath) (queries Queries, err error) {
+	dest interface{}, paths map[string]preloadPath) (err error) {
 
 	wg := sync.WaitGroup{}
 	mutex := sync.Mutex{}
@@ -231,18 +210,8 @@ func executePreloadWalker(ctx context.Context, driver Driver,
 			defer walker.Close()
 
 			werr := walker.Find(path.Parent(), func(values interface{}) error {
-				q, perr := preload(ctx, driver, values, path.Name())
-				if perr != nil {
-					return perr
-				}
-
-				mutex.Lock()
-				defer mutex.Unlock()
-
-				queries = append(queries, q...)
-				return nil
+				return preload(ctx, driver, values, path.Name())
 			})
-
 			if werr != nil {
 				mutex.Lock()
 				defer mutex.Unlock()
@@ -258,7 +227,7 @@ func executePreloadWalker(ctx context.Context, driver Driver,
 
 	wg.Wait()
 
-	return queries, err
+	return err
 }
 
 type preloadHandler struct {
