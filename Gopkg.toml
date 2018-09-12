@@ -13,29 +13,29 @@ ignored = [
   go-tests = true
 
 [[constraint]]
-  name = "github.com/jmoiron/sqlx"
-  revision = "cf35089a197953c69420c8d0cecda90809764b1d"
+  name = "github.com/ulule/sqlx"
+  revision = "48295ab65cb8f057910839456253b2ad6a9e7f52"
 
 [[constraint]]
-  name = "github.com/heetch/sqalx"
-  revision = "e40536072f95235446bdd63325902f82373774cc"
+  name = "github.com/ulule/sqalx"
+  revision = "d9cae201d6f9efafb7c8b76038c077c5d203f161"
 
 [[constraint]]
   name = "github.com/lib/pq"
-  revision = "b2004221932bd6b13167ef654c81cffac36f7537"
-
-[[constraint]]
-  name = "github.com/oleiade/reflections"
-  revision = "0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb"
+  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
 
 [[constraint]]
   name = "github.com/serenize/snaker"
   revision = "a683aaf2d516deecd70cad0c72e3ca773ecfcef0"
 
 [[constraint]]
-  name = "github.com/thoas/go-funk"
-  revision = "54489e5ff3900f4618607d32d680f8cf112bcb18"
+  name = "github.com/ulule/loukoum"
+  revision = "79401924b612bdf526ab9e1b55483103ec4429fc"
 
 [[override]]
   name = "github.com/satori/go.uuid"
   revision = "36e9d2ebbde5e3f13ab2e25625fd453271d6522e"
+
+[[constraint]]
+  name = "github.com/oklog/ulid"
+  revision = "3928b679b154aad7ea1db5352e4277e4e448b324"

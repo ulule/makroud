@@ -1,135 +1,76 @@
 package sqlxx
 
 import (
-	"fmt"
-	"time"
+	"context"
 
 	"github.com/pkg/errors"
+	"github.com/ulule/loukoum"
 )
 
 // Delete deletes the given instance.
-func Delete(driver Driver, out interface{}) error {
-	_, err := DeleteWithQueries(driver, out)
-	return err
-}
-
-// DeleteWithQueries deletes the given instance and returns performed queries.
-func DeleteWithQueries(driver Driver, out interface{}) (Queries, error) {
-	queries, err := remove(driver, out)
+func Delete(ctx context.Context, driver Driver, model Model) error {
+	err := remove(ctx, driver, model)
 	if err != nil {
-		return queries, errors.Wrap(err, "sqlxx: cannot execute delete")
+		return errors.Wrap(err, "sqlxx: cannot execute delete")
 	}
-	return queries, nil
-}
-
-// SoftDelete is an alias for Archive.
-func SoftDelete(driver Driver, out interface{}, fieldName string) error {
-	return Archive(driver, out, fieldName)
-}
-
-// SoftDeleteWithQueries is an alias for Archive.
-func SoftDeleteWithQueries(driver Driver, out interface{}, fieldName string) (Queries, error) {
-	return ArchiveWithQueries(driver, out, fieldName)
+	return nil
 }
 
 // Archive archives the given instance.
-func Archive(driver Driver, out interface{}, fieldName string) error {
-	_, err := ArchiveWithQueries(driver, out, fieldName)
-	return err
-}
-
-// ArchiveWithQueries archives the given instance and returns performed queries.
-func ArchiveWithQueries(driver Driver, out interface{}, fieldName string) (Queries, error) {
-	queries, err := archive(driver, out, fieldName)
+func Archive(ctx context.Context, driver Driver, model Model) error {
+	err := archive(ctx, driver, model)
 	if err != nil {
-		return queries, errors.Wrap(err, "sqlxx: cannot execute archive")
+		return errors.Wrap(err, "sqlxx: cannot execute archive")
 	}
-	return queries, nil
+	return nil
 }
 
-func remove(driver Driver, out interface{}) (Queries, error) {
+func remove(ctx context.Context, driver Driver, model Model) error {
 	if driver == nil {
-		return nil, ErrInvalidDriver
+		return errors.WithStack(ErrInvalidDriver)
 	}
 
-	schema, err := GetSchema(out)
+	schema, err := GetSchema(driver, model)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	pkField := schema.PrimaryKeyField
-
-	pk, err := GetFieldValueInt64(out, pkField.FieldName)
+	pk := schema.PrimaryKey()
+	id, err := pk.Value(model)
 	if err != nil {
-		return nil, err
+		return errors.Wrapf(err, "%T cannot be deleted", model)
 	}
 
-	if pk == int64(0) {
-		return nil, errors.Errorf("%v cannot be deleted (no primary key)", out)
-	}
+	builder := loukoum.Delete(schema.TableName()).
+		Where(loukoum.Condition(pk.ColumnName()).Equal(id))
 
-	query := fmt.Sprintf(`DELETE FROM %s WHERE %s = :%s`,
-		schema.TableName,
-		pkField.ColumnPath(),
-		pkField.ColumnName,
-	)
-
-	params := map[string]interface{}{
-		pkField.ColumnName: pk,
-	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	_, err = driver.NamedExec(query, params)
-	return queries, err
+	return Exec(ctx, driver, builder)
 }
 
-func archive(driver Driver, out interface{}, fieldName string) (Queries, error) {
+func archive(ctx context.Context, driver Driver, model Model) error {
 	if driver == nil {
-		return nil, ErrInvalidDriver
+		return errors.WithStack(ErrInvalidDriver)
 	}
 
-	schema, err := GetSchema(out)
+	schema, err := GetSchema(driver, model)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var (
-		pkField        = schema.PrimaryKeyField
-		deletedAtField = schema.Fields[fieldName]
-		now            = time.Now().UTC()
-	)
+	if !schema.HasDeletedKey() {
+		return errors.Wrapf(ErrSchemaDeletedKey, "%T doesn't support archive operation", model)
+	}
 
-	pk, err := GetFieldValueInt64(out, pkField.FieldName)
+	pk := schema.PrimaryKey()
+	id, err := pk.Value(model)
 	if err != nil {
-		return nil, err
+		return errors.Wrapf(err, "%T cannot be archived", model)
 	}
 
-	if pk == int64(0) {
-		return nil, errors.Errorf("%v cannot be archived (no primary key)", out)
-	}
+	builder := loukoum.Update(schema.TableName()).
+		Set(loukoum.Pair(schema.DeletedKeyName(), loukoum.Raw("NOW()"))).
+		Where(loukoum.Condition(pk.ColumnName()).Equal(id)).
+		Returning(schema.DeletedKeyName())
 
-	query := fmt.Sprintf(`UPDATE %s SET %s = :%s WHERE %s = :%s`,
-		schema.TableName,
-		deletedAtField.ColumnName,
-		deletedAtField.ColumnName,
-		pkField.ColumnPath(),
-		pkField.ColumnName,
-	)
-
-	params := map[string]interface{}{
-		deletedAtField.ColumnName: now,
-		pkField.ColumnName:        pk,
-	}
-
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	_, err = driver.NamedExec(query, params)
-	return queries, err
+	return Exec(ctx, driver, builder)
 }

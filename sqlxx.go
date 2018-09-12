@@ -1,145 +1,121 @@
 package sqlxx
 
 import (
-	"database/sql"
-	"fmt"
-	"os"
-	"sync"
-
-	"github.com/heetch/sqalx"
-	"github.com/jmoiron/sqlx"
+	"context"
+	"io"
 )
 
-var (
-	// Cache is the shared cache instance.
-	cache *Cache
-	// cacheDisabled is true if cache has been disabled
-	cacheDisabled bool
-)
-
-func init() {
-	if os.Getenv("SQLXX_DISABLE_CACHE") != "" {
-		cacheDisabled = true
-		return
-	}
-
-	if cache == nil {
-		cache = NewCache()
-	}
-}
-
-// AssociationType is an association type.
-type AssociationType uint8
-
-func (a AssociationType) String() string {
-	return map[AssociationType]string{
-		AssociationTypeUndefined:  "undefined",
-		AssociationTypeOne:        "one",
-		AssociationTypeMany:       "many",
-		AssociationTypeManyToMany: "many-to-many",
-	}[a]
-}
-
-// Association types
-const (
-	AssociationTypeUndefined = AssociationType(iota)
-	AssociationTypeOne
-	AssociationTypeMany
-	AssociationTypeManyToMany
-)
-
-// Constants
-const (
-	StructTagName       = "sqlxx"
-	SQLXStructTagName   = "db"
-	StructTagPrimaryKey = "primary_key"
-	StructTagIgnored    = "ignored"
-	StructTagDefault    = "default"
-	StructTagForeignKey = "fk"
-	StructTagSQLXField  = "field"
-)
-
-// PrimaryKeyFieldName is the default field name for primary keys
-const PrimaryKeyFieldName = "ID"
-
-// SupportedTags are supported tags.
-var SupportedTags = []string{
-	StructTagName,
-	SQLXStructTagName,
-}
-
-// TagsMapping is the reflekt.Tags mapping to handle struct tag without key:value format
-var TagsMapping = map[string]string{
-	"db": "field",
-}
-
-// ErrInvalidDriver is returned when given driver is undefined.
-var ErrInvalidDriver = fmt.Errorf("a sqlxx driver is required")
-
-// Driver can either be a *sqlx.DB or a *sqlx.Tx.
+// Driver is a high level abstraction of a database connection or a transaction.
 type Driver interface {
-	sqlx.Execer
-	sqlx.Queryer
-	sqlx.Preparer
-	BindNamed(query string, arg interface{}) (string, []interface{}, error)
-	DriverName() string
-	Get(dest interface{}, query string, args ...interface{}) error
-	MustExec(query string, args ...interface{}) sql.Result
-	NamedExec(query string, arg interface{}) (sql.Result, error)
-	NamedQuery(query string, arg interface{}) (*sqlx.Rows, error)
-	PrepareNamed(query string) (*sqlx.NamedStmt, error)
-	Preparex(query string) (*sqlx.Stmt, error)
-	Rebind(query string) string
-	Select(dest interface{}, query string, args ...interface{}) error
+
+	// ----------------------------------------------------------------------------
+	// Query
+	// ----------------------------------------------------------------------------
+
+	// Exec executes a named statement using given arguments.
+	Exec(ctx context.Context, query string, args ...interface{}) error
+
+	// MustExec executes a named statement using given arguments.
+	// If an error has occurred, it panics.
+	MustExec(ctx context.Context, query string, args ...interface{})
+
+	// Query executes a named statement that returns rows using given arguments.
+	Query(ctx context.Context, query string, arg interface{}) (Rows, error)
+
+	// MustQuery executes a named statement that returns rows using given arguments.
+	// If an error has occurred, it panics.
+	MustQuery(ctx context.Context, query string, arg interface{}) Rows
+
+	// Prepare creates a prepared statement for later queries or executions.
+	// Multiple queries or executions may be run concurrently from the returned statement.
+	Prepare(ctx context.Context, query string) (Statement, error)
+
+	// FindOne executes this named statement to fetch one record.
+	// If there is no row, an error is returned.
+	// Output must be a pointer to a value.
+	FindOne(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+
+	// FindAll executes this named statement to fetch a list of records.
+	// Output must be a pointer to a slice of value.
+	FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error
+
+	// ----------------------------------------------------------------------------
+	// Connection
+	// ----------------------------------------------------------------------------
+
+	// Close closes the underlying connection.
 	Close() error
+
+	// Ping verifies that the underlying connection is healthy.
 	Ping() error
-	Beginx() (sqalx.Node, error)
+
+	// DriverName returns the driver name used by this driver.
+	DriverName() string
+
+	// ----------------------------------------------------------------------------
+	// Transaction
+	// ----------------------------------------------------------------------------
+
+	// Begin a new transaction.
+	Begin() (Driver, error)
+
+	// Rollback the associated transaction.
 	Rollback() error
+
+	// Commit the associated transaction.
 	Commit() error
+
+	// ----------------------------------------------------------------------------
+	// System
+	// ----------------------------------------------------------------------------
+
+	close(closer io.Closer, flags map[string]string)
+	hasCache() bool
+	cache() *cache
+	logger() Logger
+	entropy() io.Reader
 }
 
-// Model represents a database table.
-type Model interface {
-	TableName() string
+// A Statement from prepare.
+type Statement interface {
+	// Close closes the statement.
+	Close() error
+	// Exec executes this named statement using the struct passed.
+	Exec(ctx context.Context, arg interface{}) error
+	// QueryRow executes this named statement returning a single row.
+	QueryRow(ctx context.Context, arg interface{}) (Row, error)
+	// QueryRows executes this named statement returning a list of rows.
+	QueryRows(ctx context.Context, arg interface{}) (Rows, error)
+	// FindOne executes this named statement to fetch one record.
+	// If there is no row, an error is returned.
+	// Output must be a pointer to a value.
+	FindOne(ctx context.Context, dest interface{}, arg interface{}) error
+	// FindAll executes this named statement to fetch a list of records.
+	// Output must be a pointer to a slice of value.
+	FindAll(ctx context.Context, dest interface{}, arg interface{}) error
 }
 
-// Cache is sqlxx cache.
-type Cache struct {
-	mu      sync.RWMutex
-	schemas map[string]Schema
+// A Row is a simple row.
+type Row interface {
+	// Write copies the columns in the current row into the given map.
+	Write(dest map[string]interface{}) error
 }
 
-// NewCache returns new cache instance.
-func NewCache() *Cache {
-	return &Cache{
-		schemas: map[string]Schema{},
-	}
-}
-
-// SetSchema caches the given schema.
-func (c *Cache) SetSchema(schema Schema) {
-	c.mu.Lock()
-	c.schemas[schema.TableName] = schema
-	c.mu.Unlock()
-}
-
-// Flush flushs the cache
-func (c *Cache) Flush() {
-	c.mu.Lock()
-	c.schemas = map[string]Schema{}
-	c.mu.Unlock()
-}
-
-// GetSchema returns the given schema from cache.
-// If the given schema does not exists, returns false as bool.
-func (c *Cache) GetSchema(model Model) (Schema, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	schema, ok := c.schemas[model.TableName()]
-	if !ok {
-		return Schema{}, false
-	}
-
-	return schema, true
+// A Rows is an iteratee of a list of records.
+type Rows interface {
+	// Next prepares the next result row for reading with the MapScan method.
+	// It returns true on success, or false if there is no next result row or an error
+	// happened while preparing it.
+	// Err should be consulted to distinguish between the two cases.
+	// Every call to MapScan, even the first one, must be preceded by a call to Next.
+	Next() bool
+	// Close closes the Rows, preventing further enumeration/iteration.
+	// If Next is called and returns false and there are no further result sets, the Rows are closed automatically
+	// and it will suffice to check the result of Err.
+	Close() error
+	// Err returns the error, if any, that was encountered during iteration.
+	// Err may be called after an explicit or implicit Close.
+	Err() error
+	// Write copies the columns in the current row into the given map.
+	Write(dest map[string]interface{}) error
 }

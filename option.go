@@ -1,5 +1,9 @@
 package sqlxx
 
+import (
+	"github.com/pkg/errors"
+)
+
 // Option is used to define Client configuration.
 type Option interface {
 	apply(*clientOptions) error
@@ -54,7 +58,6 @@ func Database(dbname string) Option {
 // EnableSSL will configure the Client to enable SSL mode.
 func EnableSSL() Option {
 	return option(func(options *clientOptions) error {
-		// NOTE Some refactoring may be required to allow further options like CA certificate, etc...
 		options.sslMode = "require"
 		return nil
 	})
@@ -97,6 +100,33 @@ func MaxOpenConnections(maximum int) Option {
 func MaxIdleConnections(maximum int) Option {
 	return option(func(options *clientOptions) error {
 		options.maxIdleConnections = maximum
+		return nil
+	})
+}
+
+// Cache will configure if the Client should use a cache.
+func Cache(enabled bool) Option {
+	return option(func(options *clientOptions) error {
+		options.withCache = enabled
+		return nil
+	})
+}
+
+// WithLogger will attach a logger on Client.
+func WithLogger(logger Logger) Option {
+	return option(func(options *clientOptions) error {
+		if logger == nil {
+			return errors.New("sqlxx: a logger instance is required")
+		}
+		options.logger = logger
+		return nil
+	})
+}
+
+// EnableSavepoint will enable the SAVEPOINT postgresql feature.
+func EnableSavepoint() Option {
+	return option(func(options *clientOptions) error {
+		options.savepointEnabled = true
 		return nil
 	})
 }

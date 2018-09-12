@@ -1,50 +1,126 @@
 package sqlxx_test
 
 import (
-	"fmt"
+	"context"
 	"testing"
+	"time"
 
-	assert "github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
+	"github.com/ulule/loukoum"
 
 	"github.com/ulule/sqlxx"
 )
 
-func TestSave_Save(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
+func TestSave_Owl(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
 
-	user := User{Username: "thoas"}
+		name := "Kika"
+		featherColor := "white"
+		favoriteFood := "Tomato"
+		owl := &Owl{
+			Name:         name,
+			FeatherColor: featherColor,
+			FavoriteFood: favoriteFood,
+		}
 
-	queries, err := sqlxx.SaveWithQueries(env.driver, &user)
-	assert.NoError(t, err)
-	assert.NotNil(t, queries)
-	assert.Len(t, queries, 1)
-	assert.Contains(t, queries[0].Query, "INSERT INTO")
+		err := sqlxx.Save(ctx, driver, owl)
+		is.NoError(err)
+		is.NotEmpty(owl.ID)
 
-	assert.NotZero(t, user.ID)
-	assert.Equal(t, true, user.IsActive)
-	assert.NotZero(t, user.UpdatedAt)
+		id := owl.ID
 
-	user.Username = "gilles"
+		query := loukoum.Select("*").From("ztp_owl").Where(loukoum.Condition("id").Equal(id))
+		last := &Owl{}
+		err = sqlxx.Exec(ctx, driver, query, last)
+		is.NoError(err)
+		is.Equal(name, last.Name)
+		is.Equal(featherColor, last.FeatherColor)
+		is.Equal(favoriteFood, last.FavoriteFood)
 
-	queries, err = sqlxx.SaveWithQueries(env.driver, &user)
-	assert.NoError(t, err)
-	assert.Contains(t, queries[0].Query, "UPDATE users SET")
-	assert.Contains(t, queries[0].Query, "username = :username")
+		favoriteFood = "Chocolate Cake"
+		owl.FavoriteFood = favoriteFood
 
-	m := map[string]interface{}{"username": "gilles"}
+		err = sqlxx.Save(ctx, driver, owl)
+		is.NoError(err)
 
-	query := `
-	SELECT count(*)
-	FROM %s
-	WHERE username = :username
-	`
+		query = loukoum.Select("*").From("ztp_owl").Where(loukoum.Condition("id").Equal(id))
+		last = &Owl{}
+		err = sqlxx.Exec(ctx, driver, query, last)
+		is.NoError(err)
+		is.Equal(name, last.Name)
+		is.Equal(featherColor, last.FeatherColor)
+		is.Equal(favoriteFood, last.FavoriteFood)
 
-	stmt, err := env.driver.PrepareNamed(fmt.Sprintf(query, user.TableName()))
-	assert.Nil(t, err)
+	})
+}
 
-	var count int
-	err = stmt.Get(&count, m)
-	assert.Nil(t, err)
-	assert.Equal(t, 1, count)
+func TestSave_Meow(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		cat := &Cat{
+			Name: "Hemlock",
+		}
+
+		err := sqlxx.Save(ctx, driver, cat)
+		is.NoError(err)
+		is.NotEmpty(cat.ID)
+
+		t0 := time.Now()
+		body := "meow"
+		meow := &Meow{
+			Body:  body,
+			CatID: cat.ID,
+		}
+
+		err = sqlxx.Save(ctx, driver, meow)
+		is.NoError(err)
+		is.NotEmpty(meow.Hash)
+		is.True(t0.Before(meow.CreatedAt))
+		is.True(t0.Before(meow.UpdatedAt))
+		is.True(time.Now().After(meow.CreatedAt))
+		is.True(time.Now().After(meow.UpdatedAt))
+		is.False(meow.DeletedAt.Valid)
+
+		hash := meow.Hash
+
+		query := loukoum.Select("*").From("ztp_meow").Where(loukoum.Condition("hash").Equal(hash))
+		last := &Meow{}
+		err = sqlxx.Exec(ctx, driver, query, last)
+		is.NoError(err)
+		is.Equal(body, last.Body)
+		is.Equal(cat.ID, last.CatID)
+		is.Equal(meow.CreatedAt.UnixNano(), last.CreatedAt.UnixNano())
+		is.Equal(meow.UpdatedAt.UnixNano(), last.UpdatedAt.UnixNano())
+		is.Equal(meow.DeletedAt.Valid, last.DeletedAt.Valid)
+		is.Equal(meow.DeletedAt.Time.UnixNano(), last.DeletedAt.Time.UnixNano())
+
+		t1 := time.Now()
+		body = "meow meow!"
+		meow.Body = body
+
+		err = sqlxx.Save(ctx, driver, meow)
+		is.NoError(err)
+		is.True(t0.Before(meow.CreatedAt))
+		is.True(t0.Before(meow.UpdatedAt))
+		is.True(t1.After(meow.CreatedAt))
+		is.True(t1.Before(meow.UpdatedAt))
+		is.True(time.Now().After(meow.CreatedAt))
+		is.True(time.Now().After(meow.UpdatedAt))
+
+		query = loukoum.Select("*").From("ztp_meow").Where(loukoum.Condition("hash").Equal(hash))
+		last = &Meow{}
+		err = sqlxx.Exec(ctx, driver, query, last)
+		is.NoError(err)
+		is.Equal(body, last.Body)
+		is.Equal(cat.ID, last.CatID)
+		is.Equal(meow.CreatedAt.UnixNano(), last.CreatedAt.UnixNano())
+		is.Equal(meow.UpdatedAt.UnixNano(), last.UpdatedAt.UnixNano())
+		is.Equal(meow.DeletedAt.Valid, last.DeletedAt.Valid)
+		is.Equal(meow.DeletedAt.Time.UnixNano(), last.DeletedAt.Time.UnixNano())
+
+	})
 }

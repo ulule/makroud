@@ -2,177 +2,424 @@ package sqlxx
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 
-	"github.com/oleiade/reflections"
 	"github.com/pkg/errors"
+
+	"github.com/ulule/sqlxx/reflectx"
 )
 
 // Schema is a model schema.
 type Schema struct {
-	Model           Model
-	ModelName       string
-	TableName       string
-	PrimaryKeyField Field
-	Fields          map[string]Field
-	Associations    map[string]Field
+	model        Model
+	modelName    string
+	tableName    string
+	pk           PrimaryKey
+	fields       map[string]Field
+	references   map[string]ForeignKey
+	associations map[string]Reference
+	createdKey   *Field
+	updatedKey   *Field
+	deletedKey   *Field
 }
 
-// FieldNames return all field names.
-func (s Schema) FieldNames() []string {
-	var names []string
-	for _, f := range s.Fields {
-		names = append(names, f.FieldName)
+// Model returns the schema model.
+func (schema Schema) Model() Model {
+	return schema.model
+}
+
+// ModelName returns the schema model name.
+func (schema Schema) ModelName() string {
+	return schema.modelName
+}
+
+// TableName returns the schema table name.
+func (schema Schema) TableName() string {
+	return schema.tableName
+}
+
+// PrimaryKey returns the schema primary key.
+func (schema Schema) PrimaryKey() PrimaryKey {
+	return schema.pk
+}
+
+// HasCreatedKey returns if a created key is defined for current schema.
+func (schema Schema) HasCreatedKey() bool {
+	return schema.createdKey != nil
+}
+
+// CreatedKeyPath returns schema created key column path.
+func (schema Schema) CreatedKeyPath() string {
+	if schema.HasUpdatedKey() {
+		return schema.createdKey.ColumnPath()
 	}
-	return names
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaCreatedKey))
+}
+
+// CreatedKeyName returns schema created key column name.
+func (schema Schema) CreatedKeyName() string {
+	if schema.HasUpdatedKey() {
+		return schema.createdKey.ColumnName()
+	}
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaCreatedKey))
+}
+
+// HasUpdatedKey returns if an updated key is defined for current schema.
+func (schema Schema) HasUpdatedKey() bool {
+	return schema.updatedKey != nil
+}
+
+// UpdatedKeyPath returns schema updated key column path.
+func (schema Schema) UpdatedKeyPath() string {
+	if schema.HasUpdatedKey() {
+		return schema.updatedKey.ColumnPath()
+	}
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaUpdatedKey))
+}
+
+// UpdatedKeyName returns schema deleted key column name.
+func (schema Schema) UpdatedKeyName() string {
+	if schema.HasUpdatedKey() {
+		return schema.updatedKey.ColumnName()
+	}
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaUpdatedKey))
+}
+
+// HasDeletedKey returns if a deleted key is defined for current schema.
+func (schema Schema) HasDeletedKey() bool {
+	return schema.deletedKey != nil
+}
+
+// DeletedKeyPath returns schema deleted key column path.
+func (schema Schema) DeletedKeyPath() string {
+	if schema.HasDeletedKey() {
+		return schema.deletedKey.ColumnPath()
+	}
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaDeletedKey))
+}
+
+// DeletedKeyName returns schema deleted key column name.
+func (schema Schema) DeletedKeyName() string {
+	if schema.HasDeletedKey() {
+		return schema.deletedKey.ColumnName()
+	}
+	panic(fmt.Sprint("sqlxx: ", ErrSchemaDeletedKey))
 }
 
 // Columns returns schema columns without table prefix.
-func (s Schema) Columns() Columns {
-	return s.columns(false)
+func (schema Schema) Columns() Columns {
+	return schema.columns(false)
 }
 
 // ColumnPaths returns schema column with table prefix.
-func (s Schema) ColumnPaths() Columns {
-	return s.columns(true)
+func (schema Schema) ColumnPaths() Columns {
+	return schema.columns(true)
 }
 
 // columns generates column slice.
-func (s Schema) columns(withTable bool) Columns {
+func (schema Schema) columns(withTable bool) Columns {
 	columns := Columns{}
-	for _, f := range s.Fields {
+	if withTable {
+		columns = append(columns, schema.pk.ColumnPath())
+	} else {
+		columns = append(columns, schema.pk.ColumnName())
+	}
+	for _, field := range schema.fields {
 		if withTable {
-			columns = append(columns, f.ColumnPath())
+			columns = append(columns, field.ColumnPath())
 		} else {
-			columns = append(columns, f.ColumnName)
+			columns = append(columns, field.ColumnName())
 		}
 	}
 	return columns
 }
 
-// WhereColumns returns where clause with the given params without table prefix.
-func (s Schema) WhereColumns(params map[string]interface{}) Conditions {
-	return s.whereColumns(params, false)
-}
-
-// WhereColumnPaths returns where clause with the given params with table prefix.
-func (s Schema) WhereColumnPaths(params map[string]interface{}) Conditions {
-	return s.whereColumns(params, true)
-}
-
-// whereColumns generates where clause for the given params.
-func (s Schema) whereColumns(params map[string]interface{}, withTable bool) Conditions {
-	wheres := Conditions{}
-	for k, v := range params {
-		column := k
-		if withTable {
-			column = fmt.Sprintf("%s.%s", s.TableName, k)
+// WriteModel will try to updates given model from sqlx mapper.
+func (schema Schema) WriteModel(mapper Mapper, model Model) error {
+	if len(mapper) == 0 {
+		return nil
+	}
+	for key, value := range mapper {
+		if schema.pk.ColumnName() == key || schema.pk.ColumnPath() == key {
+			err := reflectx.UpdateFieldValue(model, schema.pk.Field.FieldName(), value)
+			if err != nil {
+				return err
+			}
+			continue
 		}
-		if reflect.Indirect(reflect.ValueOf(v)).Kind() == reflect.Slice {
-			wheres = append(wheres, fmt.Sprintf("%s IN (:%s)", column, k))
-		} else {
-			wheres = append(wheres, fmt.Sprintf("%s = :%s", column, k))
+
+		field, ok := schema.fields[key]
+		if ok {
+			err := reflectx.UpdateFieldValue(model, field.FieldName(), value)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		key = strings.TrimPrefix(key, fmt.Sprint(schema.TableName(), "."))
+		field, ok = schema.fields[key]
+		if ok {
+			err := reflectx.UpdateFieldValue(model, field.FieldName(), value)
+			if err != nil {
+				return err
+			}
+			continue
 		}
 	}
-	return wheres
+	return nil
 }
 
 // ----------------------------------------------------------------------------
 // Initializers
 // ----------------------------------------------------------------------------
 
-// GetSchema returns the given schema from global cache
-// If the given schema does not exists, returns false as bool.
-func GetSchema(itf interface{}) (Schema, error) {
-	var (
-		err    error
-		schema Schema
-		model  = ToModel(itf)
-	)
+// GetSchema returns the schema from given model.
+// If the schema does not exists, it returns an error.
+func GetSchema(driver Driver, model Model) (*Schema, error) {
+	return getSchema(driver, model, true)
+}
 
-	if cacheDisabled {
-		return newSchema(model)
+// getSchema returns the schema from given model.
+// If the schema does not exists, it returns an error.
+// If throughout is true, it will execute a full scan of given model:
+// this is a trick to allow circular import of model.
+func getSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
+	if !driver.hasCache() {
+		return newSchema(driver, model, throughout)
 	}
 
-	schema, found := cache.GetSchema(model)
-	if found {
+	schema := driver.cache().GetSchema(model)
+	if schema != nil {
 		return schema, nil
 	}
 
-	schema, err = newSchema(model)
+	schema, err := newSchema(driver, model, throughout)
 	if err != nil {
-		return schema, err
+		return nil, err
 	}
 
-	cache.SetSchema(schema)
+	if throughout {
+		driver.cache().SetSchema(schema)
+	}
 
 	return schema, nil
 }
 
-// newSchema returns model's table columns, extracted by reflection.
-// The returned map is modelFieldName -> table_name.column_name
-func newSchema(model Model) (Schema, error) {
-	schema := Schema{
-		Model:        model,
-		ModelName:    GetIndirectType(model).Name(),
-		TableName:    model.TableName(),
-		Fields:       map[string]Field{},
-		Associations: map[string]Field{},
+// defaultModelOpts returns the default model configuration.
+func defaultModelOpts() ModelOpts {
+	return ModelOpts{
+		PrimaryKey: "id",
+		CreatedKey: "created_at",
+		UpdatedKey: "updated_at",
+		DeletedKey: "deleted_at",
+	}
+}
+
+// analyzeModelOpts analyzes given model to extract it's configuration.
+func analyzeModelOpts(model Model) ModelOpts {
+	opts := defaultModelOpts()
+
+	mpk, ok := model.(interface {
+		PrimaryKey() string
+	})
+	if ok {
+		opts.PrimaryKey = mpk.PrimaryKey()
 	}
 
-	fields, err := reflections.Fields(model)
-	if err != nil {
-		return Schema{}, errors.Wrapf(err, "cannot use reflections to obtain %T fields", model)
+	cpk, ok := model.(interface {
+		CreatedKey() string
+	})
+	if ok {
+		opts.CreatedKey = cpk.CreatedKey()
 	}
+
+	upk, ok := model.(interface {
+		UpdatedKey() string
+	})
+	if ok {
+		opts.UpdatedKey = upk.UpdatedKey()
+	}
+
+	dpk, ok := model.(interface {
+		DeletedKey() string
+	})
+	if ok {
+		opts.DeletedKey = dpk.DeletedKey()
+	}
+
+	return opts
+}
+
+// newSchema returns a schema from given model, extracted by reflection.
+// The returned schema is a mapping of a model to table and columns.
+// For example: Model.FieldName -> table_name.column_name
+//
+// If throughout is true, it will execute a full and complete scan of given model:
+// this is a trick to allow circular import of model.
+func newSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
+	fields, err := reflectx.GetFields(model)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot use reflections to obtain %T fields", model)
+	}
+
+	modelOpts := analyzeModelOpts(model)
+
+	schema := &Schema{
+		model:        reflectx.CopyZero(model).(Model),
+		modelName:    reflectx.GetIndirectTypeName(model),
+		tableName:    model.TableName(),
+		fields:       map[string]Field{},
+		references:   map[string]ForeignKey{},
+		associations: map[string]Reference{},
+	}
+
+	relationships := map[string]*Field{}
+
+	err = getSchemaFields(driver, schema, model, modelOpts, fields, relationships)
+	if err != nil {
+		return nil, err
+	}
+
+	if throughout {
+		err = getSchemaAssociations(driver, schema, model, relationships)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = inferSchemaPrimaryKey(model, modelOpts, schema)
+	if err != nil {
+		return nil, err
+	}
+
+	return schema, nil
+}
+
+func getSchemaFields(driver Driver, schema *Schema, model Model, modelOpts ModelOpts,
+	fields []string, relationships map[string]*Field) error {
 
 	for _, name := range fields {
-		field, err := NewField(&schema, model, name)
+		field, err := NewField(driver, schema, model, name, modelOpts)
 		if err != nil {
-			return Schema{}, err
+			return err
 		}
 
-		if field.IsExcluded {
+		if field.IsExcluded() {
 			continue
 		}
 
-		if field.IsPrimaryKey {
-			schema.PrimaryKeyField = field
+		err = inferSchemaTimeKey(model, modelOpts, schema, field)
+		if err != nil {
+			return err
 		}
 
-		if !field.IsAssociation {
-			schema.Fields[field.FieldName] = field
+		if field.IsPrimaryKey() {
+			err = handleSchemaPrimaryKey(schema, model, name, field)
+			if err != nil {
+				return err
+			}
 			continue
 		}
 
-		_, ok := schema.Associations[field.FieldName]
+		if field.IsForeignKey() {
+			err = handleSchemaForeignKey(schema, model, name, field)
+			if err != nil {
+				return err
+			}
+		}
+
+		if !field.IsAssociation() {
+			schema.fields[field.ColumnName()] = *field
+			continue
+		}
+
+		relationships[name] = field
+	}
+
+	return nil
+}
+
+func handleSchemaPrimaryKey(schema *Schema, model Model, name string, field *Field) error {
+	pk, err := NewPrimaryKey(field)
+	if err != nil {
+		return errors.Wrapf(err, "cannot use '%s' as primary key for %T", name, model)
+	}
+	if schema.pk.TableName() != "" {
+		return errors.Errorf("%T must have only one primary key", model)
+	}
+	schema.pk = *pk
+	return nil
+}
+
+func handleSchemaForeignKey(schema *Schema, model Model, name string, field *Field) error {
+	fk, err := NewForeignKey(field)
+	if err != nil {
+		return errors.Wrapf(err, "cannot use '%s' as foreign key for %T", name, model)
+	}
+	schema.references[fk.ColumnName()] = *fk
+	return nil
+}
+
+func getSchemaAssociations(driver Driver, schema *Schema, model Model, relationships map[string]*Field) error {
+	for name, field := range relationships {
+		_, ok := schema.associations[field.FieldName()]
 		if ok {
 			continue
 		}
 
-		schema.Associations[field.FieldName] = field
-
-		nextModel := field.ForeignKey.Reference.Model
-		if field.IsAssociationTypeMany() {
-			nextModel = field.ForeignKey.Model
-		}
-
-		nextSchema, err := GetSchema(nextModel)
+		reference, err := NewReference(driver, schema, field)
 		if err != nil {
-			return Schema{}, err
+			return errors.Wrapf(err, "cannot use '%s' as association for %T", name, model)
 		}
 
-		for k, v := range nextSchema.Associations {
-			key := fmt.Sprintf("%s.%s", field.FieldName, k)
-			_, ok := schema.Associations[key]
-			if !ok {
-				schema.Associations[key] = v
-			}
+		schema.associations[field.FieldName()] = *reference
+	}
+	return nil
+}
+
+func inferSchemaTimeKey(model Model, opts ModelOpts, schema *Schema, field *Field) error {
+	if field.IsCreatedKey() {
+		if schema.createdKey != nil {
+			return errors.Errorf("%T must have only one created_at key", model)
 		}
+		schema.createdKey = field
 	}
 
-	return schema, nil
+	if field.IsUpdatedKey() {
+		if schema.updatedKey != nil {
+			return errors.Errorf("%T must have only one updated_at key", model)
+		}
+		schema.updatedKey = field
+	}
+
+	if field.IsDeletedKey() {
+		if schema.deletedKey != nil {
+			return errors.Errorf("%T must have only one deleted_at key", model)
+		}
+		schema.deletedKey = field
+	}
+
+	return nil
+}
+
+func inferSchemaPrimaryKey(model Model, opts ModelOpts, schema *Schema) error {
+	if schema.pk.TableName() != "" {
+		return nil
+	}
+	for key, field := range schema.fields {
+		if field.ColumnName() == opts.PrimaryKey {
+			pk, err := NewPrimaryKey(&field)
+			if err != nil {
+				return errors.Wrapf(err, "cannot use primary key of %T", model)
+			}
+			schema.pk = *pk
+			delete(schema.fields, key)
+			return nil
+		}
+	}
+	return errors.Errorf("%T must have a primary key", model)
 }
 
 // ----------------------------------------------------------------------------
@@ -188,19 +435,18 @@ func (c Columns) String() string {
 	return strings.Join(c, ", ")
 }
 
-// ----------------------------------------------------------------------------
-// Where clauses
-// ----------------------------------------------------------------------------
-
-// Conditions is a list of query conditions
-type Conditions []string
-
-// String returns conditions as AND query.
-func (c Conditions) String() string {
-	return strings.Join(c, " AND ")
+// List returns table columns.
+func (c Columns) List() []string {
+	return c
 }
 
-// OR returns conditions as OR query.
-func (c Conditions) OR() string {
-	return strings.Join(c, " OR ")
+// GetColumns returns a comma-separated string representation of a model's table columns.
+func GetColumns(driver Driver, model Model) (Columns, error) {
+	schema, err := GetSchema(driver, model)
+	if err != nil {
+		return nil, errors.Wrap(err, "sqlxx: cannot fetch schema informations")
+	}
+
+	columns := schema.ColumnPaths()
+	return columns, nil
 }

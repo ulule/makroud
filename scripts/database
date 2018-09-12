@@ -9,7 +9,7 @@ export PGDATABASE='postgres'
 DOCKER_DB_PORT=${DOCKER_DB_PORT:-5432}
 
 CONTAINER_NAME="sqlxx-db"
-CONTAINER_IMAGE="postgres:9.6"
+CONTAINER_IMAGE="postgres:10.5"
 
 create_database() {
     declare dbname="$1"
@@ -32,13 +32,13 @@ do_start() {
     fi
 
     if [[ -n "$(docker ps -a -q -f name="${CONTAINER_NAME}" 2> /dev/null)" ]]; then
-        echo "[database] start ${CONTAINER_NAME}"
-        docker start "${CONTAINER_NAME}"
-        return 0
+        echo "[database] erase previous configuration"
+        docker stop "${CONTAINER_NAME}" >/dev/null 2>&1 || true
+        docker rm "${CONTAINER_NAME}" >/dev/null 2>&1 || true
     fi
 
     echo "[database] update postgres images"
-    docker pull ${CONTAINER_IMAGE}
+    docker pull ${CONTAINER_IMAGE} || true
 
     echo "[database] start new ${CONTAINER_NAME} container"
     docker run --name "${CONTAINER_NAME}" \
@@ -73,6 +73,19 @@ do_stop() {
 
 }
 
+do_client() {
+
+    echo "[database] use psql on ${CONTAINER_NAME}"
+    docker run --rm -it \
+        -e PGUSER="${PGUSER}" \
+        -e PGPASSWORD="${PGPASSWORD}" \
+        -e PGDATABASE="${PGDATABASE}" \
+        --link "${CONTAINER_NAME}:postgres" \
+        "${CONTAINER_IMAGE}" psql -h postgres
+
+}
+
+
 case "$1" in
     --stop)
         do_stop
@@ -80,6 +93,9 @@ case "$1" in
     --restart)
         do_stop
         do_start
+    ;;
+    --client)
+        do_client
     ;;
     --start | *)
         do_start
