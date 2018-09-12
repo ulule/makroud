@@ -8,6 +8,7 @@ import (
 	"github.com/ulule/loukoum"
 	"github.com/ulule/loukoum/builder"
 	"github.com/ulule/loukoum/stmt"
+	"github.com/ulule/loukoum/types"
 )
 
 // QueryBuilderConfiguration defines a template used by a QueryBuilder to generate queries with loukoum.
@@ -55,9 +56,10 @@ type QueryBuilder struct {
 	unscoped bool
 	limit    int64
 	offset   int64
-	cursor   string
-	sort     string
-	orders   []stmt.Order
+	//cursor   string TODO
+	reverse bool
+	sort    string
+	orders  []stmt.Order
 }
 
 // Columns returns models columns.
@@ -111,34 +113,51 @@ func (b *QueryBuilder) Where(condition stmt.Expression) *QueryBuilder {
 	return b
 }
 
-// Offset defines query offset.
-func (b *QueryBuilder) Offset(offset int64) *QueryBuilder {
+// WithOffset defines query offset.
+func (b *QueryBuilder) WithOffset(offset int64) *QueryBuilder {
 	b.offset = offset
 	return b
 }
 
-// GetOffset returns query offset.
-func (b *QueryBuilder) GetOffset() int64 {
+// Offset returns query offset.
+func (b *QueryBuilder) Offset() int64 {
 	return b.offset
 }
 
-// Limit defines query limit.
-func (b *QueryBuilder) Limit(limit int64) *QueryBuilder {
+// WithLimit defines query limit.
+func (b *QueryBuilder) WithLimit(limit int64) *QueryBuilder {
 	b.limit = limit
 	return b
 }
 
-// GetLimit returns query limit.
-func (b *QueryBuilder) GetLimit() int64 {
+// Limit returns query limit.
+func (b *QueryBuilder) Limit() int64 {
 	return b.limit
 }
 
-// Order defines query order.
-func (b *QueryBuilder) Order(orders ...stmt.Order) {
+// WithOrder defines query order.
+func (b *QueryBuilder) WithOrder(orders ...stmt.Order) {
 	b.orders = append(b.orders, orders...)
 }
 
-func (b *QueryBuilder) Execute(value interface{}) error {
+// WithSort defines how collections should be ordered.
+func (b *QueryBuilder) WithSort(field string, reverse ...bool) *QueryBuilder {
+	if field == "" {
+		return b
+	}
+	b.sort = field
+	if len(reverse) > 0 && reverse[0] {
+		b.reverse = true
+	}
+	return b
+}
+
+// Sort returns how collections will be ordered.
+func (b *QueryBuilder) Sort() (sort string, reverse bool) {
+	return b.sort, b.reverse
+}
+
+func (b *QueryBuilder) Find(value interface{}) error {
 	if !b.unscoped && b.schema.HasDeletedKey() {
 		b.query = b.query.Where(loukoum.Condition(b.schema.DeletedKeyPath()).IsNull(true))
 	}
@@ -159,14 +178,12 @@ func (b *QueryBuilder) Execute(value interface{}) error {
 	return nil
 }
 
-// TODO Sort, Pagination (?)
+func (b *QueryBuilder) Update(values ...types.Pair) error {
+	if !b.unscoped && b.schema.HasDeletedKey() {
+		b.query = b.query.Where(loukoum.Condition(b.schema.DeletedKeyPath()).IsNull(true))
+	}
 
-// GetSort returns query sort.
-func (b *QueryBuilder) GetSort() string {
-	return b.sort
-}
+	// TODO query exec
 
-// GetCursor returns query cursor.
-func (b *QueryBuilder) GetCursor() string {
-	return b.cursor
+	return nil
 }
