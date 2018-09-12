@@ -58,7 +58,6 @@ func Database(dbname string) Option {
 // EnableSSL will configure the Client to enable SSL mode.
 func EnableSSL() Option {
 	return option(func(options *clientOptions) error {
-		// NOTE Some refactoring may be required to allow further options like CA certificate, etc...
 		options.sslMode = "require"
 		return nil
 	})
@@ -68,6 +67,14 @@ func EnableSSL() Option {
 func DisableSSL() Option {
 	return option(func(options *clientOptions) error {
 		options.sslMode = "disable"
+		return nil
+	})
+}
+
+// SSLMode will configure the Client with given SSL mode.
+func SSLMode(mode string) Option {
+	return option(func(options *clientOptions) error {
+		options.sslMode = mode
 		return nil
 	})
 }
