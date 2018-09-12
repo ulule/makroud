@@ -1,134 +1,121 @@
 package sqlxx
 
 import (
-	"fmt"
-	"strings"
-	"time"
+	"context"
 
 	"github.com/pkg/errors"
+	"github.com/ulule/loukoum"
+	"github.com/ulule/loukoum/builder"
+
+	"github.com/ulule/sqlxx/reflectx"
 )
 
-// Save saves the model and populate it to the database
-func Save(driver Driver, out interface{}) error {
-	_, err := SaveWithQueries(driver, out)
+// Save saves the given instance.
+func Save(ctx context.Context, driver Driver, model Model) error {
+	err := save(ctx, driver, model)
+	if err != nil {
+		return errors.Wrap(err, "sqlxx: cannot execute save")
+	}
+	return nil
+}
+
+func save(ctx context.Context, driver Driver, model Model) error {
+	if driver == nil {
+		return errors.WithStack(ErrInvalidDriver)
+	}
+
+	schema, err := GetSchema(driver, model)
+	if err != nil {
+		return err
+	}
+
+	values := loukoum.Map{}
+	returning := []string{}
+
+	pk := schema.PrimaryKey()
+	id, hasPK := pk.ValueOpt(model)
+
+	err = generateSaveQuery(schema, model, hasPK, &returning, &values)
+	if err != nil {
+		return err
+	}
+
+	builder, err := getSaveBuilder(driver, schema, model, pk, hasPK, id, &returning, &values)
+	if err != nil {
+		return err
+	}
+
+	err = Exec(ctx, driver, builder, model)
+
+	// Ignore no rows error if returning is empty.
+	if IsErrNoRows(err) && len(returning) == 0 {
+		return nil
+	}
+
 	return err
 }
 
-// SaveWithQueries saves the given instance and returns performed queries.
-func SaveWithQueries(driver Driver, out interface{}) (Queries, error) {
-	queries, err := save(driver, out)
-	if err != nil {
-		return queries, errors.Wrap(err, "sqlxx: cannot execute save")
+func generateSaveQuery(schema *Schema, model Model, hasPK bool, returning *[]string, values *loukoum.Map) error {
+	for _, column := range schema.fields {
+		if column.IsPrimaryKey() {
+			continue
+		}
+
+		value, err := reflectx.GetFieldValue(model, column.FieldName())
+		if err != nil {
+			return err
+		}
+
+		if column.HasDefault() && reflectx.IsZero(value) && !hasPK {
+
+			(*returning) = append((*returning), column.ColumnName())
+
+		} else if column.IsUpdatedKey() && hasPK {
+
+			(*values)[column.ColumnName()] = loukoum.Raw("NOW()")
+			(*returning) = append((*returning), column.ColumnName())
+
+		} else {
+
+			(*values)[column.ColumnName()] = value
+
+		}
 	}
-	return queries, nil
+
+	return nil
 }
 
-func save(driver Driver, out interface{}) (Queries, error) {
-	if driver == nil {
-		return nil, ErrInvalidDriver
-	}
+func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
+	hasPK bool, id interface{}, returning *[]string, values *loukoum.Map) (builder.Builder, error) {
 
-	start := time.Now()
+	if !hasPK {
+		switch pk.Default() {
+		case PrimaryKeyDBDefault:
+			(*returning) = append((*returning), pk.ColumnName())
 
-	schema, err := GetSchema(driver, out)
-	if err != nil {
-		return nil, err
-	}
-
-	var (
-		columns        = []string{}
-		ignoredColumns = []string{}
-		values         = []string{}
-		params         = make(map[string]interface{})
-		query          string
-	)
-
-	for name, column := range schema.Fields {
-		var (
-			isIgnored    bool
-			hasDefault   bool
-			defaultValue string
-			value        string
-		)
-
-		tag := column.Tags.Get(StructTagName)
-		if tag != nil {
-			isIgnored = len(tag.Get(StructTagIgnored)) != 0
-			defaultValue = tag.Get(StructTagDefault)
-			hasDefault = len(defaultValue) != 0
-		}
-
-		if isIgnored || hasDefault {
-			ignoredColumns = append(ignoredColumns, column.ColumnName)
-		}
-
-		if !isIgnored {
-			columns = append(columns, column.ColumnName)
-
-			fv, err := GetFieldValue(out, name)
+		case PrimaryKeyULIDDefault:
+			ulid := GenerateULID(driver)
+			mapper := map[string]interface{}{
+				pk.ColumnName(): ulid,
+			}
+			(*values)[pk.ColumnName()] = ulid
+			err := schema.WriteModel(mapper, model)
 			if err != nil {
 				return nil, err
 			}
-
-			if hasDefault && IsZero(fv) {
-				value = defaultValue
-			} else {
-				value = fmt.Sprintf(":%s", column.ColumnName)
-				params[column.ColumnName] = fv
-			}
-
-			values = append(values, value)
-		}
-	}
-
-	pkField := schema.PrimaryKeyField
-
-	pk, err := GetFieldValueInt64(out, pkField.FieldName)
-	if err != nil {
-		return nil, err
-	}
-
-	if pk == int64(0) {
-		query = fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s)`,
-			schema.TableName,
-			strings.Join(columns, ", "),
-			strings.Join(values, ", "),
-		)
-	} else {
-		updates := []string{}
-		for i := range columns {
-			updates = append(updates, fmt.Sprintf("%s = %s", columns[i], values[i]))
 		}
 
-		params[pkField.ColumnName] = pk
-		query = fmt.Sprintf(`UPDATE %s SET %s WHERE %s = :%s`,
-			schema.TableName,
-			strings.Join(updates, ", "),
-			pkField.ColumnPath(),
-			pkField.ColumnName,
-		)
+		builder := loukoum.Insert(schema.TableName()).
+			Set((*values)).
+			Returning((*returning))
+
+		return builder, nil
 	}
 
-	if len(ignoredColumns) > 0 {
-		query = fmt.Sprintf(`%s RETURNING %s`, query, strings.Join(ignoredColumns, ", "))
-	}
+	builder := loukoum.Update(schema.TableName()).
+		Set((*values)).
+		Where(loukoum.Condition(pk.ColumnName()).Equal(id)).
+		Returning((*returning))
 
-	queries := Queries{{
-		Query:  query,
-		Params: params,
-	}}
-
-	// Log must be wrapped in a defered function so the duration computation is done when the function return a result.
-	defer func() {
-		Log(driver, queries, time.Since(start))
-	}()
-
-	stmt, err := driver.PrepareNamed(query)
-	if err != nil {
-		return queries, err
-	}
-	defer driver.close(stmt)
-
-	err = stmt.Get(out, out)
-	return queries, err
+	return builder, nil
 }

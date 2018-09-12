@@ -1,163 +1,334 @@
 package sqlxx_test
 
 import (
+	"context"
 	"testing"
-	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"github.com/ulule/loukoum"
 
 	"github.com/ulule/sqlxx"
 )
 
-func TestExec_InParams(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
+func TestCount(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
 
-	is := require.New(t)
-
-	env.createUser("batman")
-	env.createUser("robin")
-	env.createUser("catwoman")
-
-	query := "UPDATE users SET is_active = false WHERE username IN (?);"
-	params := []string{"batman", "robin", "catwoman"}
-	queries, err := sqlxx.ExecInParamsWithQueries(env.driver, query, params)
-	is.NoError(err)
-	is.Len(queries, 1)
-	is.Equal("UPDATE users SET is_active = false WHERE username IN (?, ?, ?);", queries[0].Query)
-	is.Equal([]interface{}{"batman", "robin", "catwoman"}, queries[0].Args)
-
-	query = "SELECT COUNT(*) FROM users WHERE is_active = :is_active"
-	stmt, err := env.driver.PrepareNamed(query)
-	is.NoError(err)
-	is.NotNil(stmt)
-
-	count := 0
-	err = stmt.Get(&count, map[string]interface{}{
-		"is_active": false,
-	})
-	is.NoError(err)
-	is.Equal(3, count)
-}
-
-func TestFind_InParams(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
-
-	is := require.New(t)
-
-	env.createUser("batman")
-	env.createUser("robin")
-	env.createUser("catwoman")
-
-	query := "SELECT * FROM users WHERE is_active = true AND username IN (?);"
-	users := &[]User{}
-	params := []string{"batman", "robin", "catwoman"}
-	queries, err := sqlxx.FindInParamsWithQueries(env.driver, users, query, params)
-	is.NoError(err)
-	is.Len(queries, 1)
-	is.Equal("SELECT * FROM users WHERE is_active = true AND username IN (?, ?, ?);", queries[0].Query)
-	is.Equal([]interface{}{"batman", "robin", "catwoman"}, queries[0].Args)
-
-	is.Len(*users, 3)
-	hasBatman := false
-	hasRobin := false
-	hasCatwoman := false
-	for _, user := range *users {
-		switch user.Username {
-		case "batman":
-			hasBatman = true
-		case "robin":
-			hasRobin = true
-		case "catwoman":
-			hasCatwoman = true
-		default:
-			is.FailNow("unexpected username", user.Username)
+		cats := []Cat{
+			Cat{Name: "Radio"},
+			Cat{Name: "Radish"},
+			Cat{Name: "Radium"},
+			Cat{Name: "Radix"},
+			Cat{Name: "Radman"},
+			Cat{Name: "Radmilla"},
 		}
-	}
-	is.True(hasBatman)
-	is.True(hasRobin)
-	is.True(hasCatwoman)
+
+		for i := range cats {
+			err := sqlxx.Save(ctx, driver, &cats[i])
+			is.NoError(err)
+		}
+
+		query := loukoum.Select("COUNT(*)").From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("Rad%"))
+
+		{
+			count, err := sqlxx.Count(ctx, driver, query)
+			is.NoError(err)
+			is.Equal(int64(6), count)
+		}
+		{
+			count, err := sqlxx.FloatCount(ctx, driver, query)
+			is.NoError(err)
+			is.Equal(float64(6), count)
+		}
+
+	})
 }
 
-func TestExec_Simple(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
+func TestExec_List(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
 
-	is := require.New(t)
+		cat1 := &Cat{Name: "Wheezie"}
+		cat2 := &Cat{Name: "Whimsy"}
+		cat3 := &Cat{Name: "Whiskey"}
+		cat4 := &Cat{Name: "Whisper"}
+		cat5 := &Cat{Name: "Whitman"}
+		cat6 := &Cat{Name: "Whitney"}
+		cat7 := &Cat{Name: "Whistle"}
+		cat8 := &Cat{Name: "Wheaton"}
 
-	batman := env.createUser("batman")
-	payload := struct {
-		Username string
-	}{
-		Username: batman.Username,
-	}
+		cats := []*Cat{cat1, cat2, cat3, cat4, cat5, cat6, cat7, cat8}
+		expected := []*Cat{cat2, cat3, cat4, cat5, cat6, cat7}
 
-	query := "UPDATE users SET is_active = false WHERE username = :username;"
-	err := sqlxx.Exec(env.driver, query, payload)
-	is.NoError(err)
+		for i := range cats {
+			err := sqlxx.Save(ctx, driver, cats[i])
+			is.NoError(err)
+		}
 
-	user := &User{}
-	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
-		"id": batman.ID,
+		list := []string{}
+		query := loukoum.Select("id").From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("Whi%"))
+
+		err := sqlxx.Exec(ctx, driver, query, &list)
+		is.NoError(err)
+
+		is.Len(list, len(expected))
+		for i := range expected {
+			is.Contains(list, expected[i].ID)
+		}
+
+		err = sqlxx.Exec(ctx, driver, query, []string{})
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+
 	})
-	is.NoError(err)
-	is.False(user.IsActive)
-	is.Equal("batman", user.Username)
 }
 
-func TestExec_Named(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
+func TestRawExec_List(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
 
-	is := require.New(t)
+		cat1 := &Cat{Name: "Venice"}
+		cat2 := &Cat{Name: "Vera"}
+		cat3 := &Cat{Name: "Vermont"}
+		cat4 := &Cat{Name: "Vermouth"}
+		cat5 := &Cat{Name: "Versailles"}
+		cat6 := &Cat{Name: "Vernetta"}
+		cat7 := &Cat{Name: "Vertigo"}
+		cat8 := &Cat{Name: "Venus"}
 
-	batman := env.createUser("batman")
+		cats := []*Cat{cat1, cat2, cat3, cat4, cat5, cat6, cat7, cat8}
+		expected := []*Cat{cat2, cat3, cat4, cat5, cat6, cat7}
 
-	query := "UPDATE users SET is_active = false WHERE username = :username;"
-	err := sqlxx.NamedExec(env.driver, query, map[string]interface{}{
-		"username": batman.Username,
+		for i := range cats {
+			err := sqlxx.Save(ctx, driver, cats[i])
+			is.NoError(err)
+		}
+
+		list := []string{}
+		query := `SELECT id FROM ztp_cat WHERE name ILIKE 'Ver%'`
+		err := sqlxx.RawExec(ctx, driver, query, &list)
+		is.NoError(err)
+
+		is.Len(list, len(expected))
+		for i := range expected {
+			is.Contains(list, expected[i].ID)
+		}
+
+		err = sqlxx.RawExec(ctx, driver, query, []string{})
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+
 	})
-	is.NoError(err)
-
-	user := &User{}
-	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
-		"id": batman.ID,
-	})
-	is.NoError(err)
-	is.False(user.IsActive)
-	is.Equal("batman", user.Username)
 }
 
-func TestExec_Sync(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
+func TestExec_Fetch(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
 
-	is := require.New(t)
+		cat1 := &Cat{Name: "Bambino"}
+		cat2 := &Cat{Name: "Banana"}
+		cat3 := &Cat{Name: "Bandit"}
+		cat4 := &Cat{Name: "Bangle"}
+		cat5 := &Cat{Name: "Banjo"}
+		cat6 := &Cat{Name: "Banker"}
+		cat7 := &Cat{Name: "Banshee"}
+		cat8 := &Cat{Name: "Baron"}
 
-	batman := env.createUser("baman")
-	batman.IsActive = false
-	batman.Username = "batman"
+		cats := []*Cat{cat1, cat2, cat3, cat4, cat5, cat6, cat7, cat8}
+		expected := cat6
 
-	t0 := time.Now()
+		for i := range cats {
+			err := sqlxx.Save(ctx, driver, cats[i])
+			is.NoError(err)
+		}
 
-	query := `
-		UPDATE users
-		SET is_active = :is_active,
-		    username = :username,
-		    updated_at = NOW()
-	 	WHERE id = :id
-		RETURNING updated_at;
-	`
-	err := sqlxx.Sync(env.driver, query, batman)
-	is.NoError(err)
-	is.True(t0.Before(batman.UpdatedAt))
+		id := ""
+		query := loukoum.Select("id").From("ztp_cat").
+			Where(loukoum.Condition("name").Equal("Banker"))
 
-	user := &User{}
-	err = sqlxx.GetByParams(env.driver, user, map[string]interface{}{
-		"id": batman.ID,
+		err := sqlxx.Exec(ctx, driver, query, &id)
+		is.NoError(err)
+		is.Equal(expected.ID, id)
+
+		err = sqlxx.Exec(ctx, driver, query, id)
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+
 	})
-	is.NoError(err)
-	is.False(user.IsActive)
-	is.Equal("batman", user.Username)
+}
+
+func TestRawExec_Fetch(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		cat1 := &Cat{Name: "Cake"}
+		cat2 := &Cat{Name: "Calvin"}
+		cat3 := &Cat{Name: "Calypso"}
+		cat4 := &Cat{Name: "Calzone"}
+		cat5 := &Cat{Name: "Cambridge"}
+		cat6 := &Cat{Name: "Cameo"}
+		cat7 := &Cat{Name: "Campbell"}
+		cat8 := &Cat{Name: "Cannes"}
+
+		cats := []*Cat{cat1, cat2, cat3, cat4, cat5, cat6, cat7, cat8}
+		expected := cat4
+
+		for i := range cats {
+			err := sqlxx.Save(ctx, driver, cats[i])
+			is.NoError(err)
+		}
+
+		id := ""
+		query := `SELECT id FROM ztp_cat WHERE name = 'Calzone'`
+		err := sqlxx.RawExec(ctx, driver, query, &id)
+		is.NoError(err)
+		is.Equal(expected.ID, id)
+
+		err = sqlxx.RawExec(ctx, driver, query, id)
+		is.Error(err)
+		is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+
+	})
+}
+
+func TestExec_FetchModel(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		cat1 := &Cat{Name: "Afro"}
+		cat2 := &Cat{Name: "Ajax"}
+		cat3 := &Cat{Name: "Akbar"}
+		cat4 := &Cat{Name: "Akiko"}
+
+		cats := []*Cat{cat1, cat2, cat3, cat4}
+		expected := cat4
+
+		for i := range cats {
+			err := sqlxx.Save(ctx, driver, cats[i])
+			is.NoError(err)
+		}
+
+		query := loukoum.Select("*").From("ztp_cat").
+			Where(loukoum.Condition("name").Equal("Akiko"))
+
+		{
+			result := &Cat{}
+			err := sqlxx.Exec(ctx, driver, query, result)
+			is.NoError(err)
+			is.Equal(expected.ID, result.ID)
+			is.Equal(expected.Name, result.Name)
+			is.Equal(expected.CreatedAt, result.CreatedAt)
+			is.Equal(expected.UpdatedAt, result.UpdatedAt)
+			is.Equal(expected.DeletedAt, result.DeletedAt)
+		}
+
+		{
+			result := &Cat{}
+			err := sqlxx.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Equal(expected.ID, result.ID)
+			is.Equal(expected.Name, result.Name)
+			is.Equal(expected.CreatedAt, result.CreatedAt)
+			is.Equal(expected.UpdatedAt, result.UpdatedAt)
+			is.Equal(expected.DeletedAt, result.DeletedAt)
+		}
+
+		{
+			result := Cat{}
+			err := sqlxx.Exec(ctx, driver, query, result)
+			is.Error(err)
+			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		}
+
+	})
+}
+
+func TestExec_ListModel(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		cat1 := &Cat{Name: "Amazon"}
+		cat2 := &Cat{Name: "Amelia"}
+		cat3 := &Cat{Name: "Amigo"}
+		cat4 := &Cat{Name: "Amos"}
+
+		cats := []*Cat{cat1, cat2, cat3, cat4}
+
+		for i := range cats {
+			err := sqlxx.Save(ctx, driver, cats[i])
+			is.NoError(err)
+		}
+
+		query := loukoum.Select("*").From("ztp_cat").
+			Where(loukoum.Condition("name").In("Amazon", "Amelia", "Amigo", "Amos"))
+
+		{
+			result := []Cat{}
+			err := sqlxx.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Len(result, 4)
+			is.Contains(cats, &result[0])
+			is.Contains(cats, &result[1])
+			is.Contains(cats, &result[2])
+			is.Contains(cats, &result[3])
+		}
+
+		{
+			result := []*Cat{}
+			err := sqlxx.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Len(result, 4)
+			is.Contains(cats, result[0])
+			is.Contains(cats, result[1])
+			is.Contains(cats, result[2])
+			is.Contains(cats, result[3])
+		}
+
+		{
+			result := &[]Cat{}
+			err := sqlxx.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Len(*result, 4)
+			is.Contains(cats, &(*result)[0])
+			is.Contains(cats, &(*result)[1])
+			is.Contains(cats, &(*result)[2])
+			is.Contains(cats, &(*result)[3])
+		}
+
+		{
+			result := &[]*Cat{}
+			err := sqlxx.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Len(*result, 4)
+			is.Contains(cats, (*result)[0])
+			is.Contains(cats, (*result)[1])
+			is.Contains(cats, (*result)[2])
+			is.Contains(cats, (*result)[3])
+		}
+
+		{
+			result := []Cat{}
+			err := sqlxx.Exec(ctx, driver, query, result)
+			is.Error(err)
+			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		}
+
+		{
+			result := []*Cat{}
+			err := sqlxx.Exec(ctx, driver, query, result)
+			is.Error(err)
+			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
+		}
+
+	})
 }

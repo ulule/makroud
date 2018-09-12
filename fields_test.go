@@ -1,95 +1,247 @@
 package sqlxx_test
 
 import (
-	"fmt"
+	"database/sql"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/sqlxx"
+	"github.com/ulule/sqlxx/reflectx"
 )
 
-func TestFields_IsForeignKey(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
+func TestFields_Elements(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		is := require.New(t)
+		schema := &sqlxx.Schema{}
+		model := Elements{}
 
-	is := require.New(t)
-
-	testers := []struct {
-		model  sqlxx.Model
-		field  string
-		result bool
-	}{
-		{FKTest1{}, "ID", false},
-		{FKTest2{}, "MyFieldID", true},
-		{FKTest3{}, "CustomField", true},
-	}
-
-	for i, tt := range testers {
-		schema, err := sqlxx.GetSchema(env.driver, tt.model)
-		field, err := sqlxx.NewField(env.driver, &schema, tt.model, tt.field)
+		field, err := sqlxx.NewField(driver, schema, model, "enabled")
 		is.NoError(err)
-		is.Equal(tt.result, field.IsForeignKey, fmt.Sprintf("index: %d", i))
-	}
-}
+		is.Equal("Elements", field.ModelName())
+		is.Equal("enabled", field.FieldName())
+		is.Equal("rune_elements", field.TableName())
+		is.Equal("enabled", field.ColumnName())
+		is.Equal("rune_elements.enabled", field.ColumnPath())
+		is.True(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.Bool, field.Type().Kind())
+		is.False(field.HasULID())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
 
-func TestFields_IsExcludedField(t *testing.T) {
-	env := setup(t)
-	defer env.teardown()
-
-	is := require.New(t)
-
-	testers := []struct {
-		model  sqlxx.Model
-		field  string
-		result bool
-	}{
-		{StructUnexportedField{}, "unexported", true},
-		{StructDBExcludedField{}, "ID", true},
-		{StructValidField{}, "ID", false},
-	}
-
-	for i, tt := range testers {
-		schema, err := sqlxx.GetSchema(env.driver, tt.model)
-		field, err := sqlxx.NewField(env.driver, &schema, tt.model, tt.field)
+		field, err = sqlxx.NewField(driver, schema, model, "Air")
 		is.NoError(err)
-		is.Equal(tt.result, field.IsExcluded, fmt.Sprintf("index: %d", i))
-	}
+		is.Equal("Elements", field.ModelName())
+		is.Equal("Air", field.FieldName())
+		is.Equal("rune_elements", field.TableName())
+		is.Equal("air", field.ColumnName())
+		is.Equal("rune_elements.air", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.String, field.Type().Kind())
+		is.False(field.HasULID())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
+
+		field, err = sqlxx.NewField(driver, schema, model, "Fire")
+		is.NoError(err)
+		is.Equal("Elements", field.ModelName())
+		is.Equal("Fire", field.FieldName())
+		is.Equal("rune_elements", field.TableName())
+		is.Equal("fire", field.ColumnName())
+		is.Equal("rune_elements.fire", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.String, field.Type().Kind())
+		is.False(field.HasULID())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
+
+		field, err = sqlxx.NewField(driver, schema, model, "Water")
+		is.NoError(err)
+		is.Equal("Elements", field.ModelName())
+		is.Equal("Water", field.FieldName())
+		is.Equal("rune_elements", field.TableName())
+		is.Equal("water", field.ColumnName())
+		is.Equal("rune_elements.water", field.ColumnPath())
+		is.True(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.String, field.Type().Kind())
+		is.False(field.HasULID())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
+
+		field, err = sqlxx.NewField(driver, schema, model, "Earth")
+		is.NoError(err)
+		is.Equal("Elements", field.ModelName())
+		is.Equal("Earth", field.FieldName())
+		is.Equal("rune_elements", field.TableName())
+		is.Equal("earth", field.ColumnName())
+		is.Equal("rune_elements.earth", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.String, field.Type().Kind())
+		is.False(field.HasULID())
+		is.True(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
+
+		field, err = sqlxx.NewField(driver, schema, model, "Fifth")
+		is.NoError(err)
+		is.Equal("Elements", field.ModelName())
+		is.Equal("Fifth", field.FieldName())
+		is.Equal("rune_elements", field.TableName())
+		is.Equal("fifth", field.ColumnName())
+		is.Equal("rune_elements.fifth", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.String, field.Type().Kind())
+		is.False(field.HasULID())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
+
+	})
 }
 
-type StructValidField struct{ ID int }
+func TestFields_Owl(t *testing.T) {
+	Setup(t)(func(driver sqlxx.Driver) {
+		is := require.New(t)
+		schema := &sqlxx.Schema{}
+		model := Owl{}
 
-func (s StructValidField) TableName() string { return "structvalidfield" }
+		field, err := sqlxx.NewField(driver, schema, model, "FavoriteFood")
+		is.NoError(err)
+		is.Equal("Owl", field.ModelName())
+		is.Equal("FavoriteFood", field.FieldName())
+		is.Equal("ztp_owl", field.TableName())
+		is.Equal("favorite_food", field.ColumnName())
+		is.Equal("ztp_owl.favorite_food", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.String, field.Type().Kind())
+		is.False(field.HasULID())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
 
-type StructUnexportedField struct{ unexported int }
+		field, err = sqlxx.NewField(driver, schema, model, "FeatherColor")
+		is.NoError(err)
+		is.Equal("Owl", field.ModelName())
+		is.Equal("FeatherColor", field.FieldName())
+		is.Equal("ztp_owl", field.TableName())
+		is.Equal("feather_color", field.ColumnName())
+		is.Equal("ztp_owl.feather_color", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.String, field.Type().Kind())
+		is.False(field.HasULID())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
 
-func (s StructUnexportedField) TableName() string { return "structunexportedfield" }
+		field, err = sqlxx.NewField(driver, schema, model, "Name")
+		is.NoError(err)
+		is.Equal("Owl", field.ModelName())
+		is.Equal("Name", field.FieldName())
+		is.Equal("ztp_owl", field.TableName())
+		is.Equal("name", field.ColumnName())
+		is.Equal("ztp_owl.name", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.String, field.Type().Kind())
+		is.False(field.HasULID())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
 
-type StructDBExcludedField struct {
-	ID int `db:"-"`
+		field, err = sqlxx.NewField(driver, schema, model, "ID")
+		is.NoError(err)
+		is.Equal("Owl", field.ModelName())
+		is.Equal("ID", field.FieldName())
+		is.Equal("ztp_owl", field.TableName())
+		is.Equal("id", field.ColumnName())
+		is.Equal("ztp_owl.id", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.True(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.Int64, field.Type().Kind())
+		is.False(field.HasULID())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
+
+		field, err = sqlxx.NewField(driver, schema, model, "GroupID")
+		is.NoError(err)
+		is.Equal("Owl", field.ModelName())
+		is.Equal("GroupID", field.FieldName())
+		is.Equal("ztp_owl", field.TableName())
+		is.Equal("group_id", field.ColumnName())
+		is.Equal("ztp_owl.group_id", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.True(field.IsForeignKey())
+		is.False(field.IsAssociation())
+		is.Equal(reflect.Struct, field.Type().Kind())
+		is.Equal(reflectx.GetIndirectType(sql.NullInt64{}), field.Type())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
+
+		field, err = sqlxx.NewField(driver, schema, model, "Group")
+		is.NoError(err)
+		is.Equal("Owl", field.ModelName())
+		is.Equal("Group", field.FieldName())
+		is.Equal("ztp_owl", field.TableName())
+		is.Equal("", field.ColumnName())
+		is.Equal("", field.ColumnPath())
+		is.False(field.IsExcluded())
+		is.False(field.IsPrimaryKey())
+		is.False(field.IsForeignKey())
+		is.True(field.IsAssociation())
+		is.True(field.IsAssociationType(sqlxx.AssociationTypeOne))
+		is.Equal(reflect.Struct, field.Type().Kind())
+		is.Equal(reflectx.GetIndirectType(Group{}), field.Type())
+		is.False(field.HasDefault())
+		is.False(field.IsCreatedKey())
+		is.False(field.IsUpdatedKey())
+		is.False(field.IsDeletedKey())
+
+	})
 }
-
-func (s StructDBExcludedField) TableName() string { return "structdbexcludedfield" }
-
-type FKTest1 struct {
-	excluded int
-	ID       int
-}
-
-func (f FKTest1) TableName() string {
-	return "fktest1"
-}
-
-type FKTest2 struct {
-	MyFieldID int
-}
-
-func (f FKTest2) TableName() string {
-	return "fktest2"
-}
-
-type FKTest3 struct {
-	CustomField int `sqlxx:"fk"`
-}
-
-func (f FKTest3) TableName() string { return "fktest3" }
