@@ -30,24 +30,6 @@ type Field struct {
 	isDeletedKey    bool
 	rtype           reflect.Type
 	associationType AssociationType
-
-	// // The reflect.StructField instance
-	// StructField reflect.StructField
-	// // The reflect Type of the field
-	// Type reflect.Type
-	// // The field struct tags
-	// Tags FieldTags
-	// // Schema is the related model schema
-	// Schema *Schema
-	// // Model is the zero-valued field's model used to generate schema from.
-	// Model Model
-
-	// // The association type
-	// AssociationType AssociationType
-	// // ForeignKey contains foreign key relations information
-	// //ForeignKey *ForeignKey
-	// // DestinationField is the value destination field if the field is an association.
-	// DestinationField string
 }
 
 // ModelName define the model name of this field.
