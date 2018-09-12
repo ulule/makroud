@@ -158,8 +158,7 @@ type TagsAnalyzerOptions struct {
 	Mapper map[string]string
 }
 
-// GetTags returns field tags.
-func GetTags(field reflect.StructField, args ...TagsAnalyzerOption) Tags {
+func getTagsOptions(args []TagsAnalyzerOption) *TagsAnalyzerOptions {
 	options := &TagsAnalyzerOptions{
 		Name:      TagName,
 		Collector: TagsList,
@@ -170,19 +169,12 @@ func GetTags(field reflect.StructField, args ...TagsAnalyzerOption) Tags {
 		args[i](options)
 	}
 
-	list := map[string]string{}
+	return options
+}
 
-	for _, name := range options.Collector {
-		_, ok := list[name]
-		if !ok {
-			v := field.Tag.Get(name)
-			if len(v) != 0 {
-				list[name] = v
-			}
-		}
-	}
-
+func getTagsAnalyze(list map[string]string, options *TagsAnalyzerOptions) Tags {
 	tags := Tags{}
+
 	for k, v := range list {
 		splits := strings.Split(v, ",")
 
@@ -243,4 +235,23 @@ func GetTags(field reflect.StructField, args ...TagsAnalyzerOption) Tags {
 	}
 
 	return tags
+}
+
+// GetTags returns field tags.
+func GetTags(field reflect.StructField, args ...TagsAnalyzerOption) Tags {
+	list := map[string]string{}
+
+	options := getTagsOptions(args)
+
+	for _, name := range options.Collector {
+		_, ok := list[name]
+		if !ok {
+			v := field.Tag.Get(name)
+			if len(v) != 0 {
+				list[name] = v
+			}
+		}
+	}
+
+	return getTagsAnalyze(list, options)
 }

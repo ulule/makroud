@@ -12,7 +12,7 @@ const (
 	AssociationTypeUndefined = AssociationType(iota)
 	AssociationTypeOne
 	AssociationTypeMany
-	AssociationTypeManyToMany
+	AssociationTypeManyToMany // NOTE (novln): Not used at the moment...
 )
 
 func (e AssociationType) String() string {

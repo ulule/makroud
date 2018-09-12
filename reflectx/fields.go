@@ -168,55 +168,34 @@ func PushFieldValue(instance interface{}, name string, value interface{}, strict
 
 	switch dkind {
 	case reflect.Ptr:
-		elem := dtype.Elem()
-
-		switch elem.Kind() {
-		case reflect.Slice:
-
-			// If destination field is a slice, initialize it if it's nil and append given value on slice.
-			if dest.IsNil() {
-				list := NewReflectSlice(elem.Elem())
-				dest.Set(list)
-			}
-
-			return updateFieldValueOnSlice(dest, output, instance, strict)
-
-		case reflect.Struct:
-
-			// Try to use scanner interface if available.
-			if tryScannerOnFieldValue(dest, output) {
-				return nil
-			}
-
-			// If destination field is a struct, create a pointer of the given value.
-			output = MakeReflectPointer(output)
-
-			return setFieldValueOnStruct(dest, output, instance)
-
-		case reflect.Ptr:
-
-			// Try to use scanner interface if available.
-			if tryScannerOnFieldValue(dest, output) {
-				return nil
-			}
-
-			// If destination field is a pointer, just forward given value.
-			return setFieldValueOnStruct(dest, output, instance)
-
-		default:
-
-			// Try to use scanner interface if available.
-			if tryScannerOnFieldValue(dest, output) {
-				return nil
-			}
-
-			// If value is not a pointer, create a pointer of the given value.
-			output = MakeReflectPointer(output)
-
-			return setFieldValueOnStruct(dest, output, instance)
-		}
+		return pushFieldValueOnPointer(instance, dest, output, dtype, strict)
 
 	case reflect.Slice:
+		return pushFieldValueOnSlice(instance, dest, output, strict)
+
+	case reflect.Struct:
+		return pushFieldValueOnStruct(instance, dest, output)
+
+	default:
+		return pushFieldValueOnDefault(instance, dest, output)
+	}
+}
+
+// pushFieldValueOnPointer tries to push given value on pointer instance.
+func pushFieldValueOnPointer(instance interface{}, dest reflect.Value, output reflect.Value,
+	dtype reflect.Type, strict bool) error {
+
+	elem := dtype.Elem()
+
+	switch elem.Kind() {
+	case reflect.Slice:
+
+		// If destination field is a slice, initialize it if it's nil and append given value on slice.
+		if dest.IsNil() {
+			list := NewReflectSlice(elem.Elem())
+			dest.Set(list)
+		}
+
 		return updateFieldValueOnSlice(dest, output, instance, strict)
 
 	case reflect.Struct:
@@ -226,11 +205,19 @@ func PushFieldValue(instance interface{}, name string, value interface{}, strict
 			return nil
 		}
 
-		// If value is a pointer, forward it's indirect value.
-		if output.Kind() == reflect.Ptr && !output.IsNil() {
-			output = output.Elem()
+		// If destination field is a struct, create a pointer of the given value.
+		output = MakeReflectPointer(output)
+
+		return setFieldValueOnStruct(dest, output, instance)
+
+	case reflect.Ptr:
+
+		// Try to use scanner interface if available.
+		if tryScannerOnFieldValue(dest, output) {
+			return nil
 		}
 
+		// If destination field is a pointer, just forward given value.
 		return setFieldValueOnStruct(dest, output, instance)
 
 	default:
@@ -240,13 +227,48 @@ func PushFieldValue(instance interface{}, name string, value interface{}, strict
 			return nil
 		}
 
-		// If value is a pointer, forward it's indirect value.
-		if output.Kind() == reflect.Ptr && !output.IsNil() {
-			output = output.Elem()
-		}
+		// If value is not a pointer, create a pointer of the given value.
+		output = MakeReflectPointer(output)
 
 		return setFieldValueOnStruct(dest, output, instance)
 	}
+}
+
+// pushFieldValueOnSlice tries to push given value on slice instance.
+func pushFieldValueOnSlice(instance interface{}, dest reflect.Value, output reflect.Value, strict bool) error {
+	return updateFieldValueOnSlice(dest, output, instance, strict)
+}
+
+// pushFieldValueOnStruct tries to push given value on struct instance.
+func pushFieldValueOnStruct(instance interface{}, dest reflect.Value, output reflect.Value) error {
+
+	// Try to use scanner interface if available.
+	if tryScannerOnFieldValue(dest, output) {
+		return nil
+	}
+
+	// If value is a pointer, forward it's indirect value.
+	if output.Kind() == reflect.Ptr && !output.IsNil() {
+		output = output.Elem()
+	}
+
+	return setFieldValueOnStruct(dest, output, instance)
+}
+
+// pushFieldValueOnDefault tries to push given value on default instance.
+func pushFieldValueOnDefault(instance interface{}, dest reflect.Value, output reflect.Value) error {
+
+	// Try to use scanner interface if available.
+	if tryScannerOnFieldValue(dest, output) {
+		return nil
+	}
+
+	// If value is a pointer, forward it's indirect value.
+	if output.Kind() == reflect.Ptr && !output.IsNil() {
+		output = output.Elem()
+	}
+
+	return setFieldValueOnStruct(dest, output, instance)
 }
 
 // getDestinationReflectValue returns field value identified by given name from instance.
@@ -324,6 +346,7 @@ func setFieldValueOnStruct(dest reflect.Value, output reflect.Value, instance in
 	return nil
 }
 
+// nolint: gocyclo
 func tryScannerOnFieldValue(dest reflect.Value, output reflect.Value) bool {
 	// Try scanner interface.
 	scan := dest

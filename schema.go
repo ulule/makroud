@@ -277,82 +277,15 @@ func newSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
 
 	relationships := map[string]*Field{}
 
-	for _, name := range fields {
-		field, err := NewField(driver, schema, model, name, modelOpts)
-		if err != nil {
-			return nil, err
-		}
-
-		if field.IsExcluded() {
-			continue
-		}
-
-		err = inferSchemaTimeKey(model, modelOpts, schema, field)
-		if err != nil {
-			return nil, err
-		}
-
-		if field.IsPrimaryKey() {
-			pk, err := NewPrimaryKey(field)
-			if err != nil {
-				return nil, errors.Wrapf(err, "cannot use primary key of %T", model)
-			}
-			if schema.pk.TableName() != "" {
-				return nil, errors.Errorf("sqlxx: %T must have only one primary key", model)
-			}
-			schema.pk = *pk
-			continue
-		}
-
-		if field.IsForeignKey() {
-			fk, err := NewForeignKey(field)
-			if err != nil {
-				return nil, errors.Wrapf(err, "cannot use '%s' as foreign key for %T", name, model)
-			}
-			schema.references[fk.ColumnName()] = *fk
-		}
-
-		if !field.IsAssociation() {
-			schema.fields[field.ColumnName()] = *field
-			continue
-		}
-
-		relationships[name] = field
+	err = getSchemaFields(driver, schema, model, modelOpts, fields, relationships)
+	if err != nil {
+		return nil, err
 	}
 
 	if throughout {
-		for name, field := range relationships {
-			_, ok := schema.associations[field.FieldName()]
-			if ok {
-				continue
-			}
-
-			reference, err := NewReference(driver, schema, field)
-			if err != nil {
-				return nil, errors.Wrapf(err, "cannot use '%s' as association for %T", name, model)
-			}
-
-			schema.associations[field.FieldName()] = *reference
-
-			// TODO (novln): Handle child references...
-			//
-			// nextModel := field.ForeignKey.Reference.Model
-			// if field.IsAssociationTypeMany() {
-			// 	nextModel = field.ForeignKey.Model
-			// }
-			//
-			// nextSchema, err := GetSchema(driver, nextModel)
-			// if err != nil {
-			// 	return Schema{}, err
-			// }
-			//
-			// for k, v := range nextSchema.Associations {
-			// 	key := fmt.Sprintf("%s.%s", field.FieldName, k)
-			// 	_, ok := schema.Associations[key]
-			// 	if !ok {
-			// 		schema.Associations[key] = v
-			// 	}
-			// }
+		err = getSchemaAssociations(driver, schema, model, relationships)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -364,24 +297,106 @@ func newSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
 	return schema, nil
 }
 
+func getSchemaFields(driver Driver, schema *Schema, model Model, modelOpts ModelOpts,
+	fields []string, relationships map[string]*Field) error {
+
+	for _, name := range fields {
+		field, err := NewField(driver, schema, model, name, modelOpts)
+		if err != nil {
+			return err
+		}
+
+		if field.IsExcluded() {
+			continue
+		}
+
+		err = inferSchemaTimeKey(model, modelOpts, schema, field)
+		if err != nil {
+			return err
+		}
+
+		if field.IsPrimaryKey() {
+			err = handleSchemaPrimaryKey(schema, model, name, field)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		if field.IsForeignKey() {
+			err = handleSchemaForeignKey(schema, model, name, field)
+			if err != nil {
+				return err
+			}
+		}
+
+		if !field.IsAssociation() {
+			schema.fields[field.ColumnName()] = *field
+			continue
+		}
+
+		relationships[name] = field
+	}
+
+	return nil
+}
+
+func handleSchemaPrimaryKey(schema *Schema, model Model, name string, field *Field) error {
+	pk, err := NewPrimaryKey(field)
+	if err != nil {
+		return errors.Wrapf(err, "cannot use '%s' as primary key for %T", name, model)
+	}
+	if schema.pk.TableName() != "" {
+		return errors.Errorf("%T must have only one primary key", model)
+	}
+	schema.pk = *pk
+	return nil
+}
+
+func handleSchemaForeignKey(schema *Schema, model Model, name string, field *Field) error {
+	fk, err := NewForeignKey(field)
+	if err != nil {
+		return errors.Wrapf(err, "cannot use '%s' as foreign key for %T", name, model)
+	}
+	schema.references[fk.ColumnName()] = *fk
+	return nil
+}
+
+func getSchemaAssociations(driver Driver, schema *Schema, model Model, relationships map[string]*Field) error {
+	for name, field := range relationships {
+		_, ok := schema.associations[field.FieldName()]
+		if ok {
+			continue
+		}
+
+		reference, err := NewReference(driver, schema, field)
+		if err != nil {
+			return errors.Wrapf(err, "cannot use '%s' as association for %T", name, model)
+		}
+
+		schema.associations[field.FieldName()] = *reference
+	}
+	return nil
+}
+
 func inferSchemaTimeKey(model Model, opts ModelOpts, schema *Schema, field *Field) error {
 	if field.IsCreatedKey() {
 		if schema.createdKey != nil {
-			return errors.Errorf("sqlxx: %T must have only one created_at key", model)
+			return errors.Errorf("%T must have only one created_at key", model)
 		}
 		schema.createdKey = field
 	}
 
 	if field.IsUpdatedKey() {
 		if schema.updatedKey != nil {
-			return errors.Errorf("sqlxx: %T must have only one updated_at key", model)
+			return errors.Errorf("%T must have only one updated_at key", model)
 		}
 		schema.updatedKey = field
 	}
 
 	if field.IsDeletedKey() {
 		if schema.deletedKey != nil {
-			return errors.Errorf("sqlxx: %T must have only one deleted_at key", model)
+			return errors.Errorf("%T must have only one deleted_at key", model)
 		}
 		schema.deletedKey = field
 	}
@@ -404,7 +419,7 @@ func inferSchemaPrimaryKey(model Model, opts ModelOpts, schema *Schema) error {
 			return nil
 		}
 	}
-	return errors.Errorf("sqlxx: %T must have a primary key", model)
+	return errors.Errorf("%T must have a primary key", model)
 }
 
 // ----------------------------------------------------------------------------

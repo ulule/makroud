@@ -60,6 +60,7 @@ type ExoCloudFixtures struct {
 	Signatures    []*ExoChunkSignature
 }
 
+// nolint: gocyclo
 func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *require.Assertions) *ExoCloudFixtures {
 	fixtures := &ExoCloudFixtures{
 		Regions:       []*ExoRegion{},
