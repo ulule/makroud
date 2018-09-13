@@ -24,4 +24,8 @@ var (
 	ErrPreloadInvalidModel = fmt.Errorf("given model is invalid")
 	// ErrPreloadInvalidPath is returned when preload detect an invalid path.
 	ErrPreloadInvalidPath = fmt.Errorf("given path is invalid")
+	// ErrSelectorNotFoundConnection is returned when the required connection does not exists in selector connections.
+	ErrSelectorNotFoundConnection = fmt.Errorf("cannot find connection in selector")
+	// ErrSelectorMissingRetryConnection is returned when the retry mechanism has no connection available from selector.
+	ErrSelectorMissingRetryConnection = fmt.Errorf("cannot find a healthy connection in selector")
 )
