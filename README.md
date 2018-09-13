@@ -1,5 +1,9 @@
 # sqlxx
 
+[![CircleCI][circle-img]][circle-url]
+[![Documentation][godoc-img]][godoc-url]
+![License][license-img]
+
 **[sqlx](https://github.com/jmoiron/sqlx) superset.**
 
 ## Installation
@@ -217,3 +221,29 @@ scripts/database --client
 Because sometimes it's hard to think of a good test fixture, using generators can save your productivity.
 
 This website was a great help to write unit test: http://www.fantasynamegenerators.com
+
+
+## License
+
+This is Free Software, released under the [`MIT License`][license-url].
+
+
+## Contributing
+
+* Ping us on twitter:
+  * [@novln_](https://twitter.com/novln_)
+  * [@oibafsellig](https://twitter.com/oibafsellig)
+  * [@thoas](https://twitter.com/thoas)
+* Fork the [project](https://github.com/ulule/loukoum)
+* Fix [bugs](https://github.com/ulule/loukoum/issues)
+
+**Don't hesitate ;)**
+
+[godoc-url]: https://godoc.org/github.com/ulule/sqlxx
+[godoc-img]: https://godoc.org/github.com/ulule/sqlxx?status.svg
+[license-img]: https://img.shields.io/badge/license-MIT-blue.svg
+[license-url]: LICENSE
+[sql-url]: https://golang.org/pkg/database/sql/
+[sqlx-url]: https://github.com/jmoiron/sqlx
+[circle-url]: https://circleci.com/gh/ulule/sqlxx/tree/master
+[circle-img]: https://circleci.com/gh/ulule/sqlxx.svg?style=shield&circle-token=e53497efffde023bac7f2710bd12c5d0e71f5af4
