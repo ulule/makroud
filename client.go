@@ -24,70 +24,74 @@ type Client struct {
 	rnd   io.Reader
 }
 
-// clientOptions configure a Client instance. clientOptions are set by the Option
-// values passed to New.
-type clientOptions struct {
-	port               int
-	host               string
-	user               string
-	password           string
-	dbName             string
-	sslMode            string
-	timezone           string
-	maxOpenConnections int
-	maxIdleConnections int
-	withCache          bool
-	savepointEnabled   bool
-	logger             Logger
+// ClientOptions configure a Client instance.
+type ClientOptions struct {
+	Port               int
+	Host               string
+	User               string
+	Password           string
+	DBName             string
+	SSLMode            string
+	Timezone           string
+	MaxOpenConnections int
+	MaxIdleConnections int
+	WithCache          bool
+	SavepointEnabled   bool
+	Logger             Logger
 }
 
-func (e clientOptions) String() string {
+func (e ClientOptions) String() string {
 	return fmt.Sprintf("%s://%s:%s@%s:%d/%s?sslmode=%s;timezone=%s",
 		ClientDriver,
-		e.user,
-		e.password,
-		e.host,
-		e.port,
-		e.dbName,
-		e.sslMode,
-		e.timezone,
+		e.User,
+		e.Password,
+		e.Host,
+		e.Port,
+		e.DBName,
+		e.SSLMode,
+		e.Timezone,
 	)
 }
 
 // New returns a new Client instance.
 func New(options ...Option) (*Client, error) {
-	opts := &clientOptions{
-		host:               "localhost",
-		port:               5432,
-		user:               "postgres",
-		password:           "",
-		dbName:             "postgres",
-		sslMode:            "disable",
-		timezone:           "UTC",
-		maxOpenConnections: 5,
-		maxIdleConnections: 2,
-		withCache:          true,
-		savepointEnabled:   false,
+	opts := &ClientOptions{
+		Host:               "localhost",
+		Port:               5432,
+		User:               "postgres",
+		Password:           "",
+		DBName:             "postgres",
+		SSLMode:            "disable",
+		Timezone:           "UTC",
+		MaxOpenConnections: 5,
+		MaxIdleConnections: 2,
+		WithCache:          true,
+		SavepointEnabled:   false,
 	}
 
 	for _, option := range options {
-		err := option.apply(opts)
+		err := option(opts)
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	return NewWithOptions(opts)
+}
+
+// NewWithOptions returns a new Client instance.
+func NewWithOptions(options *ClientOptions) (*Client, error) {
 	_ = pq.Driver{}
 
-	dbx, err := sqlx.Connect(ClientDriver, opts.String())
+	dbx, err := sqlx.Connect(ClientDriver, options.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "sqlxx: cannot connect to %s server", ClientDriver)
 	}
 
-	dbx.SetMaxIdleConns(opts.maxIdleConnections)
-	dbx.SetMaxOpenConns(opts.maxOpenConnections)
+	dbx.SetMaxIdleConns(options.MaxIdleConnections)
+	dbx.SetMaxOpenConns(options.MaxOpenConnections)
 
-	connection, err := sqalx.New(dbx, sqalx.SavePoint(opts.savepointEnabled))
+	connection, err := sqalx.New(dbx, sqalx.SavePoint(options.SavepointEnabled))
 	if err != nil {
 		return nil, errors.Wrapf(err, "sqlxx: cannot instantiate %s client driver", ClientDriver)
 	}
@@ -100,12 +104,12 @@ func New(options ...Option) (*Client, error) {
 		rnd:  entropy,
 	}
 
-	if opts.withCache {
+	if options.WithCache {
 		client.store = newCache()
 	}
 
-	if opts.logger != nil {
-		client.log = opts.logger
+	if options.Logger != nil {
+		client.log = options.Logger
 	}
 
 	return client, nil

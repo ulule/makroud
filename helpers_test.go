@@ -17,12 +17,12 @@ func TestCount(t *testing.T) {
 		is := require.New(t)
 
 		cats := []Cat{
-			Cat{Name: "Radio"},
-			Cat{Name: "Radish"},
-			Cat{Name: "Radium"},
-			Cat{Name: "Radix"},
-			Cat{Name: "Radman"},
-			Cat{Name: "Radmilla"},
+			{Name: "Radio"},
+			{Name: "Radish"},
+			{Name: "Radium"},
+			{Name: "Radix"},
+			{Name: "Radman"},
+			{Name: "Radmilla"},
 		}
 
 		for i := range cats {
