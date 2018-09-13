@@ -13,8 +13,8 @@ import (
 )
 
 // Preload preloads related fields.
-func Preload(ctx context.Context, driver Driver, out interface{}, paths ...string) error {
-	err := preload(ctx, driver, out, paths...)
+func Preload(ctx context.Context, driver Driver, out interface{}, handlers ...PreloadHandler) error {
+	err := preload(ctx, driver, out, handlers...)
 	if err != nil {
 		return errors.Wrap(err, "sqlxx: cannot execute preload")
 	}
@@ -22,7 +22,7 @@ func Preload(ctx context.Context, driver Driver, out interface{}, paths ...strin
 }
 
 // preload preloads related fields.
-func preload(ctx context.Context, driver Driver, dest interface{}, paths ...string) error {
+func preload(ctx context.Context, driver Driver, dest interface{}, handlers ...PreloadHandler) error {
 	if driver == nil {
 		return errors.WithStack(ErrInvalidDriver)
 	}
@@ -31,21 +31,21 @@ func preload(ctx context.Context, driver Driver, dest interface{}, paths ...stri
 		return errors.Wrapf(ErrPointerRequired, "cannot preload %T", dest)
 	}
 
-	groups := getPreloadGroupPath(paths)
+	groups := getPreloadGroupOperations(handlers)
 	if len(groups) == 0 {
 		return nil
 	}
 
-	for i, paths := range groups {
+	for i, group := range groups {
 		if i == 0 {
 			// Execute a preload of first level.
-			err := executePreloadHandler(ctx, driver, dest, paths)
+			err := executePreloadHandler(ctx, driver, dest, group)
 			if err != nil {
 				return err
 			}
 		} else {
 			// Otherwise, execute a preload with a walker for other levels.
-			err := executePreloadWalker(ctx, driver, dest, paths)
+			err := executePreloadWalker(ctx, driver, dest, group)
 			if err != nil {
 				return err
 			}
@@ -55,54 +55,115 @@ func preload(ctx context.Context, driver Driver, dest interface{}, paths ...stri
 	return nil
 }
 
-type preloadGroupPath map[string]preloadPath
-
-type preloadPath []string
-
-func (p preloadPath) Level() int {
-	return len(p)
+// PreloadHandler defines what resources should be preloaded.
+type PreloadHandler struct {
+	field    string
+	callback func(query builder.Select) builder.Select
 }
 
-func (p preloadPath) Path() string {
-	return strings.Join(p, ".")
+// WithPreloadField returns a handler that preload a field.
+func WithPreloadField(field string) PreloadHandler {
+	return PreloadHandler{
+		field: field,
+		callback: func(query builder.Select) builder.Select {
+			return query
+		},
+	}
 }
 
-func (p preloadPath) Parent() string {
-	l := len(p) - 1
-	return strings.Join(p[0:l], ".")
+// WithPreloadCallback returns a handler that preload a field with conditions.
+func WithPreloadCallback(field string, callback func(query builder.Select) builder.Select) PreloadHandler {
+	return PreloadHandler{
+		field:    field,
+		callback: callback,
+	}
 }
 
-func (p preloadPath) Name() string {
-	l := len(p) - 1
-	if l < 0 {
+// PreloadGroupOperation defines, for a preload level, what resources should be preloaded.
+type PreloadGroupOperation map[string]PreloadOperation
+
+// PreloadOperation defines what and how a resource should be preloaded.
+type PreloadOperation struct {
+	levels  []string
+	handler PreloadHandler
+}
+
+// Level returns the preload level.
+func (o PreloadOperation) Level() int {
+	return len(o.levels)
+}
+
+// Path returns the preload full path.
+func (o PreloadOperation) Path() string {
+	return o.handler.field
+}
+
+// Callback returns the preload conditions to execute for this operation.
+func (o PreloadOperation) Callback() func(query builder.Select) builder.Select {
+	return o.handler.callback
+}
+
+// Parent returns the resource parent path.
+func (o PreloadOperation) Parent() string {
+	size := len(o.levels) - 1
+	return strings.Join(o.levels[0:size], ".")
+}
+
+// Name returns the resource name.
+func (o PreloadOperation) Name() string {
+	size := len(o.levels) - 1
+	if size < 0 {
 		return ""
 	}
-	return p[l]
+	return o.levels[size]
 }
 
-func getPreloadGroupPath(paths []string) []preloadGroupPath {
-	groups := []preloadGroupPath{}
+func getPreloadGroupOperations(handlers []PreloadHandler) []PreloadGroupOperation {
+	groups := []PreloadGroupOperation{}
 
-	for i := range paths {
+	for i := range handlers {
 
 		// Clean up preload path and create a slice of it's level.
 		// "User.Profile.Avatar" -> ["User", "Profile", "Avatar"]
-		path := strings.Trim(paths[i], ".")
-		list := strings.Split(path, ".")
+		handlers[i].field = strings.Trim(handlers[i].field, ".")
+		levels := strings.Split(handlers[i].field, ".")
 
 		// Increase levels slice length if required.
-		for len(list) > len(groups) {
-			groups = append(groups, preloadGroupPath{})
+		for len(levels) > len(groups) {
+			groups = append(groups, PreloadGroupOperation{})
 		}
 
-		// Fill preload path to ensure we have a sequential walkthrough.
+		// Create preload operation and attach it to the correct level.
+		op := PreloadOperation{
+			levels:  levels,
+			handler: handlers[i],
+		}
+
+		idx := op.Level() - 1
+		groups[idx][op.Path()] = op
+
+	}
+
+	for i := range handlers {
+
+		// Fill preload operations to ensure we have a sequential walkthrough.
 		// [0] -> "User"
 		// [1] -> "User.Profile"
 		// [2] -> "User.Profile.Avatar"
+
+		list := strings.Split(handlers[i].field, ".")
 		for i := 0; i < len(list); i++ {
 			n := i + 1
-			path := preloadPath(list[0:n])
-			groups[i][path.Path()] = path
+			levels := list[0:n]
+			path := strings.Join(levels, ".")
+			_, ok := groups[i][path]
+			if !ok {
+				op := PreloadOperation{
+					levels:  levels,
+					handler: WithPreloadField(path),
+				}
+				groups[i][op.Path()] = op
+			}
 		}
 	}
 
@@ -154,7 +215,7 @@ func getPreloadHandler(ctx context.Context, driver Driver, dest interface{}) (*p
 // If you need to execute a preload on the second level (and/or after),
 // please use executePreloadWalker instead.
 func executePreloadHandler(ctx context.Context, driver Driver,
-	dest interface{}, paths map[string]preloadPath) (err error) {
+	dest interface{}, group PreloadGroupOperation) (err error) {
 
 	handler, err := getPreloadHandler(ctx, driver, dest)
 	if err != nil {
@@ -165,20 +226,20 @@ func executePreloadHandler(ctx context.Context, driver Driver,
 	mutex := sync.Mutex{}
 	associations := handler.schema.associations
 
-	wg.Add(len(paths))
-	for _, path := range paths {
+	wg.Add(len(group))
+	for _, operation := range group {
 
-		if path.Level() != 1 {
-			return errors.Wrapf(ErrPreloadInvalidPath, "cannot execute preload of '%s'", path.Path())
+		if operation.Level() != 1 {
+			return errors.Wrapf(ErrPreloadInvalidPath, "cannot execute preload of '%s'", operation.Path())
 		}
 
-		reference, ok := associations[path.Name()]
+		reference, ok := associations[operation.Name()]
 		if !ok {
-			return errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", path.Path())
+			return errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", operation.Path())
 		}
 
-		go func(path preloadPath) {
-			perr := handler.preload(reference)
+		go func(operation PreloadOperation) {
+			perr := handler.preload(reference, operation.Callback())
 			if perr != nil {
 				mutex.Lock()
 				defer mutex.Unlock()
@@ -187,7 +248,7 @@ func executePreloadHandler(ctx context.Context, driver Driver,
 				}
 			}
 			wg.Done()
-		}(path)
+		}(operation)
 	}
 
 	wg.Wait()
@@ -197,20 +258,20 @@ func executePreloadHandler(ctx context.Context, driver Driver,
 
 // executePreloadWalker will executes a preload from the second level and beyond...
 func executePreloadWalker(ctx context.Context, driver Driver,
-	dest interface{}, paths map[string]preloadPath) (err error) {
+	dest interface{}, group PreloadGroupOperation) (err error) {
 
 	wg := sync.WaitGroup{}
 	mutex := sync.Mutex{}
 
-	wg.Add(len(paths))
-	for _, path := range paths {
-		go func(path preloadPath) {
+	wg.Add(len(group))
+	for _, operation := range group {
+		go func(operation PreloadOperation) {
 
 			walker := reflectx.NewWalker(dest)
 			defer walker.Close()
 
-			werr := walker.Find(path.Parent(), func(values interface{}) error {
-				return preload(ctx, driver, values, path.Name())
+			werr := walker.Find(operation.Parent(), func(values interface{}) error {
+				return preload(ctx, driver, values, WithPreloadCallback(operation.Name(), operation.Callback()))
 			})
 			if werr != nil {
 				mutex.Lock()
@@ -222,7 +283,7 @@ func executePreloadWalker(ctx context.Context, driver Driver,
 
 			wg.Done()
 
-		}(path)
+		}(operation)
 	}
 
 	wg.Wait()
@@ -238,21 +299,27 @@ type preloadHandler struct {
 	dest   interface{}
 }
 
-func (handler *preloadHandler) preload(reference Reference) error {
+func (handler *preloadHandler) preload(reference Reference,
+	callback func(query builder.Select) builder.Select) error {
+
 	if reference.IsAssociationType(AssociationTypeOne) {
-		return handler.preloadOne(reference)
+		return handler.preloadOne(reference, callback)
 	}
-	return handler.preloadMany(reference)
+	return handler.preloadMany(reference, callback)
 }
 
-func (handler *preloadHandler) preloadOne(reference Reference) error {
+func (handler *preloadHandler) preloadOne(reference Reference,
+	callback func(query builder.Select) builder.Select) error {
+
 	if reference.IsLocal() {
-		return handler.preloadOneLocal(reference)
+		return handler.preloadOneLocal(reference, callback)
 	}
-	return handler.preloadOneRemote(reference)
+	return handler.preloadOneRemote(reference, callback)
 }
 
-func (handler *preloadHandler) preloadOneLocal(reference Reference) error {
+func (handler *preloadHandler) preloadOneLocal(reference Reference,
+	callback func(query builder.Select) builder.Select) error {
+
 	remote := reference.Remote()
 	local := reference.Local()
 
@@ -261,29 +328,41 @@ func (handler *preloadHandler) preloadOneLocal(reference Reference) error {
 		return err
 	}
 
-	builder := loukoum.Select(remote.Columns()).From(remote.TableName())
+	builder := callback(loukoum.Select(remote.Columns()).From(remote.TableName()))
 	if remote.HasDeletedKey() {
 		builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
 	}
 
 	switch local.ForeignKeyType() {
 	case FKStringType:
+
 		preloader := reflectx.NewStringPreloader(reference.FieldName(), reference.Type(), handler.dest)
+		defer preloader.Close()
+
 		return handler.preloadString(preloader, reference, builder,
 			getPreloadForEachCallbackLocalString(preloader, reference))
 
 	case FKIntegerType:
+
 		preloader := reflectx.NewIntegerPreloader(reference.FieldName(), reference.Type(), handler.dest)
+		defer preloader.Close()
+
 		return handler.preloadInteger(preloader, reference, builder,
 			getPreloadForEachCallbackLocalInteger(preloader, reference))
 
 	case FKOptionalStringType:
+
 		preloader := reflectx.NewStringPreloader(reference.FieldName(), reference.Type(), handler.dest)
+		defer preloader.Close()
+
 		return handler.preloadString(preloader, reference, builder,
 			getPreloadForEachCallbackLocalOptionalString(preloader, reference))
 
 	case FKOptionalIntegerType:
+
 		preloader := reflectx.NewIntegerPreloader(reference.FieldName(), reference.Type(), handler.dest)
+		defer preloader.Close()
+
 		return handler.preloadInteger(preloader, reference, builder,
 			getPreloadForEachCallbackLocalOptionalInteger(preloader, reference))
 
@@ -292,7 +371,9 @@ func (handler *preloadHandler) preloadOneLocal(reference Reference) error {
 	}
 }
 
-func (handler *preloadHandler) preloadOneRemote(reference Reference) error {
+func (handler *preloadHandler) preloadOneRemote(reference Reference,
+	callback func(query builder.Select) builder.Select) error {
+
 	remote := reference.Remote()
 	local := reference.Local()
 
@@ -301,19 +382,25 @@ func (handler *preloadHandler) preloadOneRemote(reference Reference) error {
 		return err
 	}
 
-	builder := loukoum.Select(remote.Columns()).From(remote.TableName())
+	builder := callback(loukoum.Select(remote.Columns()).From(remote.TableName()))
 	if remote.HasDeletedKey() {
 		builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
 	}
 
 	switch local.PrimaryKeyType() {
 	case PKStringType:
+
 		preloader := reflectx.NewStringPreloader(reference.FieldName(), reference.Type(), handler.dest)
+		defer preloader.Close()
+
 		return handler.preloadString(preloader, reference, builder,
 			getPreloadForEachCallbackRemoteString(preloader, reference))
 
 	case PKIntegerType:
+
 		preloader := reflectx.NewIntegerPreloader(reference.FieldName(), reference.Type(), handler.dest)
+		defer preloader.Close()
+
 		return handler.preloadInteger(preloader, reference, builder,
 			getPreloadForEachCallbackRemoteInteger(preloader, reference))
 
@@ -322,7 +409,9 @@ func (handler *preloadHandler) preloadOneRemote(reference Reference) error {
 	}
 }
 
-func (handler *preloadHandler) preloadMany(reference Reference) error {
+func (handler *preloadHandler) preloadMany(reference Reference,
+	callback func(query builder.Select) builder.Select) error {
+
 	remote := reference.Remote()
 	local := reference.Local()
 
@@ -331,19 +420,25 @@ func (handler *preloadHandler) preloadMany(reference Reference) error {
 		return err
 	}
 
-	builder := loukoum.Select(remote.Columns()).From(remote.TableName())
+	builder := callback(loukoum.Select(remote.Columns()).From(remote.TableName()))
 	if remote.HasDeletedKey() {
 		builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
 	}
 
 	switch local.PrimaryKeyType() {
 	case PKStringType:
+
 		preloader := reflectx.NewStringPreloader(reference.FieldName(), reference.Type(), handler.dest)
+		defer preloader.Close()
+
 		return handler.preloadString(preloader, reference, builder,
 			getPreloadForEachCallbackRemoteString(preloader, reference))
 
 	case PKIntegerType:
+
 		preloader := reflectx.NewIntegerPreloader(reference.FieldName(), reference.Type(), handler.dest)
+		defer preloader.Close()
+
 		return handler.preloadInteger(preloader, reference, builder,
 			getPreloadForEachCallbackRemoteInteger(preloader, reference))
 
