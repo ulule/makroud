@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"github.com/ulule/loukoum"
+	"github.com/ulule/loukoum/builder"
 
 	"github.com/ulule/sqlxx"
 )
@@ -17,25 +19,29 @@ func TestPreload_CommonFailure(t *testing.T) {
 
 		{
 			value := Human{}
-			err := sqlxx.Preload(ctx, nil, &value, "Cat")
+			err := sqlxx.Preload(ctx, nil, &value, sqlxx.WithPreloadField("Cat"))
 			is.Error(err)
 			is.Equal(sqlxx.ErrInvalidDriver, errors.Cause(err))
 		}
 		{
 			value := 12
-			err := sqlxx.Preload(ctx, driver, &value, "Cat")
+			err := sqlxx.Preload(ctx, driver, &value, sqlxx.WithPreloadField("Cat"))
 			is.Error(err)
 			is.Equal(sqlxx.ErrPreloadInvalidSchema, errors.Cause(err))
 		}
 		{
 			value := Human{}
-			err := sqlxx.Preload(ctx, driver, value, "Cat")
+			err := sqlxx.Preload(ctx, driver, value, sqlxx.WithPreloadField("Cat"))
 			is.Error(err)
 			is.Equal(sqlxx.ErrPointerRequired, errors.Cause(err))
 		}
 		{
 			value := Human{}
-			err := sqlxx.Preload(ctx, driver, &value, "X", "Y", "Z")
+			err := sqlxx.Preload(ctx, driver, &value,
+				sqlxx.WithPreloadField("X"),
+				sqlxx.WithPreloadField("Y"),
+				sqlxx.WithPreloadField("Z"),
+			)
 			is.Error(err)
 			is.Equal(sqlxx.ErrPreloadInvalidPath, errors.Cause(err))
 		}
@@ -60,7 +66,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 
 			region1 := fixtures.Regions[0]
 
-			err := sqlxx.Preload(ctx, driver, region1, "Buckets")
+			err := sqlxx.Preload(ctx, driver, region1, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.NotNil(region1.Buckets)
 			is.NotEmpty((*region1.Buckets))
@@ -70,7 +76,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 
 			region2 := fixtures.Regions[1]
 
-			err = sqlxx.Preload(ctx, driver, region2, "Buckets")
+			err = sqlxx.Preload(ctx, driver, region2, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.NotNil(region2.Buckets)
 			is.Empty((*region2.Buckets))
@@ -78,7 +84,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 
 			region3 := fixtures.Regions[2]
 
-			err = sqlxx.Preload(ctx, driver, region3, "Buckets")
+			err = sqlxx.Preload(ctx, driver, region3, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.NotNil(region3.Buckets)
 			is.NotEmpty((*region3.Buckets))
@@ -94,7 +100,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 
 			region1 := fixtures.Regions[0]
 
-			err := sqlxx.Preload(ctx, driver, &region1, "Buckets")
+			err := sqlxx.Preload(ctx, driver, &region1, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.NotNil(region1.Buckets)
 			is.NotEmpty((*region1.Buckets))
@@ -104,7 +110,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 
 			region2 := fixtures.Regions[1]
 
-			err = sqlxx.Preload(ctx, driver, &region2, "Buckets")
+			err = sqlxx.Preload(ctx, driver, &region2, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.NotNil(region2.Buckets)
 			is.Empty((*region2.Buckets))
@@ -112,7 +118,7 @@ func TestPreload_ExoRegion_One(t *testing.T) {
 
 			region3 := fixtures.Regions[2]
 
-			err = sqlxx.Preload(ctx, driver, &region3, "Buckets")
+			err = sqlxx.Preload(ctx, driver, &region3, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.NotNil(region3.Buckets)
 			is.NotEmpty((*region3.Buckets))
@@ -146,7 +152,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 				*fixtures.Regions[2],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &regions, "Buckets")
+			err := sqlxx.Preload(ctx, driver, &regions, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.Len(regions, 3)
 			is.Equal(fixtures.Regions[0].ID, regions[0].ID)
@@ -181,7 +187,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 				fixtures.Regions[2],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &regions, "Buckets")
+			err := sqlxx.Preload(ctx, driver, &regions, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.Len(regions, 3)
 			is.Equal(fixtures.Regions[0].ID, regions[0].ID)
@@ -216,7 +222,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 				*fixtures.Regions[2],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &regions, "Buckets")
+			err := sqlxx.Preload(ctx, driver, &regions, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.Len((*regions), 3)
 			is.Equal(fixtures.Regions[0].ID, (*regions)[0].ID)
@@ -251,7 +257,7 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 				fixtures.Regions[2],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &regions, "Buckets")
+			err := sqlxx.Preload(ctx, driver, &regions, sqlxx.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.Len((*regions), 3)
 			is.Equal(fixtures.Regions[0].ID, (*regions)[0].ID)
@@ -297,7 +303,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 
 			bucket1 := fixtures.Buckets[0]
 
-			err := sqlxx.Preload(ctx, driver, bucket1, "Region")
+			err := sqlxx.Preload(ctx, driver, bucket1, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.NotEmpty(bucket1.Region)
 			is.Equal(fixtures.Regions[0].ID, bucket1.Region.ID)
@@ -306,7 +312,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 
 			bucket2 := fixtures.Buckets[1]
 
-			err = sqlxx.Preload(ctx, driver, bucket2, "Region")
+			err = sqlxx.Preload(ctx, driver, bucket2, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.NotEmpty(bucket2.Region)
 			is.Equal(fixtures.Regions[0].ID, bucket2.Region.ID)
@@ -315,7 +321,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 
 			bucket3 := fixtures.Buckets[2]
 
-			err = sqlxx.Preload(ctx, driver, bucket3, "Region")
+			err = sqlxx.Preload(ctx, driver, bucket3, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.NotEmpty(bucket3.Region)
 			is.Equal(fixtures.Regions[2].ID, bucket3.Region.ID)
@@ -324,7 +330,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 
 			bucket4 := fixtures.Buckets[3]
 
-			err = sqlxx.Preload(ctx, driver, bucket4, "Region")
+			err = sqlxx.Preload(ctx, driver, bucket4, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.NotEmpty(bucket4.Region)
 			is.Equal(fixtures.Regions[2].ID, bucket4.Region.ID)
@@ -339,7 +345,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 
 			bucket1 := fixtures.Buckets[0]
 
-			err := sqlxx.Preload(ctx, driver, &bucket1, "Region")
+			err := sqlxx.Preload(ctx, driver, &bucket1, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.NotEmpty(bucket1.Region)
 			is.Equal(fixtures.Regions[0].ID, bucket1.Region.ID)
@@ -348,7 +354,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 
 			bucket2 := fixtures.Buckets[1]
 
-			err = sqlxx.Preload(ctx, driver, &bucket2, "Region")
+			err = sqlxx.Preload(ctx, driver, &bucket2, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.NotEmpty(bucket2.Region)
 			is.Equal(fixtures.Regions[0].ID, bucket2.Region.ID)
@@ -357,7 +363,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 
 			bucket3 := fixtures.Buckets[2]
 
-			err = sqlxx.Preload(ctx, driver, &bucket3, "Region")
+			err = sqlxx.Preload(ctx, driver, &bucket3, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.NotEmpty(bucket3.Region)
 			is.Equal(fixtures.Regions[2].ID, bucket3.Region.ID)
@@ -366,7 +372,7 @@ func TestPreload_ExoBucket_One(t *testing.T) {
 
 			bucket4 := fixtures.Buckets[3]
 
-			err = sqlxx.Preload(ctx, driver, &bucket4, "Region")
+			err = sqlxx.Preload(ctx, driver, &bucket4, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.NotEmpty(bucket4.Region)
 			is.Equal(fixtures.Regions[2].ID, bucket4.Region.ID)
@@ -401,7 +407,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 				*fixtures.Buckets[3],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &buckets, "Region")
+			err := sqlxx.Preload(ctx, driver, &buckets, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.Len(buckets, 4)
 			is.Equal(fixtures.Buckets[0].ID, buckets[0].ID)
@@ -442,7 +448,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 				fixtures.Buckets[3],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &buckets, "Region")
+			err := sqlxx.Preload(ctx, driver, &buckets, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.Len(buckets, 4)
 			is.Equal(fixtures.Buckets[0].ID, buckets[0].ID)
@@ -483,7 +489,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 				*fixtures.Buckets[3],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &buckets, "Region")
+			err := sqlxx.Preload(ctx, driver, &buckets, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.Len((*buckets), 4)
 			is.Equal(fixtures.Buckets[0].ID, (*buckets)[0].ID)
@@ -524,7 +530,7 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 				fixtures.Buckets[3],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &buckets, "Region")
+			err := sqlxx.Preload(ctx, driver, &buckets, sqlxx.WithPreloadField("Region"))
 			is.NoError(err)
 			is.Len((*buckets), 4)
 			is.Equal(fixtures.Buckets[0].ID, (*buckets)[0].ID)
@@ -585,12 +591,12 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory1 := fixtures.Directories[0]
 
-			err := sqlxx.Preload(ctx, driver, directory1, "Files")
+			err := sqlxx.Preload(ctx, driver, directory1, sqlxx.WithPreloadField("Files"))
 			is.NoError(err)
 			is.Empty(directory1.Files)
 			is.Empty(directory1.Directories)
 
-			err = sqlxx.Preload(ctx, driver, directory1, "Directories")
+			err = sqlxx.Preload(ctx, driver, directory1, sqlxx.WithPreloadField("Directories"))
 			is.NoError(err)
 			is.NotEmpty(directory1.Directories)
 			is.Len(directory1.Directories, 6)
@@ -627,14 +633,20 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory2 := fixtures.Directories[1]
 
-			err = sqlxx.Preload(ctx, driver, directory2, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, directory2,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory2.Files)
 			is.Empty(directory2.Directories)
 
 			directory3 := fixtures.Directories[2]
 
-			err = sqlxx.Preload(ctx, driver, directory3, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, directory3,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory3.Files)
 			is.NotEmpty(directory3.Directories)
@@ -657,7 +669,10 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory4 := fixtures.Directories[11]
 
-			err = sqlxx.Preload(ctx, driver, directory4, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, directory4,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory4.Directories)
 			is.NotEmpty(directory4.Files)
@@ -685,7 +700,10 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory5 := fixtures.Directories[13]
 
-			err = sqlxx.Preload(ctx, driver, directory5, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, directory5,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory5.Directories)
 			is.NotEmpty(directory5.Files)
@@ -703,7 +721,10 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory6 := fixtures.Directories[15]
 
-			err = sqlxx.Preload(ctx, driver, directory6, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, directory6,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory6.Directories)
 			is.NotEmpty(directory6.Files)
@@ -731,7 +752,10 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory7 := fixtures.Directories[17]
 
-			err = sqlxx.Preload(ctx, driver, directory7, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, directory7,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory7.Directories)
 			is.NotEmpty(directory7.Files)
@@ -765,12 +789,12 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory1 := fixtures.Directories[0]
 
-			err := sqlxx.Preload(ctx, driver, &directory1, "Files")
+			err := sqlxx.Preload(ctx, driver, &directory1, sqlxx.WithPreloadField("Files"))
 			is.NoError(err)
 			is.Empty(directory1.Files)
 			is.Empty(directory1.Directories)
 
-			err = sqlxx.Preload(ctx, driver, &directory1, "Directories")
+			err = sqlxx.Preload(ctx, driver, &directory1, sqlxx.WithPreloadField("Directories"))
 			is.NoError(err)
 			is.NotEmpty(directory1.Directories)
 			is.Len(directory1.Directories, 6)
@@ -807,14 +831,20 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory2 := fixtures.Directories[1]
 
-			err = sqlxx.Preload(ctx, driver, &directory2, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, &directory2,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory2.Files)
 			is.Empty(directory2.Directories)
 
 			directory3 := fixtures.Directories[2]
 
-			err = sqlxx.Preload(ctx, driver, &directory3, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, &directory3,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory3.Files)
 			is.NotEmpty(directory3.Directories)
@@ -837,7 +867,10 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory4 := fixtures.Directories[11]
 
-			err = sqlxx.Preload(ctx, driver, &directory4, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, &directory4,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory4.Directories)
 			is.NotEmpty(directory4.Files)
@@ -865,7 +898,10 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory5 := fixtures.Directories[13]
 
-			err = sqlxx.Preload(ctx, driver, &directory5, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, &directory5,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory5.Directories)
 			is.NotEmpty(directory5.Files)
@@ -883,7 +919,10 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory6 := fixtures.Directories[15]
 
-			err = sqlxx.Preload(ctx, driver, &directory6, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, &directory6,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory6.Directories)
 			is.NotEmpty(directory6.Files)
@@ -911,7 +950,10 @@ func TestPreload_ExoDirectory_One(t *testing.T) {
 
 			directory7 := fixtures.Directories[17]
 
-			err = sqlxx.Preload(ctx, driver, &directory7, "Files", "Directories")
+			err = sqlxx.Preload(ctx, driver, &directory7,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Empty(directory7.Directories)
 			is.NotEmpty(directory7.Files)
@@ -978,7 +1020,10 @@ func TestPreload_ExoDirectory_Many(t *testing.T) {
 				*fixtures.Directories[17],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &directories, "Files", "Directories")
+			err := sqlxx.Preload(ctx, driver, &directories,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Len(directories, 7)
 			is.Equal(fixtures.Directories[0].ID, directories[0].ID)
@@ -1147,7 +1192,10 @@ func TestPreload_ExoDirectory_Many(t *testing.T) {
 				fixtures.Directories[17],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &directories, "Files", "Directories")
+			err := sqlxx.Preload(ctx, driver, &directories,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Len(directories, 7)
 			is.Equal(fixtures.Directories[0].ID, directories[0].ID)
@@ -1316,7 +1364,10 @@ func TestPreload_ExoDirectory_Many(t *testing.T) {
 				*fixtures.Directories[17],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &directories, "Files", "Directories")
+			err := sqlxx.Preload(ctx, driver, &directories,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Len((*directories), 7)
 			is.Equal(fixtures.Directories[0].ID, (*directories)[0].ID)
@@ -1485,7 +1536,10 @@ func TestPreload_ExoDirectory_Many(t *testing.T) {
 				fixtures.Directories[17],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &directories, "Files", "Directories")
+			err := sqlxx.Preload(ctx, driver, &directories,
+				sqlxx.WithPreloadField("Files"),
+				sqlxx.WithPreloadField("Directories"),
+			)
 			is.NoError(err)
 			is.Len((*directories), 7)
 			is.Equal(fixtures.Directories[0].ID, (*directories)[0].ID)
@@ -1669,14 +1723,14 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk1 := fixtures.Chunks[24]
 
-			err := sqlxx.Preload(ctx, driver, chunk1, "Mode")
+			err := sqlxx.Preload(ctx, driver, chunk1, sqlxx.WithPreloadField("Mode"))
 			is.NoError(err)
 			is.NotNil(chunk1.Mode)
 			is.Equal(fixtures.Modes[0].ID, chunk1.Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, chunk1.Mode.Mode)
 			is.Nil(chunk1.Signature)
 
-			err = sqlxx.Preload(ctx, driver, chunk1, "Signature")
+			err = sqlxx.Preload(ctx, driver, chunk1, sqlxx.WithPreloadField("Signature"))
 			is.NoError(err)
 			is.NotNil(chunk1.Signature)
 			is.Equal(fixtures.Signatures[0].ID, chunk1.Signature.ID)
@@ -1685,7 +1739,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk2 := fixtures.Chunks[25]
 
-			err = sqlxx.Preload(ctx, driver, chunk2, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, chunk2,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk2.Mode)
 			is.Equal(fixtures.Modes[0].ID, chunk2.Mode.ID)
@@ -1697,7 +1754,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk3 := fixtures.Chunks[26]
 
-			err = sqlxx.Preload(ctx, driver, chunk3, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, chunk3,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk3.Mode)
 			is.Equal(fixtures.Modes[0].ID, chunk3.Mode.ID)
@@ -1709,7 +1769,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk4 := fixtures.Chunks[27]
 
-			err = sqlxx.Preload(ctx, driver, chunk4, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, chunk4,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk4.Mode)
 			is.Equal(fixtures.Modes[0].ID, chunk4.Mode.ID)
@@ -1721,7 +1784,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk5 := fixtures.Chunks[28]
 
-			err = sqlxx.Preload(ctx, driver, chunk5, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, chunk5,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk5.Mode)
 			is.Equal(fixtures.Modes[2].ID, chunk5.Mode.ID)
@@ -1730,7 +1796,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk6 := fixtures.Chunks[23]
 
-			err = sqlxx.Preload(ctx, driver, chunk6, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, chunk6,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk6.Mode)
 			is.Equal(fixtures.Modes[3].ID, chunk6.Mode.ID)
@@ -1745,14 +1814,14 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk1 := fixtures.Chunks[24]
 
-			err := sqlxx.Preload(ctx, driver, &chunk1, "Mode")
+			err := sqlxx.Preload(ctx, driver, &chunk1, sqlxx.WithPreloadField("Mode"))
 			is.NoError(err)
 			is.NotNil(chunk1.Mode)
 			is.Equal(fixtures.Modes[0].ID, chunk1.Mode.ID)
 			is.Equal(fixtures.Modes[0].Mode, chunk1.Mode.Mode)
 			is.Nil(chunk1.Signature)
 
-			err = sqlxx.Preload(ctx, driver, &chunk1, "Signature")
+			err = sqlxx.Preload(ctx, driver, &chunk1, sqlxx.WithPreloadField("Signature"))
 			is.NoError(err)
 			is.NotNil(chunk1.Signature)
 			is.Equal(fixtures.Signatures[0].ID, chunk1.Signature.ID)
@@ -1761,7 +1830,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk2 := fixtures.Chunks[25]
 
-			err = sqlxx.Preload(ctx, driver, &chunk2, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, &chunk2,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk2.Mode)
 			is.Equal(fixtures.Modes[0].ID, chunk2.Mode.ID)
@@ -1773,7 +1845,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk3 := fixtures.Chunks[26]
 
-			err = sqlxx.Preload(ctx, driver, &chunk3, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, &chunk3,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk3.Mode)
 			is.Equal(fixtures.Modes[0].ID, chunk3.Mode.ID)
@@ -1785,7 +1860,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk4 := fixtures.Chunks[27]
 
-			err = sqlxx.Preload(ctx, driver, &chunk4, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, &chunk4,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk4.Mode)
 			is.Equal(fixtures.Modes[0].ID, chunk4.Mode.ID)
@@ -1797,7 +1875,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk5 := fixtures.Chunks[28]
 
-			err = sqlxx.Preload(ctx, driver, &chunk5, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, &chunk5,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk5.Mode)
 			is.Equal(fixtures.Modes[2].ID, chunk5.Mode.ID)
@@ -1806,7 +1887,10 @@ func TestPreload_ExoChunk_One(t *testing.T) {
 
 			chunk6 := fixtures.Chunks[23]
 
-			err = sqlxx.Preload(ctx, driver, &chunk6, "Mode", "Signature")
+			err = sqlxx.Preload(ctx, driver, &chunk6,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.NotNil(chunk6.Mode)
 			is.Equal(fixtures.Modes[3].ID, chunk6.Mode.ID)
@@ -1851,7 +1935,10 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 				*fixtures.Chunks[28],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
+			err := sqlxx.Preload(ctx, driver, &chunks,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.Len(chunks, 6)
 			is.Equal(fixtures.Chunks[23].Hash, chunks[0].Hash)
@@ -1918,7 +2005,10 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 				fixtures.Chunks[28],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
+			err := sqlxx.Preload(ctx, driver, &chunks,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.Len(chunks, 6)
 			is.Equal(fixtures.Chunks[23].Hash, chunks[0].Hash)
@@ -1985,7 +2075,10 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 				*fixtures.Chunks[28],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
+			err := sqlxx.Preload(ctx, driver, &chunks,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.Len((*chunks), 6)
 			is.Equal(fixtures.Chunks[23].Hash, (*chunks)[0].Hash)
@@ -2052,7 +2145,10 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 				fixtures.Chunks[28],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
+			err := sqlxx.Preload(ctx, driver, &chunks,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.Len((*chunks), 6)
 			is.Equal(fixtures.Chunks[23].Hash, (*chunks)[0].Hash)
@@ -2109,7 +2205,10 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 
 			chunks := []ExoChunk{}
 
-			err := sqlxx.Preload(ctx, driver, &chunks, "Mode", "Signature")
+			err := sqlxx.Preload(ctx, driver, &chunks,
+				sqlxx.WithPreloadField("Mode"),
+				sqlxx.WithPreloadField("Signature"),
+			)
 			is.NoError(err)
 			is.Len(chunks, 0)
 
@@ -2150,7 +2249,7 @@ func TestPreload_Owl_One(t *testing.T) {
 
 			owl1 := fixtures.Owls[0]
 
-			err := sqlxx.Preload(ctx, driver, owl1, "Group")
+			err := sqlxx.Preload(ctx, driver, owl1, sqlxx.WithPreloadField("Group"))
 			is.NoError(err)
 			is.NotNil(owl1.Group)
 			is.Equal(fixtures.Groups[0].ID, owl1.Group.ID)
@@ -2158,7 +2257,7 @@ func TestPreload_Owl_One(t *testing.T) {
 			is.Empty(owl1.Packages)
 			is.Empty(owl1.Bag)
 
-			err = sqlxx.Preload(ctx, driver, owl1, "Packages")
+			err = sqlxx.Preload(ctx, driver, owl1, sqlxx.WithPreloadField("Packages"))
 			is.NoError(err)
 			is.NotEmpty(owl1.Packages)
 			is.Len(owl1.Packages, 2)
@@ -2166,7 +2265,7 @@ func TestPreload_Owl_One(t *testing.T) {
 			is.Contains(owl1.Packages, *fixtures.Packages[1])
 			is.Empty(owl1.Bag)
 
-			err = sqlxx.Preload(ctx, driver, owl1, "Bag")
+			err = sqlxx.Preload(ctx, driver, owl1, sqlxx.WithPreloadField("Bag"))
 			is.NoError(err)
 			is.NotEmpty(owl1.Bag)
 			is.Equal(fixtures.Bags[0].ID, owl1.Bag.ID)
@@ -2174,7 +2273,11 @@ func TestPreload_Owl_One(t *testing.T) {
 
 			owl2 := fixtures.Owls[1]
 
-			err = sqlxx.Preload(ctx, driver, owl2, "Group", "Bag", "Packages")
+			err = sqlxx.Preload(ctx, driver, owl2,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.Nil(owl2.Group)
 			is.NotEmpty(owl2.Packages)
@@ -2186,7 +2289,11 @@ func TestPreload_Owl_One(t *testing.T) {
 
 			owl3 := fixtures.Owls[2]
 
-			err = sqlxx.Preload(ctx, driver, owl3, "Group", "Bag", "Packages")
+			err = sqlxx.Preload(ctx, driver, owl3,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.NotNil(owl3.Group)
 			is.Equal(fixtures.Groups[0].ID, owl3.Group.ID)
@@ -2202,7 +2309,11 @@ func TestPreload_Owl_One(t *testing.T) {
 
 			owl5 := fixtures.Owls[4]
 
-			err = sqlxx.Preload(ctx, driver, owl5, "Group", "Bag", "Packages")
+			err = sqlxx.Preload(ctx, driver, owl5,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.NotNil(owl5.Group)
 			is.Equal(fixtures.Groups[2].ID, owl5.Group.ID)
@@ -2220,7 +2331,11 @@ func TestPreload_Owl_One(t *testing.T) {
 
 			owl1 := fixtures.Owls[0]
 
-			err := sqlxx.Preload(ctx, driver, &owl1, "Group", "Bag", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owl1,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.NotNil(owl1.Group)
 			is.Equal(fixtures.Groups[0].ID, owl1.Group.ID)
@@ -2235,7 +2350,11 @@ func TestPreload_Owl_One(t *testing.T) {
 
 			owl2 := fixtures.Owls[1]
 
-			err = sqlxx.Preload(ctx, driver, &owl2, "Group", "Bag", "Packages")
+			err = sqlxx.Preload(ctx, driver, &owl2,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.Nil(owl2.Group)
 			is.NotEmpty(owl2.Packages)
@@ -2247,7 +2366,11 @@ func TestPreload_Owl_One(t *testing.T) {
 
 			owl3 := fixtures.Owls[2]
 
-			err = sqlxx.Preload(ctx, driver, &owl3, "Group", "Bag", "Packages")
+			err = sqlxx.Preload(ctx, driver, &owl3,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.NotNil(owl3.Group)
 			is.Equal(fixtures.Groups[0].ID, owl3.Group.ID)
@@ -2263,7 +2386,11 @@ func TestPreload_Owl_One(t *testing.T) {
 
 			owl5 := fixtures.Owls[4]
 
-			err = sqlxx.Preload(ctx, driver, &owl5, "Group", "Bag", "Packages")
+			err = sqlxx.Preload(ctx, driver, &owl5,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.NotNil(owl5.Group)
 			is.Equal(fixtures.Groups[2].ID, owl5.Group.ID)
@@ -2317,7 +2444,11 @@ func TestPreload_Owl_Many(t *testing.T) {
 				*fixtures.Owls[5],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Bag", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owls,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.Len(owls, 6)
 			is.Equal(fixtures.Owls[0].ID, owls[0].ID)
@@ -2406,7 +2537,11 @@ func TestPreload_Owl_Many(t *testing.T) {
 				fixtures.Owls[5],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Bag", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owls,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.Len(owls, 6)
 			is.Equal(fixtures.Owls[0].ID, owls[0].ID)
@@ -2495,7 +2630,11 @@ func TestPreload_Owl_Many(t *testing.T) {
 				*fixtures.Owls[5],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Bag", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owls,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.Len((*owls), 6)
 			is.Equal(fixtures.Owls[0].ID, (*owls)[0].ID)
@@ -2584,7 +2723,11 @@ func TestPreload_Owl_Many(t *testing.T) {
 				fixtures.Owls[5],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Bag", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owls,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.Len((*owls), 6)
 			is.Equal(fixtures.Owls[0].ID, (*owls)[0].ID)
@@ -2663,7 +2806,11 @@ func TestPreload_Owl_Many(t *testing.T) {
 
 			owls := []Owl{}
 
-			err := sqlxx.Preload(ctx, driver, &owls, "Group", "Packages")
+			err := sqlxx.Preload(ctx, driver, &owls,
+				sqlxx.WithPreloadField("Group"),
+				sqlxx.WithPreloadField("Bag"),
+				sqlxx.WithPreloadField("Packages"),
+			)
 			is.NoError(err)
 			is.Len(owls, 0)
 
@@ -2691,7 +2838,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag1 := fixtures.Bags[0]
 
-			err := sqlxx.Preload(ctx, driver, bag1, "Owl")
+			err := sqlxx.Preload(ctx, driver, bag1, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag1.Owl)
 			is.Equal(fixtures.Owls[0].ID, bag1.Owl.ID)
@@ -2701,7 +2848,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag2 := fixtures.Bags[1]
 
-			err = sqlxx.Preload(ctx, driver, bag2, "Owl")
+			err = sqlxx.Preload(ctx, driver, bag2, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag2.Owl)
 			is.Equal(fixtures.Owls[1].ID, bag2.Owl.ID)
@@ -2711,7 +2858,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag3 := fixtures.Bags[2]
 
-			err = sqlxx.Preload(ctx, driver, bag3, "Owl")
+			err = sqlxx.Preload(ctx, driver, bag3, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag3.Owl)
 			is.Equal(fixtures.Owls[3].ID, bag3.Owl.ID)
@@ -2721,7 +2868,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag4 := fixtures.Bags[3]
 
-			err = sqlxx.Preload(ctx, driver, bag4, "Owl")
+			err = sqlxx.Preload(ctx, driver, bag4, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag4.Owl)
 			is.Equal(fixtures.Owls[4].ID, bag4.Owl.ID)
@@ -2731,7 +2878,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag5 := fixtures.Bags[4]
 
-			err = sqlxx.Preload(ctx, driver, bag5, "Owl")
+			err = sqlxx.Preload(ctx, driver, bag5, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag5.Owl)
 			is.Equal(fixtures.Owls[5].ID, bag5.Owl.ID)
@@ -2747,7 +2894,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag1 := fixtures.Bags[0]
 
-			err := sqlxx.Preload(ctx, driver, &bag1, "Owl")
+			err := sqlxx.Preload(ctx, driver, &bag1, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag1.Owl)
 			is.Equal(fixtures.Owls[0].ID, bag1.Owl.ID)
@@ -2757,7 +2904,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag2 := fixtures.Bags[1]
 
-			err = sqlxx.Preload(ctx, driver, &bag2, "Owl")
+			err = sqlxx.Preload(ctx, driver, &bag2, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag2.Owl)
 			is.Equal(fixtures.Owls[1].ID, bag2.Owl.ID)
@@ -2767,7 +2914,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag3 := fixtures.Bags[2]
 
-			err = sqlxx.Preload(ctx, driver, &bag3, "Owl")
+			err = sqlxx.Preload(ctx, driver, &bag3, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag3.Owl)
 			is.Equal(fixtures.Owls[3].ID, bag3.Owl.ID)
@@ -2777,7 +2924,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag4 := fixtures.Bags[3]
 
-			err = sqlxx.Preload(ctx, driver, &bag4, "Owl")
+			err = sqlxx.Preload(ctx, driver, &bag4, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag4.Owl)
 			is.Equal(fixtures.Owls[4].ID, bag4.Owl.ID)
@@ -2787,7 +2934,7 @@ func TestPreload_Bag_One(t *testing.T) {
 
 			bag5 := fixtures.Bags[4]
 
-			err = sqlxx.Preload(ctx, driver, &bag5, "Owl")
+			err = sqlxx.Preload(ctx, driver, &bag5, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.NotEmpty(bag5.Owl)
 			is.Equal(fixtures.Owls[5].ID, bag5.Owl.ID)
@@ -2825,7 +2972,7 @@ func TestPreload_Bag_Many(t *testing.T) {
 				*fixtures.Bags[4],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &bags, "Owl")
+			err := sqlxx.Preload(ctx, driver, &bags, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.Len(bags, 5)
 			is.Equal(fixtures.Bags[0].ID, bags[0].ID)
@@ -2878,7 +3025,7 @@ func TestPreload_Bag_Many(t *testing.T) {
 				fixtures.Bags[4],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &bags, "Owl")
+			err := sqlxx.Preload(ctx, driver, &bags, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.Len(bags, 5)
 			is.Equal(fixtures.Bags[0].ID, bags[0].ID)
@@ -2931,7 +3078,7 @@ func TestPreload_Bag_Many(t *testing.T) {
 				*fixtures.Bags[4],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &bags, "Owl")
+			err := sqlxx.Preload(ctx, driver, &bags, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.Len((*bags), 5)
 			is.Equal(fixtures.Bags[0].ID, (*bags)[0].ID)
@@ -2984,7 +3131,7 @@ func TestPreload_Bag_Many(t *testing.T) {
 				fixtures.Bags[4],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &bags, "Owl")
+			err := sqlxx.Preload(ctx, driver, &bags, sqlxx.WithPreloadField("Owl"))
 			is.NoError(err)
 			is.Len((*bags), 5)
 			is.Equal(fixtures.Bags[0].ID, (*bags)[0].ID)
@@ -3058,14 +3205,14 @@ func TestPreload_Cat_One(t *testing.T) {
 
 			cat1 := fixtures.Cats[0]
 
-			err := sqlxx.Preload(ctx, driver, cat1, "Feeder")
+			err := sqlxx.Preload(ctx, driver, cat1, sqlxx.WithPreloadField("Feeder"))
 			is.NoError(err)
 			is.NotNil(cat1.Feeder)
 			is.Equal(fixtures.Humans[0].ID, cat1.Feeder.ID)
 			is.Equal(fixtures.Humans[0].Name, cat1.Feeder.Name)
 			is.Empty(cat1.Meows)
 
-			err = sqlxx.Preload(ctx, driver, cat1, "Meows")
+			err = sqlxx.Preload(ctx, driver, cat1, sqlxx.WithPreloadField("Meows"))
 			is.NoError(err)
 			is.NotEmpty(cat1.Meows)
 			is.Len(cat1.Meows, 3)
@@ -3075,7 +3222,10 @@ func TestPreload_Cat_One(t *testing.T) {
 
 			cat2 := fixtures.Cats[1]
 
-			err = sqlxx.Preload(ctx, driver, cat2, "Feeder", "Meows")
+			err = sqlxx.Preload(ctx, driver, cat2,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.NotNil(cat2.Feeder)
 			is.Equal(fixtures.Humans[1].ID, cat2.Feeder.ID)
@@ -3084,7 +3234,10 @@ func TestPreload_Cat_One(t *testing.T) {
 
 			cat3 := fixtures.Cats[2]
 
-			err = sqlxx.Preload(ctx, driver, cat3, "Feeder", "Meows")
+			err = sqlxx.Preload(ctx, driver, cat3,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.Nil(cat3.Feeder)
 			is.NotEmpty(cat3.Meows)
@@ -3093,7 +3246,10 @@ func TestPreload_Cat_One(t *testing.T) {
 
 			cat6 := fixtures.Cats[5]
 
-			err = sqlxx.Preload(ctx, driver, cat6, "Feeder", "Meows")
+			err = sqlxx.Preload(ctx, driver, cat6,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.Nil(cat6.Feeder)
 			is.Empty(cat6.Meows)
@@ -3106,14 +3262,14 @@ func TestPreload_Cat_One(t *testing.T) {
 
 			cat1 := fixtures.Cats[0]
 
-			err := sqlxx.Preload(ctx, driver, &cat1, "Feeder")
+			err := sqlxx.Preload(ctx, driver, &cat1, sqlxx.WithPreloadField("Feeder"))
 			is.NoError(err)
 			is.NotNil(cat1.Feeder)
 			is.Equal(fixtures.Humans[0].ID, cat1.Feeder.ID)
 			is.Equal(fixtures.Humans[0].Name, cat1.Feeder.Name)
 			is.Empty(cat1.Meows)
 
-			err = sqlxx.Preload(ctx, driver, &cat1, "Meows")
+			err = sqlxx.Preload(ctx, driver, &cat1, sqlxx.WithPreloadField("Meows"))
 			is.NoError(err)
 			is.NotEmpty(cat1.Meows)
 			is.Len(cat1.Meows, 3)
@@ -3123,7 +3279,10 @@ func TestPreload_Cat_One(t *testing.T) {
 
 			cat2 := fixtures.Cats[1]
 
-			err = sqlxx.Preload(ctx, driver, &cat2, "Feeder", "Meows")
+			err = sqlxx.Preload(ctx, driver, &cat2,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.NotNil(cat2.Feeder)
 			is.Equal(fixtures.Humans[1].ID, cat2.Feeder.ID)
@@ -3132,7 +3291,10 @@ func TestPreload_Cat_One(t *testing.T) {
 
 			cat3 := fixtures.Cats[2]
 
-			err = sqlxx.Preload(ctx, driver, &cat3, "Feeder", "Meows")
+			err = sqlxx.Preload(ctx, driver, &cat3,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.Nil(cat3.Feeder)
 			is.NotEmpty(cat3.Meows)
@@ -3141,7 +3303,10 @@ func TestPreload_Cat_One(t *testing.T) {
 
 			cat6 := fixtures.Cats[5]
 
-			err = sqlxx.Preload(ctx, driver, &cat6, "Feeder", "Meows")
+			err = sqlxx.Preload(ctx, driver, &cat6,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.Nil(cat6.Feeder)
 			is.Empty(cat6.Meows)
@@ -3190,7 +3355,10 @@ func TestPreload_Cat_Many(t *testing.T) {
 				*fixtures.Cats[7],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &cats, "Feeder", "Meows")
+			err := sqlxx.Preload(ctx, driver, &cats,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.Len(cats, 8)
 			is.Equal(fixtures.Cats[0].ID, cats[0].ID)
@@ -3272,7 +3440,10 @@ func TestPreload_Cat_Many(t *testing.T) {
 				fixtures.Cats[7],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &cats, "Feeder", "Meows")
+			err := sqlxx.Preload(ctx, driver, &cats,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.Len(cats, 8)
 			is.Equal(fixtures.Cats[0].ID, cats[0].ID)
@@ -3354,7 +3525,10 @@ func TestPreload_Cat_Many(t *testing.T) {
 				*fixtures.Cats[7],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &cats, "Feeder", "Meows")
+			err := sqlxx.Preload(ctx, driver, &cats,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.Len((*cats), 8)
 			is.Equal(fixtures.Cats[0].ID, (*cats)[0].ID)
@@ -3436,7 +3610,10 @@ func TestPreload_Cat_Many(t *testing.T) {
 				fixtures.Cats[7],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &cats, "Feeder", "Meows")
+			err := sqlxx.Preload(ctx, driver, &cats,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.Len((*cats), 8)
 			is.Equal(fixtures.Cats[0].ID, (*cats)[0].ID)
@@ -3506,7 +3683,10 @@ func TestPreload_Cat_Many(t *testing.T) {
 
 			cats := []Cat{}
 
-			err := sqlxx.Preload(ctx, driver, &cats, "Feeder", "Meows")
+			err := sqlxx.Preload(ctx, driver, &cats,
+				sqlxx.WithPreloadField("Feeder"),
+				sqlxx.WithPreloadField("Meows"),
+			)
 			is.NoError(err)
 			is.Len(cats, 0)
 
@@ -3536,7 +3716,7 @@ func TestPreload_Human_One(t *testing.T) {
 
 			human1 := fixtures.Humans[0]
 
-			err := sqlxx.Preload(ctx, driver, human1, "Cat")
+			err := sqlxx.Preload(ctx, driver, human1, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.NotNil(human1.Cat)
 			is.Equal(fixtures.Cats[0].ID, human1.Cat.ID)
@@ -3544,7 +3724,7 @@ func TestPreload_Human_One(t *testing.T) {
 
 			human2 := fixtures.Humans[1]
 
-			err = sqlxx.Preload(ctx, driver, human2, "Cat")
+			err = sqlxx.Preload(ctx, driver, human2, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.NotNil(human2.Cat)
 			is.Equal(fixtures.Cats[1].ID, human2.Cat.ID)
@@ -3552,13 +3732,13 @@ func TestPreload_Human_One(t *testing.T) {
 
 			human3 := fixtures.Humans[2]
 
-			err = sqlxx.Preload(ctx, driver, human3, "Cat")
+			err = sqlxx.Preload(ctx, driver, human3, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.Nil(human3.Cat)
 
 			human7 := fixtures.Humans[6]
 
-			err = sqlxx.Preload(ctx, driver, human7, "Cat")
+			err = sqlxx.Preload(ctx, driver, human7, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.NotNil(human7.Cat)
 			is.Equal(fixtures.Cats[6].ID, human7.Cat.ID)
@@ -3572,7 +3752,7 @@ func TestPreload_Human_One(t *testing.T) {
 
 			human1 := fixtures.Humans[0]
 
-			err := sqlxx.Preload(ctx, driver, &human1, "Cat")
+			err := sqlxx.Preload(ctx, driver, &human1, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.NotNil(human1.Cat)
 			is.Equal(fixtures.Cats[0].ID, human1.Cat.ID)
@@ -3580,7 +3760,7 @@ func TestPreload_Human_One(t *testing.T) {
 
 			human2 := fixtures.Humans[1]
 
-			err = sqlxx.Preload(ctx, driver, &human2, "Cat")
+			err = sqlxx.Preload(ctx, driver, &human2, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.NotNil(human2.Cat)
 			is.Equal(fixtures.Cats[1].ID, human2.Cat.ID)
@@ -3588,13 +3768,13 @@ func TestPreload_Human_One(t *testing.T) {
 
 			human3 := fixtures.Humans[2]
 
-			err = sqlxx.Preload(ctx, driver, &human3, "Cat")
+			err = sqlxx.Preload(ctx, driver, &human3, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.Nil(human3.Cat)
 
 			human7 := fixtures.Humans[6]
 
-			err = sqlxx.Preload(ctx, driver, &human7, "Cat")
+			err = sqlxx.Preload(ctx, driver, &human7, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.NotNil(human7.Cat)
 			is.Equal(fixtures.Cats[6].ID, human7.Cat.ID)
@@ -3634,7 +3814,7 @@ func TestPreload_Human_Many(t *testing.T) {
 				*fixtures.Humans[6],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			err := sqlxx.Preload(ctx, driver, &humans, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.Len(humans, 7)
 			is.Equal(fixtures.Humans[0].ID, humans[0].ID)
@@ -3683,7 +3863,7 @@ func TestPreload_Human_Many(t *testing.T) {
 				fixtures.Humans[6],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			err := sqlxx.Preload(ctx, driver, &humans, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.Len(humans, 7)
 			is.Equal(fixtures.Humans[0].ID, humans[0].ID)
@@ -3732,7 +3912,7 @@ func TestPreload_Human_Many(t *testing.T) {
 				*fixtures.Humans[6],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			err := sqlxx.Preload(ctx, driver, &humans, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.Len((*humans), 7)
 			is.Equal(fixtures.Humans[0].ID, (*humans)[0].ID)
@@ -3781,7 +3961,7 @@ func TestPreload_Human_Many(t *testing.T) {
 				fixtures.Humans[6],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			err := sqlxx.Preload(ctx, driver, &humans, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.Len((*humans), 7)
 			is.Equal(fixtures.Humans[0].ID, (*humans)[0].ID)
@@ -3819,7 +3999,7 @@ func TestPreload_Human_Many(t *testing.T) {
 
 			humans := []Human{}
 
-			err := sqlxx.Preload(ctx, driver, &humans, "Cat")
+			err := sqlxx.Preload(ctx, driver, &humans, sqlxx.WithPreloadField("Cat"))
 			is.NoError(err)
 			is.Len(humans, 0)
 
@@ -3845,7 +4025,11 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 
 			region1 := fixtures.Regions[0]
 
-			err := sqlxx.Preload(ctx, driver, region1, "Buckets.Files", "Buckets.Directories", "Buckets.Region")
+			err := sqlxx.Preload(ctx, driver, region1,
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories"),
+				sqlxx.WithPreloadField("Buckets.Region"),
+			)
 			is.NoError(err)
 			is.NotNil(region1.Buckets)
 			is.NotEmpty((*region1.Buckets))
@@ -3890,7 +4074,11 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 
 			region2 := fixtures.Regions[1]
 
-			err = sqlxx.Preload(ctx, driver, region2, "Buckets.Files", "Buckets.Directories", "Buckets.Region")
+			err = sqlxx.Preload(ctx, driver, region2,
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories"),
+				sqlxx.WithPreloadField("Buckets.Region"),
+			)
 			is.NoError(err)
 			is.NotNil(region2.Buckets)
 			is.Empty((*region2.Buckets))
@@ -3898,7 +4086,11 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 
 			region3 := fixtures.Regions[2]
 
-			err = sqlxx.Preload(ctx, driver, region3, "Buckets.Files", "Buckets.Directories", "Buckets.Region")
+			err = sqlxx.Preload(ctx, driver, region3,
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories"),
+				sqlxx.WithPreloadField("Buckets.Region"),
+			)
 			is.NoError(err)
 			is.NotNil(region3.Buckets)
 			is.NotEmpty((*region3.Buckets))
@@ -3935,7 +4127,11 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 
 			region1 := fixtures.Regions[0]
 
-			err := sqlxx.Preload(ctx, driver, &region1, "Buckets.Files", "Buckets.Directories", "Buckets.Region")
+			err := sqlxx.Preload(ctx, driver, &region1,
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories"),
+				sqlxx.WithPreloadField("Buckets.Region"),
+			)
 			is.NoError(err)
 			is.NotNil(region1.Buckets)
 			is.NotEmpty((*region1.Buckets))
@@ -3980,7 +4176,11 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 
 			region2 := fixtures.Regions[1]
 
-			err = sqlxx.Preload(ctx, driver, &region2, "Buckets.Files", "Buckets.Directories", "Buckets.Region")
+			err = sqlxx.Preload(ctx, driver, &region2,
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories"),
+				sqlxx.WithPreloadField("Buckets.Region"),
+			)
 			is.NoError(err)
 			is.NotNil(region2.Buckets)
 			is.Empty((*region2.Buckets))
@@ -3988,7 +4188,11 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 
 			region3 := fixtures.Regions[2]
 
-			err = sqlxx.Preload(ctx, driver, &region3, "Buckets.Files", "Buckets.Directories", "Buckets.Region")
+			err = sqlxx.Preload(ctx, driver, &region3,
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories"),
+				sqlxx.WithPreloadField("Buckets.Region"),
+			)
 			is.NoError(err)
 			is.NotNil(region3.Buckets)
 			is.NotEmpty((*region3.Buckets))
@@ -4029,7 +4233,11 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 				*fixtures.Regions[2],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &regions, "Buckets.Files", "Buckets.Directories", "Buckets.Region")
+			err := sqlxx.Preload(ctx, driver, &regions,
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories"),
+				sqlxx.WithPreloadField("Buckets.Region"),
+			)
 			is.NoError(err)
 			is.Len(regions, 3)
 			is.Equal(fixtures.Regions[0].ID, regions[0].ID)
@@ -4120,7 +4328,11 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 				fixtures.Regions[2],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &regions, "Buckets.Files", "Buckets.Directories", "Buckets.Region")
+			err := sqlxx.Preload(ctx, driver, &regions,
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories"),
+				sqlxx.WithPreloadField("Buckets.Region"),
+			)
 			is.NoError(err)
 			is.Len(regions, 3)
 			is.Equal(fixtures.Regions[0].ID, regions[0].ID)
@@ -4207,13 +4419,13 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 
 			region1 := fixtures.Regions[0]
 			err := sqlxx.Preload(ctx, driver, region1,
-				"Buckets.Files",
-				"Buckets.Files.Owner",
-				"Buckets.Files.Owner.Profile",
-				"Buckets.Files.Owner.Profile.Avatar",
-				"Buckets.Files.Chunks",
-				"Buckets.Files.Chunks.Mode",
-				"Buckets.Files.Chunks.Signature",
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner.Profile"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner.Profile.Avatar"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks.Mode"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks.Signature"),
 			)
 			is.NoError(err)
 			is.NotNil(region1.Buckets)
@@ -4281,13 +4493,13 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 
 			region2 := fixtures.Regions[1]
 			err = sqlxx.Preload(ctx, driver, region2,
-				"Buckets.Files",
-				"Buckets.Files.Owner",
-				"Buckets.Files.Owner.Profile",
-				"Buckets.Files.Owner.Profile.Avatar",
-				"Buckets.Files.Chunks",
-				"Buckets.Files.Chunks.Mode",
-				"Buckets.Files.Chunks.Signature",
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner.Profile"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner.Profile.Avatar"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks.Mode"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks.Signature"),
 			)
 			is.NoError(err)
 			is.NotNil(region2.Buckets)
@@ -4296,13 +4508,13 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 
 			region3 := fixtures.Regions[2]
 			err = sqlxx.Preload(ctx, driver, region3,
-				"Buckets.Files",
-				"Buckets.Files.Owner",
-				"Buckets.Files.Owner.Profile",
-				"Buckets.Files.Owner.Profile.Avatar",
-				"Buckets.Files.Chunks",
-				"Buckets.Files.Chunks.Mode",
-				"Buckets.Files.Chunks.Signature",
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner.Profile"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner.Profile.Avatar"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks.Mode"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks.Signature"),
 			)
 			is.NoError(err)
 			is.NotNil(region3.Buckets)
@@ -4502,13 +4714,13 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 			}
 
 			err := sqlxx.Preload(ctx, driver, &regions,
-				"Buckets.Files",
-				"Buckets.Files.Owner",
-				"Buckets.Files.Owner.Profile",
-				"Buckets.Files.Owner.Profile.Avatar",
-				"Buckets.Files.Chunks",
-				"Buckets.Files.Chunks.Mode",
-				"Buckets.Files.Chunks.Signature",
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner.Profile"),
+				sqlxx.WithPreloadField("Buckets.Files.Owner.Profile.Avatar"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks.Mode"),
+				sqlxx.WithPreloadField("Buckets.Files.Chunks.Signature"),
 			)
 			is.NoError(err)
 			is.Len(regions, 3)
@@ -4780,13 +4992,13 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 			}
 
 			err := sqlxx.Preload(ctx, driver, &regions,
-				"Buckets.Directories",
-				"Buckets.Directories.Directories",
-				"Buckets.Directories.Directories.Directories",
-				"Buckets.Files",
-				"Buckets.Directories.Files",
-				"Buckets.Directories.Directories.Files",
-				"Buckets.Directories.Directories.Directories.Files",
+				sqlxx.WithPreloadField("Buckets.Directories"),
+				sqlxx.WithPreloadField("Buckets.Directories.Directories"),
+				sqlxx.WithPreloadField("Buckets.Directories.Directories.Directories"),
+				sqlxx.WithPreloadField("Buckets.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories.Directories.Files"),
+				sqlxx.WithPreloadField("Buckets.Directories.Directories.Directories.Files"),
 			)
 			is.NoError(err)
 			is.Len(regions, 3)
@@ -4971,6 +5183,61 @@ func TestPreload_ExoCloud_MultiLevel(t *testing.T) {
 			is.Equal((*fixtures.Files[18]).ID, (*regions[2].Buckets)[0].Directories[2].Files[3].ID)
 
 		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckExoCloudFixtures(fixtures)
+
+			regions := []*ExoRegion{
+				fixtures.Regions[0],
+				fixtures.Regions[1],
+				fixtures.Regions[2],
+			}
+
+			err := sqlxx.Preload(ctx, driver, &regions,
+				sqlxx.WithPreloadCallback("Buckets.Directories", func(query builder.Select) builder.Select {
+					return query.Where(loukoum.Condition("parent_id").IsNull(true))
+				}),
+			)
+			is.NoError(err)
+			is.Len(regions, 3)
+			is.Equal(fixtures.Regions[0].ID, regions[0].ID)
+			is.Equal(fixtures.Regions[1].ID, regions[1].ID)
+			is.Equal(fixtures.Regions[2].ID, regions[2].ID)
+
+			is.NotNil(regions[0].Buckets)
+			is.NotEmpty((*regions[0].Buckets))
+			is.Len((*regions[0].Buckets), 2)
+			is.Equal((*fixtures.Buckets[0]).ID, (*regions[0].Buckets)[0].ID)
+			is.Equal((*fixtures.Buckets[1]).ID, (*regions[0].Buckets)[1].ID)
+			is.Len((*regions[0].Buckets)[0].Directories, 7)
+			is.Len((*regions[0].Buckets)[1].Directories, 0)
+			sortExoCloudDirectories1(fixtures.Directories, &(*regions[0].Buckets)[0].Directories)
+			is.Equal((*fixtures.Directories[0]).ID, (*regions[0].Buckets)[0].Directories[0].ID)
+			is.Equal((*fixtures.Directories[1]).ID, (*regions[0].Buckets)[0].Directories[1].ID)
+			is.Equal((*fixtures.Directories[2]).ID, (*regions[0].Buckets)[0].Directories[2].ID)
+			is.Equal((*fixtures.Directories[3]).ID, (*regions[0].Buckets)[0].Directories[3].ID)
+			is.Equal((*fixtures.Directories[4]).ID, (*regions[0].Buckets)[0].Directories[4].ID)
+			is.Equal((*fixtures.Directories[5]).ID, (*regions[0].Buckets)[0].Directories[5].ID)
+			is.Equal((*fixtures.Directories[15]).ID, (*regions[0].Buckets)[0].Directories[6].ID)
+
+			is.NotNil(regions[1].Buckets)
+			is.Empty((*regions[1].Buckets))
+			is.Len((*regions[1].Buckets), 0)
+
+			is.NotNil(regions[2].Buckets)
+			is.NotEmpty((*regions[2].Buckets))
+			is.Len((*regions[2].Buckets), 2)
+			is.Equal((*fixtures.Buckets[2]).ID, (*regions[2].Buckets)[0].ID)
+			is.Equal((*fixtures.Buckets[3]).ID, (*regions[2].Buckets)[1].ID)
+			is.Len((*regions[2].Buckets)[0].Directories, 3)
+			is.Len((*regions[2].Buckets)[1].Directories, 0)
+			sortExoCloudDirectories1(fixtures.Directories, &(*regions[2].Buckets)[0].Directories)
+			is.Equal((*fixtures.Directories[16]).ID, (*regions[2].Buckets)[0].Directories[0].ID)
+			is.Equal((*fixtures.Directories[17]).ID, (*regions[2].Buckets)[0].Directories[1].ID)
+			is.Equal((*fixtures.Directories[18]).ID, (*regions[2].Buckets)[0].Directories[2].ID)
+
+		}
 	})
 }
 
@@ -5004,7 +5271,7 @@ func TestPreload_Zootopia_MultiLevel(t *testing.T) {
 				*fixtures.Humans[6],
 			}
 
-			err := sqlxx.Preload(ctx, driver, &humans, "Cat.Meows")
+			err := sqlxx.Preload(ctx, driver, &humans, sqlxx.WithPreloadField("Cat.Meows"))
 			is.NoError(err)
 			is.Len(humans, 7)
 			is.Equal(fixtures.Humans[0].ID, humans[0].ID)

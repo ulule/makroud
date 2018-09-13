@@ -2,6 +2,7 @@ package reflectx
 
 import (
 	"reflect"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -28,12 +29,11 @@ type StringPreloader struct {
 // NewStringPreloader creates a new StringPreloader using given value as root reference and given name as the element
 // to preload on root reference.
 func NewStringPreloader(name string, kind reflect.Type, value interface{}) *StringPreloader {
-	return &StringPreloader{
-		name:   name,
-		kind:   kind,
-		value:  value,
-		mapper: map[string][]reflect.Value{},
-	}
+	preloader := stringPreloaderPool.Get().(*StringPreloader)
+	preloader.name = name
+	preloader.kind = kind
+	preloader.value = value
+	return preloader
 }
 
 // ForEach will scan every root references (that means a simple struct or a slice of struct) and creates a zero
@@ -103,6 +103,18 @@ func (p *StringPreloader) UpdateValueOnIndex(id string, element interface{}) err
 	return nil
 }
 
+// Close will cleanup current preloader.
+func (p *StringPreloader) Close() {
+	if p != nil {
+		p.name = ""
+		p.kind = nil
+		p.value = nil
+		p.relations = reflect.Value{}
+		p.mapper = map[string][]reflect.Value{}
+		stringPreloaderPool.Put(p)
+	}
+}
+
 // A IntegerPreloader is used by preload mechanism to attach values received from query to the correct reference.
 // This preloader handles everything related to reflection, that means the query engine is handled on
 // another components. It uses a integer mapper internally.
@@ -117,12 +129,11 @@ type IntegerPreloader struct {
 // NewIntegerPreloader creates a new IntegerPreloader using given value as root reference and given name as the element
 // to preload on root reference.
 func NewIntegerPreloader(name string, kind reflect.Type, value interface{}) *IntegerPreloader {
-	return &IntegerPreloader{
-		name:   name,
-		kind:   kind,
-		value:  value,
-		mapper: map[int64][]reflect.Value{},
-	}
+	preloader := integerPreloaderPool.Get().(*IntegerPreloader)
+	preloader.name = name
+	preloader.kind = kind
+	preloader.value = value
+	return preloader
 }
 
 // ForEach will scan every root references (that means a simple struct or a slice of struct) and creates a zero
@@ -190,6 +201,18 @@ func (p *IntegerPreloader) UpdateValueOnIndex(id int64, element interface{}) err
 	}
 
 	return nil
+}
+
+// Close will cleanup current preloader.
+func (p *IntegerPreloader) Close() {
+	if p != nil {
+		p.name = ""
+		p.kind = nil
+		p.value = nil
+		p.relations = reflect.Value{}
+		p.mapper = map[int64][]reflect.Value{}
+		integerPreloaderPool.Put(p)
+	}
 }
 
 func preloadForEach(value interface{}, name string, callback func(element PreloadValue) error) error {
@@ -303,4 +326,22 @@ func preloadOnUpdate(relations reflect.Value, callback func(element interface{})
 	}
 
 	return nil
+}
+
+// A string preloader pool to reduce memory allocation pressure.
+var stringPreloaderPool = &sync.Pool{
+	New: func() interface{} {
+		return &StringPreloader{
+			mapper: map[string][]reflect.Value{},
+		}
+	},
+}
+
+// A integer preloader pool to reduce memory allocation pressure.
+var integerPreloaderPool = &sync.Pool{
+	New: func() interface{} {
+		return &IntegerPreloader{
+			mapper: map[int64][]reflect.Value{},
+		}
+	},
 }
