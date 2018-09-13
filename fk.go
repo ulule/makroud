@@ -61,6 +61,29 @@ func (val FKType) IsOptional() bool {
 	return val == FKOptionalIntegerType || val == FKOptionalStringType
 }
 
+// AssociationType define an association type.
+type AssociationType uint8
+
+// Association types.
+const (
+	AssociationTypeUndefined = AssociationType(iota)
+	AssociationTypeOne
+	AssociationTypeMany
+)
+
+func (e AssociationType) String() string {
+	switch e {
+	case AssociationTypeUndefined:
+		return "undefined"
+	case AssociationTypeOne:
+		return "one"
+	case AssociationTypeMany:
+		return "many"
+	default:
+		panic(fmt.Sprintf("sqlxx: unknown association type: %d", e))
+	}
+}
+
 // ForeignKey is a composite object that define a foreign key for a model.
 // This foreign key will be used later for Preload...
 //
