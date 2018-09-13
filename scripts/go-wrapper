@@ -25,6 +25,7 @@ do_command() {
 
     echo "[go-wrapper] run '${command}' in docker container"
     docker run --rm --net=host \
+        -e DB_SETUP="$DB_SETUP" \
         "${IMAGE_NAME}" ${command}
 }
 
