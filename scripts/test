@@ -3,10 +3,11 @@
 SOURCE_DIRECTORY=$(dirname "${BASH_SOURCE[0]}")
 cd "${SOURCE_DIRECTORY}/.."
 
-scripts/database
+if [ -z "$DB_SETUP" ]; then
+    scripts/database || exit 253
+fi
 
 gotest_path="${GOPATH}/src/github.com/stretchr/testify/require"
-
 if [[ ! -x "${gotest_path}" ]]; then
     go get -d -u -v github.com/stretchr/testify/require
 fi
