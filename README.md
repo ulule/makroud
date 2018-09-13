@@ -4,13 +4,28 @@
 [![Documentation][godoc-img]][godoc-url]
 ![License][license-img]
 
-**[sqlx](https://github.com/jmoiron/sqlx) superset.**
+*A high level SQL Connector.*
+
+
+## Introduction
+
+TODO
+
 
 ## Installation
 
+Using [dep](https://github.com/golang/dep)
+
 ```console
-$ go get -u github.com/ulule/sqlxx
+dep ensure -add github.com/ulule/sqlxx@master
 ```
+
+or `go get`
+
+```console
+go get -u github.com/ulule/sqlxx
+```
+
 
 ## API
 
@@ -181,6 +196,7 @@ type User struct {
     ID int `sqlxx:"primary_key"`
 }
 ```
+
 
 ## Development
 
