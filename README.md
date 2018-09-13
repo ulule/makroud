@@ -10,6 +10,39 @@ $ go get -u github.com/ulule/sqlxx
 
 ## API
 
+### Create a Driver
+
+A **Driver** is a high level abstraction of a database connection or a transaction. It's almost required everytime alongside a `context.Context` to manipulate rows.
+
+```go
+driver, err := sqlxx.New(
+	sqlxx.Host(cfg.Host),
+	sqlxx.Port(cfg.Port),
+	sqlxx.User(cfg.User),
+	sqlxx.Password(cfg.Password),
+	sqlxx.Database(cfg.Name),
+	sqlxx.SSLMode(cfg.SSLMode),
+	sqlxx.MaxOpenConnections(cfg.MaxOpenConnections),
+	sqlxx.MaxIdleConnections(cfg.MaxIdleConnections),
+)
+```
+
+Also, you can use directly a struct if you don't need to use
+[functional options](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis):
+
+```go
+driver, err := sqlxx.NewWithOptions(&sqlxx.ClientOptions{
+	Host:               cfg.Host,
+	Port:               cfg.Port,
+	User:               cfg.User,
+	Password:           cfg.Password,
+	Database:           cfg.Name,
+	SSLMode:            cfg.SSLMode,
+	MaxOpenConnections: cfg.MaxOpenConnections,
+	MaxIdleConnections: cfg.MaxIdleConnections,
+})
+```
+
 ### `GetSchema(model) (*Schema, error)`
 
 Returns `model` schema (your model must be conform to `Model` interface).
@@ -165,12 +198,22 @@ Also, you can execute the linter with:
 scripts/lint
 ```
 
+#### Notes
+
+If you have to examine rows generated from unit test, you prevent the test suite to cleanup by using:
+
+```
+DB_KEEP=true scripts/test
+```
+
+Then, you can access the database with:
+
+```
+scripts/database --client
+```
+
 ### Random
 
 Because sometimes it's hard to think of a good test fixture, using generators can save your productivity.
-This is a small list used to write unit test:
 
- * http://www.fantasynamegenerators.com/pet-cat-names.php
- * http://www.fantasynamegenerators.com/pet-owl-names.php
- * http://www.fantasynamegenerators.com/food-names.php
- * http://www.fantasynamegenerators.com/color-names.php
+This website was a great help to write unit test: http://www.fantasynamegenerators.com
