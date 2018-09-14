@@ -68,7 +68,7 @@ driver, err := sqlxx.NewWithOptions(&sqlxx.ClientOptions{
 With the [**Active Record**](https://en.wikipedia.org/wiki/Active_record_pattern) approach, you have to define a
 model that wraps your database table _(or view)_ columns into properties.
 
-Model are struct that contains basic go types, pointers, or `sql.Scanner`, `driver.Valuer` or `Model` interface.
+Model are struct that contains basic go types, pointers, `sql.Scanner`, `driver.Valuer` or `Model` interface.
 All the fields of this struct will be columns in the database table.
 
 #### An example
@@ -211,141 +211,65 @@ func (User) DeletedKey() string {
 }
 ```
 
-### `GetSchema(model) (*Schema, error)`
+### CRUD Operation
 
-Returns `model` schema (your model must be conform to `Model` interface).
+For the following sections, we assume that you have a `context.Context` and a `sqlxx.Driver` instance.
 
-```go
-schema, err := sqlxx.GetSchema(model)
-if err != nil {
-    log.Fatal(err)
-}
-
-// The model primary key
-pk := schema.PrimaryKey
-
-// The model fields
-fields := schema.Fields
-
-// The model relations
-relations := schema.Relations
-```
-
-### `GetByParams(db, out, params) error`
-
-Executes a `WHERE` query with `params`, returning the first matching result into `out` interface.
+#### Insert
 
 ```go
-user := User{}
+func CreateUser(ctx context.Context, driver sqlxx.Driver, name string) (*User, error) {
+	user := &User{
+		Name: name,
+	}
 
-if err := sqlxx.GetByParams(db, &user, map[string]interface{}{"username": "jdoe"}); err != nil {
-    fmt.Println(user.Username)
+	err := sqlxx.Save(ctx, driver, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 ```
 
-### `FindByParams(db, out, params) error`
-
-Executes a `WHERE` query with `params`, returning all matching results into `out` interface.
+#### Update
 
 ```go
-users := []User{}
-
-if err := sqlxx.FindByParams(db, &users, map[string]interface{}{"is_active": true}); err != nil {
-    for _, user := range users {
-        fmt.Println(user)
-    }
+func UpdateUser(ctx context.Context, driver sqlxx.Driver, user *User, name string) error {
+	user.Name = name
+	return sqlxx.Save(ctx, driver, user)
 }
 ```
 
-### `Save(db, out) error`
+#### Delete
 
-Executes either an `INSERT` or an `UPDATE` on `out` instance values, depending on primary key existance.
+Delete executes a `DELETE` on given value using it's primary key.
 
 ```go
-// INSERT
-
-// Here, no primary key yet
-user := User{Username: "jdoe"}
-
-if err := sqlxx.Save(db, &user); err != nil {
-    // This user has been created
-    fmt.Println(user)
-}
-
-// UPDATE
-
-// Here, we already have a primary key
-fmt.Println(user.ID)
-
-// Let's update the username
-user.Username = "johndoe"
-
-if err := sqlxx.Save(db, &user); err != nil {
-    // This user has been updated. Username is now "johndoe".
-    fmt.Println(user)
+func DeleteUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
+	return sqlxx.Delete(ctx, driver, user)
 }
 ```
 
-### `Delete(db, out) error`
+#### Archive
 
-Executes a `DELETE` on `out` instance primary key.
+Archive executes an `UPDATE` on `DeletedAt` field on given value.
 
 ```go
-user := User{Username: "jdoe"}
-
-// Create a user
-if err := sqlxx.Save(db, &user); err != nil {
-    fmt.Println(user)
-}
-
-// Delete it
-if err := sqlxx.Delete(db, &user); err != nil {
-    fmt.Println(user)
+func ArchiveUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
+	return sqlxx.Archive(ctx, driver, user)
 }
 ```
 
-### `Archive(db, out, field) error`
+If model has no `DeletedAt` field, an error is returned.
 
-Executes an `UPDATE` on `field` value from `out` instance.
+#### Query
 
-```go
-user := User{Username: "jdoe"}
+TODO
 
-// Create user
-if err := sqlxx.Save(db, &user); err != nil {
-    fmt.Println(user)
-}
+### Preload
 
-// Archive it by setting deleted_at column
-if err := sqlxx.Archive(db, &user, "DeletedAt"); err != nil {
-    fmt.Println(user)
-}
-```
-
-## Struct tags
-
-`sqlxx` tags must be separated by a semicolon (example: `tag1; tag2; tag3;`).
-
-| Key           | Type    | Value                                                   |
-|---------------|---------|---------------------------------------------------------|
-| `primary_key` | `bool`  | if `true`, field is consired as a primary key           |
-| `ignored`     | `bool`  | if `true`, field is ignored                             |
-| `default`     | `value` | Default value for the field (example: `default:now()`) |
-
-Tags of type `bool` can be set as `key:true` or just `key` for implicit `true`.
-
-Example:
-
-```go
-type User struct {
-    // We set as true
-    ID int `sqlxx:"primary_key:true"`
-
-    // But it is the same as
-    ID int `sqlxx:"primary_key"`
-}
-```
-
+TODO
 
 ## Development
 
