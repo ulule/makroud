@@ -27,7 +27,7 @@ go get -u github.com/ulule/sqlxx
 ```
 
 
-## API
+## Usage
 
 ### Create a Driver
 
@@ -60,6 +60,155 @@ driver, err := sqlxx.NewWithOptions(&sqlxx.ClientOptions{
 	MaxOpenConnections: cfg.MaxOpenConnections,
 	MaxIdleConnections: cfg.MaxIdleConnections,
 })
+```
+
+
+### Define a Model
+
+With the [**Active Record**](https://en.wikipedia.org/wiki/Active_record_pattern) approach, you have to define a
+model that wraps your database table _(or view)_ columns into properties.
+
+Model are struct that contains basic go types, pointers, or `sql.Scanner`, `driver.Valuer` or `Model` interface.
+All the fields of this struct will be columns in the database table.
+
+#### An example
+
+```go
+type User struct {
+	// Columns
+	ID        string `sqlxx:"column:id,pk:ulid"`
+	Email     string `sqlxx:"column:email"`
+	Password  string `sqlxx:"column:password"`
+	Country   string `sqlxx:"column:country"`
+	Locale    string `sqlxx:"column:locale"`
+	ProfileID string `sqlxx:"column:profile_id,fk:profiles"`
+	// Relationships
+	Group   []Group
+	Profile *Profile
+}
+
+
+func (User) TableName() string {
+	return "users"
+}
+```
+
+#### What does it means ?
+
+First of all, you have to define a `TableName` method that returns the database table name _(or view)_.
+Without that information, `sqlxx` cannot uses that struct as a `Model`.
+
+Then, you have to define your model columns using struct tags:
+
+ * **column**(`string`): Define column name.
+ * **pk**(`bool|string`): Define column as a primary key, it accepts the following argument:
+   * **true**: Uses internal db mechanism to define primary key value
+   * **db**: Uses internal db mechanism to define primary key value
+   * **ulid**: Generate a [ULID](https://github.com/ulid/spec) to define primary key value
+ * **default**(`bool`): On insert, if model has a zero value, it will use the db default value.
+ * **pk**(`string`): Define column as a foreign key, reference table must be provided.
+ * **-**(`bool`): Ignore this field.
+
+> **NOTE:** Tags of type `bool` can be set as `key:true` or just `key` for implicit `true`.
+
+> **NOTE:** Tags must be separated by a comma (`tagA, tagB, tagC`).
+
+Keep in mind that a model **requires one primary key (and just one)**. It's a known limitation that only one primary
+key can be specified and it can't be a composite key.
+
+After that, you can define optional relationships _(or associations)_ that can be preloaded later.
+The preload mechanism, which enables you to fetch relationships from database, support these types:
+
+ * `Model`
+ * `*Model`
+ * `[]Model`
+ * `[]*Model`
+ * `*[]Model`
+ * `*[]*Model`
+
+#### Conventions
+
+##### ID as Primary Key
+
+By default, if `pk` tag is undefined, `sqlxx` will uses the field named `ID` as primary key with
+this configuration: `pk:db`
+
+```go
+type User struct {
+	ID   string `sqlxx:"column:id"`   // Field named ID will be used a primary key by default.
+	Name string `sqlxx:"column:name"`
+}
+```
+
+##### Snake Case Column Name
+
+By default, if `column` tag is undefined, `sqlxx` will transform field name to lower snake case as column name.
+
+```go
+type User struct {
+	ID   string `sqlxx:"pk"` // Column name is `id`
+	Name string `sqlxx:""`   // Column name is `name`
+}
+```
+
+##### CreatedAt tracking
+
+For models having `CreatedAt` field, it will be set to current time when record is first created.
+
+```go
+type User struct {
+	ID        string    `sqlxx:"column:id,pk"`
+	Name      string    `sqlxx:"column:name"`
+	CreatedAt time.Time `sqlxx:"column:created_at"`
+}
+```
+
+You can override the default field name and/or column name by adding this method:
+
+```go
+func (User) CreatedKey() string {
+	return "created"
+}
+```
+
+##### UpdatedAt tracking
+
+For models having `UpdatedAt` field, it will be set to current time when record are updated.
+
+```go
+type User struct {
+	ID        string    `sqlxx:"column:id,pk"`
+	Name      string    `sqlxx:"column:name"`
+	UpdatedAt time.Time `sqlxx:"column:updated_at"`
+}
+```
+
+You can override the default field name and/or column name by adding this method:
+
+```go
+func (User) UpdatedKey() string {
+	return "updated"
+}
+```
+
+##### DeletedAt tracking
+
+For models having `DeletedAt` field, it will be set to current time when record are archived.
+
+```go
+type User struct {
+	ID        string      `sqlxx:"column:id,pk"`
+	Name      string      `sqlxx:"column:name"`
+	DeletedAt pq.NullTime `sqlxx:"column:deleted_at"`
+}
+```
+
+You can override the default field name and/or column name by adding this method:
+
+```go
+func (User) DeletedKey() string {
+	return "deleted"
+}
 ```
 
 ### `GetSchema(model) (*Schema, error)`
