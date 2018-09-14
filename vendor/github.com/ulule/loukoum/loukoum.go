@@ -13,6 +13,10 @@ const (
 	LeftJoin = types.LeftJoin
 	// RightJoin is used for "RIGHT JOIN" in join statement.
 	RightJoin = types.RightJoin
+	// LeftOuterJoin is used for "LEFT OUTER JOIN" in join statement.
+	LeftOuterJoin = types.LeftOuterJoin
+	// RightOuterJoin is used for "RIGHT OUTER JOIN" in join statement.
+	RightOuterJoin = types.RightOuterJoin
 	// Asc is used for "ORDER BY" statement.
 	Asc = types.Asc
 	// Desc is used for "ORDER BY" statement.
@@ -43,8 +47,18 @@ func Table(name string) stmt.Table {
 }
 
 // On is a wrapper to create a new On statement.
-func On(left string, right string) stmt.On {
-	return stmt.NewOn(stmt.NewColumn(left), stmt.NewColumn(right))
+func On(left string, right string) stmt.OnClause {
+	return stmt.NewOnClause(stmt.NewColumn(left), stmt.NewColumn(right))
+}
+
+// AndOn is a wrapper to create a new On statement using an infix expression.
+func AndOn(left stmt.OnExpression, right stmt.OnExpression) stmt.OnExpression {
+	return stmt.NewInfixOnExpression(left, stmt.NewLogicalOperator(types.And), right)
+}
+
+// OrOn is a wrapper to create a new On statement using an infix expression.
+func OrOn(left stmt.OnExpression, right stmt.OnExpression) stmt.OnExpression {
+	return stmt.NewInfixOnExpression(left, stmt.NewLogicalOperator(types.Or), right)
 }
 
 // Condition is a wrapper to create a new Identifier statement.
@@ -79,6 +93,11 @@ func Raw(value string) stmt.Raw {
 // Exists is a wrapper to create a new Exists expression.
 func Exists(value interface{}) stmt.Exists {
 	return stmt.NewExists(value)
+}
+
+// With is a wrapper to create a new WithQuery statement.
+func With(name string, value interface{}) stmt.WithQuery {
+	return stmt.NewWithQuery(name, value)
 }
 
 // Insert starts an InsertBuilder using the given table as into clause.

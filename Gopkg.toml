@@ -18,7 +18,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/ulule/sqalx"
-  revision = "d9cae201d6f9efafb7c8b76038c077c5d203f161"
+  revision = "3768b124acdca09ede88e7e0f341a690cb650f05"
 
 [[constraint]]
   name = "github.com/lib/pq"
@@ -30,12 +30,8 @@ ignored = [
 
 [[constraint]]
   name = "github.com/ulule/loukoum"
-  revision = "79401924b612bdf526ab9e1b55483103ec4429fc"
-
-[[override]]
-  name = "github.com/satori/go.uuid"
-  revision = "36e9d2ebbde5e3f13ab2e25625fd453271d6522e"
+  revision = "662100c1bc41855ae8b23ad5250ab86a9e55f28d"
 
 [[constraint]]
   name = "github.com/oklog/ulid"
-  revision = "3928b679b154aad7ea1db5352e4277e4e448b324"
+  revision = "6276fb390df1e9be0f0721e1a7b0d6a8c973fa0c"

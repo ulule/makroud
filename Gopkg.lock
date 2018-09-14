@@ -2,28 +2,29 @@
 
 
 [[projects]]
+  name = "github.com/gofrs/uuid"
+  packages = ["."]
+  revision = "370558f003bfe29580cd0f698d8640daccdcc45c"
+  version = "v3.1.1"
+
+[[projects]]
   name = "github.com/lib/pq"
   packages = [
     ".",
     "oid"
   ]
-  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
+  revision = "4ded0e9383f75c197b3a2aaa6d590ac52df6fd79"
 
 [[projects]]
   name = "github.com/oklog/ulid"
   packages = ["."]
-  revision = "3928b679b154aad7ea1db5352e4277e4e448b324"
+  revision = "6276fb390df1e9be0f0721e1a7b0d6a8c973fa0c"
 
 [[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
-
-[[projects]]
-  name = "github.com/satori/go.uuid"
-  packages = ["."]
-  revision = "36e9d2ebbde5e3f13ab2e25625fd453271d6522e"
 
 [[projects]]
   name = "github.com/serenize/snaker"
@@ -42,12 +43,12 @@
     "token",
     "types"
   ]
-  revision = "79401924b612bdf526ab9e1b55483103ec4429fc"
+  revision = "662100c1bc41855ae8b23ad5250ab86a9e55f28d"
 
 [[projects]]
   name = "github.com/ulule/sqalx"
   packages = ["."]
-  revision = "d9cae201d6f9efafb7c8b76038c077c5d203f161"
+  revision = "3768b124acdca09ede88e7e0f341a690cb650f05"
 
 [[projects]]
   name = "github.com/ulule/sqlx"
@@ -60,6 +61,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ced282196c59b0150ade3542337c0f0f7da1c51f4400074238f887fd54083948"
+  inputs-digest = "0279b454a492a5cb098d85ec287e2aca5da5ec0fbea5f3250b0b199f2db7dea6"
   solver-name = "gps-cdcl"
   solver-version = 1

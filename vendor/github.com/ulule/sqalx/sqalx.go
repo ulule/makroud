@@ -6,7 +6,7 @@ import (
 	"errors"
 	"strings"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"github.com/ulule/sqlx"
 )
 
