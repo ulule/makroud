@@ -1,4 +1,4 @@
-# makroud
+# Makroud
 
 [![CircleCI][circle-img]][circle-url]
 [![Documentation][godoc-img]][godoc-url]
@@ -8,7 +8,24 @@
 
 ## Introduction
 
-TODO
+Makroud is a high level SQL Connector that only support **PostgreSQL** at the moment.
+
+It's an advanced mapper and/or a lightweight ORM that relies on reflection to generate queries.
+**Using reflection has it's flaws**, type safety is not guaranteed and a panic is still possible,
+even if you are every careful and vigilant. **However,** development is super easy and straightforward
+since it doesn't relies on code generation.
+
+Makroud isn't a migration tools, and doesn't inspects the database to define the application data model
+since there is no code generation. It's important to have Active Record that are synchronized with your
+data model in your database.
+
+It also support simple associations with preloading.
+
+Under the hood, it relies on three components:
+
+ * [Loukoum](https://github.com/ulule/loukoum) for query generation
+ * [Sqlx](https://github.com/ulule/sqlx) to have an extended mapper
+ * [Sqalx](https://github.com/ulule/sqalx) to support nested transaction
 
 ## Installation
 
@@ -405,6 +422,25 @@ func GetUserByName(ctx context.Context, driver makroud.Driver, name string) (*Us
 }
 ```
 
+Also, it's support query without `Model`.
+
+```go
+func FindUserIDWithStaffRole(ctx context.Context, driver makroud.Driver) ([]string, error) {
+	list := []string{}
+
+	stmt := loukoum.Select("id").
+		From("users").
+		Where(loukoum.Condition("role").Equal("staff"))
+
+	err := makroud.Exec(ctx, driver, stmt, &list)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+```
+
 ### Preload
 
 TODO
@@ -471,7 +507,5 @@ This is Free Software, released under the [`MIT License`][license-url].
 [godoc-img]: https://godoc.org/github.com/ulule/makroud?status.svg
 [license-img]: https://img.shields.io/badge/license-MIT-blue.svg
 [license-url]: LICENSE
-[sql-url]: https://golang.org/pkg/database/sql/
-[sqlx-url]: https://github.com/jmoiron/sqlx
 [circle-url]: https://circleci.com/gh/ulule/makroud/tree/master
 [circle-img]: https://circleci.com/gh/ulule/makroud.svg?style=shield&circle-token=e53497efffde023bac7f2710bd12c5d0e71f5af4
