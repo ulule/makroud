@@ -25,6 +25,8 @@ type Field struct {
 	isExcluded      bool
 	hasDefault      bool
 	hasULID         bool
+	hasUUIDV1       bool
+	hasUUIDV4       bool
 	isCreatedKey    bool
 	isUpdatedKey    bool
 	isDeletedKey    bool
@@ -97,6 +99,16 @@ func (field Field) HasULID() bool {
 	return field.hasULID
 }
 
+// HasUUIDV1 returns if the field has a uuid v1 type for it's primary key.
+func (field Field) HasUUIDV1() bool {
+	return field.hasUUIDV1
+}
+
+// HasUUIDV4 returns if the field has a uuid v4 type for it's primary key.
+func (field Field) HasUUIDV4() bool {
+	return field.hasUUIDV4
+}
+
 // IsCreatedKey returns if the field is a created key.
 func (field Field) IsCreatedKey() bool {
 	return field.isCreatedKey
@@ -163,6 +175,8 @@ func NewField(driver Driver, schema *Schema, model Model, name string, args ...M
 	isExcluded := tags.HasKey(TagName, TagKeyIgnored) || field.PkgPath != ""
 	hasDefault := tags.HasKey(TagName, TagKeyDefault)
 	hasULID := tags.GetByKey(TagName, TagKeyPrimaryKey) == TagKeyULID
+	hasUUIDV1 := tags.GetByKey(TagName, TagKeyPrimaryKey) == TagKeyUUIDV1
+	hasUUIDV4 := tags.GetByKey(TagName, TagKeyPrimaryKey) == TagKeyUUIDV4
 
 	isCreatedKey := columnName == opts.CreatedKey
 	isUpdatedKey := columnName == opts.UpdatedKey
@@ -185,6 +199,8 @@ func NewField(driver Driver, schema *Schema, model Model, name string, args ...M
 		isDeletedKey: isDeletedKey,
 		hasDefault:   hasDefault,
 		hasULID:      hasULID,
+		hasUUIDV1:    hasUUIDV1,
+		hasUUIDV4:    hasUUIDV4,
 		rtype:        rtype,
 	}
 

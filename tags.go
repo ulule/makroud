@@ -23,7 +23,7 @@ var TagsMapper = map[string]string{
 	TagNameAlt: TagKeyColumn,
 }
 
-// Tag modifiers
+// Tag modifiers.
 const (
 	TagKeyIgnored    = "-"
 	TagKeyDefault    = "default"
@@ -31,6 +31,8 @@ const (
 	TagKeyForeignKey = "fk"
 	TagKeyPrimaryKey = "pk"
 	TagKeyULID       = "ulid"
+	TagKeyUUIDV1     = "uuid-v1"
+	TagKeyUUIDV4     = "uuid-v4"
 )
 
 // TagProperty is a struct tag property.

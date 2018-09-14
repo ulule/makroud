@@ -103,6 +103,31 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 			if err != nil {
 				return nil, err
 			}
+
+		case PrimaryKeyUUIDV1Default:
+			uuid := GenerateUUIDV1(driver)
+			mapper := map[string]interface{}{
+				pk.ColumnName(): uuid,
+			}
+			(*values)[pk.ColumnName()] = uuid
+			err := schema.WriteModel(mapper, model)
+			if err != nil {
+				return nil, err
+			}
+
+		case PrimaryKeyUUIDV4Default:
+			uuid := GenerateUUIDV4(driver)
+			mapper := map[string]interface{}{
+				pk.ColumnName(): uuid,
+			}
+			(*values)[pk.ColumnName()] = uuid
+			err := schema.WriteModel(mapper, model)
+			if err != nil {
+				return nil, err
+			}
+
+		default:
+			return nil, errors.Errorf("unsupported primary key type: %s", pk.Default())
 		}
 
 		builder := loukoum.Insert(schema.TableName()).

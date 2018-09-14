@@ -99,8 +99,11 @@ Then, you have to define your model columns using struct tags:
  * **column**(`string`): Define column name.
  * **pk**(`bool|string`): Define column as a primary key, it accepts the following argument:
    * **true**: Uses internal db mechanism to define primary key value
-   * **db**: Uses internal db mechanism to define primary key value
    * **ulid**: Generate a [ULID](https://github.com/ulid/spec) to define primary key value
+   * **uuid-v1**: Generate a [UUID V1](https://en.wikipedia.org/wiki/Universally_unique_identifier)
+     to define primary key value
+   * **uuid-v4**: Generate a [UUID V4](https://en.wikipedia.org/wiki/Universally_unique_identifier)
+     to define primary key value
  * **default**(`bool`): On insert, if model has a zero value, it will use the db default value.
  * **pk**(`string`): Define column as a foreign key, reference table must be provided.
  * **-**(`bool`): Ignore this field.

@@ -3,6 +3,7 @@ package makroud
 import (
 	"fmt"
 
+	"github.com/gofrs/uuid"
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
 
@@ -56,14 +57,22 @@ const (
 	PrimaryKeyDBDefault = PrimaryKeyDefault(iota)
 	// PrimaryKeyULIDDefault uses a ulid generator to define primary key value.
 	PrimaryKeyULIDDefault
+	// PrimaryKeyUUIDV1Default uses a uuid v1 generator to define primary key value.
+	PrimaryKeyUUIDV1Default
+	// PrimaryKeyUUIDV4Default uses a uuid v4 generator to define primary key value.
+	PrimaryKeyUUIDV4Default
 )
 
 func (e PrimaryKeyDefault) String() string {
 	switch e {
 	case PrimaryKeyDBDefault:
-		return "db"
+		return "default"
 	case PrimaryKeyULIDDefault:
 		return "ulid"
+	case PrimaryKeyUUIDV1Default:
+		return "uuid-v1"
+	case PrimaryKeyUUIDV4Default:
+		return "uuid-v4"
 	default:
 		panic(fmt.Sprintf("makroud: unknown primary key default types: %d", e))
 	}
@@ -107,6 +116,12 @@ func NewPrimaryKey(field *Field) (*PrimaryKey, error) {
 
 	if field.HasULID() {
 		pk.pkDefault = PrimaryKeyULIDDefault
+	}
+	if field.HasUUIDV1() {
+		pk.pkDefault = PrimaryKeyUUIDV1Default
+	}
+	if field.HasUUIDV4() {
+		pk.pkDefault = PrimaryKeyUUIDV4Default
 	}
 
 	return pk, nil
@@ -154,4 +169,14 @@ func (key PrimaryKey) ValueOpt(model Model) (interface{}, bool) {
 // GenerateULID generates a new ulid.
 func GenerateULID(driver Driver) string {
 	return ulid.MustNew(ulid.Now(), driver.entropy()).String()
+}
+
+// GenerateUUIDV1 generates a new uuid v1.
+func GenerateUUIDV1(driver Driver) string {
+	return uuid.Must(uuid.NewV1()).String()
+}
+
+// GenerateUUIDV4 generates a new uuid v4.
+func GenerateUUIDV4(driver Driver) string {
+	return uuid.Must(uuid.NewV4()).String()
 }
