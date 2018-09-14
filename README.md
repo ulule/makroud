@@ -356,7 +356,51 @@ func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
 
 #### Query
 
-TODO
+By using a [Loukoum](https://github.com/ulule/loukoum) `SelectBuilder`.
+
+```go
+import "github.com/ulule/loukoum"
+
+func GetUserByID(ctx context.Context, driver makroud.Driver, id string) (*User, error) {
+	user := &User{}
+
+	columns, err := makroud.GetColumns(driver, user)
+	if err != nil {
+		return nil, err
+	}
+
+	stmt := loukoum.Select(columns...).
+		From(user.TableName()).
+		Where(loukoum.Condition("id").Equal(id))
+
+	err := makroud.Exec(ctx, driver, stmt, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func GetUserByName(ctx context.Context, driver makroud.Driver, name string) (*User, error) {
+	user := &User{}
+
+	columns, err := makroud.GetColumns(driver, user)
+	if err != nil {
+		return nil, err
+	}
+
+	stmt := loukoum.Select(columns...).
+		From(user.TableName()).
+		Where(loukoum.Condition("name").Equal(name))
+
+	err := makroud.Exec(ctx, driver, stmt, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+```
 
 ### Preload
 
