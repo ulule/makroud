@@ -422,7 +422,7 @@ func GetUserByName(ctx context.Context, driver makroud.Driver, name string) (*Us
 }
 ```
 
-Also, it's support query without `Model`.
+Also, it support query without `Model`.
 
 ```go
 func FindUserIDWithStaffRole(ctx context.Context, driver makroud.Driver) ([]string, error) {
