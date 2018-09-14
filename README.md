@@ -6,11 +6,9 @@
 
 *A high level SQL Connector.*
 
-
 ## Introduction
 
 TODO
-
 
 ## Installation
 
@@ -25,7 +23,6 @@ or `go get`
 ```console
 go get -u github.com/ulule/sqlxx
 ```
-
 
 ## Usage
 
@@ -62,7 +59,6 @@ driver, err := sqlxx.NewWithOptions(&sqlxx.ClientOptions{
 })
 ```
 
-
 ### Define a Model
 
 With the [**Active Record**](https://en.wikipedia.org/wiki/Active_record_pattern) approach, you have to define a
@@ -86,7 +82,6 @@ type User struct {
 	Group   []Group
 	Profile *Profile
 }
-
 
 func (User) TableName() string {
 	return "users"
@@ -211,11 +206,13 @@ func (User) DeletedKey() string {
 }
 ```
 
-### CRUD Operation
+### Operations
 
 For the following sections, we assume that you have a `context.Context` and a `sqlxx.Driver` instance.
 
 #### Insert
+
+For a simple insert, you can use save a model like this:
 
 ```go
 func CreateUser(ctx context.Context, driver sqlxx.Driver, name string) (*User, error) {
@@ -232,7 +229,32 @@ func CreateUser(ctx context.Context, driver sqlxx.Driver, name string) (*User, e
 }
 ```
 
+Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukoum) `InsertBuilder` alongside the model.
+
+```go
+import "github.com/ulule/loukoum"
+
+func CreateUser(ctx context.Context, driver sqlxx.Driver, name string) (*User, error) {
+	user := &User{
+		Name: name,
+	}
+
+	stmt := loukoum.Insert("users").
+		Set(loukoum.Pair("name", user.Name)).
+		Returning("id, created_at, updated_at")
+
+	err := sqlxx.Exec(ctx, driver, stmt, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+```
+
 #### Update
+
+For a simple update, asumming your model have a primary key defined, you can use save it by executing:
 
 ```go
 func UpdateUser(ctx context.Context, driver sqlxx.Driver, user *User, name string) error {
@@ -241,13 +263,56 @@ func UpdateUser(ctx context.Context, driver sqlxx.Driver, user *User, name strin
 }
 ```
 
+Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukoum) `UpdateBuilder` alongside the model.
+
+```go
+import "github.com/ulule/loukoum"
+
+func UpdateUser(ctx context.Context, driver sqlxx.Driver, user *User, name string) error {
+	user.Name = name
+
+	stmt := loukoum.Update("users").
+		Set(
+			loukoum.Pair("updated_at", loukoum.Raw("NOW()")),
+			loukoum.Pair("name", user.Name),
+		).
+		Where(loukoum.Condition("id").Equal(user.ID)).
+		Returning("updated_at")
+
+	err := sqlxx.Exec(ctx, driver, stmt, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+```
+
 #### Delete
 
-Delete executes a `DELETE` on given value using it's primary key.
+For a simple delete _(using a `DELETE` statement)_, asumming your model have a primary key defined,
+you can use delete it using:
 
 ```go
 func DeleteUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
 	return sqlxx.Delete(ctx, driver, user)
+}
+```
+
+Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukoum) `DeleteBuilder` alongside the model.
+
+```go
+import "github.com/ulule/loukoum"
+
+func DeleteUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
+	stmt := loukoum.Delete("users").Where(loukoum.Condition("id").Equal(user.ID))
+
+	err := sqlxx.Exec(ctx, driver, stmt, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 ```
 
@@ -261,7 +326,32 @@ func ArchiveUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
 }
 ```
 
-If model has no `DeletedAt` field, an error is returned.
+> **NOTE**: If model has no `DeletedAt` field, an error is returned.
+
+Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukoum) `UpdateBuilder` alongside the model.
+
+```go
+import "github.com/ulule/loukoum"
+
+func ArchiveUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
+	user.Name = name
+
+	stmt := loukoum.Update("users").
+		Set(
+			loukoum.Pair("deleted_at", loukoum.Raw("NOW()")),
+			loukoum.Pair("name", ""),
+		).
+		Where(loukoum.Condition("id").Equal(user.ID)).
+		Returning("deleted_at")
+
+	err := sqlxx.Exec(ctx, driver, stmt, user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+```
 
 #### Query
 
@@ -275,7 +365,8 @@ TODO
 
 ### Docker
 
-The test suite is running on PostgreSQL. We use [Docker](https://docs.docker.com/install/) to create a running container using [scripts/database](scripts/database).
+The test suite is running on PostgreSQL. We use [Docker](https://docs.docker.com/install/) to create a running
+container using [scripts/database](scripts/database).
 
 ### Testing
 
