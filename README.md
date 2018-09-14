@@ -28,7 +28,8 @@ go get -u github.com/ulule/makroud
 
 ### Create a Driver
 
-A **Driver** is a high level abstraction of a database connection or a transaction. It's almost required everytime alongside a `context.Context` to manipulate rows.
+A **Driver** is a high level abstraction of a database connection or a transaction.
+It's almost required everytime alongside a `context.Context` to manipulate rows.
 
 ```go
 driver, err := makroud.New(
