@@ -9,7 +9,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud/reflectx"
 )
 
 // nolint: structcheck,megacheck

@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/ulule/sqlx"
 )
 
-// ClientDriver define the driver name used in sqlxx.
+// ClientDriver define the driver name used in makroud.
 const ClientDriver = "postgres"
 
 // Client is a wrapper that can interact with the database.
@@ -85,7 +85,7 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 
 	dbx, err := sqlx.Connect(ClientDriver, options.String())
 	if err != nil {
-		return nil, errors.Wrapf(err, "sqlxx: cannot connect to %s server", ClientDriver)
+		return nil, errors.Wrapf(err, "makroud: cannot connect to %s server", ClientDriver)
 	}
 
 	dbx.SetMaxIdleConns(options.MaxIdleConnections)
@@ -93,7 +93,7 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 
 	connection, err := sqalx.New(dbx, sqalx.SavePoint(options.SavepointEnabled))
 	if err != nil {
-		return nil, errors.Wrapf(err, "sqlxx: cannot instantiate %s client driver", ClientDriver)
+		return nil, errors.Wrapf(err, "makroud: cannot instantiate %s client driver", ClientDriver)
 	}
 
 	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -121,7 +121,7 @@ func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) er
 
 		_, err := c.node.ExecContext(ctx, query)
 		if err != nil {
-			return errors.Wrap(err, "sqlxx: cannot execute query")
+			return errors.Wrap(err, "makroud: cannot execute query")
 		}
 
 		return nil
@@ -129,7 +129,7 @@ func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) er
 
 	_, err := c.node.NamedExecContext(ctx, query, args[0])
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute query")
+		return errors.Wrap(err, "makroud: cannot execute query")
 	}
 
 	return nil
@@ -148,7 +148,7 @@ func (c *Client) MustExec(ctx context.Context, query string, args ...interface{}
 func (c *Client) Query(ctx context.Context, query string, arg interface{}) (Rows, error) {
 	rows, err := c.node.NamedQueryContext(ctx, query, arg)
 	if err != nil {
-		return nil, errors.Wrap(err, "sqlxx: cannot execute query")
+		return nil, errors.Wrap(err, "makroud: cannot execute query")
 	}
 	return wrapRows(rows), nil
 }
@@ -168,7 +168,7 @@ func (c *Client) MustQuery(ctx context.Context, query string, arg interface{}) R
 func (c *Client) Prepare(ctx context.Context, query string) (Statement, error) {
 	stmt, err := c.node.PrepareNamedContext(ctx, query)
 	if err != nil {
-		return nil, errors.Wrap(err, "sqlxx: cannot prepare statement")
+		return nil, errors.Wrap(err, "makroud: cannot prepare statement")
 	}
 	return wrapStatement(stmt), nil
 }
@@ -179,7 +179,7 @@ func (c *Client) Prepare(ctx context.Context, query string) (Statement, error) {
 func (c *Client) FindOne(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 	err := c.node.GetContext(ctx, dest, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute query")
+		return errors.Wrap(err, "makroud: cannot execute query")
 	}
 	return nil
 }
@@ -189,7 +189,7 @@ func (c *Client) FindOne(ctx context.Context, dest interface{}, query string, ar
 func (c *Client) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
 	err := c.node.SelectContext(ctx, dest, query, args...)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute query")
+		return errors.Wrap(err, "makroud: cannot execute query")
 	}
 	return nil
 }
@@ -198,7 +198,7 @@ func (c *Client) FindAll(ctx context.Context, dest interface{}, query string, ar
 func (c *Client) Begin() (Driver, error) {
 	node, err := c.node.Beginx()
 	if err != nil {
-		return nil, errors.Wrap(err, "sqlxx: create a transaction")
+		return nil, errors.Wrap(err, "makroud: create a transaction")
 	}
 	return wrapClient(c, node), nil
 }
@@ -207,7 +207,7 @@ func (c *Client) Begin() (Driver, error) {
 func (c *Client) Rollback() error {
 	err := c.node.Rollback()
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot rollback transaction")
+		return errors.Wrap(err, "makroud: cannot rollback transaction")
 	}
 	return nil
 }
@@ -216,7 +216,7 @@ func (c *Client) Rollback() error {
 func (c *Client) Commit() error {
 	err := c.node.Commit()
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot commit transaction")
+		return errors.Wrap(err, "makroud: cannot commit transaction")
 	}
 	return nil
 }
@@ -235,7 +235,7 @@ func (c *Client) Ping() error {
 		})
 	}
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot ping database")
+		return errors.Wrap(err, "makroud: cannot ping database")
 	}
 	return nil
 }
@@ -296,7 +296,7 @@ func wrapStatement(stmt *sqlx.NamedStmt) Statement {
 func (w *stmtWrapper) Close() error {
 	err := w.stmt.Close()
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot close statement")
+		return errors.Wrap(err, "makroud: cannot close statement")
 	}
 	return nil
 }
@@ -305,7 +305,7 @@ func (w *stmtWrapper) Close() error {
 func (w *stmtWrapper) Exec(ctx context.Context, arg interface{}) error {
 	_, err := w.stmt.ExecContext(ctx, arg)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute statement")
+		return errors.Wrap(err, "makroud: cannot execute statement")
 	}
 	return nil
 }
@@ -315,10 +315,10 @@ func (w *stmtWrapper) QueryRow(ctx context.Context, arg interface{}) (Row, error
 	row := w.stmt.QueryRowxContext(ctx, arg)
 	err := row.Err()
 	if err != nil {
-		return nil, errors.Wrap(err, "sqlxx: cannot execute statement")
+		return nil, errors.Wrap(err, "makroud: cannot execute statement")
 	}
 	if row == nil {
-		return nil, errors.Wrap(ErrNoRows, "sqlxx: cannot execute statement")
+		return nil, errors.Wrap(ErrNoRows, "makroud: cannot execute statement")
 	}
 	return wrapRow(row), nil
 }
@@ -327,7 +327,7 @@ func (w *stmtWrapper) QueryRow(ctx context.Context, arg interface{}) (Row, error
 func (w *stmtWrapper) QueryRows(ctx context.Context, arg interface{}) (Rows, error) {
 	rows, err := w.stmt.QueryxContext(ctx, arg)
 	if err != nil {
-		return nil, errors.Wrap(err, "sqlxx: cannot execute statement")
+		return nil, errors.Wrap(err, "makroud: cannot execute statement")
 	}
 	return wrapRows(rows), nil
 }
@@ -336,7 +336,7 @@ func (w *stmtWrapper) QueryRows(ctx context.Context, arg interface{}) (Rows, err
 func (w *stmtWrapper) FindOne(ctx context.Context, dest interface{}, arg interface{}) error {
 	err := w.stmt.GetContext(ctx, dest, arg)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute statement")
+		return errors.Wrap(err, "makroud: cannot execute statement")
 	}
 	return nil
 }
@@ -345,7 +345,7 @@ func (w *stmtWrapper) FindOne(ctx context.Context, dest interface{}, arg interfa
 func (w *stmtWrapper) FindAll(ctx context.Context, dest interface{}, arg interface{}) error {
 	err := w.stmt.SelectContext(ctx, dest, arg)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute statement")
+		return errors.Wrap(err, "makroud: cannot execute statement")
 	}
 	return nil
 }
@@ -366,7 +366,7 @@ func wrapRow(row *sqlx.Row) Row {
 func (r *rowWrapper) Write(dest map[string]interface{}) error {
 	err := r.row.MapScan(dest)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot write row")
+		return errors.Wrap(err, "makroud: cannot write row")
 	}
 	return nil
 }
@@ -398,7 +398,7 @@ func (r *rowsWrapper) Next() bool {
 func (r *rowsWrapper) Close() error {
 	err := r.rows.Close()
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot close rows")
+		return errors.Wrap(err, "makroud: cannot close rows")
 	}
 	return nil
 }
@@ -413,7 +413,7 @@ func (r *rowsWrapper) Err() error {
 func (r *rowsWrapper) Write(dest map[string]interface{}) error {
 	err := r.rows.MapScan(dest)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot write row")
+		return errors.Wrap(err, "makroud: cannot write row")
 	}
 	return nil
 }

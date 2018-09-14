@@ -21,8 +21,8 @@ RUN apt-get -y update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY . /go/src/github.com/ulule/sqlxx
-WORKDIR /go/src/github.com/ulule/sqlxx
+COPY . /go/src/github.com/ulule/makroud
+WORKDIR /go/src/github.com/ulule/makroud
 RUN dep ensure
 
 CMD /bin/bash

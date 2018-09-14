@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 	"github.com/ulule/loukoum"
 	"github.com/ulule/loukoum/builder"
 
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud/reflectx"
 )
 
 // Save saves the given instance.
 func Save(ctx context.Context, driver Driver, model Model) error {
 	err := save(ctx, driver, model)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute save")
+		return errors.Wrap(err, "makroud: cannot execute save")
 	}
 	return nil
 }

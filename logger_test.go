@@ -1,4 +1,4 @@
-package sqlxx_test
+package makroud_test
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/ulule/loukoum/format"
 
-	"github.com/ulule/sqlxx"
+	"github.com/ulule/makroud"
 )
 
 type logger struct {
@@ -36,7 +36,7 @@ func TestLogger(t *testing.T) {
 	logger := &logger{
 		logs: make(chan string, 10),
 	}
-	Setup(t, sqlxx.WithLogger(logger))(func(driver sqlxx.Driver) {
+	Setup(t, makroud.WithLogger(logger))(func(driver makroud.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
 
@@ -46,7 +46,7 @@ func TestLogger(t *testing.T) {
 			FavoriteFood: "Shrimps",
 		}
 
-		err := sqlxx.Save(ctx, driver, owl)
+		err := makroud.Save(ctx, driver, owl)
 		is.NoError(err)
 		expected := fmt.Sprint(
 			`INSERT INTO ztp_owl (favorite_food, feather_color, group_id, name) VALUES `,
@@ -58,7 +58,7 @@ func TestLogger(t *testing.T) {
 		is.Equal(expected, log)
 
 		owl.Name = "Nibbles"
-		err = sqlxx.Save(ctx, driver, owl)
+		err = makroud.Save(ctx, driver, owl)
 		is.NoError(err)
 		expected = fmt.Sprint(
 			`UPDATE ztp_owl SET favorite_food = 'Shrimps', feather_color = 'lavender', group_id = NULL, `,
@@ -69,7 +69,7 @@ func TestLogger(t *testing.T) {
 		is.NoError(err)
 		is.Equal(expected, log)
 
-		err = sqlxx.Delete(ctx, driver, owl)
+		err = makroud.Delete(ctx, driver, owl)
 		is.NoError(err)
 		expected = fmt.Sprint(`DELETE FROM ztp_owl WHERE (id = `, format.Int(owl.ID), `);`, EOL)
 

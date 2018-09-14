@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"reflect"
@@ -6,19 +6,19 @@ import (
 )
 
 const (
-	// TagName defines sqlxx tag namespace.
-	TagName = "sqlxx"
+	// TagName defines makroud tag namespace.
+	TagName = "makroud"
 	// TagNameAlt defines sqlx tag namespace.
 	TagNameAlt = "db"
 )
 
-// TagsList is a list of supported tags, this include sqlx and sqlxx one.
+// TagsList is a list of supported tags, this include sqlx and makroud one.
 var TagsList = []string{
 	TagName,
 	TagNameAlt,
 }
 
-// TagsMapper is a mapper that convert sqlx tag to sqlxx one...
+// TagsMapper is a mapper that convert sqlx tag to makroud one...
 var TagsMapper = map[string]string{
 	TagNameAlt: TagKeyColumn,
 }

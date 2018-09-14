@@ -9,7 +9,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud/reflectx"
 )
 
 func TestReflectx_IsZero(t *testing.T) {

@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/ulule/loukoum/builder"
 
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud/reflectx"
 )
 
 // Exec will execute given query from a Loukoum builder.
@@ -26,7 +26,7 @@ func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...inte
 
 	err := exec(ctx, driver, query, args, dest...)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute query")
+		return errors.Wrap(err, "makroud: cannot execute query")
 	}
 
 	return nil
@@ -44,7 +44,7 @@ func RawExec(ctx context.Context, driver Driver, query string, dest ...interface
 
 	err := exec(ctx, driver, query, nil, dest...)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute query")
+		return errors.Wrap(err, "makroud: cannot execute query")
 	}
 
 	return nil
@@ -53,7 +53,7 @@ func RawExec(ctx context.Context, driver Driver, query string, dest ...interface
 func exec(ctx context.Context, driver Driver, query string, args map[string]interface{}, dest ...interface{}) error {
 	stmt, err := driver.Prepare(ctx, query)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot prepare statement")
+		return errors.Wrap(err, "makroud: cannot prepare statement")
 	}
 	defer driver.close(stmt, map[string]string{
 		"query": query,

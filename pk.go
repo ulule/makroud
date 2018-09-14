@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
 
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud/reflectx"
 )
 
 // PKType define a primary key type.
@@ -31,7 +31,7 @@ func (val PKType) String() string {
 	case PKStringType:
 		return "string"
 	default:
-		panic(fmt.Sprintf("sqlxx: unknown primary key type: %d", val))
+		panic(fmt.Sprintf("makroud: unknown primary key type: %d", val))
 	}
 }
 
@@ -65,7 +65,7 @@ func (e PrimaryKeyDefault) String() string {
 	case PrimaryKeyULIDDefault:
 		return "ulid"
 	default:
-		panic(fmt.Sprintf("sqlxx: unknown primary key default types: %d", e))
+		panic(fmt.Sprintf("makroud: unknown primary key default types: %d", e))
 	}
 }
 

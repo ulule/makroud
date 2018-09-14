@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 // Model represents a database table.
 type Model interface {

@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud/reflectx"
 )
 
 // Schema is a model schema.
@@ -54,7 +54,7 @@ func (schema Schema) CreatedKeyPath() string {
 	if schema.HasUpdatedKey() {
 		return schema.createdKey.ColumnPath()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrSchemaCreatedKey))
+	panic(fmt.Sprint("makroud: ", ErrSchemaCreatedKey))
 }
 
 // CreatedKeyName returns schema created key column name.
@@ -62,7 +62,7 @@ func (schema Schema) CreatedKeyName() string {
 	if schema.HasUpdatedKey() {
 		return schema.createdKey.ColumnName()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrSchemaCreatedKey))
+	panic(fmt.Sprint("makroud: ", ErrSchemaCreatedKey))
 }
 
 // HasUpdatedKey returns if an updated key is defined for current schema.
@@ -75,7 +75,7 @@ func (schema Schema) UpdatedKeyPath() string {
 	if schema.HasUpdatedKey() {
 		return schema.updatedKey.ColumnPath()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrSchemaUpdatedKey))
+	panic(fmt.Sprint("makroud: ", ErrSchemaUpdatedKey))
 }
 
 // UpdatedKeyName returns schema deleted key column name.
@@ -83,7 +83,7 @@ func (schema Schema) UpdatedKeyName() string {
 	if schema.HasUpdatedKey() {
 		return schema.updatedKey.ColumnName()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrSchemaUpdatedKey))
+	panic(fmt.Sprint("makroud: ", ErrSchemaUpdatedKey))
 }
 
 // HasDeletedKey returns if a deleted key is defined for current schema.
@@ -96,7 +96,7 @@ func (schema Schema) DeletedKeyPath() string {
 	if schema.HasDeletedKey() {
 		return schema.deletedKey.ColumnPath()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrSchemaDeletedKey))
+	panic(fmt.Sprint("makroud: ", ErrSchemaDeletedKey))
 }
 
 // DeletedKeyName returns schema deleted key column name.
@@ -104,7 +104,7 @@ func (schema Schema) DeletedKeyName() string {
 	if schema.HasDeletedKey() {
 		return schema.deletedKey.ColumnName()
 	}
-	panic(fmt.Sprint("sqlxx: ", ErrSchemaDeletedKey))
+	panic(fmt.Sprint("makroud: ", ErrSchemaDeletedKey))
 }
 
 // Columns returns schema columns without table prefix.
@@ -444,7 +444,7 @@ func (c Columns) List() []string {
 func GetColumns(driver Driver, model Model) (Columns, error) {
 	schema, err := GetSchema(driver, model)
 	if err != nil {
-		return nil, errors.Wrap(err, "sqlxx: cannot fetch schema informations")
+		return nil, errors.Wrap(err, "makroud: cannot fetch schema informations")
 	}
 
 	columns := schema.ColumnPaths()

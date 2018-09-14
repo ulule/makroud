@@ -1,4 +1,4 @@
-package sqlxx_test
+package makroud_test
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/ulule/loukoum"
 
-	"github.com/ulule/sqlxx"
+	"github.com/ulule/makroud"
 )
 
 func TestSave_Owl(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
 
@@ -25,7 +25,7 @@ func TestSave_Owl(t *testing.T) {
 			FavoriteFood: favoriteFood,
 		}
 
-		err := sqlxx.Save(ctx, driver, owl)
+		err := makroud.Save(ctx, driver, owl)
 		is.NoError(err)
 		is.NotEmpty(owl.ID)
 
@@ -33,7 +33,7 @@ func TestSave_Owl(t *testing.T) {
 
 		query := loukoum.Select("*").From("ztp_owl").Where(loukoum.Condition("id").Equal(id))
 		last := &Owl{}
-		err = sqlxx.Exec(ctx, driver, query, last)
+		err = makroud.Exec(ctx, driver, query, last)
 		is.NoError(err)
 		is.Equal(name, last.Name)
 		is.Equal(featherColor, last.FeatherColor)
@@ -42,12 +42,12 @@ func TestSave_Owl(t *testing.T) {
 		favoriteFood = "Chocolate Cake"
 		owl.FavoriteFood = favoriteFood
 
-		err = sqlxx.Save(ctx, driver, owl)
+		err = makroud.Save(ctx, driver, owl)
 		is.NoError(err)
 
 		query = loukoum.Select("*").From("ztp_owl").Where(loukoum.Condition("id").Equal(id))
 		last = &Owl{}
-		err = sqlxx.Exec(ctx, driver, query, last)
+		err = makroud.Exec(ctx, driver, query, last)
 		is.NoError(err)
 		is.Equal(name, last.Name)
 		is.Equal(featherColor, last.FeatherColor)
@@ -57,7 +57,7 @@ func TestSave_Owl(t *testing.T) {
 }
 
 func TestSave_Meow(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
 
@@ -65,7 +65,7 @@ func TestSave_Meow(t *testing.T) {
 			Name: "Hemlock",
 		}
 
-		err := sqlxx.Save(ctx, driver, cat)
+		err := makroud.Save(ctx, driver, cat)
 		is.NoError(err)
 		is.NotEmpty(cat.ID)
 
@@ -76,7 +76,7 @@ func TestSave_Meow(t *testing.T) {
 			CatID: cat.ID,
 		}
 
-		err = sqlxx.Save(ctx, driver, meow)
+		err = makroud.Save(ctx, driver, meow)
 		is.NoError(err)
 		is.NotEmpty(meow.Hash)
 		is.True(t0.Before(meow.CreatedAt))
@@ -89,7 +89,7 @@ func TestSave_Meow(t *testing.T) {
 
 		query := loukoum.Select("*").From("ztp_meow").Where(loukoum.Condition("hash").Equal(hash))
 		last := &Meow{}
-		err = sqlxx.Exec(ctx, driver, query, last)
+		err = makroud.Exec(ctx, driver, query, last)
 		is.NoError(err)
 		is.Equal(body, last.Body)
 		is.Equal(cat.ID, last.CatID)
@@ -102,7 +102,7 @@ func TestSave_Meow(t *testing.T) {
 		body = "meow meow!"
 		meow.Body = body
 
-		err = sqlxx.Save(ctx, driver, meow)
+		err = makroud.Save(ctx, driver, meow)
 		is.NoError(err)
 		is.True(t0.Before(meow.CreatedAt))
 		is.True(t0.Before(meow.UpdatedAt))
@@ -113,7 +113,7 @@ func TestSave_Meow(t *testing.T) {
 
 		query = loukoum.Select("*").From("ztp_meow").Where(loukoum.Condition("hash").Equal(hash))
 		last = &Meow{}
-		err = sqlxx.Exec(ctx, driver, query, last)
+		err = makroud.Exec(ctx, driver, query, last)
 		is.NoError(err)
 		is.Equal(body, last.Body)
 		is.Equal(cat.ID, last.CatID)

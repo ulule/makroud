@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"context"
@@ -9,14 +9,14 @@ import (
 	"github.com/ulule/loukoum"
 	"github.com/ulule/loukoum/builder"
 
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud/reflectx"
 )
 
 // Preload preloads related fields.
 func Preload(ctx context.Context, driver Driver, out interface{}, handlers ...PreloadHandler) error {
 	err := preload(ctx, driver, out, handlers...)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute preload")
+		return errors.Wrap(err, "makroud: cannot execute preload")
 	}
 	return nil
 }

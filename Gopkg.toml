@@ -1,4 +1,4 @@
-# Gopkg.toml for github.com/ulule/sqlxx
+# Gopkg.toml for github.com/ulule/makroud
 
 ignored = [
   "github.com/stretchr/testify/require",
@@ -6,7 +6,7 @@ ignored = [
 ]
 
 [metadata]
-  codename = "sqlxx"
+  codename = "makroud"
 
 [prune]
   non-go = true
@@ -22,7 +22,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/lib/pq"
-  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
+  revision = "4ded0e9383f75c197b3a2aaa6d590ac52df6fd79"
 
 [[constraint]]
   name = "github.com/serenize/snaker"

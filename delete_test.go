@@ -1,4 +1,4 @@
-package sqlxx_test
+package makroud_test
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/ulule/loukoum"
 
-	"github.com/ulule/sqlxx"
+	"github.com/ulule/makroud"
 )
 
 func TestDelete_DeleteOwl(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
 
@@ -22,22 +22,22 @@ func TestDelete_DeleteOwl(t *testing.T) {
 			FavoriteFood: "Raspberry",
 		}
 
-		err := sqlxx.Save(ctx, driver, owl)
+		err := makroud.Save(ctx, driver, owl)
 		is.NoError(err)
 		is.NotEmpty(owl.ID)
 
 		id := owl.ID
 
-		err = sqlxx.Delete(ctx, driver, owl)
+		err = makroud.Delete(ctx, driver, owl)
 		is.NoError(err)
 
 		query := loukoum.Select("COUNT(*)").From("ztp_owl").Where(loukoum.Condition("id").Equal(id))
-		count, err := sqlxx.Count(ctx, driver, query)
+		count, err := makroud.Count(ctx, driver, query)
 		is.NoError(err)
 		is.Equal(int64(0), count)
 
 		query = loukoum.Select("COUNT(*)").From("ztp_owl").Where(loukoum.Condition("name").Equal("Blake"))
-		count, err = sqlxx.Count(ctx, driver, query)
+		count, err = makroud.Count(ctx, driver, query)
 		is.NoError(err)
 		is.NoError(err)
 		is.Equal(int64(0), count)
@@ -46,7 +46,7 @@ func TestDelete_DeleteOwl(t *testing.T) {
 }
 
 func TestDelete_ArchiveOwl(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
 
@@ -56,19 +56,19 @@ func TestDelete_ArchiveOwl(t *testing.T) {
 			FavoriteFood: "Wasabi",
 		}
 
-		err := sqlxx.Save(ctx, driver, owl)
+		err := makroud.Save(ctx, driver, owl)
 		is.NoError(err)
 		is.NotEmpty(owl.ID)
 
-		err = sqlxx.Archive(ctx, driver, owl)
+		err = makroud.Archive(ctx, driver, owl)
 		is.Error(err)
-		is.Equal(sqlxx.ErrSchemaDeletedKey, errors.Cause(err))
+		is.Equal(makroud.ErrSchemaDeletedKey, errors.Cause(err))
 
 	})
 }
 
 func TestDelete_DeleteMeow(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
 
@@ -76,7 +76,7 @@ func TestDelete_DeleteMeow(t *testing.T) {
 			Name: "Wolfram",
 		}
 
-		err := sqlxx.Save(ctx, driver, cat)
+		err := makroud.Save(ctx, driver, cat)
 		is.NoError(err)
 		is.NotEmpty(cat.ID)
 
@@ -85,17 +85,17 @@ func TestDelete_DeleteMeow(t *testing.T) {
 			CatID: cat.ID,
 		}
 
-		err = sqlxx.Save(ctx, driver, meow)
+		err = makroud.Save(ctx, driver, meow)
 		is.NoError(err)
 		is.NotEmpty(meow.Hash)
 
 		id := meow.Hash
 
-		err = sqlxx.Delete(ctx, driver, meow)
+		err = makroud.Delete(ctx, driver, meow)
 		is.NoError(err)
 
 		query := loukoum.Select("COUNT(*)").From("ztp_meow").Where(loukoum.Condition("hash").Equal(id))
-		count, err := sqlxx.Count(ctx, driver, query)
+		count, err := makroud.Count(ctx, driver, query)
 		is.NoError(err)
 		is.Equal(int64(0), count)
 
@@ -103,7 +103,7 @@ func TestDelete_DeleteMeow(t *testing.T) {
 }
 
 func TestDelete_ArchiveMeow(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
 
@@ -111,7 +111,7 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 			Name: "Wolfram",
 		}
 
-		err := sqlxx.Save(ctx, driver, cat)
+		err := makroud.Save(ctx, driver, cat)
 		is.NoError(err)
 		is.NotEmpty(cat.ID)
 
@@ -120,23 +120,23 @@ func TestDelete_ArchiveMeow(t *testing.T) {
 			CatID: cat.ID,
 		}
 
-		err = sqlxx.Save(ctx, driver, meow)
+		err = makroud.Save(ctx, driver, meow)
 		is.NoError(err)
 		is.NotEmpty(meow.Hash)
 
 		id := meow.Hash
 
-		err = sqlxx.Archive(ctx, driver, meow)
+		err = makroud.Archive(ctx, driver, meow)
 		is.NoError(err)
 
 		query := loukoum.Select("COUNT(*)").From("ztp_meow").Where(loukoum.Condition("hash").Equal(id))
-		count, err := sqlxx.Count(ctx, driver, query)
+		count, err := makroud.Count(ctx, driver, query)
 		is.NoError(err)
 		is.Equal(int64(1), count)
 
 		query = loukoum.Select("COUNT(*)").From("ztp_meow").
 			Where(loukoum.Condition("hash").Equal(id)).And(loukoum.Condition("deleted").IsNull(true))
-		count, err = sqlxx.Count(ctx, driver, query)
+		count, err = makroud.Count(ctx, driver, query)
 		is.NoError(err)
 		is.Equal(int64(0), count)
 

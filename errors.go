@@ -1,15 +1,15 @@
-package sqlxx
+package makroud
 
 import (
 	"fmt"
 )
 
-// Sqlxx general errors.
+// makroud general errors.
 var (
 	// ErrNoRows is returned when query doesn't return a row.
 	ErrNoRows = fmt.Errorf("no rows in result set")
 	// ErrInvalidDriver is returned when given driver is undefined.
-	ErrInvalidDriver = fmt.Errorf("a sqlxx driver is required")
+	ErrInvalidDriver = fmt.Errorf("a makroud driver is required")
 	// ErrPointerRequired is returned when given value is not a pointer.
 	ErrPointerRequired = fmt.Errorf("a pointer is required")
 	// ErrSchemaCreatedKey is returned when we cannot find a created key in given schema.

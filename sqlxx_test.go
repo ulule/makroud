@@ -1,4 +1,4 @@
-package sqlxx_test
+package makroud_test
 
 import (
 	"context"
@@ -12,15 +12,15 @@ import (
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 
-	"github.com/ulule/sqlxx"
+	"github.com/ulule/makroud"
 )
 
-var dbDefaultOptions = map[string]sqlxx.Option{
-	"USER":     sqlxx.User("postgres"),
-	"PASSWORD": sqlxx.Password(""),
-	"HOST":     sqlxx.Host("localhost"),
-	"PORT":     sqlxx.Port(5432),
-	"NAME":     sqlxx.Database("sqlxx_test"),
+var dbDefaultOptions = map[string]makroud.Option{
+	"USER":     makroud.User("postgres"),
+	"PASSWORD": makroud.Password(""),
+	"HOST":     makroud.Host("localhost"),
+	"PORT":     makroud.Port(5432),
+	"NAME":     makroud.Database("makroud_test"),
 }
 
 // ----------------------------------------------------------------------------
@@ -30,9 +30,9 @@ var dbDefaultOptions = map[string]sqlxx.Option{
 // nolint: structcheck,megacheck
 type Elements struct {
 	Air     string `db:"air"`
-	Fire    string `sqlxx:"column:fire"`
-	Water   string `sqlxx:"-"`
-	Earth   string `sqlxx:"column:earth,default"`
+	Fire    string `makroud:"column:fire"`
+	Water   string `makroud:"-"`
+	Earth   string `makroud:"column:earth,default"`
 	Fifth   string
 	enabled bool
 }
@@ -61,7 +61,7 @@ type ExoCloudFixtures struct {
 }
 
 // nolint: gocyclo
-func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *require.Assertions) *ExoCloudFixtures {
+func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *require.Assertions) *ExoCloudFixtures {
 	fixtures := &ExoCloudFixtures{
 		Regions:       []*ExoRegion{},
 		Organizations: []*ExoOrganization{},
@@ -95,9 +95,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Regions = append(fixtures.Regions, region3)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Regions {
-			err := sqlxx.Save(ctx, dbx, fixtures.Regions[i])
+			err := makroud.Save(ctx, dbx, fixtures.Regions[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Regions[i].ID)
 		}
@@ -122,9 +122,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Organizations = append(fixtures.Organizations, organization3)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Organizations {
-			err := sqlxx.Save(ctx, dbx, fixtures.Organizations[i])
+			err := makroud.Save(ctx, dbx, fixtures.Organizations[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Organizations[i].ID)
 		}
@@ -264,9 +264,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Avatars = append(fixtures.Avatars, avatar19)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Avatars {
-			err := sqlxx.Save(ctx, dbx, fixtures.Avatars[i])
+			err := makroud.Save(ctx, dbx, fixtures.Avatars[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Avatars[i].ID)
 		}
@@ -463,9 +463,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Profiles = append(fixtures.Profiles, profile19)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Profiles {
-			err := sqlxx.Save(ctx, dbx, fixtures.Profiles[i])
+			err := makroud.Save(ctx, dbx, fixtures.Profiles[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Profiles[i].ID)
 		}
@@ -643,9 +643,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Users = append(fixtures.Users, user19)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Users {
-			err := sqlxx.Save(ctx, dbx, fixtures.Users[i])
+			err := makroud.Save(ctx, dbx, fixtures.Users[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Users[i].ID)
 		}
@@ -862,9 +862,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Groups = append(fixtures.Groups, group30)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Groups {
-			err := sqlxx.Save(ctx, dbx, fixtures.Groups[i])
+			err := makroud.Save(ctx, dbx, fixtures.Groups[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Groups[i].ID)
 		}
@@ -903,9 +903,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Buckets = append(fixtures.Buckets, bucket4)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Buckets {
-			err := sqlxx.Save(ctx, dbx, fixtures.Buckets[i])
+			err := makroud.Save(ctx, dbx, fixtures.Buckets[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Buckets[i].ID)
 		}
@@ -954,9 +954,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Directories = append(fixtures.Directories, directory6)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Directories {
-			err := sqlxx.Save(ctx, dbx, fixtures.Directories[i])
+			err := makroud.Save(ctx, dbx, fixtures.Directories[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Directories[i].ID)
 		}
@@ -1090,12 +1090,12 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Directories = append(fixtures.Directories, directory19)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Directories {
 			if fixtures.Directories[i].ID != "" {
 				continue
 			}
-			err := sqlxx.Save(ctx, dbx, fixtures.Directories[i])
+			err := makroud.Save(ctx, dbx, fixtures.Directories[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Directories[i].ID)
 		}
@@ -1300,9 +1300,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Files = append(fixtures.Files, file22)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Files {
-			err := sqlxx.Save(ctx, dbx, fixtures.Files[i])
+			err := makroud.Save(ctx, dbx, fixtures.Files[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Files[i].ID)
 		}
@@ -1339,9 +1339,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Modes = append(fixtures.Modes, mode6)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Modes {
-			err := sqlxx.Save(ctx, dbx, fixtures.Modes[i])
+			err := makroud.Save(ctx, dbx, fixtures.Modes[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Modes[i].ID)
 		}
@@ -2062,9 +2062,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Chunks = append(fixtures.Chunks, chunk51)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Chunks {
-			err := sqlxx.Save(ctx, dbx, fixtures.Chunks[i])
+			err := makroud.Save(ctx, dbx, fixtures.Chunks[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Chunks[i].Hash)
 		}
@@ -2149,9 +2149,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	}
 	fixtures.Signatures = append(fixtures.Signatures, signature13)
 
-	_ = sqlxx.Transaction(driver, func(dbx sqlxx.Driver) error {
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
 		for i := range fixtures.Signatures {
-			err := sqlxx.Save(ctx, dbx, fixtures.Signatures[i])
+			err := makroud.Save(ctx, dbx, fixtures.Signatures[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Signatures[i].ID)
 		}
@@ -2197,9 +2197,9 @@ func sortExoCloudDirectories2(source []*ExoDirectory, directories *[]*ExoDirecto
 
 type ExoOrganization struct {
 	// Columns
-	ID      string `sqlxx:"column:id,pk:ulid"`
-	Name    string `sqlxx:"column:name"`
-	Website string `sqlxx:"column:website"`
+	ID      string `makroud:"column:id,pk:ulid"`
+	Name    string `makroud:"column:name"`
+	Website string `makroud:"column:website"`
 }
 
 func (ExoOrganization) TableName() string {
@@ -2208,12 +2208,12 @@ func (ExoOrganization) TableName() string {
 
 type ExoUser struct {
 	// Columns
-	ID        string `sqlxx:"column:id,pk:ulid"`
-	Email     string `sqlxx:"column:email"`
-	Password  string `sqlxx:"column:password"`
-	Country   string `sqlxx:"column:country"`
-	Locale    string `sqlxx:"column:locale"`
-	ProfileID string `sqlxx:"column:profile_id,fk:exo_profile"`
+	ID        string `makroud:"column:id,pk:ulid"`
+	Email     string `makroud:"column:email"`
+	Password  string `makroud:"column:password"`
+	Country   string `makroud:"column:country"`
+	Locale    string `makroud:"column:locale"`
+	ProfileID string `makroud:"column:profile_id,fk:exo_profile"`
 	// Relationships
 	Group   []ExoGroup
 	Profile *ExoProfile
@@ -2225,10 +2225,10 @@ func (ExoUser) TableName() string {
 
 type ExoGroup struct {
 	// Columns
-	ID             string `sqlxx:"column:id,pk:ulid"`
-	Role           string `sqlxx:"column:role"`
-	UserID         string `sqlxx:"column:user_id,fk:exo_user"`
-	OrganizationID string `sqlxx:"column:organization_id,fk:exo_organization"`
+	ID             string `makroud:"column:id,pk:ulid"`
+	Role           string `makroud:"column:role"`
+	UserID         string `makroud:"column:user_id,fk:exo_user"`
+	OrganizationID string `makroud:"column:organization_id,fk:exo_organization"`
 	// Relationships
 	User         *ExoUser
 	Organization *ExoOrganization
@@ -2240,13 +2240,13 @@ func (ExoGroup) TableName() string {
 
 type ExoProfile struct {
 	// Columns
-	ID          string         `sqlxx:"column:id,pk:ulid"`
-	FirstName   string         `sqlxx:"column:first_name"`
-	LastName    string         `sqlxx:"column:last_name"`
-	AvatarID    sql.NullString `sqlxx:"column:avatar_id,fk:exo_avatar"`
-	DisplayName sql.NullString `sqlxx:"column:display_name"`
-	Description sql.NullString `sqlxx:"column:description"`
-	Website     sql.NullString `sqlxx:"column:website"`
+	ID          string         `makroud:"column:id,pk:ulid"`
+	FirstName   string         `makroud:"column:first_name"`
+	LastName    string         `makroud:"column:last_name"`
+	AvatarID    sql.NullString `makroud:"column:avatar_id,fk:exo_avatar"`
+	DisplayName sql.NullString `makroud:"column:display_name"`
+	Description sql.NullString `makroud:"column:description"`
+	Website     sql.NullString `makroud:"column:website"`
 	// Relationships
 	Avatar *ExoAvatar
 }
@@ -2257,10 +2257,10 @@ func (ExoProfile) TableName() string {
 
 type ExoAvatar struct {
 	// Columns
-	ID       string `sqlxx:"column:id,pk:ulid"`
-	URL      string `sqlxx:"column:url"`
-	Path     string `sqlxx:"column:path"`
-	MimeType string `sqlxx:"column:mime_type"`
+	ID       string `makroud:"column:id,pk:ulid"`
+	URL      string `makroud:"column:url"`
+	Path     string `makroud:"column:path"`
+	MimeType string `makroud:"column:mime_type"`
 }
 
 func (ExoAvatar) TableName() string {
@@ -2269,9 +2269,9 @@ func (ExoAvatar) TableName() string {
 
 type ExoRegion struct {
 	// Columns
-	ID       string `sqlxx:"column:id,pk:ulid"`
-	Name     string `sqlxx:"column:name"`
-	Hostname string `sqlxx:"column:hostname"`
+	ID       string `makroud:"column:id,pk:ulid"`
+	Name     string `makroud:"column:name"`
+	Hostname string `makroud:"column:hostname"`
 	// Relationships
 	Buckets *[]ExoBucket
 }
@@ -2282,11 +2282,11 @@ func (ExoRegion) TableName() string {
 
 type ExoBucket struct {
 	// Columns
-	ID             string `sqlxx:"column:id,pk:ulid"`
-	Name           string `sqlxx:"column:name"`
-	Description    string `sqlxx:"column:description"`
-	RegionID       string `sqlxx:"column:region_id,fk:exo_region"`
-	OrganizationID string `sqlxx:"column:organization_id,fk:exo_organization"`
+	ID             string `makroud:"column:id,pk:ulid"`
+	Name           string `makroud:"column:name"`
+	Description    string `makroud:"column:description"`
+	RegionID       string `makroud:"column:region_id,fk:exo_region"`
+	OrganizationID string `makroud:"column:organization_id,fk:exo_organization"`
 	// Relationships
 	Region      ExoRegion
 	Directories []ExoDirectory
@@ -2299,11 +2299,11 @@ func (ExoBucket) TableName() string {
 
 type ExoDirectory struct {
 	// Columns
-	ID             string         `sqlxx:"column:id,pk:ulid"`
-	Path           string         `sqlxx:"column:path"`
-	OrganizationID string         `sqlxx:"column:organization_id,fk:exo_organization"`
-	BucketID       string         `sqlxx:"column:bucket_id,fk:exo_bucket"`
-	ParentID       sql.NullString `sqlxx:"column:parent_id,fk:exo_directory"`
+	ID             string         `makroud:"column:id,pk:ulid"`
+	Path           string         `makroud:"column:path"`
+	OrganizationID string         `makroud:"column:organization_id,fk:exo_organization"`
+	BucketID       string         `makroud:"column:bucket_id,fk:exo_bucket"`
+	ParentID       sql.NullString `makroud:"column:parent_id,fk:exo_directory"`
 	// Relationships
 	Directories []*ExoDirectory
 	Files       []*ExoFile
@@ -2315,12 +2315,12 @@ func (ExoDirectory) TableName() string {
 
 type ExoFile struct {
 	// Columns
-	ID             string `sqlxx:"column:id,pk:ulid"`
-	Path           string `sqlxx:"column:path"`
-	OrganizationID string `sqlxx:"column:organization_id,fk:exo_organization"`
-	UserID         string `sqlxx:"column:user_id,fk:exo_user"`
-	BucketID       string `sqlxx:"column:bucket_id,fk:exo_bucket"`
-	DirectoryID    string `sqlxx:"column:directory_id,fk:exo_directory"`
+	ID             string `makroud:"column:id,pk:ulid"`
+	Path           string `makroud:"column:path"`
+	OrganizationID string `makroud:"column:organization_id,fk:exo_organization"`
+	UserID         string `makroud:"column:user_id,fk:exo_user"`
+	BucketID       string `makroud:"column:bucket_id,fk:exo_bucket"`
+	DirectoryID    string `makroud:"column:directory_id,fk:exo_directory"`
 	// Relationships
 	Chunks []ExoChunk
 	Owner  *ExoUser
@@ -2332,12 +2332,12 @@ func (ExoFile) TableName() string {
 
 type ExoChunk struct {
 	// Columns
-	Hash           string `sqlxx:"column:hash,pk:ulid"`
-	Bytes          string `sqlxx:"column:bytes"`
-	OrganizationID string `sqlxx:"column:organization_id,fk:exo_organization"`
-	UserID         string `sqlxx:"column:user_id,fk:exo_user"`
-	ModeID         string `sqlxx:"column:mode_id,fk:exo_chunk_mode"`
-	FileID         string `sqlxx:"column:file_id,fk:exo_file"`
+	Hash           string `makroud:"column:hash,pk:ulid"`
+	Bytes          string `makroud:"column:bytes"`
+	OrganizationID string `makroud:"column:organization_id,fk:exo_organization"`
+	UserID         string `makroud:"column:user_id,fk:exo_user"`
+	ModeID         string `makroud:"column:mode_id,fk:exo_chunk_mode"`
+	FileID         string `makroud:"column:file_id,fk:exo_file"`
 	// Relationships
 	File      *ExoFile
 	Signature *ExoChunkSignature
@@ -2349,9 +2349,9 @@ func (ExoChunk) TableName() string {
 }
 
 type ExoChunkSignature struct {
-	ID      string `sqlxx:"column:id,pk:ulid"`
-	ChunkID string `sqlxx:"column:chunk_id,fk:exo_chunk"`
-	Bytes   string `sqlxx:"column:bytes"`
+	ID      string `makroud:"column:id,pk:ulid"`
+	ChunkID string `makroud:"column:chunk_id,fk:exo_chunk"`
+	Bytes   string `makroud:"column:bytes"`
 }
 
 func (ExoChunkSignature) TableName() string {
@@ -2359,8 +2359,8 @@ func (ExoChunkSignature) TableName() string {
 }
 
 type ExoChunkMode struct {
-	ID   string `sqlxx:"column:id,pk:ulid"`
-	Mode string `sqlxx:"column:mode"`
+	ID   string `makroud:"column:id,pk:ulid"`
+	Mode string `makroud:"column:mode"`
 }
 
 func (ExoChunkMode) TableName() string {
@@ -2382,7 +2382,7 @@ type ZootopiaFixtures struct {
 	Meows    []*Meow
 }
 
-func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *require.Assertions) ZootopiaFixtures {
+func GenerateZootopiaFixtures(ctx context.Context, driver makroud.Driver, is *require.Assertions) ZootopiaFixtures {
 	fixtures := ZootopiaFixtures{
 		Groups:   []*Group{},
 		Centers:  []*Center{},
@@ -2397,7 +2397,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	group1 := &Group{
 		Name: "Spring",
 	}
-	err := sqlxx.Save(ctx, driver, group1)
+	err := makroud.Save(ctx, driver, group1)
 	is.NoError(err)
 	is.NotEmpty(group1.ID)
 	fixtures.Groups = append(fixtures.Groups, group1)
@@ -2405,7 +2405,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	group2 := &Group{
 		Name: "Summer",
 	}
-	err = sqlxx.Save(ctx, driver, group2)
+	err = makroud.Save(ctx, driver, group2)
 	is.NoError(err)
 	is.NotEmpty(group2.ID)
 	fixtures.Groups = append(fixtures.Groups, group2)
@@ -2413,7 +2413,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	group3 := &Group{
 		Name: "Winter",
 	}
-	err = sqlxx.Save(ctx, driver, group3)
+	err = makroud.Save(ctx, driver, group3)
 	is.NoError(err)
 	is.NotEmpty(group3.ID)
 	fixtures.Groups = append(fixtures.Groups, group3)
@@ -2421,7 +2421,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	group4 := &Group{
 		Name: "Fall",
 	}
-	err = sqlxx.Save(ctx, driver, group4)
+	err = makroud.Save(ctx, driver, group4)
 	is.NoError(err)
 	is.NotEmpty(group4.ID)
 	fixtures.Groups = append(fixtures.Groups, group4)
@@ -2430,7 +2430,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Name: "Soul",
 		Area: "Lancaster",
 	}
-	err = sqlxx.Save(ctx, driver, center1)
+	err = makroud.Save(ctx, driver, center1)
 	is.NoError(err)
 	is.NotEmpty(center1.ID)
 	fixtures.Centers = append(fixtures.Centers, center1)
@@ -2439,7 +2439,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Name: "Cloud",
 		Area: "Nancledra",
 	}
-	err = sqlxx.Save(ctx, driver, center2)
+	err = makroud.Save(ctx, driver, center2)
 	is.NoError(err)
 	is.NotEmpty(center2.ID)
 	fixtures.Centers = append(fixtures.Centers, center2)
@@ -2448,7 +2448,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Name: "Gold",
 		Area: "Woodhurst",
 	}
-	err = sqlxx.Save(ctx, driver, center3)
+	err = makroud.Save(ctx, driver, center3)
 	is.NoError(err)
 	is.NotEmpty(center3.ID)
 	fixtures.Centers = append(fixtures.Centers, center3)
@@ -2457,7 +2457,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Name: "Moonstone",
 		Area: "Armskirk",
 	}
-	err = sqlxx.Save(ctx, driver, center4)
+	err = makroud.Save(ctx, driver, center4)
 	is.NoError(err)
 	is.NotEmpty(center4.ID)
 	fixtures.Centers = append(fixtures.Centers, center4)
@@ -2466,7 +2466,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Name: "Celestial",
 		Area: "Bayside",
 	}
-	err = sqlxx.Save(ctx, driver, center5)
+	err = makroud.Save(ctx, driver, center5)
 	is.NoError(err)
 	is.NotEmpty(center5.ID)
 	fixtures.Centers = append(fixtures.Centers, center5)
@@ -2475,7 +2475,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Name: "Solitude",
 		Area: "Black Castle",
 	}
-	err = sqlxx.Save(ctx, driver, center6)
+	err = makroud.Save(ctx, driver, center6)
 	is.NoError(err)
 	is.NotEmpty(center6.ID)
 	fixtures.Centers = append(fixtures.Centers, center6)
@@ -2489,7 +2489,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: group1.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, owl1)
+	err = makroud.Save(ctx, driver, owl1)
 	is.NoError(err)
 	is.NotEmpty(owl1.ID)
 	fixtures.Owls = append(fixtures.Owls, owl1)
@@ -2502,7 +2502,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Valid: false,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, owl2)
+	err = makroud.Save(ctx, driver, owl2)
 	is.NoError(err)
 	is.NotEmpty(owl2.ID)
 	fixtures.Owls = append(fixtures.Owls, owl2)
@@ -2516,7 +2516,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: group1.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, owl3)
+	err = makroud.Save(ctx, driver, owl3)
 	is.NoError(err)
 	is.NotEmpty(owl3.ID)
 	fixtures.Owls = append(fixtures.Owls, owl3)
@@ -2530,7 +2530,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: group2.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, owl4)
+	err = makroud.Save(ctx, driver, owl4)
 	is.NoError(err)
 	is.NotEmpty(owl4.ID)
 	fixtures.Owls = append(fixtures.Owls, owl4)
@@ -2544,7 +2544,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: group3.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, owl5)
+	err = makroud.Save(ctx, driver, owl5)
 	is.NoError(err)
 	is.NotEmpty(owl5.ID)
 	fixtures.Owls = append(fixtures.Owls, owl5)
@@ -2558,7 +2558,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: group4.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, owl6)
+	err = makroud.Save(ctx, driver, owl6)
 	is.NoError(err)
 	is.NotEmpty(owl6.ID)
 	fixtures.Owls = append(fixtures.Owls, owl6)
@@ -2567,7 +2567,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		OwlID: owl1.ID,
 		Color: "Frosty Cyan",
 	}
-	err = sqlxx.Save(ctx, driver, bag1)
+	err = makroud.Save(ctx, driver, bag1)
 	is.NoError(err)
 	is.NotEmpty(bag1.ID)
 	fixtures.Bags = append(fixtures.Bags, bag1)
@@ -2576,7 +2576,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		OwlID: owl2.ID,
 		Color: "Burned Blue",
 	}
-	err = sqlxx.Save(ctx, driver, bag2)
+	err = makroud.Save(ctx, driver, bag2)
 	is.NoError(err)
 	is.NotEmpty(bag2.ID)
 	fixtures.Bags = append(fixtures.Bags, bag2)
@@ -2585,7 +2585,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		OwlID: owl4.ID,
 		Color: "Ordinary Maroon",
 	}
-	err = sqlxx.Save(ctx, driver, bag3)
+	err = makroud.Save(ctx, driver, bag3)
 	is.NoError(err)
 	is.NotEmpty(bag3.ID)
 	fixtures.Bags = append(fixtures.Bags, bag3)
@@ -2594,7 +2594,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		OwlID: owl5.ID,
 		Color: "Misty Lemon",
 	}
-	err = sqlxx.Save(ctx, driver, bag4)
+	err = makroud.Save(ctx, driver, bag4)
 	is.NoError(err)
 	is.NotEmpty(bag4.ID)
 	fixtures.Bags = append(fixtures.Bags, bag4)
@@ -2603,7 +2603,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		OwlID: owl6.ID,
 		Color: "Lustrous Onyx",
 	}
-	err = sqlxx.Save(ctx, driver, bag5)
+	err = makroud.Save(ctx, driver, bag5)
 	is.NoError(err)
 	is.NotEmpty(bag5.ID)
 	fixtures.Bags = append(fixtures.Bags, bag5)
@@ -2617,7 +2617,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl1.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack1)
+	err = makroud.Save(ctx, driver, pack1)
 	is.NoError(err)
 	is.NotEmpty(pack1.ID)
 	fixtures.Packages = append(fixtures.Packages, pack1)
@@ -2631,7 +2631,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl1.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack2)
+	err = makroud.Save(ctx, driver, pack2)
 	is.NoError(err)
 	is.NotEmpty(pack2.ID)
 	fixtures.Packages = append(fixtures.Packages, pack2)
@@ -2644,7 +2644,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Valid: false,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack3)
+	err = makroud.Save(ctx, driver, pack3)
 	is.NoError(err)
 	is.NotEmpty(pack3.ID)
 	fixtures.Packages = append(fixtures.Packages, pack3)
@@ -2658,7 +2658,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl2.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack4)
+	err = makroud.Save(ctx, driver, pack4)
 	is.NoError(err)
 	is.NotEmpty(pack4.ID)
 	fixtures.Packages = append(fixtures.Packages, pack4)
@@ -2671,7 +2671,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl3.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack5)
+	err = makroud.Save(ctx, driver, pack5)
 	is.NoError(err)
 	is.NotEmpty(pack5.ID)
 	fixtures.Packages = append(fixtures.Packages, pack5)
@@ -2685,7 +2685,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl3.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack6)
+	err = makroud.Save(ctx, driver, pack6)
 	is.NoError(err)
 	is.NotEmpty(pack6.ID)
 	fixtures.Packages = append(fixtures.Packages, pack6)
@@ -2699,7 +2699,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl3.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack7)
+	err = makroud.Save(ctx, driver, pack7)
 	is.NoError(err)
 	is.NotEmpty(pack7.ID)
 	fixtures.Packages = append(fixtures.Packages, pack7)
@@ -2713,7 +2713,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl3.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack8)
+	err = makroud.Save(ctx, driver, pack8)
 	is.NoError(err)
 	is.NotEmpty(pack8.ID)
 	fixtures.Packages = append(fixtures.Packages, pack8)
@@ -2727,7 +2727,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl3.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack9)
+	err = makroud.Save(ctx, driver, pack9)
 	is.NoError(err)
 	is.NotEmpty(pack9.ID)
 	fixtures.Packages = append(fixtures.Packages, pack9)
@@ -2741,7 +2741,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl4.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack10)
+	err = makroud.Save(ctx, driver, pack10)
 	is.NoError(err)
 	is.NotEmpty(pack10.ID)
 	fixtures.Packages = append(fixtures.Packages, pack10)
@@ -2755,7 +2755,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl4.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack11)
+	err = makroud.Save(ctx, driver, pack11)
 	is.NoError(err)
 	is.NotEmpty(pack11.ID)
 	fixtures.Packages = append(fixtures.Packages, pack11)
@@ -2769,7 +2769,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl4.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack12)
+	err = makroud.Save(ctx, driver, pack12)
 	is.NoError(err)
 	is.NotEmpty(pack12.ID)
 	fixtures.Packages = append(fixtures.Packages, pack12)
@@ -2783,7 +2783,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl4.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack13)
+	err = makroud.Save(ctx, driver, pack13)
 	is.NoError(err)
 	is.NotEmpty(pack13.ID)
 	fixtures.Packages = append(fixtures.Packages, pack13)
@@ -2797,7 +2797,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl6.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack14)
+	err = makroud.Save(ctx, driver, pack14)
 	is.NoError(err)
 	is.NotEmpty(pack14.ID)
 	fixtures.Packages = append(fixtures.Packages, pack14)
@@ -2811,7 +2811,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl6.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack15)
+	err = makroud.Save(ctx, driver, pack15)
 	is.NoError(err)
 	is.NotEmpty(pack15.ID)
 	fixtures.Packages = append(fixtures.Packages, pack15)
@@ -2825,7 +2825,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			Int64: owl6.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, pack16)
+	err = makroud.Save(ctx, driver, pack16)
 	is.NoError(err)
 	is.NotEmpty(pack16.ID)
 	fixtures.Packages = append(fixtures.Packages, pack16)
@@ -2833,7 +2833,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	cat1 := &Cat{
 		Name: "Eagle",
 	}
-	err = sqlxx.Save(ctx, driver, cat1)
+	err = makroud.Save(ctx, driver, cat1)
 	is.NoError(err)
 	is.NotEmpty(cat1.ID)
 	fixtures.Cats = append(fixtures.Cats, cat1)
@@ -2841,7 +2841,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	cat2 := &Cat{
 		Name: "Zigzag",
 	}
-	err = sqlxx.Save(ctx, driver, cat2)
+	err = makroud.Save(ctx, driver, cat2)
 	is.NoError(err)
 	is.NotEmpty(cat2.ID)
 	fixtures.Cats = append(fixtures.Cats, cat2)
@@ -2849,7 +2849,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	cat3 := &Cat{
 		Name: "Scully",
 	}
-	err = sqlxx.Save(ctx, driver, cat3)
+	err = makroud.Save(ctx, driver, cat3)
 	is.NoError(err)
 	is.NotEmpty(cat3.ID)
 	fixtures.Cats = append(fixtures.Cats, cat3)
@@ -2857,7 +2857,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	cat4 := &Cat{
 		Name: "Hooker",
 	}
-	err = sqlxx.Save(ctx, driver, cat4)
+	err = makroud.Save(ctx, driver, cat4)
 	is.NoError(err)
 	is.NotEmpty(cat4.ID)
 	fixtures.Cats = append(fixtures.Cats, cat4)
@@ -2865,7 +2865,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	cat5 := &Cat{
 		Name: "Ditty",
 	}
-	err = sqlxx.Save(ctx, driver, cat5)
+	err = makroud.Save(ctx, driver, cat5)
 	is.NoError(err)
 	is.NotEmpty(cat5.ID)
 	fixtures.Cats = append(fixtures.Cats, cat5)
@@ -2873,7 +2873,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	cat6 := &Cat{
 		Name: "Dinky",
 	}
-	err = sqlxx.Save(ctx, driver, cat6)
+	err = makroud.Save(ctx, driver, cat6)
 	is.NoError(err)
 	is.NotEmpty(cat6.ID)
 	fixtures.Cats = append(fixtures.Cats, cat6)
@@ -2881,7 +2881,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	cat7 := &Cat{
 		Name: "Flick",
 	}
-	err = sqlxx.Save(ctx, driver, cat7)
+	err = makroud.Save(ctx, driver, cat7)
 	is.NoError(err)
 	is.NotEmpty(cat7.ID)
 	fixtures.Cats = append(fixtures.Cats, cat7)
@@ -2889,7 +2889,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	cat8 := &Cat{
 		Name: "Icarus",
 	}
-	err = sqlxx.Save(ctx, driver, cat8)
+	err = makroud.Save(ctx, driver, cat8)
 	is.NoError(err)
 	is.NotEmpty(cat8.ID)
 	fixtures.Cats = append(fixtures.Cats, cat8)
@@ -2901,7 +2901,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			String: cat1.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, human1)
+	err = makroud.Save(ctx, driver, human1)
 	is.NoError(err)
 	is.NotEmpty(human1.ID)
 	fixtures.Humans = append(fixtures.Humans, human1)
@@ -2913,7 +2913,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			String: cat2.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, human2)
+	err = makroud.Save(ctx, driver, human2)
 	is.NoError(err)
 	is.NotEmpty(human2.ID)
 	fixtures.Humans = append(fixtures.Humans, human2)
@@ -2921,7 +2921,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	human3 := &Human{
 		Name: "Larry Golade",
 	}
-	err = sqlxx.Save(ctx, driver, human3)
+	err = makroud.Save(ctx, driver, human3)
 	is.NoError(err)
 	is.NotEmpty(human3.ID)
 	fixtures.Humans = append(fixtures.Humans, human3)
@@ -2933,7 +2933,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			String: cat4.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, human4)
+	err = makroud.Save(ctx, driver, human4)
 	is.NoError(err)
 	is.NotEmpty(human4.ID)
 	fixtures.Humans = append(fixtures.Humans, human4)
@@ -2941,7 +2941,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	human5 := &Human{
 		Name: "Alex Ception",
 	}
-	err = sqlxx.Save(ctx, driver, human5)
+	err = makroud.Save(ctx, driver, human5)
 	is.NoError(err)
 	is.NotEmpty(human5.ID)
 	fixtures.Humans = append(fixtures.Humans, human5)
@@ -2949,7 +2949,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 	human6 := &Human{
 		Name: "Djamal Alatête",
 	}
-	err = sqlxx.Save(ctx, driver, human6)
+	err = makroud.Save(ctx, driver, human6)
 	is.NoError(err)
 	is.NotEmpty(human6.ID)
 	fixtures.Humans = append(fixtures.Humans, human6)
@@ -2961,7 +2961,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 			String: cat7.ID,
 		},
 	}
-	err = sqlxx.Save(ctx, driver, human7)
+	err = makroud.Save(ctx, driver, human7)
 	is.NoError(err)
 	is.NotEmpty(human7.ID)
 	fixtures.Humans = append(fixtures.Humans, human7)
@@ -2970,7 +2970,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000001",
 		CatID: cat1.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow1)
+	err = makroud.Save(ctx, driver, meow1)
 	is.NoError(err)
 	is.NotEmpty(meow1.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow1)
@@ -2979,7 +2979,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000002",
 		CatID: cat1.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow2)
+	err = makroud.Save(ctx, driver, meow2)
 	is.NoError(err)
 	is.NotEmpty(meow2.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow2)
@@ -2988,7 +2988,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000003",
 		CatID: cat1.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow3)
+	err = makroud.Save(ctx, driver, meow3)
 	is.NoError(err)
 	is.NotEmpty(meow3.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow3)
@@ -2997,7 +2997,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000004",
 		CatID: cat3.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow4)
+	err = makroud.Save(ctx, driver, meow4)
 	is.NoError(err)
 	is.NotEmpty(meow4.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow4)
@@ -3006,7 +3006,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000005",
 		CatID: cat4.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow5)
+	err = makroud.Save(ctx, driver, meow5)
 	is.NoError(err)
 	is.NotEmpty(meow5.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow5)
@@ -3015,7 +3015,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000006",
 		CatID: cat4.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow6)
+	err = makroud.Save(ctx, driver, meow6)
 	is.NoError(err)
 	is.NotEmpty(meow6.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow6)
@@ -3024,7 +3024,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000007",
 		CatID: cat4.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow7)
+	err = makroud.Save(ctx, driver, meow7)
 	is.NoError(err)
 	is.NotEmpty(meow7.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow7)
@@ -3033,7 +3033,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000008",
 		CatID: cat5.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow8)
+	err = makroud.Save(ctx, driver, meow8)
 	is.NoError(err)
 	is.NotEmpty(meow8.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow8)
@@ -3042,7 +3042,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000009",
 		CatID: cat7.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow9)
+	err = makroud.Save(ctx, driver, meow9)
 	is.NoError(err)
 	is.NotEmpty(meow9.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow9)
@@ -3051,7 +3051,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000010",
 		CatID: cat7.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow10)
+	err = makroud.Save(ctx, driver, meow10)
 	is.NoError(err)
 	is.NotEmpty(meow10.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow10)
@@ -3060,7 +3060,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000011",
 		CatID: cat8.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow11)
+	err = makroud.Save(ctx, driver, meow11)
 	is.NoError(err)
 	is.NotEmpty(meow11.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow11)
@@ -3069,7 +3069,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000012",
 		CatID: cat8.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow12)
+	err = makroud.Save(ctx, driver, meow12)
 	is.NoError(err)
 	is.NotEmpty(meow12.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow12)
@@ -3078,7 +3078,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000013",
 		CatID: cat8.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow13)
+	err = makroud.Save(ctx, driver, meow13)
 	is.NoError(err)
 	is.NotEmpty(meow13.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow13)
@@ -3087,7 +3087,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000014",
 		CatID: cat8.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow14)
+	err = makroud.Save(ctx, driver, meow14)
 	is.NoError(err)
 	is.NotEmpty(meow14.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow14)
@@ -3096,7 +3096,7 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 		Body:  "meow_00000000015",
 		CatID: cat8.ID,
 	}
-	err = sqlxx.Save(ctx, driver, meow15)
+	err = makroud.Save(ctx, driver, meow15)
 	is.NoError(err)
 	is.NotEmpty(meow15.Hash)
 	fixtures.Meows = append(fixtures.Meows, meow15)
@@ -3106,8 +3106,8 @@ func GenerateZootopiaFixtures(ctx context.Context, driver sqlxx.Driver, is *requ
 
 type Group struct {
 	// Columns
-	ID   int64  `sqlxx:"column:id,pk"`
-	Name string `sqlxx:"column:name"`
+	ID   int64  `makroud:"column:id,pk"`
+	Name string `makroud:"column:name"`
 }
 
 func (Group) TableName() string {
@@ -3116,9 +3116,9 @@ func (Group) TableName() string {
 
 type Center struct {
 	// Columns
-	ID   string `sqlxx:"column:id"`
-	Name string `sqlxx:"column:name"`
-	Area string `sqlxx:"column:area"`
+	ID   string `makroud:"column:id"`
+	Name string `makroud:"column:name"`
+	Area string `makroud:"column:area"`
 }
 
 func (Center) TableName() string {
@@ -3127,11 +3127,11 @@ func (Center) TableName() string {
 
 type Owl struct {
 	// Columns
-	ID           int64         `sqlxx:"column:id,pk"`
-	Name         string        `sqlxx:"column:name"`
-	FeatherColor string        `sqlxx:"column:feather_color"`
-	FavoriteFood string        `sqlxx:"column:favorite_food"`
-	GroupID      sql.NullInt64 `sqlxx:"column:group_id,fk:ztp_group"`
+	ID           int64         `makroud:"column:id,pk"`
+	Name         string        `makroud:"column:name"`
+	FeatherColor string        `makroud:"column:feather_color"`
+	FavoriteFood string        `makroud:"column:favorite_food"`
+	GroupID      sql.NullInt64 `makroud:"column:group_id,fk:ztp_group"`
 	// Relationships
 	Group    *Group
 	Packages []Package
@@ -3144,9 +3144,9 @@ func (Owl) TableName() string {
 
 type Bag struct {
 	// Columns
-	ID    int64  `sqlxx:"column:id,pk"`
-	Color string `sqlxx:"column:color"`
-	OwlID int64  `sqlxx:"column:owl_id,fk:ztp_owl"`
+	ID    int64  `makroud:"column:id,pk"`
+	Color string `makroud:"column:color"`
+	OwlID int64  `makroud:"column:owl_id,fk:ztp_owl"`
 	// Relationships
 	Owl Owl
 }
@@ -3157,11 +3157,11 @@ func (Bag) TableName() string {
 
 type Package struct {
 	// Columns
-	ID            string        `sqlxx:"column:id"`
-	Status        string        `sqlxx:"column:status"`
-	SenderID      string        `sqlxx:"column:sender_id,fk:ztp_center"`
-	ReceiverID    string        `sqlxx:"column:receiver_id,fk:ztp_center"`
-	TransporterID sql.NullInt64 `sqlxx:"column:transporter_id,fk:ztp_owl"`
+	ID            string        `makroud:"column:id"`
+	Status        string        `makroud:"column:status"`
+	SenderID      string        `makroud:"column:sender_id,fk:ztp_center"`
+	ReceiverID    string        `makroud:"column:receiver_id,fk:ztp_center"`
+	TransporterID sql.NullInt64 `makroud:"column:transporter_id,fk:ztp_owl"`
 	// Relationships
 	Sender   *Center
 	Receiver *Center
@@ -3173,11 +3173,11 @@ func (Package) TableName() string {
 
 type Cat struct {
 	// Columns
-	ID        string      `sqlxx:"column:id,pk:ulid"`
-	Name      string      `sqlxx:"column:name"`
-	CreatedAt time.Time   `sqlxx:"column:created_at,default"`
-	UpdatedAt time.Time   `sqlxx:"column:updated_at,default"`
-	DeletedAt pq.NullTime `sqlxx:"column:deleted_at"`
+	ID        string      `makroud:"column:id,pk:ulid"`
+	Name      string      `makroud:"column:name"`
+	CreatedAt time.Time   `makroud:"column:created_at,default"`
+	UpdatedAt time.Time   `makroud:"column:updated_at,default"`
+	DeletedAt pq.NullTime `makroud:"column:deleted_at"`
 	// Relationships
 	Feeder *Human
 	Meows  []*Meow
@@ -3189,12 +3189,12 @@ func (Cat) TableName() string {
 
 type Meow struct {
 	// Columns
-	Hash      string      `sqlxx:"column:hash,pk:ulid"`
-	Body      string      `sqlxx:"column:body"`
-	CatID     string      `sqlxx:"column:cat_id,fk:ztp_cat"`
-	CreatedAt time.Time   `sqlxx:"column:created"`
-	UpdatedAt time.Time   `sqlxx:"column:updated"`
-	DeletedAt pq.NullTime `sqlxx:"column:deleted"`
+	Hash      string      `makroud:"column:hash,pk:ulid"`
+	Body      string      `makroud:"column:body"`
+	CatID     string      `makroud:"column:cat_id,fk:ztp_cat"`
+	CreatedAt time.Time   `makroud:"column:created"`
+	UpdatedAt time.Time   `makroud:"column:updated"`
+	DeletedAt pq.NullTime `makroud:"column:deleted"`
 }
 
 func (Meow) TableName() string {
@@ -3215,12 +3215,12 @@ func (Meow) DeletedKey() string {
 
 type Human struct {
 	// Columns
-	ID        string         `sqlxx:"column:id,pk:ulid"`
-	Name      string         `sqlxx:"column:name"`
-	CreatedAt time.Time      `sqlxx:"column:created_at,default"`
-	UpdatedAt time.Time      `sqlxx:"column:updated_at,default"`
-	DeletedAt pq.NullTime    `sqlxx:"column:deleted_at"`
-	CatID     sql.NullString `sqlxx:"column:cat_id,fk:ztp_cat"`
+	ID        string         `makroud:"column:id,pk:ulid"`
+	Name      string         `makroud:"column:name"`
+	CreatedAt time.Time      `makroud:"column:created_at,default"`
+	UpdatedAt time.Time      `makroud:"column:updated_at,default"`
+	DeletedAt pq.NullTime    `makroud:"column:deleted_at"`
+	CatID     sql.NullString `makroud:"column:cat_id,fk:ztp_cat"`
 	// Relationships
 	Cat *Cat
 }
@@ -3234,7 +3234,7 @@ func (Human) TableName() string {
 // ----------------------------------------------------------------------------
 
 type environment struct {
-	driver *sqlxx.Client
+	driver *makroud.Client
 	is     *require.Assertions
 }
 
@@ -3251,7 +3251,7 @@ func (e *environment) shutdown(ctx context.Context) {
 	e.is.NoError(e.driver.Close())
 }
 
-func dbParamString(option func(string) sqlxx.Option, param string, env ...string) sqlxx.Option {
+func dbParamString(option func(string) makroud.Option, param string, env ...string) makroud.Option {
 	param = strings.ToUpper(param)
 	v := os.Getenv(fmt.Sprintf("DB_%s", param))
 	if len(v) != 0 {
@@ -3266,7 +3266,7 @@ func dbParamString(option func(string) sqlxx.Option, param string, env ...string
 	return dbDefaultOptions[param]
 }
 
-func dbParamInt(option func(int) sqlxx.Option, param string, env ...string) sqlxx.Option {
+func dbParamInt(option func(int) makroud.Option, param string, env ...string) makroud.Option {
 	param = strings.ToUpper(param)
 	v := os.Getenv(fmt.Sprintf("DB_%s", param))
 	n, err := strconv.Atoi(v)
@@ -3285,22 +3285,22 @@ func dbParamInt(option func(int) sqlxx.Option, param string, env ...string) sqlx
 
 type SetupCallback func(handler SetupHandler)
 
-type SetupHandler func(driver sqlxx.Driver)
+type SetupHandler func(driver makroud.Driver)
 
-func Setup(t require.TestingT, options ...sqlxx.Option) SetupCallback {
+func Setup(t require.TestingT, options ...makroud.Option) SetupCallback {
 	is := require.New(t)
 	ctx := context.Background()
-	opts := []sqlxx.Option{
-		dbParamString(sqlxx.Host, "host", "PGHOST"),
-		dbParamInt(sqlxx.Port, "port", "PGPORT"),
-		dbParamString(sqlxx.User, "user", "PGUSER"),
-		dbParamString(sqlxx.Password, "password", "PGPASSWORD"),
-		dbParamString(sqlxx.Database, "name", "PGDATABASE"),
-		sqlxx.Cache(true),
+	opts := []makroud.Option{
+		dbParamString(makroud.Host, "host", "PGHOST"),
+		dbParamInt(makroud.Port, "port", "PGPORT"),
+		dbParamString(makroud.User, "user", "PGUSER"),
+		dbParamString(makroud.Password, "password", "PGPASSWORD"),
+		dbParamString(makroud.Database, "name", "PGDATABASE"),
+		makroud.Cache(true),
 	}
 	opts = append(opts, options...)
 
-	db, err := sqlxx.New(opts...)
+	db, err := makroud.New(opts...)
 	is.NoError(err)
 	is.NotNil(db)
 
@@ -3316,7 +3316,7 @@ func Setup(t require.TestingT, options ...sqlxx.Option) SetupCallback {
 	}
 }
 
-func DropTables(ctx context.Context, db *sqlxx.Client) {
+func DropTables(ctx context.Context, db *makroud.Client) {
 	db.MustExec(ctx, `
 
 		--
@@ -3352,7 +3352,7 @@ func DropTables(ctx context.Context, db *sqlxx.Client) {
 	`)
 }
 
-func CreateTables(ctx context.Context, db *sqlxx.Client) {
+func CreateTables(ctx context.Context, db *makroud.Client) {
 	db.MustExec(ctx, `
 
 		--

@@ -1,10 +1,10 @@
-package sqlxx
+package makroud
 
 import (
 	"time"
 )
 
-// Logger is an observer that collect queries executed in sqlxx.
+// Logger is an observer that collect queries executed in makroud.
 type Logger interface {
 	// Log push what query was executed and its duration.
 	Log(query string, duration time.Duration)

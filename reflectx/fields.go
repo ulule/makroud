@@ -10,7 +10,7 @@ import (
 func GetFields(element interface{}) ([]string, error) {
 	dest := reflect.TypeOf(element)
 	if dest == nil || (dest.Kind() != reflect.Ptr && dest.Kind() != reflect.Struct) {
-		return nil, errors.New("sqlxx: cannot find fields on a non-struct interface")
+		return nil, errors.New("makroud: cannot find fields on a non-struct interface")
 	}
 
 	value := reflect.ValueOf(element)
@@ -40,7 +40,7 @@ func GetFieldByName(element interface{}, name string) (reflect.StructField, bool
 func GetFieldReflectTypeByName(element interface{}, name string) (reflect.Type, error) {
 	value, ok := GetFieldByName(element, name)
 	if !ok {
-		return nil, errors.Errorf("sqlxx: no such field %s in %T", name, element)
+		return nil, errors.Errorf("makroud: no such field %s in %T", name, element)
 	}
 
 	kind := value.Type
@@ -67,18 +67,18 @@ func GetFieldValue(element interface{}, name string) (interface{}, error) {
 
 	// Avoid calling FieldByName on zero value
 	if !value.IsValid() {
-		return nil, errors.Errorf("sqlxx: no such field %s in %T", name, element)
+		return nil, errors.Errorf("makroud: no such field %s in %T", name, element)
 	}
 
 	field := value.FieldByName(name)
 	if !field.IsValid() {
-		return nil, errors.Errorf("sqlxx: no such field %s in %T", name, element)
+		return nil, errors.Errorf("makroud: no such field %s in %T", name, element)
 	}
 	if field.Kind() == reflect.Ptr && field.IsNil() {
 		return nil, nil
 	}
 	if !field.CanInterface() {
-		return nil, errors.Errorf("sqlxx: cannot find field %s in %T", name, element)
+		return nil, errors.Errorf("makroud: cannot find field %s in %T", name, element)
 	}
 
 	return field.Interface(), nil
@@ -283,10 +283,10 @@ func getDestinationReflectValue(instance interface{}, name string) (dest reflect
 	// Find field identified by given name.
 	dest = v.FieldByName(name)
 	if !dest.IsValid() {
-		return dest, errors.Errorf("sqlxx: no such field %s in %T", name, instance)
+		return dest, errors.Errorf("makroud: no such field %s in %T", name, instance)
 	}
 	if !dest.CanSet() {
-		return dest, errors.Errorf("sqlxx: cannot update field %s in %T", name, instance)
+		return dest, errors.Errorf("makroud: cannot update field %s in %T", name, instance)
 	}
 
 	return dest, nil
@@ -296,7 +296,7 @@ func getDestinationReflectValue(instance interface{}, name string) (dest reflect
 func getOutputReflectValue(instance interface{}, name string, value interface{}) (output reflect.Value, err error) {
 	output = reflect.ValueOf(value)
 	if !output.IsValid() && value != nil {
-		return output, errors.Errorf("sqlxx: cannot uses %T as value to update %s in %T", value, name, instance)
+		return output, errors.Errorf("makroud: cannot uses %T as value to update %s in %T", value, name, instance)
 	}
 	return output, nil
 }
@@ -325,7 +325,7 @@ func appendFieldValueOnSlice(dest reflect.Value, output reflect.Value, instance 
 
 	// Verify that types are equals. Otherwise, returns a nice error.
 	if dtype != otype {
-		return errors.Errorf("sqlxx: cannot use type %v to update type %v in %T", sotype, sdtype, instance)
+		return errors.Errorf("makroud: cannot use type %v to update type %v in %T", sotype, sdtype, instance)
 	}
 
 	AppendReflectSlice(dest, output)
@@ -338,7 +338,7 @@ func setFieldValueOnStruct(dest reflect.Value, output reflect.Value, instance in
 
 	// Verify that types are equals. Otherwise, returns a nice error.
 	if dtype != otype {
-		return errors.Errorf("sqlxx: cannot use type %v to update type %v in %T", otype, dtype, instance)
+		return errors.Errorf("makroud: cannot use type %v to update type %v in %T", otype, dtype, instance)
 	}
 
 	dest.Set(output)

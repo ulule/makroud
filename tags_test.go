@@ -1,12 +1,12 @@
-package sqlxx_test
+package makroud_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/ulule/sqlxx"
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud"
+	"github.com/ulule/makroud/reflectx"
 )
 
 func TestTags_Analyze(t *testing.T) {
@@ -19,13 +19,13 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 1)
 		name := tags[0].Name()
 		properties := tags[0].Properties()
-		is.Equal(sqlxx.TagName, name)
+		is.Equal(makroud.TagName, name)
 		is.Len(properties, 1)
-		is.Equal(sqlxx.TagKeyColumn, properties[0].Key())
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
 		is.Equal("air", properties[0].Value())
 	}
 	{
@@ -33,13 +33,13 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 1)
 		name := tags[0].Name()
 		properties := tags[0].Properties()
-		is.Equal(sqlxx.TagName, name)
+		is.Equal(makroud.TagName, name)
 		is.Len(properties, 1)
-		is.Equal(sqlxx.TagKeyColumn, properties[0].Key())
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
 		is.Equal("fire", properties[0].Value())
 	}
 	{
@@ -47,13 +47,13 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 1)
 		name := tags[0].Name()
 		properties := tags[0].Properties()
-		is.Equal(sqlxx.TagName, name)
+		is.Equal(makroud.TagName, name)
 		is.Len(properties, 1)
-		is.Equal(sqlxx.TagKeyIgnored, properties[0].Key())
+		is.Equal(makroud.TagKeyIgnored, properties[0].Key())
 		is.Equal("true", properties[0].Value())
 	}
 	{
@@ -61,15 +61,15 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 1)
 		name := tags[0].Name()
 		properties := tags[0].Properties()
-		is.Equal(sqlxx.TagName, name)
+		is.Equal(makroud.TagName, name)
 		is.Len(properties, 2)
-		is.Equal(sqlxx.TagKeyColumn, properties[0].Key())
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
 		is.Equal("earth", properties[0].Value())
-		is.Equal(sqlxx.TagKeyDefault, properties[1].Key())
+		is.Equal(makroud.TagKeyDefault, properties[1].Key())
 		is.Equal("true", properties[1].Value())
 	}
 	{
@@ -77,7 +77,7 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 0)
 	}
 	{
@@ -93,14 +93,14 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 1)
 		name := tags[0].Name()
 		properties := tags[0].Properties()
-		is.Equal(sqlxx.TagName, name)
-		is.Equal(sqlxx.TagKeyColumn, properties[0].Key())
+		is.Equal(makroud.TagName, name)
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
 		is.Equal("hash", properties[0].Value())
-		is.Equal(sqlxx.TagKeyPrimaryKey, properties[1].Key())
+		is.Equal(makroud.TagKeyPrimaryKey, properties[1].Key())
 		is.Equal("ulid", properties[1].Value())
 	}
 
@@ -111,14 +111,14 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 1)
 		name := tags[0].Name()
 		properties := tags[0].Properties()
-		is.Equal(sqlxx.TagName, name)
-		is.Equal(sqlxx.TagKeyColumn, properties[0].Key())
+		is.Equal(makroud.TagName, name)
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
 		is.Equal("chunk_id", properties[0].Value())
-		is.Equal(sqlxx.TagKeyForeignKey, properties[1].Key())
+		is.Equal(makroud.TagKeyForeignKey, properties[1].Key())
 		is.Equal("exo_chunk", properties[1].Value())
 	}
 
@@ -129,14 +129,14 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 1)
 		name := tags[0].Name()
 		properties := tags[0].Properties()
-		is.Equal(sqlxx.TagName, name)
-		is.Equal(sqlxx.TagKeyColumn, properties[0].Key())
+		is.Equal(makroud.TagName, name)
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
 		is.Equal("id", properties[0].Value())
-		is.Equal(sqlxx.TagKeyPrimaryKey, properties[1].Key())
+		is.Equal(makroud.TagKeyPrimaryKey, properties[1].Key())
 		is.Equal("ulid", properties[1].Value())
 	}
 
@@ -147,14 +147,14 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 1)
 		name := tags[0].Name()
 		properties := tags[0].Properties()
-		is.Equal(sqlxx.TagName, name)
-		is.Equal(sqlxx.TagKeyColumn, properties[0].Key())
+		is.Equal(makroud.TagName, name)
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
 		is.Equal("id", properties[0].Value())
-		is.Equal(sqlxx.TagKeyPrimaryKey, properties[1].Key())
+		is.Equal(makroud.TagKeyPrimaryKey, properties[1].Key())
 		is.Equal("true", properties[1].Value())
 	}
 
@@ -165,12 +165,12 @@ func TestTags_Analyze(t *testing.T) {
 		is.True(ok)
 		is.NotEmpty(field)
 
-		tags := sqlxx.GetTags(field)
+		tags := makroud.GetTags(field)
 		is.Len(tags, 1)
 		name := tags[0].Name()
 		properties := tags[0].Properties()
-		is.Equal(sqlxx.TagName, name)
-		is.Equal(sqlxx.TagKeyColumn, properties[0].Key())
+		is.Equal(makroud.TagName, name)
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
 		is.Equal("id", properties[0].Value())
 	}
 

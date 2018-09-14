@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ func (c QueryBuilderConfiguration) New(driver Driver) *QueryBuilder {
 
 	schema, err := GetSchema(driver, c.model)
 	if err != nil {
-		panic(errors.Wrap(err, "sqlxx: cannot fetch schema informations"))
+		panic(errors.Wrap(err, "makroud: cannot fetch schema informations"))
 	}
 
 	table := stmt.NewTable(c.model.TableName())

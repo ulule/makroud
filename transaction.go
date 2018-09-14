@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"github.com/pkg/errors"
@@ -7,7 +7,7 @@ import (
 // Transaction will creates a transaction.
 func Transaction(driver Driver, handler func(driver Driver) error) error {
 	if driver == nil {
-		return errors.Wrap(ErrInvalidDriver, "sqlxx: cannot create a transaction")
+		return errors.Wrap(ErrInvalidDriver, "makroud: cannot create a transaction")
 	}
 
 	tx, err := driver.Begin()

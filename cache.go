@@ -1,10 +1,10 @@
-package sqlxx
+package makroud
 
 import (
 	"sync"
 )
 
-// cache is sqlxx cache.
+// cache is driver cache used to store Schema information.
 type cache struct {
 	mutex   sync.RWMutex
 	schemas map[string]*Schema
@@ -34,7 +34,7 @@ func (c *cache) GetSchema(model Model) *Schema {
 // SetSchema caches the given schema.
 func (c *cache) SetSchema(schema *Schema) {
 	if schema == nil {
-		panic("sqlxx: schema shouldn't be nil")
+		panic("makroud: schema shouldn't be nil")
 	}
 
 	c.mutex.Lock()
@@ -43,7 +43,7 @@ func (c *cache) SetSchema(schema *Schema) {
 	c.schemas[schema.TableName()] = schema
 }
 
-// Flush flushs the cache
+// Flush flushs the cache.
 func (c *cache) Flush() {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()

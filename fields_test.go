@@ -1,4 +1,4 @@
-package sqlxx_test
+package makroud_test
 
 import (
 	"database/sql"
@@ -7,17 +7,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/ulule/sqlxx"
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud"
+	"github.com/ulule/makroud/reflectx"
 )
 
 func TestFields_Elements(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		is := require.New(t)
-		schema := &sqlxx.Schema{}
+		schema := &makroud.Schema{}
 		model := Elements{}
 
-		field, err := sqlxx.NewField(driver, schema, model, "enabled")
+		field, err := makroud.NewField(driver, schema, model, "enabled")
 		is.NoError(err)
 		is.Equal("Elements", field.ModelName())
 		is.Equal("enabled", field.FieldName())
@@ -35,7 +35,7 @@ func TestFields_Elements(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "Air")
+		field, err = makroud.NewField(driver, schema, model, "Air")
 		is.NoError(err)
 		is.Equal("Elements", field.ModelName())
 		is.Equal("Air", field.FieldName())
@@ -53,7 +53,7 @@ func TestFields_Elements(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "Fire")
+		field, err = makroud.NewField(driver, schema, model, "Fire")
 		is.NoError(err)
 		is.Equal("Elements", field.ModelName())
 		is.Equal("Fire", field.FieldName())
@@ -71,7 +71,7 @@ func TestFields_Elements(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "Water")
+		field, err = makroud.NewField(driver, schema, model, "Water")
 		is.NoError(err)
 		is.Equal("Elements", field.ModelName())
 		is.Equal("Water", field.FieldName())
@@ -89,7 +89,7 @@ func TestFields_Elements(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "Earth")
+		field, err = makroud.NewField(driver, schema, model, "Earth")
 		is.NoError(err)
 		is.Equal("Elements", field.ModelName())
 		is.Equal("Earth", field.FieldName())
@@ -107,7 +107,7 @@ func TestFields_Elements(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "Fifth")
+		field, err = makroud.NewField(driver, schema, model, "Fifth")
 		is.NoError(err)
 		is.Equal("Elements", field.ModelName())
 		is.Equal("Fifth", field.FieldName())
@@ -129,12 +129,12 @@ func TestFields_Elements(t *testing.T) {
 }
 
 func TestFields_Owl(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		is := require.New(t)
-		schema := &sqlxx.Schema{}
+		schema := &makroud.Schema{}
 		model := Owl{}
 
-		field, err := sqlxx.NewField(driver, schema, model, "FavoriteFood")
+		field, err := makroud.NewField(driver, schema, model, "FavoriteFood")
 		is.NoError(err)
 		is.Equal("Owl", field.ModelName())
 		is.Equal("FavoriteFood", field.FieldName())
@@ -152,7 +152,7 @@ func TestFields_Owl(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "FeatherColor")
+		field, err = makroud.NewField(driver, schema, model, "FeatherColor")
 		is.NoError(err)
 		is.Equal("Owl", field.ModelName())
 		is.Equal("FeatherColor", field.FieldName())
@@ -170,7 +170,7 @@ func TestFields_Owl(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "Name")
+		field, err = makroud.NewField(driver, schema, model, "Name")
 		is.NoError(err)
 		is.Equal("Owl", field.ModelName())
 		is.Equal("Name", field.FieldName())
@@ -188,7 +188,7 @@ func TestFields_Owl(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "ID")
+		field, err = makroud.NewField(driver, schema, model, "ID")
 		is.NoError(err)
 		is.Equal("Owl", field.ModelName())
 		is.Equal("ID", field.FieldName())
@@ -206,7 +206,7 @@ func TestFields_Owl(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "GroupID")
+		field, err = makroud.NewField(driver, schema, model, "GroupID")
 		is.NoError(err)
 		is.Equal("Owl", field.ModelName())
 		is.Equal("GroupID", field.FieldName())
@@ -224,7 +224,7 @@ func TestFields_Owl(t *testing.T) {
 		is.False(field.IsUpdatedKey())
 		is.False(field.IsDeletedKey())
 
-		field, err = sqlxx.NewField(driver, schema, model, "Group")
+		field, err = makroud.NewField(driver, schema, model, "Group")
 		is.NoError(err)
 		is.Equal("Owl", field.ModelName())
 		is.Equal("Group", field.FieldName())
@@ -235,7 +235,7 @@ func TestFields_Owl(t *testing.T) {
 		is.False(field.IsPrimaryKey())
 		is.False(field.IsForeignKey())
 		is.True(field.IsAssociation())
-		is.True(field.IsAssociationType(sqlxx.AssociationTypeOne))
+		is.True(field.IsAssociationType(makroud.AssociationTypeOne))
 		is.Equal(reflect.Struct, field.Type().Kind())
 		is.Equal(reflectx.GetIndirectType(Group{}), field.Type())
 		is.False(field.HasDefault())

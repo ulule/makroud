@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud/reflectx"
 )
 
 // FKType define a foreign key type.
@@ -40,7 +40,7 @@ func (val FKType) String() string {
 	case FKOptionalStringType:
 		return "option[string]"
 	default:
-		panic(fmt.Sprintf("sqlxx: unknown foreign key type: %d", val))
+		panic(fmt.Sprintf("makroud: unknown foreign key type: %d", val))
 	}
 }
 
@@ -80,7 +80,7 @@ func (e AssociationType) String() string {
 	case AssociationTypeMany:
 		return "many"
 	default:
-		panic(fmt.Sprintf("sqlxx: unknown association type: %d", e))
+		panic(fmt.Sprintf("makroud: unknown association type: %d", e))
 	}
 }
 

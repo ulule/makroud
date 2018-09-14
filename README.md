@@ -1,4 +1,4 @@
-# sqlxx
+# makroud
 
 [![CircleCI][circle-img]][circle-url]
 [![Documentation][godoc-img]][godoc-url]
@@ -15,13 +15,13 @@ TODO
 Using [dep](https://github.com/golang/dep)
 
 ```console
-dep ensure -add github.com/ulule/sqlxx@master
+dep ensure -add github.com/ulule/makroud@master
 ```
 
 or `go get`
 
 ```console
-go get -u github.com/ulule/sqlxx
+go get -u github.com/ulule/makroud
 ```
 
 ## Usage
@@ -31,15 +31,15 @@ go get -u github.com/ulule/sqlxx
 A **Driver** is a high level abstraction of a database connection or a transaction. It's almost required everytime alongside a `context.Context` to manipulate rows.
 
 ```go
-driver, err := sqlxx.New(
-	sqlxx.Host(cfg.Host),
-	sqlxx.Port(cfg.Port),
-	sqlxx.User(cfg.User),
-	sqlxx.Password(cfg.Password),
-	sqlxx.Database(cfg.Name),
-	sqlxx.SSLMode(cfg.SSLMode),
-	sqlxx.MaxOpenConnections(cfg.MaxOpenConnections),
-	sqlxx.MaxIdleConnections(cfg.MaxIdleConnections),
+driver, err := makroud.New(
+	makroud.Host(cfg.Host),
+	makroud.Port(cfg.Port),
+	makroud.User(cfg.User),
+	makroud.Password(cfg.Password),
+	makroud.Database(cfg.Name),
+	makroud.SSLMode(cfg.SSLMode),
+	makroud.MaxOpenConnections(cfg.MaxOpenConnections),
+	makroud.MaxIdleConnections(cfg.MaxIdleConnections),
 )
 ```
 
@@ -47,7 +47,7 @@ Also, you can use directly a struct if you don't need to use
 [functional options](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis):
 
 ```go
-driver, err := sqlxx.NewWithOptions(&sqlxx.ClientOptions{
+driver, err := makroud.NewWithOptions(&makroud.ClientOptions{
 	Host:               cfg.Host,
 	Port:               cfg.Port,
 	User:               cfg.User,
@@ -72,12 +72,12 @@ All the fields of this struct will be columns in the database table.
 ```go
 type User struct {
 	// Columns
-	ID        string `sqlxx:"column:id,pk:ulid"`
-	Email     string `sqlxx:"column:email"`
-	Password  string `sqlxx:"column:password"`
-	Country   string `sqlxx:"column:country"`
-	Locale    string `sqlxx:"column:locale"`
-	ProfileID string `sqlxx:"column:profile_id,fk:profiles"`
+	ID        string `makroud:"column:id,pk:ulid"`
+	Email     string `makroud:"column:email"`
+	Password  string `makroud:"column:password"`
+	Country   string `makroud:"column:country"`
+	Locale    string `makroud:"column:locale"`
+	ProfileID string `makroud:"column:profile_id,fk:profiles"`
 	// Relationships
 	Group   []Group
 	Profile *Profile
@@ -91,7 +91,7 @@ func (User) TableName() string {
 #### What does it means ?
 
 First of all, you have to define a `TableName` method that returns the database table name _(or view)_.
-Without that information, `sqlxx` cannot uses that struct as a `Model`.
+Without that information, `makroud` cannot uses that struct as a `Model`.
 
 Then, you have to define your model columns using struct tags:
 
@@ -125,24 +125,24 @@ The preload mechanism, which enables you to fetch relationships from database, s
 
 ##### ID as Primary Key
 
-By default, if `pk` tag is undefined, `sqlxx` will uses the field named `ID` as primary key with
+By default, if `pk` tag is undefined, `makroud` will uses the field named `ID` as primary key with
 this configuration: `pk:db`
 
 ```go
 type User struct {
-	ID   string `sqlxx:"column:id"`   // Field named ID will be used a primary key by default.
-	Name string `sqlxx:"column:name"`
+	ID   string `makroud:"column:id"`   // Field named ID will be used a primary key by default.
+	Name string `makroud:"column:name"`
 }
 ```
 
 ##### Snake Case Column Name
 
-By default, if `column` tag is undefined, `sqlxx` will transform field name to lower snake case as column name.
+By default, if `column` tag is undefined, `makroud` will transform field name to lower snake case as column name.
 
 ```go
 type User struct {
-	ID   string `sqlxx:"pk"` // Column name is `id`
-	Name string `sqlxx:""`   // Column name is `name`
+	ID   string `makroud:"pk"` // Column name is `id`
+	Name string `makroud:""`   // Column name is `name`
 }
 ```
 
@@ -152,9 +152,9 @@ For models having `CreatedAt` field, it will be set to current time when record 
 
 ```go
 type User struct {
-	ID        string    `sqlxx:"column:id,pk"`
-	Name      string    `sqlxx:"column:name"`
-	CreatedAt time.Time `sqlxx:"column:created_at"`
+	ID        string    `makroud:"column:id,pk"`
+	Name      string    `makroud:"column:name"`
+	CreatedAt time.Time `makroud:"column:created_at"`
 }
 ```
 
@@ -172,9 +172,9 @@ For models having `UpdatedAt` field, it will be set to current time when record 
 
 ```go
 type User struct {
-	ID        string    `sqlxx:"column:id,pk"`
-	Name      string    `sqlxx:"column:name"`
-	UpdatedAt time.Time `sqlxx:"column:updated_at"`
+	ID        string    `makroud:"column:id,pk"`
+	Name      string    `makroud:"column:name"`
+	UpdatedAt time.Time `makroud:"column:updated_at"`
 }
 ```
 
@@ -192,9 +192,9 @@ For models having `DeletedAt` field, it will be set to current time when record 
 
 ```go
 type User struct {
-	ID        string      `sqlxx:"column:id,pk"`
-	Name      string      `sqlxx:"column:name"`
-	DeletedAt pq.NullTime `sqlxx:"column:deleted_at"`
+	ID        string      `makroud:"column:id,pk"`
+	Name      string      `makroud:"column:name"`
+	DeletedAt pq.NullTime `makroud:"column:deleted_at"`
 }
 ```
 
@@ -208,19 +208,19 @@ func (User) DeletedKey() string {
 
 ### Operations
 
-For the following sections, we assume that you have a `context.Context` and a `sqlxx.Driver` instance.
+For the following sections, we assume that you have a `context.Context` and a `makroud.Driver` instance.
 
 #### Insert
 
 For a simple insert, you can use save a model like this:
 
 ```go
-func CreateUser(ctx context.Context, driver sqlxx.Driver, name string) (*User, error) {
+func CreateUser(ctx context.Context, driver makroud.Driver, name string) (*User, error) {
 	user := &User{
 		Name: name,
 	}
 
-	err := sqlxx.Save(ctx, driver, user)
+	err := makroud.Save(ctx, driver, user)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukou
 ```go
 import "github.com/ulule/loukoum"
 
-func CreateUser(ctx context.Context, driver sqlxx.Driver, name string) (*User, error) {
+func CreateUser(ctx context.Context, driver makroud.Driver, name string) (*User, error) {
 	user := &User{
 		Name: name,
 	}
@@ -243,7 +243,7 @@ func CreateUser(ctx context.Context, driver sqlxx.Driver, name string) (*User, e
 		Set(loukoum.Pair("name", user.Name)).
 		Returning("id, created_at, updated_at")
 
-	err := sqlxx.Exec(ctx, driver, stmt, user)
+	err := makroud.Exec(ctx, driver, stmt, user)
 	if err != nil {
 		return nil, err
 	}
@@ -257,9 +257,9 @@ func CreateUser(ctx context.Context, driver sqlxx.Driver, name string) (*User, e
 For a simple update, asumming your model have a primary key defined, you can use save it by executing:
 
 ```go
-func UpdateUser(ctx context.Context, driver sqlxx.Driver, user *User, name string) error {
+func UpdateUser(ctx context.Context, driver makroud.Driver, user *User, name string) error {
 	user.Name = name
-	return sqlxx.Save(ctx, driver, user)
+	return makroud.Save(ctx, driver, user)
 }
 ```
 
@@ -268,7 +268,7 @@ Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukou
 ```go
 import "github.com/ulule/loukoum"
 
-func UpdateUser(ctx context.Context, driver sqlxx.Driver, user *User, name string) error {
+func UpdateUser(ctx context.Context, driver makroud.Driver, user *User, name string) error {
 	user.Name = name
 
 	stmt := loukoum.Update("users").
@@ -279,7 +279,7 @@ func UpdateUser(ctx context.Context, driver sqlxx.Driver, user *User, name strin
 		Where(loukoum.Condition("id").Equal(user.ID)).
 		Returning("updated_at")
 
-	err := sqlxx.Exec(ctx, driver, stmt, user)
+	err := makroud.Exec(ctx, driver, stmt, user)
 	if err != nil {
 		return nil, err
 	}
@@ -294,8 +294,8 @@ For a simple delete _(using a `DELETE` statement)_, asumming your model have a p
 you can use delete it using:
 
 ```go
-func DeleteUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
-	return sqlxx.Delete(ctx, driver, user)
+func DeleteUser(ctx context.Context, driver makroud.Driver, user *User) error {
+	return makroud.Delete(ctx, driver, user)
 }
 ```
 
@@ -304,10 +304,10 @@ Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukou
 ```go
 import "github.com/ulule/loukoum"
 
-func DeleteUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
+func DeleteUser(ctx context.Context, driver makroud.Driver, user *User) error {
 	stmt := loukoum.Delete("users").Where(loukoum.Condition("id").Equal(user.ID))
 
-	err := sqlxx.Exec(ctx, driver, stmt, user)
+	err := makroud.Exec(ctx, driver, stmt, user)
 	if err != nil {
 		return nil, err
 	}
@@ -321,8 +321,8 @@ func DeleteUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
 Archive executes an `UPDATE` on `DeletedAt` field on given value.
 
 ```go
-func ArchiveUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
-	return sqlxx.Archive(ctx, driver, user)
+func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
+	return makroud.Archive(ctx, driver, user)
 }
 ```
 
@@ -333,7 +333,7 @@ Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukou
 ```go
 import "github.com/ulule/loukoum"
 
-func ArchiveUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
+func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
 	user.Name = name
 
 	stmt := loukoum.Update("users").
@@ -344,7 +344,7 @@ func ArchiveUser(ctx context.Context, driver sqlxx.Driver, user *User) error {
 		Where(loukoum.Condition("id").Equal(user.ID)).
 		Returning("deleted_at")
 
-	err := sqlxx.Exec(ctx, driver, stmt, user)
+	err := makroud.Exec(ctx, driver, stmt, user)
 	if err != nil {
 		return nil, err
 	}
@@ -419,11 +419,11 @@ This is Free Software, released under the [`MIT License`][license-url].
 
 **Don't hesitate ;)**
 
-[godoc-url]: https://godoc.org/github.com/ulule/sqlxx
-[godoc-img]: https://godoc.org/github.com/ulule/sqlxx?status.svg
+[godoc-url]: https://godoc.org/github.com/ulule/makroud
+[godoc-img]: https://godoc.org/github.com/ulule/makroud?status.svg
 [license-img]: https://img.shields.io/badge/license-MIT-blue.svg
 [license-url]: LICENSE
 [sql-url]: https://golang.org/pkg/database/sql/
 [sqlx-url]: https://github.com/jmoiron/sqlx
-[circle-url]: https://circleci.com/gh/ulule/sqlxx/tree/master
-[circle-img]: https://circleci.com/gh/ulule/sqlxx.svg?style=shield&circle-token=e53497efffde023bac7f2710bd12c5d0e71f5af4
+[circle-url]: https://circleci.com/gh/ulule/makroud/tree/master
+[circle-img]: https://circleci.com/gh/ulule/makroud.svg?style=shield&circle-token=e53497efffde023bac7f2710bd12c5d0e71f5af4

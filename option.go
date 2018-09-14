@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"github.com/pkg/errors"
@@ -108,7 +108,7 @@ func Cache(enabled bool) Option {
 func WithLogger(logger Logger) Option {
 	return func(options *ClientOptions) error {
 		if logger == nil {
-			return errors.New("sqlxx: a logger instance is required")
+			return errors.New("makroud: a logger instance is required")
 		}
 		options.Logger = logger
 		return nil

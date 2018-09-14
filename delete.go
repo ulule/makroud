@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 func Delete(ctx context.Context, driver Driver, model Model) error {
 	err := remove(ctx, driver, model)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute delete")
+		return errors.Wrap(err, "makroud: cannot execute delete")
 	}
 	return nil
 }
@@ -20,7 +20,7 @@ func Delete(ctx context.Context, driver Driver, model Model) error {
 func Archive(ctx context.Context, driver Driver, model Model) error {
 	err := archive(ctx, driver, model)
 	if err != nil {
-		return errors.Wrap(err, "sqlxx: cannot execute archive")
+		return errors.Wrap(err, "makroud: cannot execute archive")
 	}
 	return nil
 }

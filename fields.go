@@ -1,4 +1,4 @@
-package sqlxx
+package makroud
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/serenize/snaker"
 
-	"github.com/ulule/sqlxx/reflectx"
+	"github.com/ulule/makroud/reflectx"
 )
 
 // Field is a field.

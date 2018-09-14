@@ -1,21 +1,21 @@
-package sqlxx_test
+package makroud_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/ulule/sqlxx"
+	"github.com/ulule/makroud"
 )
 
 // TODO: Finish and improve coverage
 
 func TestSchema_Owl(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		is := require.New(t)
 		model := &Owl{}
 
-		schema, err := sqlxx.GetSchema(driver, model)
+		schema, err := makroud.GetSchema(driver, model)
 		is.NoError(err)
 		is.NotNil(schema)
 
@@ -46,11 +46,11 @@ func TestSchema_Owl(t *testing.T) {
 }
 
 func TestSchema_Cat(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		is := require.New(t)
 		model := &Cat{}
 
-		schema, err := sqlxx.GetSchema(driver, model)
+		schema, err := makroud.GetSchema(driver, model)
 		is.NoError(err)
 		is.NotNil(schema)
 
@@ -85,11 +85,11 @@ func TestSchema_Cat(t *testing.T) {
 }
 
 func TestSchema_Meow(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		is := require.New(t)
 		model := &Meow{}
 
-		schema, err := sqlxx.GetSchema(driver, model)
+		schema, err := makroud.GetSchema(driver, model)
 		is.NoError(err)
 		is.NotNil(schema)
 
@@ -126,11 +126,11 @@ func TestSchema_Meow(t *testing.T) {
 }
 
 func TestSchema_ExoChunk(t *testing.T) {
-	Setup(t)(func(driver sqlxx.Driver) {
+	Setup(t)(func(driver makroud.Driver) {
 		is := require.New(t)
 		model := &ExoChunk{}
 
-		schema, err := sqlxx.GetSchema(driver, model)
+		schema, err := makroud.GetSchema(driver, model)
 		is.NoError(err)
 		is.NotNil(schema)
 
