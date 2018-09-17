@@ -10,7 +10,7 @@ import (
 	"github.com/ulule/makroud/reflectx"
 )
 
-// Save saves the given instance.
+// Save inserts or updates the given instance.
 func Save(ctx context.Context, driver Driver, model Model) error {
 	err := save(ctx, driver, model)
 	if err != nil {

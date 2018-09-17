@@ -3,7 +3,6 @@ package makroud
 import (
 	"context"
 	"strings"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/ulule/loukoum"
@@ -79,38 +78,38 @@ func WithPreloadCallback(field string, callback func(query builder.Select) build
 	}
 }
 
-// PreloadGroupOperation defines, for a preload level, what resources should be preloaded.
-type PreloadGroupOperation map[string]PreloadOperation
+// preloadGroupOperation defines, for a preload level, what resources should be preloaded.
+type preloadGroupOperation map[string]preloadOperation
 
-// PreloadOperation defines what and how a resource should be preloaded.
-type PreloadOperation struct {
+// preloadOperation defines what and how a resource should be preloaded.
+type preloadOperation struct {
 	levels  []string
 	handler PreloadHandler
 }
 
 // Level returns the preload level.
-func (o PreloadOperation) Level() int {
+func (o preloadOperation) Level() int {
 	return len(o.levels)
 }
 
 // Path returns the preload full path.
-func (o PreloadOperation) Path() string {
+func (o preloadOperation) Path() string {
 	return o.handler.field
 }
 
 // Callback returns the preload conditions to execute for this operation.
-func (o PreloadOperation) Callback() func(query builder.Select) builder.Select {
+func (o preloadOperation) Callback() func(query builder.Select) builder.Select {
 	return o.handler.callback
 }
 
 // Parent returns the resource parent path.
-func (o PreloadOperation) Parent() string {
+func (o preloadOperation) Parent() string {
 	size := len(o.levels) - 1
 	return strings.Join(o.levels[0:size], ".")
 }
 
 // Name returns the resource name.
-func (o PreloadOperation) Name() string {
+func (o preloadOperation) Name() string {
 	size := len(o.levels) - 1
 	if size < 0 {
 		return ""
@@ -118,8 +117,8 @@ func (o PreloadOperation) Name() string {
 	return o.levels[size]
 }
 
-func getPreloadGroupOperations(handlers []PreloadHandler) []PreloadGroupOperation {
-	groups := []PreloadGroupOperation{}
+func getPreloadGroupOperations(handlers []PreloadHandler) []preloadGroupOperation {
+	groups := []preloadGroupOperation{}
 
 	for i := range handlers {
 
@@ -130,11 +129,11 @@ func getPreloadGroupOperations(handlers []PreloadHandler) []PreloadGroupOperatio
 
 		// Increase levels slice length if required.
 		for len(levels) > len(groups) {
-			groups = append(groups, PreloadGroupOperation{})
+			groups = append(groups, preloadGroupOperation{})
 		}
 
 		// Create preload operation and attach it to the correct level.
-		op := PreloadOperation{
+		op := preloadOperation{
 			levels:  levels,
 			handler: handlers[i],
 		}
@@ -158,7 +157,7 @@ func getPreloadGroupOperations(handlers []PreloadHandler) []PreloadGroupOperatio
 			path := strings.Join(levels, ".")
 			_, ok := groups[i][path]
 			if !ok {
-				op := PreloadOperation{
+				op := preloadOperation{
 					levels:  levels,
 					handler: WithPreloadField(path),
 				}
@@ -215,20 +214,16 @@ func getPreloadHandler(ctx context.Context, driver Driver, dest interface{}) (*p
 // If you need to execute a preload on the second level (and/or after),
 // please use executePreloadWalker instead.
 func executePreloadHandler(ctx context.Context, driver Driver,
-	dest interface{}, group PreloadGroupOperation) (err error) {
+	dest interface{}, group preloadGroupOperation) error {
 
 	handler, err := getPreloadHandler(ctx, driver, dest)
 	if err != nil {
 		return err
 	}
 
-	wg := sync.WaitGroup{}
-	mutex := sync.Mutex{}
 	associations := handler.schema.associations
 
-	wg.Add(len(group))
 	for _, operation := range group {
-
 		if operation.Level() != 1 {
 			return errors.Wrapf(ErrPreloadInvalidPath, "cannot execute preload of '%s'", operation.Path())
 		}
@@ -238,57 +233,32 @@ func executePreloadHandler(ctx context.Context, driver Driver,
 			return errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", operation.Path())
 		}
 
-		go func(operation PreloadOperation) {
-			perr := handler.preload(reference, operation.Callback())
-			if perr != nil {
-				mutex.Lock()
-				defer mutex.Unlock()
-				if err != nil {
-					err = perr
-				}
-			}
-			wg.Done()
-		}(operation)
+		err := handler.preload(reference, operation.Callback())
+		if err != nil {
+			return err
+		}
 	}
 
-	wg.Wait()
-
-	return err
+	return nil
 }
 
 // executePreloadWalker will executes a preload from the second level and beyond...
 func executePreloadWalker(ctx context.Context, driver Driver,
-	dest interface{}, group PreloadGroupOperation) (err error) {
+	dest interface{}, group preloadGroupOperation) error {
 
-	wg := sync.WaitGroup{}
-	mutex := sync.Mutex{}
-
-	wg.Add(len(group))
 	for _, operation := range group {
-		go func(operation PreloadOperation) {
+		walker := reflectx.NewWalker(dest)
+		defer walker.Close()
 
-			walker := reflectx.NewWalker(dest)
-			defer walker.Close()
-
-			werr := walker.Find(operation.Parent(), func(values interface{}) error {
-				return preload(ctx, driver, values, WithPreloadCallback(operation.Name(), operation.Callback()))
-			})
-			if werr != nil {
-				mutex.Lock()
-				defer mutex.Unlock()
-				if err != nil {
-					err = werr
-				}
-			}
-
-			wg.Done()
-
-		}(operation)
+		err := walker.Find(operation.Parent(), func(values interface{}) error {
+			return preload(ctx, driver, values, WithPreloadCallback(operation.Name(), operation.Callback()))
+		})
+		if err != nil {
+			return err
+		}
 	}
 
-	wg.Wait()
-
-	return err
+	return nil
 }
 
 type preloadHandler struct {

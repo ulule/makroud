@@ -13,7 +13,7 @@ import (
 // PKType define a primary key type.
 type PKType uint8
 
-// PrimaryKey types.
+// Primary key types.
 const (
 	// PKUnknownType is an unknown primary key.
 	PKUnknownType = PKType(iota)

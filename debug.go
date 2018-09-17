@@ -191,6 +191,10 @@ func debugField(field Field) debugWriter {
 			v: strconv.FormatBool(field.IsAssociation()),
 		},
 		debugValue{
+			k: "association_type",
+			v: field.associationType.String(),
+		},
+		debugValue{
 			k: "is_excluded",
 			v: strconv.FormatBool(field.IsExcluded()),
 		},
@@ -201,6 +205,14 @@ func debugField(field Field) debugWriter {
 		debugValue{
 			k: "has_ulid",
 			v: strconv.FormatBool(field.HasULID()),
+		},
+		debugValue{
+			k: "has_uuid_v1",
+			v: strconv.FormatBool(field.HasUUIDV1()),
+		},
+		debugValue{
+			k: "has_uuid_v4",
+			v: strconv.FormatBool(field.HasUUIDV4()),
 		},
 		debugValue{
 			k: "is_created_key",
@@ -217,10 +229,6 @@ func debugField(field Field) debugWriter {
 		debugValue{
 			k: "reflect_type",
 			v: field.rtype.String(),
-		},
-		debugValue{
-			k: "association_type",
-			v: field.associationType.String(),
 		},
 	}
 }

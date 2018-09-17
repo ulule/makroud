@@ -16,7 +16,7 @@ import (
 // ClientDriver define the driver name used in makroud.
 const ClientDriver = "postgres"
 
-// Client is a wrapper that can interact with the database.
+// Client is a wrapper that can interact with the database, it's an implementation of Driver.
 type Client struct {
 	node  sqalx.Node
 	store *cache
@@ -100,7 +100,7 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 
 	client := &Client{
 		node: connection,
-		log:  &EmptyLogger{},
+		log:  &emptyLogger{},
 		rnd:  entropy,
 	}
 

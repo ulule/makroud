@@ -8,7 +8,7 @@ import (
 const (
 	// TagName defines makroud tag namespace.
 	TagName = "makroud"
-	// TagNameAlt defines sqlx tag namespace.
+	// TagNameAlt defines makroud alternative tag namespace (sqlx).
 	TagNameAlt = "db"
 )
 
@@ -23,7 +23,7 @@ var TagsMapper = map[string]string{
 	TagNameAlt: TagKeyColumn,
 }
 
-// Tag modifiers.
+// Tag modifiers on Model.
 const (
 	TagKeyIgnored    = "-"
 	TagKeyDefault    = "default"

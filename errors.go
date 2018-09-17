@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-// makroud general errors.
+// Makroud general errors.
 var (
 	// ErrNoRows is returned when query doesn't return a row.
 	ErrNoRows = fmt.Errorf("no rows in result set")

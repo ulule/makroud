@@ -21,8 +21,8 @@ func Log(driver Driver, queries Queries, duration time.Duration) {
 	}()
 }
 
-// EmptyLogger is a no-op Logger.
-type EmptyLogger struct{}
+// emptyLogger is a no-op Logger.
+type emptyLogger struct{}
 
 // Log push what query was executed and its duration.
-func (EmptyLogger) Log(query string, duration time.Duration) {}
+func (emptyLogger) Log(query string, duration time.Duration) {}

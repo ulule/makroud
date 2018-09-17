@@ -1,7 +1,6 @@
 package makroud
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 
@@ -11,7 +10,18 @@ import (
 	"github.com/ulule/makroud/reflectx"
 )
 
-// Field is a field.
+// Field defines the column name, field and options from model.
+//
+// For example: If we have an User, we could have this primary key defined in User's schema.
+//
+//     Field {
+//         ModelName:  User,
+//         TableName:  users,
+//         FieldName:  AvatarID,
+//         ColumnName: avatar_id,
+//         ColumnPath: users.avatar_id,
+//     }
+//
 type Field struct {
 	modelName       string
 	tableName       string
@@ -131,12 +141,10 @@ func (field Field) Type() reflect.Type {
 
 // String returns a human readable version of current instance.
 func (field Field) String() string {
-	buffer := &bytes.Buffer{}
-	debugField(field).write(buffer)
-	return buffer.String()
+	return DebugField(field)
 }
 
-// NewField returns full column name from model, field and tag.
+// NewField creates a new field using given model and name.
 func NewField(driver Driver, schema *Schema, model Model, name string, args ...ModelOpts) (*Field, error) {
 	if schema == nil {
 		return nil, errors.New("schema is required to generate a field instance")
