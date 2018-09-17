@@ -15,11 +15,11 @@ It's an advanced mapper and/or a lightweight ORM that relies on reflection to ge
 even if you are every careful and vigilant. **However,** development is super easy and straightforward
 since it doesn't relies on code generation.
 
-Makroud isn't a migration tools, and doesn't inspects the database to define the application data model
-since there is no code generation. It's important to have Active Record that are synchronized with your
+Makroud isn't a migration tools and it doesn't inspects the database to define the application data model
+_(since there is no code generation)_. It's **really** important to have Active Record that are synchronized with your
 data model in your database.
 
-It also support simple associations with preloading.
+It also support simple associations _(one, many)_ with preloading.
 
 Under the hood, it relies on three components:
 
@@ -443,7 +443,53 @@ func FindUserIDWithStaffRole(ctx context.Context, driver makroud.Driver) ([]stri
 
 ### Preload
 
-TODO
+On models having associations, you can execute a preload to fetch these relationships from the database.
+
+Let's define an user with a profile:
+
+```go
+type User struct {
+	ID       string   `makroud:"column:id,pk"`
+	Email    string   `makroud:"column:email"`
+	Profile  *Profile
+}
+
+func (User) TableName() string {
+	return "users"
+}
+
+type Profile struct {
+	ID         string  `makroud:"column:id,pk:ulid"`
+	FirstName  string  `makroud:"column:first_name"`
+	LastName   string  `makroud:"column:last_name"`
+	UserID     string  `makroud:"column:user_id,fk:users"`
+	Enabled    bool    `makroud:"column:enabled"`
+}
+
+func (Profile) TableName() string {
+	return "profiles"
+}
+```
+
+Once you obtain a user record, you can preload it's profile by executing:
+
+```go
+err := makroud.Preload(ctx, driver, &user, makroud.WithPreloadField("Profile"))
+```
+
+**Or,** if preloading requires specific conditions, you can use a callback like this:
+
+```go
+import "github.com/ulule/loukoum/builder"
+
+err := makroud.Preload(ctx, driver, &user,
+	makroud.WithPreloadCallback("Profile", func(query builder.Select) builder.Select {
+		return query.Where(loukoum.Condition("enabled").Equal(true))
+	}),
+)
+```
+
+If there is no error and if the user record has a profile, then you should have a the `Profile` value loaded.
 
 ## Development
 
