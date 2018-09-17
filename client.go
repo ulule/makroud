@@ -115,6 +115,33 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 	return client, nil
 }
 
+// NewDebugClient returns a new client with a specific engine.
+// Use this with extreme caution, please use New() or NewWithOptions() instead...
+func NewDebugClient(driver string, dsn string) (*Client, error) {
+	_ = pq.Driver{}
+
+	dbx, err := sqlx.Connect(driver, dsn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "makroud: cannot connect to %s server", driver)
+	}
+
+	connection, err := sqalx.New(dbx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "makroud: cannot instantiate %s client driver", driver)
+	}
+
+	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	client := &Client{
+		node:  connection,
+		log:   &emptyLogger{},
+		rnd:   entropy,
+		store: newCache(),
+	}
+
+	return client, nil
+}
+
 // Exec executes a named statement using given arguments.
 func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) error {
 	if len(args) == 0 {
