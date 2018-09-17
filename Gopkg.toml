@@ -2,7 +2,11 @@
 
 ignored = [
   "github.com/stretchr/testify/require",
-  "github.com/davecgh/go-spew/spew"
+  "github.com/davecgh/go-spew/spew",
+  "github.com/go-xorm/core",
+  "github.com/go-gorp/gorp",
+  "github.com/go-xorm/xorm",
+  "github.com/jinzhu/gorm"
 ]
 
 [metadata]
