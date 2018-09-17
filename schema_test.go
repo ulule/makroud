@@ -8,8 +8,6 @@ import (
 	"github.com/ulule/makroud"
 )
 
-// TODO: Finish and improve coverage
-
 func TestSchema_Owl(t *testing.T) {
 	Setup(t)(func(driver makroud.Driver) {
 		is := require.New(t)
@@ -134,34 +132,31 @@ func TestSchema_ExoChunk(t *testing.T) {
 		is.NoError(err)
 		is.NotNil(schema)
 
-		// TODO: Finish
+		is.Equal("exo_chunk", schema.TableName())
+		is.Equal("hash", schema.PrimaryKey().ColumnName())
+		is.Equal("exo_chunk.hash", schema.PrimaryKey().ColumnPath())
 
-		// is.Equal("ztp_meow", schema.TableName())
-		// is.Equal("hash", schema.PrimaryKey().ColumnName())
-		// is.Equal("ztp_meow.hash", schema.PrimaryKey().ColumnPath())
-		//
-		// is.True(schema.HasCreatedKey())
-		// is.True(schema.HasUpdatedKey())
-		// is.True(schema.HasDeletedKey())
-		// is.Equal("ztp_meow.created", schema.CreatedKeyPath())
-		// is.Equal("ztp_meow.updated", schema.UpdatedKeyPath())
-		// is.Equal("ztp_meow.deleted", schema.DeletedKeyPath())
-		//
-		// columns := schema.Columns()
-		// is.Len(columns, 5)
-		// is.Contains(columns, "hash")
-		// is.Contains(columns, "body")
-		// is.Contains(columns, "created")
-		// is.Contains(columns, "updated")
-		// is.Contains(columns, "deleted")
-		//
-		// columns = schema.ColumnPaths()
-		// is.Len(columns, 5)
-		// is.Contains(columns, "ztp_meow.hash")
-		// is.Contains(columns, "ztp_meow.body")
-		// is.Contains(columns, "ztp_meow.created")
-		// is.Contains(columns, "ztp_meow.updated")
-		// is.Contains(columns, "ztp_meow.deleted")
+		is.False(schema.HasCreatedKey())
+		is.False(schema.HasUpdatedKey())
+		is.False(schema.HasDeletedKey())
+
+		columns := schema.Columns()
+		is.Len(columns, 6)
+		is.Contains(columns, "hash")
+		is.Contains(columns, "bytes")
+		is.Contains(columns, "organization_id")
+		is.Contains(columns, "user_id")
+		is.Contains(columns, "mode_id")
+		is.Contains(columns, "file_id")
+
+		columns = schema.ColumnPaths()
+		is.Len(columns, 6)
+		is.Contains(columns, "exo_chunk.hash")
+		is.Contains(columns, "exo_chunk.bytes")
+		is.Contains(columns, "exo_chunk.organization_id")
+		is.Contains(columns, "exo_chunk.user_id")
+		is.Contains(columns, "exo_chunk.mode_id")
+		is.Contains(columns, "exo_chunk.file_id")
 
 	})
 }
