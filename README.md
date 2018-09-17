@@ -11,11 +11,11 @@
 Makroud is a high level SQL Connector that only support **PostgreSQL** at the moment.
 
 It's an advanced mapper and/or a lightweight ORM that relies on reflection to generate queries.
-**Using reflection has it's flaws**, type safety is not guaranteed and a panic is still possible,
+**Using reflection has its flaws**, type safety is not guaranteed and a panic is still possible,
 even if you are every careful and vigilant. **However,** development is super easy and straightforward
-since it doesn't relies on code generation.
+since it doesn't rely on code generation.
 
-Makroud isn't a migration tools and it doesn't inspects the database to define the application data model
+Makroud isn't a migration tool and it doesn't inspect the database to define the application data model
 _(since there is no code generation)_. It's **really** important to have Active Record that are synchronized with your
 data model in your database.
 
@@ -61,7 +61,7 @@ driver, err := makroud.New(
 )
 ```
 
-Also, you can use directly a struct if you don't need to use
+Also, you can use a struct directly if you don't need to use
 [functional options](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis):
 
 ```go
@@ -82,7 +82,7 @@ driver, err := makroud.NewWithOptions(&makroud.ClientOptions{
 With the [**Active Record**](https://en.wikipedia.org/wiki/Active_record_pattern) approach, you have to define a
 model that wraps your database table _(or view)_ columns into properties.
 
-Model are struct that contains basic go types, pointers, `sql.Scanner`, `driver.Valuer` or `Model` interface.
+Models are structs that contain basic go types, pointers, `sql.Scanner`, `driver.Valuer` or `Model` interface.
 All the fields of this struct will be columns in the database table.
 
 #### An example
@@ -117,9 +117,9 @@ Then, you have to define your model columns using struct tags:
  * **pk**(`bool|string`): Define column as a primary key, it accepts the following argument:
    * **true**: Uses internal db mechanism to define primary key value
    * **ulid**: Generate a [ULID](https://github.com/ulid/spec) to define primary key value
-   * **uuid-v1**: Generate a [UUID V1](https://en.wikipedia.org/wiki/Universally_unique_identifier)
+   * **uuid-v1**: Generate a [UUID V1](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_1_(date-time_and_MAC_address))
      to define primary key value
-   * **uuid-v4**: Generate a [UUID V4](https://en.wikipedia.org/wiki/Universally_unique_identifier)
+   * **uuid-v4**: Generate a [UUID V4](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random))
      to define primary key value
  * **default**(`bool`): On insert, if model has a zero value, it will use the db default value.
  * **pk**(`string`): Define column as a foreign key, reference table must be provided.
@@ -146,19 +146,19 @@ The preload mechanism, which enables you to fetch relationships from database, s
 
 ##### ID as Primary Key
 
-By default, if `pk` tag is undefined, `makroud` will uses the field named `ID` as primary key with
+By default, if the `pk` tag is undefined, `makroud` will use the field named `ID` as primary key with
 this configuration: `pk:db`
 
 ```go
 type User struct {
-	ID   string `makroud:"column:id"`   // Field named ID will be used a primary key by default.
+	ID   string `makroud:"column:id"`   // Field named ID will be used as a primary key by default.
 	Name string `makroud:"column:name"`
 }
 ```
 
 ##### Snake Case Column Name
 
-By default, if `column` tag is undefined, `makroud` will transform field name to lower snake case as column name.
+By default, if the `column` tag is undefined, `makroud` will transform field name to lower snake case as column name.
 
 ```go
 type User struct {
@@ -169,7 +169,7 @@ type User struct {
 
 ##### CreatedAt tracking
 
-For models having `CreatedAt` field, it will be set to current time when record is first created.
+For models having a `CreatedAt` field, it will be set to current time when the record is first created.
 
 ```go
 type User struct {
@@ -189,7 +189,7 @@ func (User) CreatedKey() string {
 
 ##### UpdatedAt tracking
 
-For models having `UpdatedAt` field, it will be set to current time when record are updated.
+For models having a `UpdatedAt` field, it will be set to current time when records are updated.
 
 ```go
 type User struct {
@@ -209,7 +209,7 @@ func (User) UpdatedKey() string {
 
 ##### DeletedAt tracking
 
-For models having `DeletedAt` field, it will be set to current time when record are archived.
+For models having a `DeletedAt` field, it will be set to current time when records are archived.
 
 ```go
 type User struct {
@@ -250,7 +250,7 @@ func CreateUser(ctx context.Context, driver makroud.Driver, name string) (*User,
 }
 ```
 
-Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukoum) `InsertBuilder` alongside the model.
+Or for more complex statements, use a [Loukoum](https://github.com/ulule/loukoum) `InsertBuilder` alongside the model.
 
 ```go
 import "github.com/ulule/loukoum"
@@ -275,7 +275,7 @@ func CreateUser(ctx context.Context, driver makroud.Driver, name string) (*User,
 
 #### Update
 
-For a simple update, asumming your model have a primary key defined, you can use save it by executing:
+For a simple update, asumming your model have a primary key defined, you can save it by executing:
 
 ```go
 func UpdateUser(ctx context.Context, driver makroud.Driver, user *User, name string) error {
@@ -284,7 +284,7 @@ func UpdateUser(ctx context.Context, driver makroud.Driver, user *User, name str
 }
 ```
 
-Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukoum) `UpdateBuilder` alongside the model.
+Or for more complex statements, use a [Loukoum](https://github.com/ulule/loukoum) `UpdateBuilder` alongside the model.
 
 ```go
 import "github.com/ulule/loukoum"
@@ -312,7 +312,7 @@ func UpdateUser(ctx context.Context, driver makroud.Driver, user *User, name str
 #### Delete
 
 For a simple delete _(using a `DELETE` statement)_, asumming your model have a primary key defined,
-you can use delete it using:
+you can delete it using:
 
 ```go
 func DeleteUser(ctx context.Context, driver makroud.Driver, user *User) error {
@@ -320,7 +320,7 @@ func DeleteUser(ctx context.Context, driver makroud.Driver, user *User) error {
 }
 ```
 
-Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukoum) `DeleteBuilder` alongside the model.
+Or for more complex statements, use a [Loukoum](https://github.com/ulule/loukoum) `DeleteBuilder` alongside the model.
 
 ```go
 import "github.com/ulule/loukoum"
@@ -347,9 +347,9 @@ func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
 }
 ```
 
-> **NOTE**: If model has no `DeletedAt` field, an error is returned.
+> **NOTE**: If the model has no `DeletedAt` field, an error is returned.
 
-Or for more complex statements, uses a [Loukoum](https://github.com/ulule/loukoum) `UpdateBuilder` alongside the model.
+Or for more complex statements, use a [Loukoum](https://github.com/ulule/loukoum) `UpdateBuilder` alongside the model.
 
 ```go
 import "github.com/ulule/loukoum"
@@ -422,7 +422,7 @@ func GetUserByName(ctx context.Context, driver makroud.Driver, name string) (*Us
 }
 ```
 
-Also, it support query without `Model`.
+Also, it supports query without `Model`.
 
 ```go
 func FindUserIDWithStaffRole(ctx context.Context, driver makroud.Driver) ([]string, error) {
@@ -445,7 +445,7 @@ func FindUserIDWithStaffRole(ctx context.Context, driver makroud.Driver) ([]stri
 
 On models having associations, you can execute a preload to fetch these relationships from the database.
 
-Let's define an user with a profile:
+Let's define a user with a profile:
 
 ```go
 type User struct {
@@ -471,7 +471,7 @@ func (Profile) TableName() string {
 }
 ```
 
-Once you obtain a user record, you can preload it's profile by executing:
+Once you obtain a user record, you can preload its profile by executing:
 
 ```go
 err := makroud.Preload(ctx, driver, &user, makroud.WithPreloadField("Profile"))
@@ -489,7 +489,7 @@ err := makroud.Preload(ctx, driver, &user,
 )
 ```
 
-If there is no error and if the user record has a profile, then you should have a the `Profile` value loaded.
+If there is no error and if the user record has a profile, then you should have the `Profile` value loaded.
 
 ## Development
 
@@ -514,7 +514,7 @@ scripts/lint
 
 #### Notes
 
-If you have to examine rows generated from unit test, you prevent the test suite to cleanup by using:
+If you have to examine rows generated from unit test, you can prevent the test suite to cleanup by using:
 
 ```
 DB_KEEP=true scripts/test
