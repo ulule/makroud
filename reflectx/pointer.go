@@ -19,14 +19,14 @@ func MakePointer(instance interface{}) interface{} {
 	return cp.Interface()
 }
 
-// IsPointer returns if given instance is a pointer.
+// IsPointer returns if given instance is a pointer, and not a nil one.
 func IsPointer(instance interface{}) bool {
 	val, ok := instance.(reflect.Value)
 	if !ok {
 		val = reflect.ValueOf(instance)
 	}
 
-	return val.Kind() == reflect.Ptr
+	return val.Kind() == reflect.Ptr && !val.IsNil()
 }
 
 // MakeReflectPointer makes a pointer from given reflect value.
