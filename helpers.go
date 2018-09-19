@@ -60,6 +60,9 @@ func exec(ctx context.Context, driver Driver, query string, args map[string]inte
 	})
 
 	if len(dest) > 0 {
+		if !reflectx.IsPointer(dest[0]) {
+			return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
+		}
 		if reflectx.IsSlice(dest[0]) {
 			return execRows(ctx, driver, stmt, args, dest[0])
 		}
@@ -70,10 +73,6 @@ func exec(ctx context.Context, driver Driver, query string, args map[string]inte
 }
 
 func execRows(ctx context.Context, driver Driver, stmt Statement, args map[string]interface{}, dest interface{}) error {
-	if !reflectx.IsPointer(dest) {
-		return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
-	}
-
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
 		return stmt.FindAll(ctx, dest, args)
@@ -112,10 +111,6 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 }
 
 func execRow(ctx context.Context, driver Driver, stmt Statement, args map[string]interface{}, dest interface{}) error {
-	if !reflectx.IsPointer(dest) {
-		return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
-	}
-
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
 		return stmt.FindOne(ctx, dest, args)
