@@ -181,36 +181,11 @@ func (schema Schema) ScanRow(row Row, model Model) error {
 		return err
 	}
 
-	values := make([]interface{}, len(columns))
-	value := reflectx.GetIndirectValue(model)
-	if !reflectx.IsStruct(value) {
-		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
+	values, err := schema.traverse(model, columns)
+	if err != nil {
+		return err
 	}
 
-	// Create a map of model field pointers from given columns.
-	for i, column := range columns {
-		if schema.pk.ColumnName() == column || schema.pk.ColumnPath() == column {
-			values[i] = reflectx.GetReflectFieldByIndexes(value, schema.pk.FieldIndex())
-			continue
-		}
-
-		field, ok := schema.fields[column]
-		if ok {
-			values[i] = reflectx.GetReflectFieldByIndexes(value, field.FieldIndex())
-			continue
-		}
-
-		column = strings.TrimPrefix(column, fmt.Sprint(schema.TableName(), "."))
-		field, ok = schema.fields[column]
-		if ok {
-			values[i] = reflectx.GetReflectFieldByIndexes(value, field.FieldIndex())
-			continue
-		}
-
-		return errors.Wrapf(ErrSchemaColumnRequired, "missing destination name %s in %T", column, model)
-	}
-
-	// Scan into the model received values.
 	return row.Scan(values...)
 }
 
@@ -221,13 +196,21 @@ func (schema Schema) ScanRows(rows Rows, model Model) error {
 		return err
 	}
 
+	values, err := schema.traverse(model, columns)
+	if err != nil {
+		return err
+	}
+
+	return rows.Scan(values...)
+}
+
+func (schema Schema) traverse(model Model, columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
 	value := reflectx.GetIndirectValue(model)
 	if !reflectx.IsStruct(value) {
-		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
+		return nil, errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
 	}
 
-	// Create a map of model field pointers from given columns.
 	for i, column := range columns {
 		if schema.pk.ColumnName() == column || schema.pk.ColumnPath() == column {
 			values[i] = reflectx.GetReflectFieldByIndexes(value, schema.pk.FieldIndex())
@@ -247,11 +230,10 @@ func (schema Schema) ScanRows(rows Rows, model Model) error {
 			continue
 		}
 
-		return errors.Wrapf(ErrSchemaColumnRequired, "missing destination name %s in %T", column, model)
+		return nil, errors.Wrapf(ErrSchemaColumnRequired, "missing destination name %s in %T", column, model)
 	}
 
-	// Scan into the model received values.
-	return rows.Scan(values...)
+	return values, nil
 }
 
 // ----------------------------------------------------------------------------

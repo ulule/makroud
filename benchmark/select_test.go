@@ -46,10 +46,12 @@ func BenchmarkSQLX_SelectAll(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	ctx := context.Background()
+
 	b.Run("sqlx", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var store []JetSQLX
-			err = dbx.Select(&store, "select * from jets")
+			err = dbx.SelectContext(ctx, &store, "select * from jets")
 			if err != nil {
 				b.Fatal(err)
 			}
