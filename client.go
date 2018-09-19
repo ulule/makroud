@@ -143,12 +143,10 @@ func NewDebugClient(driver string, dsn string) (*Client, error) {
 // Exec executes a named statement using given arguments.
 func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) error {
 	if len(args) == 0 {
-
 		_, err := c.node.ExecContext(ctx, query)
 		if err != nil {
 			return errors.Wrap(err, "makroud: cannot execute query")
 		}
-
 		return nil
 	}
 
