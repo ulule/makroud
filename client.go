@@ -100,7 +100,6 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 
 	client := &Client{
 		node: connection,
-		log:  &emptyLogger{},
 		rnd:  entropy,
 	}
 
@@ -134,7 +133,6 @@ func NewDebugClient(driver string, dsn string) (*Client, error) {
 
 	client := &Client{
 		node:  connection,
-		log:   &emptyLogger{},
 		rnd:   entropy,
 		store: newCache(),
 	}
@@ -280,6 +278,10 @@ func (c *Client) cache() *cache {
 	return c.store
 }
 
+func (c *Client) hasLogger() bool {
+	return c.log != nil
+}
+
 func (c *Client) logger() Logger {
 	return c.log
 }
@@ -291,8 +293,8 @@ func (c *Client) entropy() io.Reader {
 func (c *Client) close(closer io.Closer, flags map[string]string) {
 	thr := closer.Close()
 	if thr != nil {
-		thr = errors.Wrapf(thr, "trying to close: %T", closer)
-		// TODO (novln): Add an observer to collect this error.
+		// thr = errors.Wrapf(thr, "trying to close: %T", closer)
+		// // TODO (novln): Add an observer to collect this error.
 		_ = thr
 	}
 }
@@ -398,6 +400,25 @@ func (r *rowWrapper) Write(dest map[string]interface{}) error {
 	return nil
 }
 
+// Columns returns the column names.
+func (r *rowWrapper) Columns() ([]string, error) {
+	columns, err := r.row.Columns()
+	if err != nil {
+		return nil, errors.Wrap(err, "makroud: cannot return row columns")
+	}
+	return columns, nil
+}
+
+// Scan copies the columns in the current row into the values pointed at by dest.
+// The number of values in dest must be the same as the number of columns in Rows.
+func (r *rowWrapper) Scan(dest ...interface{}) error {
+	err := r.row.Scan(dest...)
+	if err != nil {
+		return errors.Wrap(err, "makroud: cannot scan given values")
+	}
+	return nil
+}
+
 // A rowsWrapper wraps a rows from sqlx.
 type rowsWrapper struct {
 	rows *sqlx.Rows
@@ -441,6 +462,25 @@ func (r *rowsWrapper) Write(dest map[string]interface{}) error {
 	err := r.rows.MapScan(dest)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot write row")
+	}
+	return nil
+}
+
+// Columns returns the column names.
+func (r *rowsWrapper) Columns() ([]string, error) {
+	columns, err := r.rows.Columns()
+	if err != nil {
+		return nil, errors.Wrap(err, "makroud: cannot return rows columns")
+	}
+	return columns, nil
+}
+
+// Scan copies the columns in the current row into the values pointed at by dest.
+// The number of values in dest must be the same as the number of columns in Rows.
+func (r *rowsWrapper) Scan(dest ...interface{}) error {
+	err := r.rows.Scan(dest...)
+	if err != nil {
+		return errors.Wrap(err, "makroud: cannot scan given values")
 	}
 	return nil
 }

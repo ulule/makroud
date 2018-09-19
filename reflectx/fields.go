@@ -51,6 +51,22 @@ func GetFieldReflectTypeByName(element interface{}, name string) (reflect.Type, 
 	return kind, nil
 }
 
+// GetReflectFieldByIndexes returns a pointer of field value with the given traversal indexes.
+func GetReflectFieldByIndexes(value reflect.Value, indexes []int) interface{} {
+	for _, i := range indexes {
+		value = reflect.Indirect(value).Field(i)
+		// if this is a pointer and it's nil, allocate a new value and set it
+		if value.Kind() == reflect.Ptr && value.IsNil() {
+			instance := reflect.New(GetIndirectType(value))
+			value.Set(instance)
+		}
+		if value.Kind() == reflect.Map && value.IsNil() {
+			value.Set(reflect.MakeMap(value.Type()))
+		}
+	}
+	return value.Addr().Interface()
+}
+
 // GetFieldValue returns the field's value with given name.
 func GetFieldValue(element interface{}, name string) (interface{}, error) {
 	value, ok := element.(reflect.Value)

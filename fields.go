@@ -26,6 +26,7 @@ type Field struct {
 	modelName       string
 	tableName       string
 	fieldName       string
+	fieldIndex      []int
 	columnPath      string
 	columnName      string
 	foreignKey      string
@@ -52,6 +53,11 @@ func (field Field) ModelName() string {
 // FieldName define the struct field name used for this field.
 func (field Field) FieldName() string {
 	return field.fieldName
+}
+
+// FieldIndex define the struct field index used for this field.
+func (field Field) FieldIndex() []int {
+	return field.fieldIndex
 }
 
 // TableName returns the model name's table name of this field.
@@ -195,7 +201,8 @@ func NewField(driver Driver, schema *Schema, model Model, name string, args ...M
 	instance := &Field{
 		modelName:    modelName,
 		tableName:    tableName,
-		fieldName:    name,
+		fieldName:    field.Name,
+		fieldIndex:   field.Index,
 		columnName:   columnName,
 		columnPath:   columnPath,
 		isPrimaryKey: isPrimaryKey,

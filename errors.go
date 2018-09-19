@@ -12,6 +12,10 @@ var (
 	ErrInvalidDriver = fmt.Errorf("a makroud driver is required")
 	// ErrPointerRequired is returned when given value is not a pointer.
 	ErrPointerRequired = fmt.Errorf("a pointer is required")
+	// ErrStructRequired is returned when given value is not a struct.
+	ErrStructRequired = fmt.Errorf("a struct is required")
+	// ErrSchemaColumnRequired is returned when we cannot find a column in current schema.
+	ErrSchemaColumnRequired = fmt.Errorf("cannot find column in schema")
 	// ErrSchemaCreatedKey is returned when we cannot find a created key in given schema.
 	ErrSchemaCreatedKey = fmt.Errorf("cannot find created key in schema")
 	// ErrSchemaUpdatedKey is returned when we cannot find a updated key in given schema.

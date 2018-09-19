@@ -15,12 +15,14 @@ import (
 // Exec will execute given query from a Loukoum builder.
 // If an object is given, it will mutate it to match the row values.
 func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...interface{}) error {
-	start := time.Now()
-	queries := Queries{NewQuery(stmt)}
+	if driver.hasLogger() {
+		start := time.Now()
+		queries := Queries{NewQuery(stmt)}
 
-	defer func() {
-		Log(driver, queries, time.Since(start))
-	}()
+		defer func() {
+			Log(driver, queries, time.Since(start))
+		}()
+	}
 
 	query, args := stmt.NamedQuery()
 
@@ -35,12 +37,14 @@ func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...inte
 // RawExec will execute given query.
 // If an object is given, it will mutate it to match the row values.
 func RawExec(ctx context.Context, driver Driver, query string, dest ...interface{}) error {
-	start := time.Now()
-	queries := Queries{NewRawQuery(query)}
+	if driver.hasLogger() {
+		start := time.Now()
+		queries := Queries{NewRawQuery(query)}
 
-	defer func() {
-		Log(driver, queries, time.Since(start))
-	}()
+		defer func() {
+			Log(driver, queries, time.Since(start))
+		}()
+	}
 
 	err := exec(ctx, driver, query, nil, dest...)
 	if err != nil {
@@ -91,18 +95,14 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 	list := reflectx.NewReflectSlice(reflectx.GetSliceType(dest))
 
 	for rows.Next() {
-		mapper, err := ScanRows(rows)
+		model := reflectx.NewSliceValue(dest).(Model)
+
+		err := schema.ScanRows(rows, model)
 		if err != nil {
 			return err
 		}
 
-		row := reflectx.NewSliceValue(dest)
-		err = schema.WriteModel(mapper, row.(Model))
-		if err != nil {
-			return err
-		}
-
-		reflectx.AppendReflectSlice(list, row)
+		reflectx.AppendReflectSlice(list, model)
 	}
 
 	reflectx.SetReflectSlice(dest, list)
@@ -126,12 +126,7 @@ func execRow(ctx context.Context, driver Driver, stmt Statement, args map[string
 		return err
 	}
 
-	mapper, err := ScanRow(row)
-	if err != nil {
-		return err
-	}
-
-	return schema.WriteModel(mapper, model)
+	return schema.ScanRow(row, model)
 }
 
 // Count will execute given query to return a number from a aggregate function.

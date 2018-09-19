@@ -171,6 +171,86 @@ func (schema Schema) WriteModel(mapper Mapper, model Model) error {
 	return nil
 }
 
+// ScanRow executes a scan from given row into model.
+func (schema Schema) ScanRow(row Row, model Model) error {
+	columns, err := row.Columns()
+	if err != nil {
+		return err
+	}
+
+	values := make([]interface{}, len(columns))
+	value := reflectx.GetIndirectValue(model)
+	if !reflectx.IsStruct(value) {
+		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
+	}
+
+	// Create a map of model field pointers from given columns.
+	for i, column := range columns {
+		if schema.pk.ColumnName() == column || schema.pk.ColumnPath() == column {
+			values[i] = reflectx.GetReflectFieldByIndexes(value, schema.pk.FieldIndex())
+			continue
+		}
+
+		field, ok := schema.fields[column]
+		if ok {
+			values[i] = reflectx.GetReflectFieldByIndexes(value, field.FieldIndex())
+			continue
+		}
+
+		column = strings.TrimPrefix(column, fmt.Sprint(schema.TableName(), "."))
+		field, ok = schema.fields[column]
+		if ok {
+			values[i] = reflectx.GetReflectFieldByIndexes(value, field.FieldIndex())
+			continue
+		}
+
+		return errors.Wrapf(ErrSchemaColumnRequired, "missing destination name %s in %T", column, model)
+	}
+
+	// Scan into the model received values.
+	return row.Scan(values...)
+}
+
+// ScanRows executes a scan from current row into model.
+func (schema Schema) ScanRows(rows Rows, model Model) error {
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	values := make([]interface{}, len(columns))
+	value := reflectx.GetIndirectValue(model)
+	if !reflectx.IsStruct(value) {
+		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
+	}
+
+	// Create a map of model field pointers from given columns.
+	for i, column := range columns {
+		if schema.pk.ColumnName() == column || schema.pk.ColumnPath() == column {
+			values[i] = reflectx.GetReflectFieldByIndexes(value, schema.pk.FieldIndex())
+			continue
+		}
+
+		field, ok := schema.fields[column]
+		if ok {
+			values[i] = reflectx.GetReflectFieldByIndexes(value, field.FieldIndex())
+			continue
+		}
+
+		column = strings.TrimPrefix(column, fmt.Sprint(schema.TableName(), "."))
+		field, ok = schema.fields[column]
+		if ok {
+			values[i] = reflectx.GetReflectFieldByIndexes(value, field.FieldIndex())
+			continue
+		}
+
+		return errors.Wrapf(ErrSchemaColumnRequired, "missing destination name %s in %T", column, model)
+	}
+
+	// Scan into the model received values.
+	return rows.Scan(values...)
+}
+
 // ----------------------------------------------------------------------------
 // Initializers
 // ----------------------------------------------------------------------------
