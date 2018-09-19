@@ -69,8 +69,8 @@ func AppendReflectSlice(list reflect.Value, value interface{}) {
 	target.Set(reflect.Append(target, val))
 }
 
-// CopyReflectSlice will attach given reflect slice to the destination value.
-func CopyReflectSlice(dest interface{}, list reflect.Value) {
+// SetReflectSlice will attach given reflect slice to the destination value.
+func SetReflectSlice(dest interface{}, list reflect.Value) {
 	val, ok := dest.(reflect.Value)
 	if !ok {
 		val = reflect.ValueOf(dest)

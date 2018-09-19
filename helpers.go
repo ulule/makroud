@@ -105,7 +105,7 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 		reflectx.AppendReflectSlice(list, row)
 	}
 
-	reflectx.CopyReflectSlice(dest, list)
+	reflectx.SetReflectSlice(dest, list)
 
 	return nil
 }
