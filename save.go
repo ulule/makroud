@@ -99,7 +99,7 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 				pk.ColumnName(): ulid,
 			}
 			(*values)[pk.ColumnName()] = ulid
-			err := schema.WriteModel(mapper, model)
+			err := schema.WriteModel(model, mapper)
 			if err != nil {
 				return nil, err
 			}
@@ -110,7 +110,7 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 				pk.ColumnName(): uuid,
 			}
 			(*values)[pk.ColumnName()] = uuid
-			err := schema.WriteModel(mapper, model)
+			err := schema.WriteModel(model, mapper)
 			if err != nil {
 				return nil, err
 			}
@@ -121,7 +121,7 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 				pk.ColumnName(): uuid,
 			}
 			(*values)[pk.ColumnName()] = uuid
-			err := schema.WriteModel(mapper, model)
+			err := schema.WriteModel(model, mapper)
 			if err != nil {
 				return nil, err
 			}

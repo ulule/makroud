@@ -10,6 +10,9 @@ import (
 	"github.com/ulule/makroud/reflectx"
 )
 
+// Mapper will be used to mutate a Model with row values.
+type Mapper map[string]interface{}
+
 // Schema is a model schema.
 type Schema struct {
 	model        Model
@@ -136,7 +139,7 @@ func (schema Schema) columns(withTable bool) Columns {
 }
 
 // WriteModel will try to updates given model from sqlx mapper.
-func (schema Schema) WriteModel(mapper Mapper, model Model) error {
+func (schema Schema) WriteModel(model Model, mapper Mapper) error {
 	if len(mapper) == 0 {
 		return nil
 	}
