@@ -3,6 +3,7 @@ package benchmark
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
 
 	"github.com/go-gorp/gorp"
@@ -14,7 +15,7 @@ import (
 	"github.com/ulule/makroud/benchmark/mimic"
 )
 
-func BenchmarkMakroud_Delete(b *testing.B) {
+func BenchmarkMakroud_Update(b *testing.B) {
 	row := JetMakroud{
 		ID:         1,
 		PilotID:    1,
@@ -27,7 +28,7 @@ func BenchmarkMakroud_Delete(b *testing.B) {
 		Manifest:   []byte("test"),
 	}
 
-	exec := jetExecDelete()
+	exec := jetExecUpdate()
 	exec.NumInput = -1
 	dsn := mimic.NewResult(exec)
 
@@ -40,7 +41,7 @@ func BenchmarkMakroud_Delete(b *testing.B) {
 
 	b.Run("makroud", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			err = makroud.Delete(ctx, driver, &row)
+			err = makroud.Save(ctx, driver, &row)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -48,8 +49,8 @@ func BenchmarkMakroud_Delete(b *testing.B) {
 	})
 }
 
-func BenchmarkSQLX_Delete(b *testing.B) {
-	exec := jetExecDelete()
+func BenchmarkSQLX_Update(b *testing.B) {
+	exec := jetExecUpdate()
 	exec.NumInput = -1
 	dsn := mimic.NewResult(exec)
 
@@ -59,9 +60,20 @@ func BenchmarkSQLX_Delete(b *testing.B) {
 	}
 
 	ctx := context.Background()
-	query := "DELETE FROM jets WHERE id = :id"
+	query := fmt.Sprint(
+		"UPDATE jets SET pilot_id = :pilot_id, airport_id = :airport_id, name = :name, color = :color, ",
+		"uuid = :uuid, identifier = :identifier, cargo = :cargo, manifest = :manifest WHERE id = :id",
+	)
 	args := map[string]interface{}{
-		"id": 1,
+		"pilot_id":   1,
+		"airport_id": 1,
+		"name":       "test",
+		"color":      sql.NullString{},
+		"uuid":       "test",
+		"identifier": "test",
+		"cargo":      []byte("test"),
+		"manifest":   []byte("test"),
+		"id":         1,
 	}
 
 	b.Run("sqlx", func(b *testing.B) {
@@ -80,7 +92,7 @@ func BenchmarkSQLX_Delete(b *testing.B) {
 	})
 }
 
-func BenchmarkGORM_Delete(b *testing.B) {
+func BenchmarkGORM_Update(b *testing.B) {
 	row := JetGorm{
 		ID:         1,
 		PilotID:    1,
@@ -93,7 +105,7 @@ func BenchmarkGORM_Delete(b *testing.B) {
 		Manifest:   []byte("test"),
 	}
 
-	exec := jetExecDelete()
+	exec := jetExecUpdate()
 	exec.NumInput = -1
 	dsn := mimic.NewResult(exec)
 
@@ -104,7 +116,7 @@ func BenchmarkGORM_Delete(b *testing.B) {
 
 	b.Run("gorm", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			err := gormdb.Delete(&row).Error
+			err := gormdb.Model(&row).Updates(row).Error
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -112,7 +124,7 @@ func BenchmarkGORM_Delete(b *testing.B) {
 	})
 }
 
-func BenchmarkGORP_Delete(b *testing.B) {
+func BenchmarkGORP_Update(b *testing.B) {
 	row := JetGorp{
 		ID:         1,
 		PilotID:    1,
@@ -125,7 +137,7 @@ func BenchmarkGORP_Delete(b *testing.B) {
 		Manifest:   []byte("test"),
 	}
 
-	exec := jetExecDelete()
+	exec := jetExecUpdate()
 	exec.NumInput = -1
 	dsn := mimic.NewResult(exec)
 
@@ -136,13 +148,13 @@ func BenchmarkGORP_Delete(b *testing.B) {
 
 	gorpdb := &gorp.DbMap{Db: db, Dialect: gorp.PostgresDialect{}}
 	if err != nil {
-		b.Fatal(err)
+		panic(err)
 	}
 	gorpdb.AddTable(JetGorp{}).SetKeys(true, "ID")
 
 	b.Run("gorp", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, err := gorpdb.Delete(&row)
+			_, err := gorpdb.Update(&row)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -150,7 +162,7 @@ func BenchmarkGORP_Delete(b *testing.B) {
 	})
 }
 
-func BenchmarkXORM_Delete(b *testing.B) {
+func BenchmarkXORM_Update(b *testing.B) {
 	row := JetXorm{
 		ID:         1,
 		PilotID:    1,
@@ -163,7 +175,7 @@ func BenchmarkXORM_Delete(b *testing.B) {
 		Manifest:   []byte("test"),
 	}
 
-	exec := jetExecDelete()
+	exec := jetExecUpdate()
 	exec.NumInput = -1
 	dsn := mimic.NewResult(exec)
 
@@ -174,7 +186,7 @@ func BenchmarkXORM_Delete(b *testing.B) {
 
 	b.Run("xorm", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, err := xormdb.Delete(&row)
+			_, err := xormdb.Id(row.ID).Update(&row)
 			if err != nil {
 				b.Fatal(err)
 			}

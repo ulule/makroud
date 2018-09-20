@@ -95,7 +95,7 @@ type mimicResult struct {
 }
 
 func (m *mimicResult) LastInsertId() (int64, error) {
-	return 0, errors.New("not supported")
+	return int64(m.rowsAffected), nil
 }
 
 func (m *mimicResult) RowsAffected() (int64, error) {

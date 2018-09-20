@@ -21,7 +21,18 @@ and **[Kallax](https://github.com/src-d/go-kallax)** since they rely on code gen
 ## Execute
 
 ```bash
-go test -run=XXX -bench=. -benchmem -benchtime=10s
+go test -run=XXX -bench=SelectAll -benchmem -benchtime=10s
+go test -run=XXX -bench=SelectSubset -benchmem -benchtime=10s
+go test -run=XXX -bench=SelectComplex -benchmem -benchtime=10s
+go test -run=XXX -bench=Insert -benchmem -benchtime=10s
+go test -run=XXX -bench=Update -benchmem -benchtime=10s
+go test -run=XXX -bench=Delete -benchmem -benchtime=10s
+```
+
+## Benchmark graph
+
+```bash
+cd graph && python3 graph.py
 ```
 
 ## Credits
