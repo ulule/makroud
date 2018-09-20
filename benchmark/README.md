@@ -35,6 +35,15 @@ go test -run=XXX -bench=Delete -benchmem -benchtime=10s
 cd graph && python3 graph.py
 ```
 
+## Acknowledgement
+
+**SQLX** queries in this benchmark could be optimized.
+
+However, since **Makroud** is built on top of **SQLX**, this benchmark highlight the difference of performance using
+the same instructions.
+
+**In every case**, using **SQLX** with a optimized workflow is more efficient than **Makroud**.
+
 ## Credits
 
 * [SQLBoiler Benchmark repository](https://github.com/volatiletech/boilbench)
