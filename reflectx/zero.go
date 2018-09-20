@@ -28,8 +28,9 @@ func IsZero(instance interface{}) bool {
 	return reflect.DeepEqual(value.Interface(), zero.Interface())
 }
 
-// MakeZero returns a zero value for the given element.
-func MakeZero(element interface{}) reflect.Value {
+// MakeReflectZero returns a zero reflect value for the given element.
+// If given element is a pointer, it will use it's deferenced value.
+func MakeReflectZero(element interface{}) reflect.Value {
 	t, ok := element.(reflect.Type)
 	if !ok {
 		t = reflect.TypeOf(element)
@@ -38,7 +39,8 @@ func MakeZero(element interface{}) reflect.Value {
 	return reflect.New(GetIndirectType(t)).Elem()
 }
 
-// CopyZero returns a zero value for the given element.
-func CopyZero(element interface{}) interface{} {
-	return MakeZero(element).Interface()
+// MakeZero returns a zero value for the given element.
+// If given element is a pointer, it will use it's deferenced value.
+func MakeZero(element interface{}) interface{} {
+	return MakeReflectZero(element).Interface()
 }

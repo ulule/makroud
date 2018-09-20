@@ -197,3 +197,218 @@ func TestReflectx_IsZero(t *testing.T) {
 	is.False(reflectx.IsZero(foo10.Active))
 
 }
+
+func TestReflectx_MakeZero(t *testing.T) {
+	is := require.New(t)
+
+	vi := int(6)
+	vi8 := int8(6)
+	vi16 := int16(6)
+	vi32 := int32(6)
+	vi64 := int64(6)
+	vui := uint(6)
+	vui8 := uint8(6)
+	vui16 := uint16(6)
+	vui32 := uint32(6)
+	vui64 := uint64(6)
+	vf32 := float32(6)
+	vf64 := float64(6)
+	vb := true
+	vs := "foo"
+	vrun := 'f'
+	vt := time.Now()
+	vni64 := sql.NullInt64{Valid: true, Int64: 6}
+	vnf64 := sql.NullFloat64{Valid: true, Float64: 6}
+	vnb := sql.NullBool{Valid: true, Bool: true}
+	vns := sql.NullString{Valid: true, String: "foo"}
+	vnt := pq.NullTime{Valid: true, Time: vt}
+	ve := Elements{xD: 6}
+
+	scenarios := []struct {
+		input    interface{}
+		expected interface{}
+	}{
+		{
+			input:    vi,
+			expected: int(0),
+		},
+		{
+			input:    &vi,
+			expected: int(0),
+		},
+		{
+			input:    vi8,
+			expected: int8(0),
+		},
+		{
+			input:    &vi8,
+			expected: int8(0),
+		},
+		{
+			input:    vi16,
+			expected: int16(0),
+		},
+		{
+			input:    &vi16,
+			expected: int16(0),
+		},
+		{
+			input:    vi32,
+			expected: int32(0),
+		},
+		{
+			input:    &vi32,
+			expected: int32(0),
+		},
+		{
+			input:    vi64,
+			expected: int64(0),
+		},
+		{
+			input:    &vi64,
+			expected: int64(0),
+		},
+		{
+			input:    vui,
+			expected: uint(0),
+		},
+		{
+			input:    &vui,
+			expected: uint(0),
+		},
+		{
+			input:    vui8,
+			expected: uint8(0),
+		},
+		{
+			input:    &vui8,
+			expected: uint8(0),
+		},
+		{
+			input:    vui16,
+			expected: uint16(0),
+		},
+		{
+			input:    &vui16,
+			expected: uint16(0),
+		},
+		{
+			input:    vui32,
+			expected: uint32(0),
+		},
+		{
+			input:    &vui32,
+			expected: uint32(0),
+		},
+		{
+			input:    vui64,
+			expected: uint64(0),
+		},
+		{
+			input:    &vui64,
+			expected: uint64(0),
+		},
+		{
+			input:    vf32,
+			expected: float32(0),
+		},
+		{
+			input:    &vf32,
+			expected: float32(0),
+		},
+		{
+			input:    vf64,
+			expected: float64(0),
+		},
+		{
+			input:    &vf64,
+			expected: float64(0),
+		},
+		{
+			input:    vb,
+			expected: false,
+		},
+		{
+			input:    &vb,
+			expected: false,
+		},
+		{
+			input:    vs,
+			expected: "",
+		},
+		{
+			input:    &vs,
+			expected: "",
+		},
+		{
+			input:    vrun,
+			expected: int32(0),
+		},
+		{
+			input:    &vrun,
+			expected: int32(0),
+		},
+		{
+			input:    vt,
+			expected: time.Time{},
+		},
+		{
+			input:    &vt,
+			expected: time.Time{},
+		},
+		{
+			input:    vni64,
+			expected: sql.NullInt64{},
+		},
+		{
+			input:    &vni64,
+			expected: sql.NullInt64{},
+		},
+		{
+			input:    vnf64,
+			expected: sql.NullFloat64{},
+		},
+		{
+			input:    &vnf64,
+			expected: sql.NullFloat64{},
+		},
+		{
+			input:    vnb,
+			expected: sql.NullBool{},
+		},
+		{
+			input:    &vnb,
+			expected: sql.NullBool{},
+		},
+		{
+			input:    vns,
+			expected: sql.NullString{},
+		},
+		{
+			input:    &vns,
+			expected: sql.NullString{},
+		},
+		{
+			input:    vnt,
+			expected: pq.NullTime{},
+		},
+		{
+			input:    &vnt,
+			expected: pq.NullTime{},
+		},
+		{
+			input:    ve,
+			expected: Elements{},
+		},
+		{
+			input:    &ve,
+			expected: Elements{},
+		},
+	}
+
+	for i, scenario := range scenarios {
+		m := fmt.Sprintf("loop #%d", i)
+		v := reflectx.MakeZero(scenario.input)
+		is.Equal(scenario.expected, v, m)
+	}
+}

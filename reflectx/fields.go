@@ -375,7 +375,7 @@ func tryScannerOnFieldValue(dest reflect.Value, output reflect.Value) bool {
 
 	// If scanner pointer is nil, allocate a zero value.
 	if scan.IsNil() {
-		zero := MakeZero(scan.Type().Elem())
+		zero := MakeReflectZero(scan.Type().Elem())
 		scan.Set(zero.Addr())
 	}
 
@@ -404,7 +404,7 @@ func tryScannerOnFieldValue(dest reflect.Value, output reflect.Value) bool {
 	arg := output
 	if arg.Kind() == reflect.Ptr {
 		if arg.IsNil() {
-			arg = MakeZero(scan.Type())
+			arg = MakeReflectZero(scan.Type())
 		} else {
 			arg = output.Elem()
 		}

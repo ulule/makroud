@@ -346,7 +346,7 @@ func newSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
 	modelOpts := analyzeModelOpts(model)
 
 	schema := &Schema{
-		model:        reflectx.CopyZero(model).(Model),
+		model:        reflectx.MakeZero(model).(Model),
 		modelName:    reflectx.GetIndirectTypeName(model),
 		tableName:    model.TableName(),
 		fields:       map[string]Field{},
