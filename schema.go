@@ -138,42 +138,6 @@ func (schema Schema) columns(withTable bool) Columns {
 	return columns
 }
 
-// WriteModel will try to updates given model from sqlx mapper.
-func (schema Schema) WriteModel(model Model, mapper Mapper) error {
-	if len(mapper) == 0 {
-		return nil
-	}
-	for key, value := range mapper {
-		if schema.pk.ColumnName() == key || schema.pk.ColumnPath() == key {
-			err := reflectx.UpdateFieldValue(model, schema.pk.Field.FieldName(), value)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-
-		field, ok := schema.fields[key]
-		if ok {
-			err := reflectx.UpdateFieldValue(model, field.FieldName(), value)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-
-		key = strings.TrimPrefix(key, fmt.Sprint(schema.TableName(), "."))
-		field, ok = schema.fields[key]
-		if ok {
-			err := reflectx.UpdateFieldValue(model, field.FieldName(), value)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-	}
-	return nil
-}
-
 // ScanRow executes a scan from given row into model.
 func (schema Schema) ScanRow(row Row, model Model) error {
 	columns, err := row.Columns()

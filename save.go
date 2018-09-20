@@ -96,36 +96,18 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 
 		case PrimaryKeyULIDDefault:
 			ulid := GenerateULID(driver)
-			mapper := map[string]interface{}{
-				pk.ColumnName(): ulid,
-			}
 			values[pk.ColumnName()] = ulid
-			err := schema.WriteModel(model, mapper)
-			if err != nil {
-				return nil, err
-			}
+			(*returning) = append((*returning), pk.ColumnName())
 
 		case PrimaryKeyUUIDV1Default:
 			uuid := GenerateUUIDV1(driver)
-			mapper := map[string]interface{}{
-				pk.ColumnName(): uuid,
-			}
 			values[pk.ColumnName()] = uuid
-			err := schema.WriteModel(model, mapper)
-			if err != nil {
-				return nil, err
-			}
+			(*returning) = append((*returning), pk.ColumnName())
 
 		case PrimaryKeyUUIDV4Default:
 			uuid := GenerateUUIDV4(driver)
-			mapper := map[string]interface{}{
-				pk.ColumnName(): uuid,
-			}
 			values[pk.ColumnName()] = uuid
-			err := schema.WriteModel(model, mapper)
-			if err != nil {
-				return nil, err
-			}
+			(*returning) = append((*returning), pk.ColumnName())
 
 		default:
 			return nil, errors.Errorf("unsupported primary key type: %s", pk.Default())
