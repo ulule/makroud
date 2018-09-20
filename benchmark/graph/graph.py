@@ -46,7 +46,7 @@ yaxis_table = {'nsop': 'ns/op', 'bop': 'B/op', 'aop': 'allocs/op'}
 benchmark_table = {
   'select_all': {
     'nsop': {
-      'Makroud': 25587,
+      'Makroud': 24014,
       'SQLX': 193563,
       'GORM': 89607,
       'GORP': 44242,
@@ -69,7 +69,7 @@ benchmark_table = {
   },
   'select_subset': {
     'nsop': {
-      'Makroud': 27726,
+      'Makroud': 25134,
       'SQLX': 113860,
       'GORM': 88795,
       'GORP': 46822,
@@ -92,7 +92,7 @@ benchmark_table = {
   },
   'select_complex': {
     'nsop': {
-      'Makroud': 39247,
+      'Makroud': 30429,
       'SQLX': 130819,
       'GORM': 99197,
       'GORP': 43960,
@@ -115,21 +115,21 @@ benchmark_table = {
   },
   'insert': {
     'nsop': {
-      'Makroud': 31184,
+      'Makroud': 30669,
       'SQLX': 39335,
       'GORM': 24075,
       'GORP': 5815,
       'XORM': 17758,
     },
     'bop': {
-      'Makroud': 7210,
+      'Makroud': 6881,
       'SQLX': 2831,
       'GORM': 7928,
       'GORP': 1432,
       'XORM': 5648,
     },
     'aop': {
-      'Makroud': 129,
+      'Makroud': 126,
       'SQLX': 49,
       'GORM': 150,
       'GORP': 34,
@@ -138,21 +138,21 @@ benchmark_table = {
   },
   'update': {
     'nsop': {
-      'Makroud': 34328,
+      'Makroud': 32227,
       'SQLX': 31900,
       'GORM': 48402,
       'GORP': 5136,
       'XORM': 32869,
     },
     'bop': {
-      'Makroud': 7474,
+      'Makroud': 7410,
       'SQLX': 2463,
       'GORM': 12632,
       'GORP': 1536,
       'XORM': 7640,
     },
     'aop': {
-      'Makroud': 131,
+      'Makroud': 123,
       'SQLX': 43,
       'GORM': 287,
       'GORP': 35,
@@ -204,9 +204,3 @@ for kind in ['SelectAll', 'SelectSubset', 'SelectComplex', 'Insert', 'Update', '
       yaxis_table[bench],
       benchmark_table[key_table[kind]][bench],
     )
-
-# BenchmarkMakroud_Update/makroud-4                 500000             34328 ns/op            7474 B/op        131 allocs/op
-# BenchmarkSQLX_Update/sqlx-4                      1000000             31900 ns/op            2463 B/op         43 allocs/op
-# BenchmarkGORM_Update/gorm-4                       300000             48402 ns/op           12632 B/op        287 allocs/op
-# BenchmarkGORP_Update/gorp-4                      3000000              5136 ns/op            1536 B/op         35 allocs/op
-# BenchmarkXORM_Update/xorm-4                       500000             32869 ns/op            7640 B/op        197 allocs/op
