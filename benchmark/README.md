@@ -39,10 +39,19 @@ cd graph && python3 graph.py
 
 **SQLX** queries in this benchmark could be optimized.
 
-However, since **Makroud** is built on top of **SQLX**, this benchmark highlight the difference of performance using
-the same instructions.
+However, since **Makroud** is built on top of **SQLX**, this benchmark highlight the difference of
+performance using the same instructions.
 
 **In every case**, using **SQLX** with a optimized workflow is more efficient than **Makroud**.
+
+## Test Machine
+
+```
+OS:     Archlinux x86_64 Linux-4.18.8
+CPU:    Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz
+Memory: 16GB
+Go:     go version go1.11 linux/amd64
+```
 
 ## Credits
 

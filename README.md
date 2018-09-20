@@ -491,6 +491,29 @@ err := makroud.Preload(ctx, driver, &user,
 
 If there is no error and if the user record has a profile, then you should have the `Profile` value loaded.
 
+## Benchmarks
+
+If you'd like to run the benchmarks yourself check out our [directory](benchmark/).
+
+![SelectAll NsOp](benchmark/graph/images/select_all_nsop.png)
+![SelectAll Bop](benchmark/graph/images/select_all_bop.png)
+![SelectAll Aop](benchmark/graph/images/select_all_aop.png)
+![SelectSubset NsOp](benchmark/graph/images/select_subset_nsop.png)
+![SelectSubset Bop](benchmark/graph/images/select_subset_bop.png)
+![SelectSubset Aop](benchmark/graph/images/select_subset_aop.png)
+![SelectComplex NsOp](benchmark/graph/images/select_complex_nsop.png)
+![SelectComplex Bop](benchmark/graph/images/select_complex_bop.png)
+![SelectComplex Aop](benchmark/graph/images/select_complex_aop.png)
+![Insert NsOp](benchmark/graph/images/insert_nsop.png)
+![Insert Bop](benchmark/graph/images/insert_bop.png)
+![Insert Aop](benchmark/graph/images/insert_aop.png)
+![Update NsOp](benchmark/graph/images/update_nsop.png)
+![Update Bop](benchmark/graph/images/update_bop.png)
+![Update Aop](benchmark/graph/images/update_aop.png)
+![Delete NsOp](benchmark/graph/images/delete_nsop.png)
+![Delete Bop](benchmark/graph/images/delete_bop.png)
+![Delete Aop](benchmark/graph/images/delete_aop.png)
+
 ## Development
 
 ### Docker
