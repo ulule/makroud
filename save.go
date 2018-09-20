@@ -40,7 +40,7 @@ func save(ctx context.Context, driver Driver, model Model) error {
 		return err
 	}
 
-	builder, err := getSaveBuilder(driver, schema, model, pk, hasPK, id, &returning, values)
+	builder, err := getSaveBuilder(driver, model, pk, hasPK, id, &returning, values)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func generateSaveQuery(schema *Schema, model Model, hasPK bool, returning *[]str
 	return nil
 }
 
-func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
+func getSaveBuilder(driver Driver, model Model, pk PrimaryKey,
 	hasPK bool, id interface{}, returning *[]string, values loukoum.Map) (builder.Builder, error) {
 
 	if !hasPK {
@@ -114,14 +114,14 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 			return nil, errors.Errorf("unsupported primary key type: %s", pk.Default())
 		}
 
-		builder := loukoum.Insert(schema.TableName()).
+		builder := loukoum.Insert(model.TableName()).
 			Set(values).
 			Returning((*returning))
 
 		return builder, nil
 	}
 
-	builder := loukoum.Update(schema.TableName()).
+	builder := loukoum.Update(model.TableName()).
 		Set(values).
 		Where(loukoum.Condition(pk.ColumnName()).Equal(id)).
 		Returning((*returning))
