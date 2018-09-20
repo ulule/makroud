@@ -62,6 +62,7 @@ func generateSaveQuery(schema *Schema, model Model, hasPK bool, returning *[]str
 			continue
 		}
 
+		name := column.ColumnName()
 		value, err := reflectx.GetFieldValueWithIndexes(instance, column.FieldIndex())
 		if err != nil {
 			return err
@@ -69,16 +70,16 @@ func generateSaveQuery(schema *Schema, model Model, hasPK bool, returning *[]str
 
 		if !hasPK && column.HasDefault() && reflectx.IsZero(value) {
 
-			(*returning) = append((*returning), column.ColumnName())
+			(*returning) = append((*returning), name)
 
 		} else if column.IsUpdatedKey() && hasPK {
 
-			values[column.ColumnName()] = loukoum.Raw("NOW()")
-			(*returning) = append((*returning), column.ColumnName())
+			values[name] = loukoum.Raw("NOW()")
+			(*returning) = append((*returning), name)
 
 		} else {
 
-			values[column.ColumnName()] = value
+			values[name] = value
 
 		}
 	}
