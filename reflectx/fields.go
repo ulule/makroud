@@ -74,12 +74,15 @@ func GetFieldValue(element interface{}, name string) (interface{}, error) {
 		value = reflect.Indirect(reflect.ValueOf(element))
 	}
 
+	// Avoid calling FieldByName on interface.
 	if value.Kind() == reflect.Interface {
 		value = reflect.ValueOf(value.Interface())
 	}
 
 	// Avoid calling FieldByName on pointer.
-	value = reflect.Indirect(value)
+	if value.Kind() == reflect.Ptr {
+		value = reflect.Indirect(value)
+	}
 
 	// Avoid calling FieldByName on zero value
 	if !value.IsValid() {
@@ -98,6 +101,23 @@ func GetFieldValue(element interface{}, name string) (interface{}, error) {
 	}
 
 	return field.Interface(), nil
+}
+
+// GetFieldValueWithIndexes returns the field's value with given traversal indexes.
+func GetFieldValueWithIndexes(value reflect.Value, indexes []int) (interface{}, error) {
+	for _, i := range indexes {
+		value = reflect.Indirect(value).Field(i)
+		if !value.IsValid() {
+			return nil, errors.Errorf("makroud: cannot find required field in %T", value)
+		}
+		if value.Kind() == reflect.Ptr && value.IsNil() {
+			return nil, nil
+		}
+	}
+	if !value.CanInterface() {
+		return nil, errors.Errorf("makroud: cannot find required field in %T", value)
+	}
+	return value.Interface(), nil
 }
 
 // GetFieldValueInt64 returns int64 value for the given instance field.

@@ -35,12 +35,12 @@ func save(ctx context.Context, driver Driver, model Model) error {
 	pk := schema.PrimaryKey()
 	id, hasPK := pk.ValueOpt(model)
 
-	err = generateSaveQuery(schema, model, hasPK, &returning, &values)
+	err = generateSaveQuery(schema, model, hasPK, &returning, values)
 	if err != nil {
 		return err
 	}
 
-	builder, err := getSaveBuilder(driver, schema, model, pk, hasPK, id, &returning, &values)
+	builder, err := getSaveBuilder(driver, schema, model, pk, hasPK, id, &returning, values)
 	if err != nil {
 		return err
 	}
@@ -55,29 +55,30 @@ func save(ctx context.Context, driver Driver, model Model) error {
 	return err
 }
 
-func generateSaveQuery(schema *Schema, model Model, hasPK bool, returning *[]string, values *loukoum.Map) error {
+func generateSaveQuery(schema *Schema, model Model, hasPK bool, returning *[]string, values loukoum.Map) error {
+	instance := reflectx.GetIndirectValue(model)
 	for _, column := range schema.fields {
 		if column.IsPrimaryKey() {
 			continue
 		}
 
-		value, err := reflectx.GetFieldValue(model, column.FieldName())
+		value, err := reflectx.GetFieldValueWithIndexes(instance, column.FieldIndex())
 		if err != nil {
 			return err
 		}
 
-		if column.HasDefault() && reflectx.IsZero(value) && !hasPK {
+		if !hasPK && column.HasDefault() && reflectx.IsZero(value) {
 
 			(*returning) = append((*returning), column.ColumnName())
 
 		} else if column.IsUpdatedKey() && hasPK {
 
-			(*values)[column.ColumnName()] = loukoum.Raw("NOW()")
+			values[column.ColumnName()] = loukoum.Raw("NOW()")
 			(*returning) = append((*returning), column.ColumnName())
 
 		} else {
 
-			(*values)[column.ColumnName()] = value
+			values[column.ColumnName()] = value
 
 		}
 	}
@@ -86,7 +87,7 @@ func generateSaveQuery(schema *Schema, model Model, hasPK bool, returning *[]str
 }
 
 func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
-	hasPK bool, id interface{}, returning *[]string, values *loukoum.Map) (builder.Builder, error) {
+	hasPK bool, id interface{}, returning *[]string, values loukoum.Map) (builder.Builder, error) {
 
 	if !hasPK {
 		switch pk.Default() {
@@ -98,7 +99,7 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 			mapper := map[string]interface{}{
 				pk.ColumnName(): ulid,
 			}
-			(*values)[pk.ColumnName()] = ulid
+			values[pk.ColumnName()] = ulid
 			err := schema.WriteModel(model, mapper)
 			if err != nil {
 				return nil, err
@@ -109,7 +110,7 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 			mapper := map[string]interface{}{
 				pk.ColumnName(): uuid,
 			}
-			(*values)[pk.ColumnName()] = uuid
+			values[pk.ColumnName()] = uuid
 			err := schema.WriteModel(model, mapper)
 			if err != nil {
 				return nil, err
@@ -120,7 +121,7 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 			mapper := map[string]interface{}{
 				pk.ColumnName(): uuid,
 			}
-			(*values)[pk.ColumnName()] = uuid
+			values[pk.ColumnName()] = uuid
 			err := schema.WriteModel(model, mapper)
 			if err != nil {
 				return nil, err
@@ -131,14 +132,14 @@ func getSaveBuilder(driver Driver, schema *Schema, model Model, pk PrimaryKey,
 		}
 
 		builder := loukoum.Insert(schema.TableName()).
-			Set((*values)).
+			Set(values).
 			Returning((*returning))
 
 		return builder, nil
 	}
 
 	builder := loukoum.Update(schema.TableName()).
-		Set((*values)).
+		Set(values).
 		Where(loukoum.Condition(pk.ColumnName()).Equal(id)).
 		Returning((*returning))
 

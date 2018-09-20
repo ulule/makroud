@@ -16,17 +16,6 @@ import (
 )
 
 func BenchmarkMakroud_Insert(b *testing.B) {
-	row := JetMakroud{
-		PilotID:    1,
-		AirportID:  1,
-		Name:       "test",
-		Color:      sql.NullString{},
-		UUID:       "test",
-		Identifier: "test",
-		Cargo:      []byte("test"),
-		Manifest:   []byte("test"),
-	}
-
 	exec := jetExecInsert()
 	exec.NumInput = -1
 	dsn := mimic.NewResult(exec)
@@ -40,6 +29,16 @@ func BenchmarkMakroud_Insert(b *testing.B) {
 
 	b.Run("makroud", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
+			row := JetMakroud{
+				PilotID:    1,
+				AirportID:  1,
+				Name:       "test",
+				Color:      sql.NullString{},
+				UUID:       "test",
+				Identifier: "test",
+				Cargo:      []byte("test"),
+				Manifest:   []byte("test"),
+			}
 			err = makroud.Save(ctx, driver, &row)
 			if err != nil {
 				b.Fatal(err)
@@ -93,17 +92,6 @@ func BenchmarkSQLX_Insert(b *testing.B) {
 }
 
 func BenchmarkGORM_Insert(b *testing.B) {
-	row := JetGorm{
-		PilotID:    1,
-		AirportID:  1,
-		Name:       "test",
-		Color:      sql.NullString{},
-		UUID:       "test",
-		Identifier: "test",
-		Cargo:      []byte("test"),
-		Manifest:   []byte("test"),
-	}
-
 	exec := jetExecInsert()
 	exec.NumInput = -1
 	dsn := mimic.NewResult(exec)
@@ -115,6 +103,16 @@ func BenchmarkGORM_Insert(b *testing.B) {
 
 	b.Run("gorm", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
+			row := JetGorm{
+				PilotID:    1,
+				AirportID:  1,
+				Name:       "test",
+				Color:      sql.NullString{},
+				UUID:       "test",
+				Identifier: "test",
+				Cargo:      []byte("test"),
+				Manifest:   []byte("test"),
+			}
 			err := gormdb.Create(&row).Error
 			if err != nil {
 				b.Fatal(err)
@@ -124,17 +122,6 @@ func BenchmarkGORM_Insert(b *testing.B) {
 }
 
 func BenchmarkGORP_Insert(b *testing.B) {
-	row := JetGorp{
-		PilotID:    1,
-		AirportID:  1,
-		Name:       "test",
-		Color:      sql.NullString{},
-		UUID:       "test",
-		Identifier: "test",
-		Cargo:      []byte("test"),
-		Manifest:   []byte("test"),
-	}
-
 	exec := jetExecInsert()
 	exec.NumInput = -1
 	dsn := mimic.NewResult(exec)
@@ -152,6 +139,16 @@ func BenchmarkGORP_Insert(b *testing.B) {
 
 	b.Run("gorp", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
+			row := JetGorp{
+				PilotID:    1,
+				AirportID:  1,
+				Name:       "test",
+				Color:      sql.NullString{},
+				UUID:       "test",
+				Identifier: "test",
+				Cargo:      []byte("test"),
+				Manifest:   []byte("test"),
+			}
 			err := gorpdb.Insert(&row)
 			if err != nil {
 				b.Fatal(err)
@@ -161,18 +158,6 @@ func BenchmarkGORP_Insert(b *testing.B) {
 }
 
 func BenchmarkXORM_Insert(b *testing.B) {
-	row := JetXorm{
-		ID:         1,
-		PilotID:    1,
-		AirportID:  1,
-		Name:       "test",
-		Color:      sql.NullString{},
-		UUID:       "test",
-		Identifier: "test",
-		Cargo:      []byte("test"),
-		Manifest:   []byte("test"),
-	}
-
 	exec := jetExecInsert()
 	exec.NumInput = -1
 	dsn := mimic.NewResult(exec)
@@ -184,6 +169,17 @@ func BenchmarkXORM_Insert(b *testing.B) {
 
 	b.Run("xorm", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
+			row := JetXorm{
+				ID:         1,
+				PilotID:    1,
+				AirportID:  1,
+				Name:       "test",
+				Color:      sql.NullString{},
+				UUID:       "test",
+				Identifier: "test",
+				Cargo:      []byte("test"),
+				Manifest:   []byte("test"),
+			}
 			_, err := xormdb.Insert(&row)
 			if err != nil {
 				b.Fatal(err)
