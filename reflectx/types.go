@@ -13,12 +13,11 @@ import (
 // ----------------------------------------------------------------------------
 
 var (
-	int64Type       = reflect.TypeOf(int64(0))
-	nullInt64Type   = reflect.TypeOf(sql.NullInt64{})
-	nullFloat64Type = reflect.TypeOf(sql.NullFloat64{})
-	stringType      = reflect.TypeOf("")
-	nullStringType  = reflect.TypeOf(sql.NullString{})
-	scannerType     = reflect.TypeOf((*sql.Scanner)(nil)).Elem()
+	int64Type      = reflect.TypeOf(int64(0))
+	nullInt64Type  = reflect.TypeOf(sql.NullInt64{})
+	stringType     = reflect.TypeOf("")
+	nullStringType = reflect.TypeOf(sql.NullString{})
+	scannerType    = reflect.TypeOf((*sql.Scanner)(nil)).Elem()
 )
 
 // ----------------------------------------------------------------------------
@@ -130,7 +129,8 @@ const (
 
 // GetType returns high level type from given reflect type.
 func GetType(value reflect.Type) Type {
-	switch value.Kind() {
+	indirect := GetIndirectType(value)
+	switch indirect.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return Int64Type
 
@@ -141,11 +141,10 @@ func GetType(value reflect.Type) Type {
 		return StringType
 
 	case reflect.Struct:
-		indirect := GetIndirectType(value)
 		if indirect == nullStringType {
 			return OptionalStringType
 		}
-		if indirect == nullInt64Type || indirect == nullFloat64Type {
+		if indirect == nullInt64Type {
 			return OptionalInt64Type
 		}
 	}

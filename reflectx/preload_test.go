@@ -2,6 +2,7 @@ package reflectx_test
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -47,8 +48,10 @@ func TestReflectx_Preload(t *testing.T) {
 		is.NoError(err)
 		is.NotEmpty(kind)
 
-		count := 0
 		preloader := reflectx.NewStringPreloader(name, kind, wb)
+		defer preloader.Close()
+
+		count := 0
 		err = preloader.ForEach(func(element reflectx.PreloadValue) error {
 			pk, err := reflectx.GetFieldValueString(element.Unwrap(), "Hash")
 			if err != nil {
@@ -59,6 +62,11 @@ func TestReflectx_Preload(t *testing.T) {
 		})
 		is.NoError(err)
 		is.Equal(1, count)
+
+		indexes := preloader.Indexes()
+		is.NotEmpty(indexes)
+		is.Len(indexes, 1)
+		is.Equal(wb.Hash, indexes[0])
 
 		count = 0
 		err = preloader.OnExecute(func(element interface{}) error {
@@ -100,8 +108,10 @@ func TestReflectx_Preload(t *testing.T) {
 		is.NoError(err)
 		is.NotEmpty(kind)
 
-		count := 0
 		preloader := reflectx.NewIntegerPreloader(name, kind, wa)
+		defer preloader.Close()
+
+		count := 0
 		err = preloader.ForEach(func(element reflectx.PreloadValue) error {
 			pk, err := reflectx.GetFieldValueInt64(element.Unwrap(), "Hash")
 			if err != nil {
@@ -112,6 +122,11 @@ func TestReflectx_Preload(t *testing.T) {
 		})
 		is.NoError(err)
 		is.Equal(1, count)
+
+		indexes := preloader.Indexes()
+		is.NotEmpty(indexes)
+		is.Len(indexes, 1)
+		is.Equal(wa.Hash, indexes[0])
 
 		count = 0
 		err = preloader.OnExecute(func(element interface{}) error {
@@ -179,8 +194,10 @@ func TestReflectx_Preload(t *testing.T) {
 		is.NoError(err)
 		is.NotEmpty(kind)
 
-		count := 0
 		preloader := reflectx.NewIntegerPreloader(name, kind, lwa)
+		defer preloader.Close()
+
+		count := 0
 		err = preloader.ForEach(func(element reflectx.PreloadValue) error {
 			pk, err := reflectx.GetFieldValueInt64(element.Unwrap(), "Hash")
 			if err != nil {
@@ -191,6 +208,18 @@ func TestReflectx_Preload(t *testing.T) {
 		})
 		is.NoError(err)
 		is.Equal(5, count)
+
+		indexes := preloader.Indexes()
+		is.NotEmpty(indexes)
+		is.Len(indexes, 5)
+		sort.Slice(indexes, func(i int, j int) bool {
+			return indexes[i] < indexes[j]
+		})
+		is.Equal((*lwa)[0].Hash, indexes[0])
+		is.Equal((*lwa)[1].Hash, indexes[1])
+		is.Equal((*lwa)[2].Hash, indexes[2])
+		is.Equal((*lwa)[3].Hash, indexes[3])
+		is.Equal((*lwa)[4].Hash, indexes[4])
 
 		count = 0
 		err = preloader.OnExecute(func(element interface{}) error {
