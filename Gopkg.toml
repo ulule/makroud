@@ -6,7 +6,8 @@ ignored = [
   "github.com/go-xorm/core",
   "github.com/go-gorp/gorp",
   "github.com/go-xorm/xorm",
-  "github.com/jinzhu/gorm"
+  "github.com/jinzhu/gorm",
+  "github.com/jmoiron/sqlx"
 ]
 
 [metadata]
@@ -34,7 +35,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/ulule/loukoum"
-  revision = "662100c1bc41855ae8b23ad5250ab86a9e55f28d"
+  revision = "1f7dbd98bf099061ff898838af0c534e4ba0da06"
 
 [[constraint]]
   name = "github.com/oklog/ulid"

@@ -43,7 +43,7 @@
     "token",
     "types"
   ]
-  revision = "662100c1bc41855ae8b23ad5250ab86a9e55f28d"
+  revision = "1f7dbd98bf099061ff898838af0c534e4ba0da06"
 
 [[projects]]
   name = "github.com/ulule/sqalx"
@@ -61,6 +61,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b6fcf227660e5be6c67f73202492353193b94e182b398c842857508e7a01fcf1"
+  inputs-digest = "3eff8a95b0075343ab9591a6ae98993e9fbf0eef06f4cd7a1a2690d79dbbada3"
   solver-name = "gps-cdcl"
   solver-version = 1
