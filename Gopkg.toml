@@ -35,7 +35,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/ulule/loukoum"
-  revision = "1f7dbd98bf099061ff898838af0c534e4ba0da06"
+  revision = "70542dabc493001df4c7aa1f8894a06e8934205a"
 
 [[constraint]]
   name = "github.com/oklog/ulid"
