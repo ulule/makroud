@@ -495,7 +495,7 @@ If there is no error and if the user record has a profile, then you should have 
 
 A [benchmark directory](benchmark/) containing result with other ORM using reflection is available.
 
-> **NOTE:** A benchmark is always a observation, not a measurement of performance.
+> **NOTE:** A benchmark is always an observation, not a measurement of performance.
 
 ![SelectAll NsOp](benchmark/graph/images/select_all_nsop.png)
 ![SelectAll Bop](benchmark/graph/images/select_all_bop.png)
