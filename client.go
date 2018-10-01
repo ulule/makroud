@@ -1,6 +1,7 @@
 package sqlxx
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/heetch/sqalx"
@@ -14,7 +15,7 @@ const ClientDriver = "postgres"
 
 // Client is a wrapper that can interact with the database.
 type Client struct {
-	sqalx.Node
+	node sqalx.Node
 }
 
 // clientOptions configure a Client instance. clientOptions are set by the Option
@@ -29,6 +30,7 @@ type clientOptions struct {
 	timezone           string
 	maxOpenConnections int
 	maxIdleConnections int
+	savepointEnabled   bool
 }
 
 func (e clientOptions) String() string {
@@ -75,16 +77,69 @@ func New(options ...Option) (*Client, error) {
 	dbx.SetMaxIdleConns(opts.maxIdleConnections)
 	dbx.SetMaxOpenConns(opts.maxOpenConnections)
 
-	connection, err := sqalx.New(dbx)
+	var sqalxOpts []sqalx.Option
+	if opts.savepointEnabled {
+		sqalxOpts = append(sqalxOpts, sqalx.SavePoint(true))
+	}
+
+	connection, err := sqalx.New(dbx, sqalxOpts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "sqlxx: cannot instantiate %s client driver", ClientDriver)
 	}
 
 	client := &Client{
-		Node: connection,
+		node: connection,
 	}
 
 	return client, nil
+}
+
+func (c *Client) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return c.node.Exec(query, args...)
+}
+
+func (c *Client) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return c.node.Query(query, args...)
+}
+
+func (c *Client) Queryx(query string, args ...interface{}) (*sqlx.Rows, error) {
+	return c.node.Queryx(query, args...)
+}
+
+func (c *Client) QueryRowx(query string, args ...interface{}) *sqlx.Row {
+	return c.node.QueryRowx(query, args...)
+}
+
+func (c *Client) DriverName() string {
+	return c.node.DriverName()
+}
+
+func (c *Client) Get(dest interface{}, query string, args ...interface{}) error {
+	return c.node.Get(dest, query, args...)
+}
+
+func (c *Client) MustExec(query string, args ...interface{}) sql.Result {
+	return c.node.MustExec(query, args...)
+}
+
+func (c *Client) NamedExec(query string, arg interface{}) (sql.Result, error) {
+	return c.node.NamedExec(query, arg)
+}
+
+func (c *Client) PrepareNamed(query string) (Statement, error) {
+	return c.node.PrepareNamed(query)
+}
+
+func (c *Client) Rebind(query string) string {
+	return c.node.Rebind(query)
+}
+
+func (c *Client) Select(dest interface{}, query string, args ...interface{}) error {
+	return c.node.Select(dest, query, args...)
+}
+
+func (c *Client) Close() error {
+	return c.node.Close()
 }
 
 // Ping verify that the database connection is healthy.
@@ -103,9 +158,18 @@ func (e *Client) Ping() error {
 	return nil
 }
 
-// Wrap creates a new Client using given database connection.
-func Wrap(connection sqalx.Node) *Client {
-	return &Client{
-		Node: connection,
+func (c *Client) Beginx() (Driver, error) {
+	node, err := c.node.Beginx()
+	if err != nil {
+		return nil, errors.WithStack(err)
 	}
+	return wrapClient(node), nil
+}
+
+func (c *Client) Rollback() error {
+	return c.node.Rollback()
+}
+
+func (c *Client) Commit() error {
+	return c.node.Commit()
 }

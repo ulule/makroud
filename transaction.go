@@ -15,8 +15,7 @@ func Transaction(driver Driver, handler func(driver Driver) error) error {
 		return errors.Wrap(err, "sqlxx: cannot create a transaction")
 	}
 
-	client := &Client{Node: tx}
-	err = handler(client)
+	err = handler(tx)
 	if err != nil {
 
 		thr := tx.Rollback()

@@ -6,7 +6,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/heetch/sqalx"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -78,24 +77,36 @@ var ErrInvalidDriver = fmt.Errorf("a sqlxx driver is required")
 
 // Driver can either be a *sqlx.DB or a *sqlx.Tx.
 type Driver interface {
-	sqlx.Execer
-	sqlx.Queryer
-	sqlx.Preparer
-	BindNamed(query string, arg interface{}) (string, []interface{}, error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	Queryx(query string, args ...interface{}) (*sqlx.Rows, error)
+	QueryRowx(query string, args ...interface{}) *sqlx.Row
 	DriverName() string
 	Get(dest interface{}, query string, args ...interface{}) error
 	MustExec(query string, args ...interface{}) sql.Result
 	NamedExec(query string, arg interface{}) (sql.Result, error)
-	NamedQuery(query string, arg interface{}) (*sqlx.Rows, error)
-	PrepareNamed(query string) (*sqlx.NamedStmt, error)
-	Preparex(query string) (*sqlx.Stmt, error)
+	PrepareNamed(query string) (Statement, error)
 	Rebind(query string) string
 	Select(dest interface{}, query string, args ...interface{}) error
 	Close() error
 	Ping() error
-	Beginx() (sqalx.Node, error)
+	Beginx() (Driver, error)
 	Rollback() error
 	Commit() error
+}
+
+// Statement from PrepareNamed.
+type Statement interface {
+	// Close closes the statement.
+	Close() error
+	// Exec executes a named statement using the struct passed.
+	Exec(arg interface{}) (sql.Result, error)
+	// Query using this Statement.
+	Query(dest interface{}) (*sql.Rows, error)
+	// Get using this Statement.
+	Get(dest interface{}, arg interface{}) error
+	// Select using this Statement.
+	Select(dest interface{}, arg interface{}) error
 }
 
 // Model represents a database table.

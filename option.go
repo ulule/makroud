@@ -100,3 +100,11 @@ func MaxIdleConnections(maximum int) Option {
 		return nil
 	})
 }
+
+// EnableSavepoint will enable the SAVEPOINT postgresql feature.
+func EnableSavepoint() Option {
+	return option(func(options *clientOptions) error {
+		options.savepointEnabled = true
+		return nil
+	})
+}
