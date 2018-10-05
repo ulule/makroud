@@ -7,6 +7,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+// DefaultSelector defines the default selector alias.
+const DefaultSelector = MasterSelector
+
+// MasterSelector defines the master alias.
+const MasterSelector = "master"
+
+// SlaveSelector defines the slave alias.
+const SlaveSelector = "slave"
+
 // Selector contains a pool of drivers indexed by their name.
 type Selector struct {
 	mutex          sync.RWMutex
@@ -31,7 +40,7 @@ func NewSelectorWithDriver(driver Driver) (*Selector, error) {
 	selector := &Selector{
 		configurations: map[string]*ClientOptions{},
 		connections: map[string]Driver{
-			"master": driver,
+			DefaultSelector: driver,
 		},
 	}
 
@@ -93,7 +102,7 @@ func (selector *Selector) RetryAliases(handler func(Driver) error, aliases ...st
 
 // RetryMaster is an helper calling RetryAliases with a slave then a master connection.
 func (selector *Selector) RetryMaster(handler func(Driver) error) error {
-	return selector.RetryAliases(handler, "slave", "master")
+	return selector.RetryAliases(handler, SlaveSelector, MasterSelector)
 }
 
 // Close closes all drivers connections.
