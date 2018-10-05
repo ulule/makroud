@@ -53,6 +53,11 @@ func (selector *Selector) Using(alias string) (Driver, error) {
 	selector.mutex.Lock()
 	defer selector.mutex.Unlock()
 
+	connection, found = selector.connections[alias]
+	if found {
+		return connection, nil
+	}
+
 	for name, configuration := range selector.configurations {
 		if alias == strings.ToLower(name) {
 
