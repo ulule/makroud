@@ -276,6 +276,10 @@ func (c *Client) cache() *cache {
 	return c.store
 }
 
+func (c *Client) setCache(store *cache) {
+	c.store = store
+}
+
 func (c *Client) hasLogger() bool {
 	return c.log != nil
 }
