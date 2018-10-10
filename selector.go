@@ -24,12 +24,12 @@ type Selector struct {
 	connections    map[string]Driver
 }
 
-func (s *Selector) cache() *cache {
-	return s.store
+func (selector *Selector) cache() *cache {
+	return selector.store
 }
 
-func (s *Selector) hasCache() bool {
-	return s.store != nil
+func (selector *Selector) hasCache() bool {
+	return selector.store != nil
 }
 
 // NewSelector returns a new selector containing a pool of drivers with given configuration.
