@@ -92,6 +92,10 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 		return err
 	}
 
+	if !rows.Next() {
+		return nil
+	}
+
 	list := reflectx.NewReflectSlice(reflectx.GetSliceType(dest))
 
 	for rows.Next() {
