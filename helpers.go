@@ -92,13 +92,11 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 		return err
 	}
 
-	if !rows.Next() {
-		return nil
-	}
-
+	hasNext := false
 	list := reflectx.NewReflectSlice(reflectx.GetSliceType(dest))
 
 	for rows.Next() {
+		hasNext = true
 		model := reflectx.NewSliceValue(dest).(Model)
 
 		err := schema.ScanRows(rows, model)
@@ -109,7 +107,9 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 		reflectx.AppendReflectSlice(list, model)
 	}
 
-	reflectx.SetReflectSlice(dest, list)
+	if hasNext {
+		reflectx.SetReflectSlice(dest, list)
+	}
 
 	return nil
 }
