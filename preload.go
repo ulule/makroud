@@ -57,13 +57,15 @@ func preload(ctx context.Context, driver Driver, dest interface{}, handlers ...P
 // PreloadHandler defines what resources should be preloaded.
 type PreloadHandler struct {
 	field    string
+	unscoped bool
 	callback func(query builder.Select) builder.Select
 }
 
 // WithPreloadField returns a handler that preload a field.
 func WithPreloadField(field string) PreloadHandler {
 	return PreloadHandler{
-		field: field,
+		field:    field,
+		unscoped: false,
 		callback: func(query builder.Select) builder.Select {
 			return query
 		},
@@ -74,8 +76,15 @@ func WithPreloadField(field string) PreloadHandler {
 func WithPreloadCallback(field string, callback func(query builder.Select) builder.Select) PreloadHandler {
 	return PreloadHandler{
 		field:    field,
+		unscoped: false,
 		callback: callback,
 	}
+}
+
+// WithUnscopedPreload unscopes given preload handler.
+func WithUnscopedPreload(handler PreloadHandler) PreloadHandler {
+	handler.unscoped = true
+	return handler
 }
 
 // preloadGroupOperation defines, for a preload level, what resources should be preloaded.
@@ -90,6 +99,11 @@ type preloadOperation struct {
 // Level returns the preload level.
 func (o preloadOperation) Level() int {
 	return len(o.levels)
+}
+
+// Unscoped returns if preload is unscoped.
+func (o preloadOperation) Unscoped() bool {
+	return o.handler.unscoped
 }
 
 // Path returns the preload full path.
@@ -233,7 +247,7 @@ func executePreloadHandler(ctx context.Context, driver Driver,
 			return errors.Wrapf(ErrPreloadInvalidPath, "'%s' is not a valid association", operation.Path())
 		}
 
-		err := handler.preload(reference, operation.Callback())
+		err := handler.preload(reference, operation.Unscoped(), operation.Callback())
 		if err != nil {
 			return err
 		}
@@ -251,7 +265,9 @@ func executePreloadWalker(ctx context.Context, driver Driver,
 		defer walker.Close()
 
 		err := walker.Find(operation.Parent(), func(values interface{}) error {
-			return preload(ctx, driver, values, WithPreloadCallback(operation.Name(), operation.Callback()))
+			op := WithPreloadCallback(operation.Name(), operation.Callback())
+			op.unscoped = operation.Unscoped()
+			return preload(ctx, driver, values, op)
 		})
 		if err != nil {
 			return err
@@ -269,25 +285,25 @@ type preloadHandler struct {
 	dest   interface{}
 }
 
-func (handler *preloadHandler) preload(reference Reference,
+func (handler *preloadHandler) preload(reference Reference, unscoped bool,
 	callback func(query builder.Select) builder.Select) error {
 
 	if reference.IsAssociationType(AssociationTypeOne) {
-		return handler.preloadOne(reference, callback)
+		return handler.preloadOne(reference, unscoped, callback)
 	}
-	return handler.preloadMany(reference, callback)
+	return handler.preloadMany(reference, unscoped, callback)
 }
 
-func (handler *preloadHandler) preloadOne(reference Reference,
+func (handler *preloadHandler) preloadOne(reference Reference, unscoped bool,
 	callback func(query builder.Select) builder.Select) error {
 
 	if reference.IsLocal() {
-		return handler.preloadOneLocal(reference, callback)
+		return handler.preloadOneLocal(reference, unscoped, callback)
 	}
-	return handler.preloadOneRemote(reference, callback)
+	return handler.preloadOneRemote(reference, unscoped, callback)
 }
 
-func (handler *preloadHandler) preloadOneLocal(reference Reference,
+func (handler *preloadHandler) preloadOneLocal(reference Reference, unscoped bool,
 	callback func(query builder.Select) builder.Select) error {
 
 	remote := reference.Remote()
@@ -299,7 +315,7 @@ func (handler *preloadHandler) preloadOneLocal(reference Reference,
 	}
 
 	builder := callback(loukoum.Select(remote.Columns()).From(remote.TableName()))
-	if remote.HasDeletedKey() {
+	if remote.HasDeletedKey() && !unscoped {
 		builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
 	}
 
@@ -341,7 +357,7 @@ func (handler *preloadHandler) preloadOneLocal(reference Reference,
 	}
 }
 
-func (handler *preloadHandler) preloadOneRemote(reference Reference,
+func (handler *preloadHandler) preloadOneRemote(reference Reference, unscoped bool,
 	callback func(query builder.Select) builder.Select) error {
 
 	remote := reference.Remote()
@@ -353,7 +369,7 @@ func (handler *preloadHandler) preloadOneRemote(reference Reference,
 	}
 
 	builder := callback(loukoum.Select(remote.Columns()).From(remote.TableName()))
-	if remote.HasDeletedKey() {
+	if remote.HasDeletedKey() && !unscoped {
 		builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
 	}
 
@@ -379,7 +395,7 @@ func (handler *preloadHandler) preloadOneRemote(reference Reference,
 	}
 }
 
-func (handler *preloadHandler) preloadMany(reference Reference,
+func (handler *preloadHandler) preloadMany(reference Reference, unscoped bool,
 	callback func(query builder.Select) builder.Select) error {
 
 	remote := reference.Remote()
@@ -391,7 +407,7 @@ func (handler *preloadHandler) preloadMany(reference Reference,
 	}
 
 	builder := callback(loukoum.Select(remote.Columns()).From(remote.TableName()))
-	if remote.HasDeletedKey() {
+	if remote.HasDeletedKey() && !unscoped {
 		builder = builder.Where(loukoum.Condition(remote.DeletedKeyPath()).IsNull(true))
 	}
 
