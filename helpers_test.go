@@ -81,6 +81,14 @@ func TestExec_List(t *testing.T) {
 			is.Contains(list, expected[i].ID)
 		}
 
+		list = []string{}
+		query = loukoum.Select("id").From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("XXXXX%"))
+		err = makroud.Exec(ctx, driver, query, &list)
+		is.NoError(err)
+		is.NotNil(list)
+		is.Empty(list)
+
 		err = makroud.Exec(ctx, driver, query, []string{})
 		is.Error(err)
 		is.Equal(makroud.ErrPointerRequired, errors.Cause(err))
@@ -119,6 +127,13 @@ func TestRawExec_List(t *testing.T) {
 		for i := range expected {
 			is.Contains(list, expected[i].ID)
 		}
+
+		list = []string{}
+		query = `SELECT id FROM ztp_cat WHERE name ILIKE 'XXXXX%'`
+		err = makroud.RawExec(ctx, driver, query, &list)
+		is.NoError(err)
+		is.NotNil(list)
+		is.Empty(list)
 
 		err = makroud.RawExec(ctx, driver, query, []string{})
 		is.Error(err)
