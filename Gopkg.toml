@@ -39,4 +39,4 @@ ignored = [
 
 [[constraint]]
   name = "github.com/oklog/ulid"
-  revision = "6276fb390df1e9be0f0721e1a7b0d6a8c973fa0c"
+  version = "v1.3.1"
