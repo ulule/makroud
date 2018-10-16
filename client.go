@@ -53,9 +53,9 @@ func (e ClientOptions) String() string {
 	)
 }
 
-// New returns a new Client instance.
-func New(options ...Option) (*Client, error) {
-	opts := &ClientOptions{
+// NewClientOptions creates a new ClientOptions instance with default options.
+func NewClientOptions() *ClientOptions {
+	return &ClientOptions{
 		Host:               "localhost",
 		Port:               5432,
 		User:               "postgres",
@@ -68,6 +68,11 @@ func New(options ...Option) (*Client, error) {
 		WithCache:          true,
 		SavepointEnabled:   false,
 	}
+}
+
+// New returns a new Client instance.
+func New(options ...Option) (*Client, error) {
+	opts := NewClientOptions()
 
 	for _, option := range options {
 		err := option(opts)
