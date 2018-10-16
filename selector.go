@@ -16,6 +16,9 @@ const MasterSelector = "master"
 // SlaveSelector defines the slave alias.
 const SlaveSelector = "slave"
 
+// SelectorConfigurations define a list of configurations for a pool of drivers.
+type SelectorConfigurations map[string]*ClientOptions
+
 // Selector contains a pool of drivers indexed by their name.
 type Selector struct {
 	mutex          sync.RWMutex
