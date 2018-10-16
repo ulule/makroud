@@ -16,6 +16,9 @@ const MasterSelector = "master"
 // SlaveSelector defines the slave alias.
 const SlaveSelector = "slave"
 
+// SelectorConfigurations define a list of configurations for a pool of drivers.
+type SelectorConfigurations map[string]*ClientOptions
+
 // Selector contains a pool of drivers indexed by their name.
 type Selector struct {
 	mutex          sync.RWMutex
@@ -121,22 +124,27 @@ func (selector *Selector) RetryMaster(handler func(Driver) error) error {
 }
 
 // Close closes all drivers connections.
-func (selector *Selector) Close() []error {
+func (selector *Selector) Close() error {
 	selector.mutex.Lock()
 	defer selector.mutex.Unlock()
 
-	errs := []error{}
+	failures := []error{}
 
 	for alias, connection := range selector.connections {
 		err := connection.Close()
 		if err != nil {
-			errs = append(errs, errors.Wrapf(err, "cannot close drivers connection for %s", alias))
+			failures = append(failures, errors.Wrapf(err, "cannot close drivers connection for %s", alias))
 		}
 	}
 
 	selector.connections = map[string]Driver{}
 
-	return errs
+	if len(failures) > 0 {
+		// TODO (novln): Add an observer to collect these errors.
+		return failures[0]
+	}
+
+	return nil
 }
 
 // Ping checks if a connection is available.
