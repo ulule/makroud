@@ -137,6 +137,7 @@ func (selector *Selector) Close() error {
 	selector.connections = map[string]Driver{}
 
 	if len(failures) > 0 {
+		// TODO (novln): Add an observer to collect these errors.
 		return failures[0]
 	}
 
