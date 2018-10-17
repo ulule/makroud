@@ -8,31 +8,43 @@ import (
 const (
 	// TagName defines makroud tag namespace.
 	TagName = "makroud"
-	// TagNameAlt defines makroud alternative tag namespace (sqlx).
+	// TagName defines makroud tag namespace in short version.
+	TagNameShort = "mk"
+	// TagNameAlt defines sqlx tag namespace for backward compatibility.
 	TagNameAlt = "db"
 )
 
 // TagsList is a list of supported tags, this include sqlx and makroud one.
 var TagsList = []string{
 	TagName,
+	TagNameShort,
 	TagNameAlt,
 }
 
-// TagsMapper is a mapper that convert sqlx tag to makroud one...
-var TagsMapper = map[string]string{
+// TagsNameMapper is a mapper that convert supported tag name to makroud one (migrate).
+var TagsNameMapper = map[string]string{
 	TagNameAlt: TagKeyColumn,
+}
+
+// TagsKeyMapper is a mapper that convert tag key to another key (aliasing).
+var TagsKeyMapper = map[string]string{
+	TagKeyColumnShort:   TagKeyColumn,
+	TagKeyRelationShort: TagKeyRelation,
 }
 
 // Tag modifiers on Model.
 const (
-	TagKeyIgnored    = "-"
-	TagKeyDefault    = "default"
-	TagKeyColumn     = "column"
-	TagKeyForeignKey = "fk"
-	TagKeyPrimaryKey = "pk"
-	TagKeyULID       = "ulid"
-	TagKeyUUIDV1     = "uuid-v1"
-	TagKeyUUIDV4     = "uuid-v4"
+	TagKeyIgnored       = "-"
+	TagKeyDefault       = "default"
+	TagKeyColumn        = "column"
+	TagKeyColumnShort   = "col"
+	TagKeyForeignKey    = "fk"
+	TagKeyPrimaryKey    = "pk"
+	TagKeyRelation      = "relation"
+	TagKeyRelationShort = "rel"
+	TagKeyULID          = "ulid"
+	TagKeyUUIDV1        = "uuid-v1"
+	TagKeyUUIDV4        = "uuid-v4"
 )
 
 // TagProperty is a struct tag property.
@@ -156,15 +168,18 @@ type TagsAnalyzerOptions struct {
 	Name string
 	// Collector defines what tags should be analyzed.
 	Collector []string
-	// Mapper defines how to convert a supported tag to the default one.
-	Mapper map[string]string
+	// NameMapper defines how to convert a supported tag to the default one.
+	NameMapper map[string]string
+	// KeyMapper defines how to convert a tag key tag to another one (aliasing).
+	KeyMapper map[string]string
 }
 
 func getTagsOptions(args []TagsAnalyzerOption) *TagsAnalyzerOptions {
 	options := &TagsAnalyzerOptions{
-		Name:      TagName,
-		Collector: TagsList,
-		Mapper:    TagsMapper,
+		Name:       TagName,
+		Collector:  TagsList,
+		NameMapper: TagsNameMapper,
+		KeyMapper:  TagsKeyMapper,
 	}
 
 	for i := range args {
@@ -177,7 +192,7 @@ func getTagsOptions(args []TagsAnalyzerOption) *TagsAnalyzerOptions {
 func getTagsAnalyze(list map[string]string, options *TagsAnalyzerOptions) Tags {
 	tags := Tags{}
 
-	for k, v := range list {
+	for namespace, v := range list {
 		splits := strings.Split(v, ",")
 
 		// Properties
@@ -193,12 +208,13 @@ func getTagsAnalyze(list map[string]string, options *TagsAnalyzerOptions) Tags {
 			splits = strings.Split(v, ":")
 			length := len(splits)
 
+			// Ignore empty tag.
 			if length == 0 {
 				continue
 			}
 
 			// Typically the case of sqlx tag that doesn't have key:value format (db:"column_name")
-			k, ok := options.Mapper[k]
+			k, ok := options.NameMapper[namespace]
 			if ok {
 				v := strings.TrimSpace(splits[0])
 				if v != TagKeyIgnored {
@@ -215,21 +231,28 @@ func getTagsAnalyze(list map[string]string, options *TagsAnalyzerOptions) Tags {
 				continue
 			}
 
+			k, ok = options.KeyMapper[strings.TrimSpace(splits[0])]
+			if !ok {
+				k = strings.TrimSpace(splits[0])
+			}
+
 			// Typically, we have single property like "default", "ignored", etc...
 			// To be consistent, we add true/false string values.
 			if length == 1 {
 				tags.Set(options.Name, TagProperty{
-					key:   strings.TrimSpace(splits[0]),
+					key:   k,
 					value: "true",
 				})
 				continue
 			}
 
+			v = strings.TrimSpace(splits[1])
+
 			// Property named tag: key:value
 			if length == 2 {
 				tags.Set(options.Name, TagProperty{
-					key:   strings.TrimSpace(splits[0]),
-					value: strings.TrimSpace(splits[1]),
+					key:   k,
+					value: v,
 				})
 				continue
 			}

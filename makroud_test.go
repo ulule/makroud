@@ -32,7 +32,7 @@ type Elements struct {
 	Air     string `db:"air"`
 	Fire    string `makroud:"column:fire"`
 	Water   string `makroud:"-"`
-	Earth   string `makroud:"column:earth,default"`
+	Earth   string `mk:"col:earth,default"`
 	Fifth   string
 	enabled bool
 }
