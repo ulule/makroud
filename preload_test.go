@@ -562,6 +562,64 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 	})
 }
 
+func TestPreload_ExoAddress_One(t *testing.T) {
+	Setup(t)(func(driver makroud.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		CheckExoCloudFixtures := func(fixtures *ExoCloudFixtures) {
+			is.Nil(fixtures.Organizations[0].Shipping)
+			is.Nil(fixtures.Organizations[0].Billing)
+			is.Nil(fixtures.Organizations[1].Shipping)
+			is.Nil(fixtures.Organizations[1].Billing)
+			is.Nil(fixtures.Organizations[2].Shipping)
+			is.Nil(fixtures.Organizations[2].Billing)
+		}
+
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckExoCloudFixtures(fixtures)
+
+			organization1 := fixtures.Organizations[0]
+
+			err := makroud.Preload(ctx, driver, organization1, makroud.WithPreloadField("Shipping"))
+			is.NoError(err)
+			is.NotNil(organization1.Shipping)
+			is.Equal(fixtures.Addresses[1], organization1.Shipping)
+
+			err = makroud.Preload(ctx, driver, organization1, makroud.WithPreloadField("Billing"))
+			is.NoError(err)
+			is.NotNil(organization1.Billing)
+			is.Equal(fixtures.Addresses[0], organization1.Billing)
+
+			organization2 := fixtures.Organizations[1]
+
+			err = makroud.Preload(ctx, driver, organization2,
+				makroud.WithPreloadField("Shipping"),
+				makroud.WithPreloadField("Billing"),
+			)
+			is.NoError(err)
+			is.NotNil(organization2.Shipping)
+			is.NotNil(organization2.Billing)
+			is.Equal(fixtures.Addresses[2], organization2.Shipping)
+			is.Equal(fixtures.Addresses[2], organization2.Billing)
+
+			organization3 := fixtures.Organizations[2]
+
+			err = makroud.Preload(ctx, driver, organization3,
+				makroud.WithPreloadField("Shipping"),
+				makroud.WithPreloadField("Billing"),
+			)
+			is.NoError(err)
+			is.Nil(organization3.Shipping)
+			is.Nil(organization3.Billing)
+
+		}
+
+	})
+}
+
 func TestPreload_ExoDirectory_One(t *testing.T) {
 	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()

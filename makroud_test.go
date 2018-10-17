@@ -51,6 +51,7 @@ type ExoCloudFixtures struct {
 	Avatars       []*ExoAvatar
 	Profiles      []*ExoProfile
 	Users         []*ExoUser
+	Addresses     []*ExoAddress
 	Groups        []*ExoGroup
 	Buckets       []*ExoBucket
 	Directories   []*ExoDirectory
@@ -68,6 +69,7 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 		Avatars:       []*ExoAvatar{},
 		Profiles:      []*ExoProfile{},
 		Users:         []*ExoUser{},
+		Addresses:     []*ExoAddress{},
 		Groups:        []*ExoGroup{},
 		Buckets:       []*ExoBucket{},
 		Directories:   []*ExoDirectory{},
@@ -104,15 +106,82 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 		return nil
 	})
 
+	address1 := &ExoAddress{
+		FirstName:        "Addison",
+		LastName:         "Harris",
+		Type:             "business",
+		OrganizationName: "Nemo World",
+		Address1:         "55 S. San Juan Ave.",
+		Address2:         "",
+		PostalCode:       "14094",
+		City:             "Lockport",
+		State:            "New York",
+		Country:          "US",
+	}
+	fixtures.Addresses = append(fixtures.Addresses, address1)
+
+	address2 := &ExoAddress{
+		FirstName:        "Aubrey",
+		LastName:         "Jones",
+		Type:             "business",
+		OrganizationName: "Nemo World",
+		Address1:         "21 Washington Ct.",
+		Address2:         "",
+		PostalCode:       "95046",
+		City:             "San Martin",
+		State:            "California",
+		Country:          "US",
+	}
+	fixtures.Addresses = append(fixtures.Addresses, address2)
+
+	address3 := &ExoAddress{
+		FirstName:        "Emily",
+		LastName:         "Martinez",
+		Type:             "",
+		OrganizationName: "Dark Holding",
+		Address1:         "107 Faubourg Saint Honoré",
+		Address2:         "",
+		PostalCode:       "75008",
+		City:             "Paris",
+		State:            "",
+		Country:          "FR",
+	}
+	fixtures.Addresses = append(fixtures.Addresses, address3)
+
+	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+		for i := range fixtures.Addresses {
+			err := makroud.Save(ctx, dbx, fixtures.Addresses[i])
+			is.NoError(err)
+			is.NotEmpty(fixtures.Addresses[i].ID)
+		}
+		return nil
+	})
+
 	organization1 := &ExoOrganization{
 		Name:    "Nemo World",
 		Website: "https://www.nemoworld.com",
+		ShippingID: sql.NullString{
+			Valid:  true,
+			String: address2.ID,
+		},
+		BillingID: sql.NullString{
+			Valid:  true,
+			String: address1.ID,
+		},
 	}
 	fixtures.Organizations = append(fixtures.Organizations, organization1)
 
 	organization2 := &ExoOrganization{
 		Name:    "Shadow Navigations",
 		Website: "https://www.shadow-navigations.co.uk",
+		ShippingID: sql.NullString{
+			Valid:  true,
+			String: address3.ID,
+		},
+		BillingID: sql.NullString{
+			Valid:  true,
+			String: address3.ID,
+		},
 	}
 	fixtures.Organizations = append(fixtures.Organizations, organization2)
 
@@ -2197,13 +2266,37 @@ func sortExoCloudDirectories2(source []*ExoDirectory, directories *[]*ExoDirecto
 
 type ExoOrganization struct {
 	// Columns
-	ID      string `makroud:"column:id,pk:ulid"`
-	Name    string `makroud:"column:name"`
-	Website string `makroud:"column:website"`
+	ID         string         `makroud:"column:id,pk:ulid"`
+	Name       string         `makroud:"column:name"`
+	Website    string         `makroud:"column:website"`
+	ShippingID sql.NullString `makroud:"column:shipping_id,fk:exo_address"`
+	BillingID  sql.NullString `makroud:"column:billing_id,fk:exo_address"`
+	// Relationships
+	Shipping *ExoAddress
+	Billing  *ExoAddress
 }
 
 func (ExoOrganization) TableName() string {
 	return "exo_organization"
+}
+
+type ExoAddress struct {
+	// Columns
+	ID               string `makroud:"column:id,pk:ulid"`
+	FirstName        string `makroud:"column:first_name"`
+	LastName         string `makroud:"column:last_name"`
+	Type             string `makroud:"column:type"`
+	OrganizationName string `makroud:"column:organization_name"`
+	Address1         string `makroud:"column:address1"`
+	Address2         string `makroud:"column:address2"`
+	PostalCode       string `makroud:"column:postal_code"`
+	City             string `makroud:"column:city"`
+	State            string `makroud:"column:state"`
+	Country          string `makroud:"column:country"`
+}
+
+func (ExoAddress) TableName() string {
+	return "exo_address"
 }
 
 type ExoUser struct {
@@ -3348,6 +3441,7 @@ func DropTables(ctx context.Context, db *makroud.Client) {
 		DROP TABLE IF EXISTS exo_profile CASCADE;
 		DROP TABLE IF EXISTS exo_avatar CASCADE;
 		DROP TABLE IF EXISTS exo_organization CASCADE;
+		DROP TABLE IF EXISTS exo_address CASCADE;
 
 	`)
 }
@@ -3415,10 +3509,25 @@ func CreateTables(ctx context.Context, db *makroud.Client) {
 		-- Object storage application
 		--
 
+		CREATE TABLE exo_address (
+			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
+			first_name         VARCHAR(255) NOT NULL,
+			last_name          VARCHAR(255) NOT NULL,
+			type               VARCHAR(255) NOT NULL,
+			organization_name  VARCHAR(255) NOT NULL,
+			address1           VARCHAR(255) NOT NULL,
+			address2           VARCHAR(255) NOT NULL,
+			postal_code        VARCHAR(124) NOT NULL,
+			city               VARCHAR(124) NOT NULL,
+			state              VARCHAR(255) NOT NULL,
+			country            VARCHAR(2) NOT NULL
+		);
 		CREATE TABLE exo_organization (
 			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
 			name               VARCHAR(255) NOT NULL,
-			website            VARCHAR(2048) NOT NULL
+			website            VARCHAR(2048) NOT NULL,
+			shipping_id        VARCHAR(26) REFERENCES exo_address(id) ON DELETE CASCADE,
+			billing_id         VARCHAR(26) REFERENCES exo_address(id) ON DELETE CASCADE
 		);
 		CREATE TABLE exo_avatar (
 			id                 VARCHAR(26) PRIMARY KEY NOT NULL,
