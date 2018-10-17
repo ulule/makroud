@@ -52,7 +52,7 @@ func NewSelector(configurations map[string]*ClientOptions) (*Selector, error) {
 func NewSelectorWithDriver(driver Driver) (*Selector, error) {
 	selector := &Selector{
 		configurations: map[string]*ClientOptions{},
-		store:          driver.cache(),
+		store:          driver.getCache(),
 		connections: map[string]Driver{
 			DefaultSelector: driver,
 		},

@@ -233,7 +233,7 @@ func getSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
 		return newSchema(driver, model, throughout)
 	}
 
-	schema := driver.cache().GetSchema(model)
+	schema := driver.getCache().GetSchema(model)
 	if schema != nil {
 		return schema, nil
 	}
@@ -244,7 +244,7 @@ func getSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
 	}
 
 	if throughout {
-		driver.cache().SetSchema(schema)
+		driver.getCache().SetSchema(schema)
 	}
 
 	return schema, nil
