@@ -71,7 +71,8 @@ type Driver interface {
 
 	close(closer io.Closer, flags map[string]string)
 	hasCache() bool
-	cache() *cache
+	getCache() *cache
+	setCache(store *cache)
 	hasLogger() bool
 	logger() Logger
 	entropy() io.Reader

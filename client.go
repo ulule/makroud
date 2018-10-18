@@ -277,7 +277,7 @@ func (c *Client) hasCache() bool {
 	return c.store != nil
 }
 
-func (c *Client) cache() *cache {
+func (c *Client) getCache() *cache {
 	return c.store
 }
 

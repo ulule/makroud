@@ -195,6 +195,14 @@ func debugField(field Field) debugWriter {
 			v: field.associationType.String(),
 		},
 		debugValue{
+			k: "has_relation",
+			v: strconv.FormatBool(field.HasRelation()),
+		},
+		debugValue{
+			k: "relation_name",
+			v: field.RelationName(),
+		},
+		debugValue{
 			k: "is_excluded",
 			v: strconv.FormatBool(field.IsExcluded()),
 		},
