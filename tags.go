@@ -8,7 +8,7 @@ import (
 const (
 	// TagName defines makroud tag namespace.
 	TagName = "makroud"
-	// TagName defines makroud tag namespace in short version.
+	// TagNameShort defines makroud tag namespace in short version.
 	TagNameShort = "mk"
 	// TagNameAlt defines sqlx tag namespace for backward compatibility.
 	TagNameAlt = "db"
@@ -189,23 +189,14 @@ func getTagsOptions(args []TagsAnalyzerOption) *TagsAnalyzerOptions {
 	return options
 }
 
-func getTagsAnalyze(list map[string]string, options *TagsAnalyzerOptions) Tags {
+func getTagsAnalyze(list map[string][]string, options *TagsAnalyzerOptions) Tags {
 	tags := Tags{}
 
-	for namespace, v := range list {
-		splits := strings.Split(v, ",")
-
-		// Properties
-		vals := []string{}
-		for _, s := range splits {
-			if len(s) != 0 {
-				vals = append(vals, strings.TrimSpace(s))
-			}
-		}
+	for namespace, vals := range list {
 
 		// Key / value
 		for _, v := range vals {
-			splits = strings.Split(v, ":")
+			splits := strings.Split(v, ":")
 			length := len(splits)
 
 			// Ignore empty tag.
@@ -262,21 +253,30 @@ func getTagsAnalyze(list map[string]string, options *TagsAnalyzerOptions) Tags {
 	return tags
 }
 
-// GetTags returns field tags.
-func GetTags(field reflect.StructField, args ...TagsAnalyzerOption) Tags {
-	list := map[string]string{}
-
-	options := getTagsOptions(args)
-
+func extractTagsProperties(field reflect.StructField, options *TagsAnalyzerOptions) map[string][]string {
+	list := map[string][]string{}
 	for _, name := range options.Collector {
 		_, ok := list[name]
 		if !ok {
 			v := field.Tag.Get(name)
 			if len(v) != 0 {
-				list[name] = v
+				splits := strings.Split(v, ",")
+				vals := []string{}
+				for _, s := range splits {
+					if len(s) != 0 {
+						vals = append(vals, strings.TrimSpace(s))
+					}
+				}
+				list[name] = vals
 			}
 		}
 	}
+	return list
+}
 
+// GetTags returns field tags.
+func GetTags(field reflect.StructField, args ...TagsAnalyzerOption) Tags {
+	options := getTagsOptions(args)
+	list := extractTagsProperties(field, options)
 	return getTagsAnalyze(list, options)
 }
