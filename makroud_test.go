@@ -2272,8 +2272,8 @@ type ExoOrganization struct {
 	ShippingID sql.NullString `makroud:"column:shipping_id,fk:exo_address"`
 	BillingID  sql.NullString `makroud:"column:billing_id,fk:exo_address"`
 	// Relationships
-	Shipping *ExoAddress
-	Billing  *ExoAddress
+	Shipping *ExoAddress `makroud:"relation:shipping_id"`
+	Billing  *ExoAddress `makroud:"relation:billing_id"`
 }
 
 func (ExoOrganization) TableName() string {
@@ -2308,8 +2308,8 @@ type ExoUser struct {
 	Locale    string `makroud:"column:locale"`
 	ProfileID string `makroud:"column:profile_id,fk:exo_profile"`
 	// Relationships
-	Group   []ExoGroup
-	Profile *ExoProfile
+	Group   []ExoGroup  `makroud:"relation:exo_group.user_id"`
+	Profile *ExoProfile `makroud:"relation:profile_id"`
 }
 
 func (ExoUser) TableName() string {
@@ -3256,8 +3256,8 @@ type Package struct {
 	ReceiverID    string        `makroud:"column:receiver_id,fk:ztp_center"`
 	TransporterID sql.NullInt64 `makroud:"column:transporter_id,fk:ztp_owl"`
 	// Relationships
-	Sender   *Center
-	Receiver *Center
+	Sender   *Center `makroud:"relation:sender_id"`
+	Receiver *Center `makroud:"relation:receiver_id"`
 }
 
 func (Package) TableName() string {
@@ -3272,8 +3272,8 @@ type Cat struct {
 	UpdatedAt time.Time   `makroud:"column:updated_at,default"`
 	DeletedAt pq.NullTime `makroud:"column:deleted_at"`
 	// Relationships
-	Feeder *Human
-	Meows  []*Meow
+	Feeder *Human  `makroud:"relation:ztp_human.cat_id"`
+	Meows  []*Meow `makroud:"relation:ztp_meow.cat_id"`
 }
 
 func (Cat) TableName() string {

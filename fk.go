@@ -281,66 +281,84 @@ func NewReference(driver Driver, local *Schema, field *Field) (*Reference, error
 	}
 }
 
+func createLocalReference(local *Schema, remote *Schema, field *Field,
+	element ForeignKey, target PrimaryKey) *Reference {
+	return &Reference{
+		Field:   *field,
+		isLocal: true,
+		local: ReferenceObject{
+			schema:       local,
+			modelName:    element.ModelName(),
+			tableName:    element.TableName(),
+			fieldName:    element.FieldName(),
+			columnName:   element.ColumnName(),
+			columnPath:   element.ColumnPath(),
+			isForeignKey: true,
+			fkType:       element.Type(),
+		},
+		remote: ReferenceObject{
+			schema:       remote,
+			modelName:    target.ModelName(),
+			tableName:    target.TableName(),
+			fieldName:    target.FieldName(),
+			columnName:   target.ColumnName(),
+			columnPath:   target.ColumnPath(),
+			isPrimaryKey: true,
+			pkType:       target.Type(),
+		},
+	}
+}
+
+func createRemoteReference(local *Schema, remote *Schema, field *Field,
+	element ForeignKey, target PrimaryKey) *Reference {
+	return &Reference{
+		Field:   *field,
+		isLocal: false,
+		local: ReferenceObject{
+			schema:       local,
+			modelName:    target.ModelName(),
+			tableName:    target.TableName(),
+			fieldName:    target.FieldName(),
+			columnName:   target.ColumnName(),
+			columnPath:   target.ColumnPath(),
+			isPrimaryKey: true,
+			pkType:       target.Type(),
+		},
+		remote: ReferenceObject{
+			schema:       remote,
+			modelName:    element.ModelName(),
+			tableName:    element.TableName(),
+			fieldName:    element.FieldName(),
+			columnName:   element.ColumnName(),
+			columnPath:   element.ColumnPath(),
+			isForeignKey: true,
+			fkType:       element.Type(),
+		},
+	}
+}
+
 // Article.Author -> User
 func newReferenceAsOne(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
+	if field.HasRelation() {
+		return newReferenceAsOneExplicit(driver, local, remote, field)
+	}
+	return newReferenceAsOneImplicit(driver, local, remote, field)
+}
+
+func newReferenceAsOneExplicit(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
 	for _, element := range local.references {
-		if element.ForeignKey() == remote.TableName() {
+		if element.ForeignKey() == remote.TableName() && element.ColumnName() == field.RelationName() {
 			target := remote.PrimaryKey()
-			current := &Reference{
-				Field:   *field,
-				isLocal: true,
-				local: ReferenceObject{
-					schema:       local,
-					modelName:    element.ModelName(),
-					tableName:    element.TableName(),
-					fieldName:    element.FieldName(),
-					columnName:   element.ColumnName(),
-					columnPath:   element.ColumnPath(),
-					isForeignKey: true,
-					fkType:       element.Type(),
-				},
-				remote: ReferenceObject{
-					schema:       remote,
-					modelName:    target.ModelName(),
-					tableName:    target.TableName(),
-					fieldName:    target.FieldName(),
-					columnName:   target.ColumnName(),
-					columnPath:   target.ColumnPath(),
-					isPrimaryKey: true,
-					pkType:       target.Type(),
-				},
-			}
+			current := createLocalReference(local, remote, field, element, target)
 			return current, nil
 		}
 	}
 
 	for _, element := range remote.references {
-		if element.ForeignKey() == local.TableName() {
+		if element.ForeignKey() == local.TableName() &&
+			(element.ColumnPath() == field.RelationName() || element.ColumnName() == field.RelationName()) {
 			target := local.PrimaryKey()
-			current := &Reference{
-				Field:   *field,
-				isLocal: false,
-				local: ReferenceObject{
-					schema:       local,
-					modelName:    target.ModelName(),
-					tableName:    target.TableName(),
-					fieldName:    target.FieldName(),
-					columnName:   target.ColumnName(),
-					columnPath:   target.ColumnPath(),
-					isPrimaryKey: true,
-					pkType:       target.Type(),
-				},
-				remote: ReferenceObject{
-					schema:       remote,
-					modelName:    element.ModelName(),
-					tableName:    element.TableName(),
-					fieldName:    element.FieldName(),
-					columnName:   element.ColumnName(),
-					columnPath:   element.ColumnPath(),
-					isForeignKey: true,
-					fkType:       element.Type(),
-				},
-			}
+			current := createRemoteReference(local, remote, field, element, target)
 			return current, nil
 		}
 	}
@@ -348,35 +366,94 @@ func newReferenceAsOne(driver Driver, local *Schema, remote *Schema, field *Fiel
 	return nil, errors.Errorf("cannot find foreign key for: %s.%s", field.ModelName(), field.FieldName())
 }
 
-// Article.Hashtags -> Tag
-func newReferenceAsMany(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
+func newReferenceAsOneImplicit(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
+	// First, try using model table name and field name.
+	current, ok := newReferenceAsOneImplicitUsingDefaultName(driver, local, remote, field)
+	if ok {
+		return current, nil
+	}
+
+	// Finally, try using only model table name.
+	current, ok = newReferenceAsOneImplicitUsingFallback(driver, local, remote, field)
+	if ok {
+		return current, nil
+	}
+
+	return nil, errors.Errorf("cannot find foreign key for: %s.%s", field.ModelName(), field.FieldName())
+}
+
+func newReferenceAsOneImplicitUsingDefaultName(driver Driver,
+	local *Schema, remote *Schema, field *Field) (*Reference, bool) {
+
+	relationName := fmt.Sprint(field.FieldName(), "ID")
+	for _, element := range local.references {
+		if element.ForeignKey() == remote.TableName() && relationName == element.FieldName() {
+			target := remote.PrimaryKey()
+			current := createLocalReference(local, remote, field, element, target)
+			return current, true
+		}
+	}
+
+	relationName = fmt.Sprint(field.ModelName(), "ID")
+	for _, element := range remote.references {
+		if element.ForeignKey() == local.TableName() && relationName == element.FieldName() {
+			target := local.PrimaryKey()
+			current := createRemoteReference(local, remote, field, element, target)
+			return current, true
+		}
+	}
+
+	return nil, false
+}
+
+func newReferenceAsOneImplicitUsingFallback(driver Driver,
+	local *Schema, remote *Schema, field *Field) (*Reference, bool) {
+
+	for _, element := range local.references {
+		if element.ForeignKey() == remote.TableName() {
+			target := remote.PrimaryKey()
+			current := createLocalReference(local, remote, field, element, target)
+			return current, true
+		}
+	}
+
 	for _, element := range remote.references {
 		if element.ForeignKey() == local.TableName() {
 			target := local.PrimaryKey()
-			current := &Reference{
-				Field:   *field,
-				isLocal: false,
-				local: ReferenceObject{
-					schema:       local,
-					modelName:    target.ModelName(),
-					tableName:    target.TableName(),
-					fieldName:    target.FieldName(),
-					columnName:   target.ColumnName(),
-					columnPath:   target.ColumnPath(),
-					isPrimaryKey: true,
-					pkType:       target.Type(),
-				},
-				remote: ReferenceObject{
-					schema:       remote,
-					modelName:    element.ModelName(),
-					tableName:    element.TableName(),
-					fieldName:    element.FieldName(),
-					columnName:   element.ColumnName(),
-					columnPath:   element.ColumnPath(),
-					isForeignKey: true,
-					fkType:       element.Type(),
-				},
-			}
+			current := createRemoteReference(local, remote, field, element, target)
+			return current, true
+		}
+	}
+
+	return nil, false
+}
+
+// Article.Hashtags -> Tag
+func newReferenceAsMany(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
+	if field.HasRelation() {
+		return newReferenceAsManyExplicit(driver, local, remote, field)
+	}
+	return newReferenceAsManyImplicit(driver, local, remote, field)
+}
+
+func newReferenceAsManyExplicit(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
+	for _, element := range remote.references {
+		if element.ForeignKey() == local.TableName() &&
+			(element.ColumnPath() == field.RelationName() || element.ColumnName() == field.RelationName()) {
+			target := local.PrimaryKey()
+			current := createRemoteReference(local, remote, field, element, target)
+			return current, nil
+		}
+	}
+
+	return nil, errors.Errorf("cannot find foreign key for: %s.%s", field.ModelName(), field.FieldName())
+}
+
+func newReferenceAsManyImplicit(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
+	for _, element := range remote.references {
+		if element.ForeignKey() == local.TableName() {
+			target := local.PrimaryKey()
+			current := createRemoteReference(local, remote, field, element, target)
 			return current, nil
 		}
 	}

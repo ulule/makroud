@@ -30,10 +30,12 @@ type Field struct {
 	columnPath      string
 	columnName      string
 	foreignKey      string
+	relationName    string
 	isPrimaryKey    bool
 	isForeignKey    bool
 	isAssociation   bool
 	isExcluded      bool
+	hasRelation     bool
 	hasDefault      bool
 	hasULID         bool
 	hasUUIDV1       bool
@@ -93,6 +95,16 @@ func (field Field) IsForeignKey() bool {
 // ForeignKey returns the field foreign key's table name.
 func (field Field) ForeignKey() string {
 	return field.foreignKey
+}
+
+// HasRelation returns if the field has a explicit relation.
+func (field Field) HasRelation() bool {
+	return field.hasRelation
+}
+
+// RelationName returns the field relation name.
+func (field Field) RelationName() string {
+	return field.relationName
 }
 
 // IsAssociation returns if the field is an association.
@@ -247,6 +259,9 @@ func getFieldAssocitationType(driver Driver, instance *Field, rtype reflect.Type
 		return nil, errors.Errorf("unable to infer the association type for field '%s'", instance.fieldName)
 	}
 
+	relationName := tags.GetByKey(TagName, TagKeyRelation)
+	hasRelation := relationName != ""
+
 	instance.isAssociation = true
 	instance.associationType = associationType
 	instance.columnName = ""
@@ -257,6 +272,8 @@ func getFieldAssocitationType(driver Driver, instance *Field, rtype reflect.Type
 	instance.isDeletedKey = false
 	instance.hasDefault = false
 	instance.hasULID = false
+	instance.hasRelation = hasRelation
+	instance.relationName = relationName
 
 	return instance, nil
 }
