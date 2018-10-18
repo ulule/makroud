@@ -19,7 +19,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/ulule/sqlx"
-  revision = "48295ab65cb8f057910839456253b2ad6a9e7f52"
+  revision = "77703d105271b95b0c8e6eec911d7c1d6ccf83ef"
 
 [[constraint]]
   name = "github.com/ulule/sqalx"
