@@ -13,7 +13,7 @@
     ".",
     "oid"
   ]
-  revision = "4ded0e9383f75c197b3a2aaa6d590ac52df6fd79"
+  revision = "9eb73efc1fcc404148b56765b0d3f61d9a5ef8ee"
 
 [[projects]]
   name = "github.com/oklog/ulid"
@@ -62,6 +62,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d7613153ea9c309b857835d8d31de3555ebe4568ca1106d2c400768b38cf77a0"
+  inputs-digest = "1e4995ce37a8a477b76d33d3abe92312d62c81e0f92200d094cae2548ae994c0"
   solver-name = "gps-cdcl"
   solver-version = 1
