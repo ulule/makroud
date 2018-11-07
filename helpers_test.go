@@ -84,6 +84,7 @@ func TestExec_List(t *testing.T) {
 		list = []string{}
 		query = loukoum.Select("id").From("ztp_cat").
 			Where(loukoum.Condition("name").ILike("XXXXX%"))
+
 		err = makroud.Exec(ctx, driver, query, &list)
 		is.NoError(err)
 		is.NotNil(list)
@@ -92,6 +93,20 @@ func TestExec_List(t *testing.T) {
 		err = makroud.Exec(ctx, driver, query, []string{})
 		is.Error(err)
 		is.Equal(makroud.ErrPointerRequired, errors.Cause(err))
+
+		expected = []*Cat{cat3, cat6}
+		list = []string{}
+		query = loukoum.Select("id").From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("Whi%")).
+			And(loukoum.Condition("name").ILike("%ey"))
+
+		err = makroud.Exec(ctx, driver, query, &list)
+		is.NoError(err)
+
+		is.Len(list, len(expected))
+		for i := range expected {
+			is.Contains(list, expected[i].ID)
+		}
 
 	})
 }
@@ -139,6 +154,17 @@ func TestRawExec_List(t *testing.T) {
 		is.Error(err)
 		is.Equal(makroud.ErrPointerRequired, errors.Cause(err))
 
+		expected = []*Cat{cat5, cat8}
+		list = []string{}
+		query = `SELECT id FROM ztp_cat WHERE name ILIKE 'Ve%' AND name ILIKE '%s'`
+		err = makroud.RawExec(ctx, driver, query, &list)
+		is.NoError(err)
+
+		is.Len(list, len(expected))
+		for i := range expected {
+			is.Contains(list, expected[i].ID)
+		}
+
 	})
 }
 
@@ -176,6 +202,15 @@ func TestExec_Fetch(t *testing.T) {
 		is.Error(err)
 		is.Equal(makroud.ErrPointerRequired, errors.Cause(err))
 
+		id = ""
+		query = loukoum.Select("id").From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("Ba%")).
+			And(loukoum.Condition("name").ILike("%er"))
+
+		err = makroud.Exec(ctx, driver, query, &id)
+		is.NoError(err)
+		is.Equal(expected.ID, id)
+
 	})
 }
 
@@ -210,6 +245,12 @@ func TestRawExec_Fetch(t *testing.T) {
 		err = makroud.RawExec(ctx, driver, query, id)
 		is.Error(err)
 		is.Equal(makroud.ErrPointerRequired, errors.Cause(err))
+
+		id = ""
+		query = `SELECT id FROM ztp_cat WHERE name ILIKE 'Cal%' AND name ILIKE '%ne'`
+		err = makroud.RawExec(ctx, driver, query, &id)
+		is.NoError(err)
+		is.Equal(expected.ID, id)
 
 	})
 }
@@ -262,6 +303,32 @@ func TestExec_FetchModel(t *testing.T) {
 			err := makroud.Exec(ctx, driver, query, result)
 			is.Error(err)
 			is.Equal(makroud.ErrPointerRequired, errors.Cause(err))
+		}
+
+		query = loukoum.Select("*").From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("Ak%")).
+			And(loukoum.Condition("name").ILike("%ko"))
+
+		{
+			result := &Cat{}
+			err := makroud.Exec(ctx, driver, query, result)
+			is.NoError(err)
+			is.Equal(expected.ID, result.ID)
+			is.Equal(expected.Name, result.Name)
+			is.Equal(expected.CreatedAt, result.CreatedAt)
+			is.Equal(expected.UpdatedAt, result.UpdatedAt)
+			is.Equal(expected.DeletedAt, result.DeletedAt)
+		}
+
+		{
+			result := &Cat{}
+			err := makroud.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Equal(expected.ID, result.ID)
+			is.Equal(expected.Name, result.Name)
+			is.Equal(expected.CreatedAt, result.CreatedAt)
+			is.Equal(expected.UpdatedAt, result.UpdatedAt)
+			is.Equal(expected.DeletedAt, result.DeletedAt)
 		}
 
 	})
@@ -343,6 +410,53 @@ func TestExec_ListModel(t *testing.T) {
 			err := makroud.Exec(ctx, driver, query, result)
 			is.Error(err)
 			is.Equal(makroud.ErrPointerRequired, errors.Cause(err))
+		}
+
+		query = loukoum.Select("*").From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("Am%"))
+
+		{
+			result := []Cat{}
+			err := makroud.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Len(result, 4)
+			is.Contains(cats, &result[0])
+			is.Contains(cats, &result[1])
+			is.Contains(cats, &result[2])
+			is.Contains(cats, &result[3])
+		}
+
+		{
+			result := []*Cat{}
+			err := makroud.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Len(result, 4)
+			is.Contains(cats, result[0])
+			is.Contains(cats, result[1])
+			is.Contains(cats, result[2])
+			is.Contains(cats, result[3])
+		}
+
+		{
+			result := &[]Cat{}
+			err := makroud.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Len(*result, 4)
+			is.Contains(cats, &(*result)[0])
+			is.Contains(cats, &(*result)[1])
+			is.Contains(cats, &(*result)[2])
+			is.Contains(cats, &(*result)[3])
+		}
+
+		{
+			result := &[]*Cat{}
+			err := makroud.Exec(ctx, driver, query, &result)
+			is.NoError(err)
+			is.Len(*result, 4)
+			is.Contains(cats, (*result)[0])
+			is.Contains(cats, (*result)[1])
+			is.Contains(cats, (*result)[2])
+			is.Contains(cats, (*result)[3])
 		}
 
 	})

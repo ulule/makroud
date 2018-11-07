@@ -83,18 +83,18 @@ type Statement interface {
 	// Close closes the statement.
 	Close() error
 	// Exec executes this named statement using the struct passed.
-	Exec(ctx context.Context, arg interface{}) error
+	Exec(ctx context.Context, args []interface{}) error
 	// QueryRow executes this named statement returning a single row.
-	QueryRow(ctx context.Context, arg interface{}) (Row, error)
+	QueryRow(ctx context.Context, args []interface{}) (Row, error)
 	// QueryRows executes this named statement returning a list of rows.
-	QueryRows(ctx context.Context, arg interface{}) (Rows, error)
+	QueryRows(ctx context.Context, args []interface{}) (Rows, error)
 	// FindOne executes this named statement to fetch one record.
 	// If there is no row, an error is returned.
 	// Output must be a pointer to a value.
-	FindOne(ctx context.Context, dest interface{}, arg interface{}) error
+	FindOne(ctx context.Context, dest interface{}, args []interface{}) error
 	// FindAll executes this named statement to fetch a list of records.
 	// Output must be a pointer to a slice of value.
-	FindAll(ctx context.Context, dest interface{}, arg interface{}) error
+	FindAll(ctx context.Context, dest interface{}, args []interface{}) error
 }
 
 // A Row is a simple row.

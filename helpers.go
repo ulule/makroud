@@ -24,7 +24,7 @@ func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...inte
 		}()
 	}
 
-	query, args := stmt.NamedQuery()
+	query, args := stmt.Query()
 
 	err := exec(ctx, driver, query, args, dest...)
 	if err != nil {
@@ -54,7 +54,7 @@ func RawExec(ctx context.Context, driver Driver, query string, dest ...interface
 	return nil
 }
 
-func exec(ctx context.Context, driver Driver, query string, args map[string]interface{}, dest ...interface{}) error {
+func exec(ctx context.Context, driver Driver, query string, args []interface{}, dest ...interface{}) error {
 	stmt, err := driver.Prepare(ctx, query)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot prepare statement")
@@ -76,7 +76,7 @@ func exec(ctx context.Context, driver Driver, query string, args map[string]inte
 	return stmt.Exec(ctx, args)
 }
 
-func execRows(ctx context.Context, driver Driver, stmt Statement, args map[string]interface{}, dest interface{}) error {
+func execRows(ctx context.Context, driver Driver, stmt Statement, args []interface{}, dest interface{}) error {
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
 		return stmt.FindAll(ctx, dest, args)
@@ -114,7 +114,7 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args map[strin
 	return nil
 }
 
-func execRow(ctx context.Context, driver Driver, stmt Statement, args map[string]interface{}, dest interface{}) error {
+func execRow(ctx context.Context, driver Driver, stmt Statement, args []interface{}, dest interface{}) error {
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
 		return stmt.FindOne(ctx, dest, args)
