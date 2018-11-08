@@ -194,7 +194,7 @@ func (c *Client) MustQuery(ctx context.Context, query string, arg interface{}) R
 // Prepare creates a prepared statement for later queries or executions.
 // Multiple queries or executions may be run concurrently from the returned statement.
 func (c *Client) Prepare(ctx context.Context, query string) (Statement, error) {
-	stmt, err := c.node.PrepareNamedContext(ctx, query)
+	stmt, err := c.node.PreparexContext(ctx, query)
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot prepare statement")
 	}
@@ -316,13 +316,13 @@ func wrapClient(client *Client, connection sqalx.Node) Driver {
 	}
 }
 
-// A stmtWrapper wraps a named statement from sqlx.
+// A stmtWrapper wraps a statement from sqlx.
 type stmtWrapper struct {
-	stmt *sqlx.NamedStmt
+	stmt *sqlx.Stmt
 }
 
 // wrapStatement creates a new Statement using given named statement from sqlx.
-func wrapStatement(stmt *sqlx.NamedStmt) Statement {
+func wrapStatement(stmt *sqlx.Stmt) Statement {
 	return &stmtWrapper{
 		stmt: stmt,
 	}
@@ -338,8 +338,8 @@ func (w *stmtWrapper) Close() error {
 }
 
 // Exec executes this named statement using the struct passed.
-func (w *stmtWrapper) Exec(ctx context.Context, arg interface{}) error {
-	_, err := w.stmt.ExecContext(ctx, arg)
+func (w *stmtWrapper) Exec(ctx context.Context, args []interface{}) error {
+	_, err := w.stmt.ExecContext(ctx, args...)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot execute statement")
 	}
@@ -347,8 +347,8 @@ func (w *stmtWrapper) Exec(ctx context.Context, arg interface{}) error {
 }
 
 // QueryRow executes this named statement returning a single row.
-func (w *stmtWrapper) QueryRow(ctx context.Context, arg interface{}) (Row, error) {
-	row := w.stmt.QueryRowxContext(ctx, arg)
+func (w *stmtWrapper) QueryRow(ctx context.Context, args []interface{}) (Row, error) {
+	row := w.stmt.QueryRowxContext(ctx, args...)
 	err := row.Err()
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot execute statement")
@@ -360,8 +360,8 @@ func (w *stmtWrapper) QueryRow(ctx context.Context, arg interface{}) (Row, error
 }
 
 // QueryRows executes this named statement returning a list of rows.
-func (w *stmtWrapper) QueryRows(ctx context.Context, arg interface{}) (Rows, error) {
-	rows, err := w.stmt.QueryxContext(ctx, arg)
+func (w *stmtWrapper) QueryRows(ctx context.Context, args []interface{}) (Rows, error) {
+	rows, err := w.stmt.QueryxContext(ctx, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot execute statement")
 	}
@@ -369,8 +369,8 @@ func (w *stmtWrapper) QueryRows(ctx context.Context, arg interface{}) (Rows, err
 }
 
 // FindOne executes this named statement to fetch one record.
-func (w *stmtWrapper) FindOne(ctx context.Context, dest interface{}, arg interface{}) error {
-	err := w.stmt.GetContext(ctx, dest, arg)
+func (w *stmtWrapper) FindOne(ctx context.Context, dest interface{}, args []interface{}) error {
+	err := w.stmt.GetContext(ctx, dest, args...)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot execute statement")
 	}
@@ -378,8 +378,8 @@ func (w *stmtWrapper) FindOne(ctx context.Context, dest interface{}, arg interfa
 }
 
 // FindAll executes this named statement to fetch a list of records.
-func (w *stmtWrapper) FindAll(ctx context.Context, dest interface{}, arg interface{}) error {
-	err := w.stmt.SelectContext(ctx, dest, arg)
+func (w *stmtWrapper) FindAll(ctx context.Context, dest interface{}, args []interface{}) error {
+	err := w.stmt.SelectContext(ctx, dest, args...)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot execute statement")
 	}

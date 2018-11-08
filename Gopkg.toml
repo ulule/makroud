@@ -19,11 +19,11 @@ ignored = [
 
 [[constraint]]
   name = "github.com/ulule/sqlx"
-  revision = "77703d105271b95b0c8e6eec911d7c1d6ccf83ef"
+  revision = "0bb2039bd75c1d5a044181b973c6323206281c0f"
 
 [[constraint]]
   name = "github.com/ulule/sqalx"
-  revision = "3768b124acdca09ede88e7e0f341a690cb650f05"
+  revision = "607b375fd15126a4528510d9512fb19eb050f448"
 
 [[constraint]]
   name = "github.com/lib/pq"

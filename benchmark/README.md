@@ -50,7 +50,7 @@ performance using the same instructions.
 OS:     Archlinux x86_64 Linux-4.18.8
 CPU:    Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz
 Memory: 16GB
-Go:     go version go1.11 linux/amd64
+Go:     go version go1.11.2 linux/amd64
 ```
 
 ## Credits

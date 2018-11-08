@@ -51,19 +51,19 @@ func BenchmarkSQLX_SelectAll(b *testing.B) {
 
 	ctx := context.Background()
 	query := "SELECT * FROM jets"
-	args := map[string]interface{}{}
+	args := []interface{}{}
 
 	b.Run("sqlx", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var store []JetSQLX
 
-			stmt, err := dbx.PrepareNamedContext(ctx, query)
+			stmt, err := dbx.PreparexContext(ctx, query)
 			if err != nil {
 				b.Fatal(err)
 			}
 			defer stmt.Close()
 
-			err = stmt.SelectContext(ctx, &store, args)
+			err = stmt.SelectContext(ctx, &store, args...)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -174,19 +174,19 @@ func BenchmarkSQLX_SelectSubset(b *testing.B) {
 
 	ctx := context.Background()
 	query := "SELECT id, name, color, uuid, identifier, cargo, manifest FROM jets"
-	args := map[string]interface{}{}
+	args := []interface{}{}
 
 	b.Run("sqlx", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var store []JetSQLX
 
-			stmt, err := dbx.PrepareNamedContext(ctx, query)
+			stmt, err := dbx.PreparexContext(ctx, query)
 			if err != nil {
 				b.Fatal(err)
 			}
 			defer stmt.Close()
 
-			err = stmt.SelectContext(ctx, &store, args)
+			err = stmt.SelectContext(ctx, &store, args...)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -310,22 +310,19 @@ func BenchmarkSQLX_SelectComplex(b *testing.B) {
 		"SELECT id, name, color, uuid, identifier, cargo, manifest FROM jets ",
 		"WHERE id > :id AND name != :name GROUP BY id OFFSET 1 LIMIT 1",
 	)
-	args := map[string]interface{}{
-		"id":   1,
-		"name": "thing",
-	}
+	args := []interface{}{1, "thing"}
 
 	b.Run("sqlx", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			var store []JetSQLX
 
-			stmt, err := dbx.PrepareNamedContext(ctx, query)
+			stmt, err := dbx.PreparexContext(ctx, query)
 			if err != nil {
 				b.Fatal(err)
 			}
 			defer stmt.Close()
 
-			err = stmt.SelectContext(ctx, &store, args)
+			err = stmt.SelectContext(ctx, &store, args...)
 			if err != nil {
 				b.Fatal(err)
 			}
