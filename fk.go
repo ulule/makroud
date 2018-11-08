@@ -450,6 +450,17 @@ func newReferenceAsManyExplicit(driver Driver, local *Schema, remote *Schema, fi
 }
 
 func newReferenceAsManyImplicit(driver Driver, local *Schema, remote *Schema, field *Field) (*Reference, error) {
+	// First, try using model table name and field name.
+	relationName := fmt.Sprint(field.ModelName(), "ID")
+	for _, element := range remote.references {
+		if element.ForeignKey() == local.TableName() && relationName == element.FieldName() {
+			target := local.PrimaryKey()
+			current := createRemoteReference(local, remote, field, element, target)
+			return current, nil
+		}
+	}
+
+	// Finally, try using only model table name.
 	for _, element := range remote.references {
 		if element.ForeignKey() == local.TableName() {
 			target := local.PrimaryKey()
