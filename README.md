@@ -12,7 +12,7 @@ Makroud is a high level SQL Connector that only support **PostgreSQL** at the mo
 
 It's an advanced mapper and/or a lightweight ORM that relies on reflection to generate queries.
 **Using reflection has its flaws**, type safety is not guaranteed and a panic is still possible,
-even if you are every careful and vigilant. **However,** development is super easy and straightforward
+even if you are very careful and vigilant. **However,** development is super easy and straightforward
 since it doesn't rely on code generation.
 
 Makroud isn't a migration tool and it doesn't inspect the database to define the application data model
@@ -97,8 +97,8 @@ type User struct {
 	Locale    string `makroud:"column:locale"`
 	ProfileID string `makroud:"column:profile_id,fk:profiles"`
 	// Relationships
-	Group   []Group
-	Profile *Profile
+	Roles    []Role    `makroud:"relation:roles.user_id"`
+	Profile  *Profile  `makroud:"relation:profile_id"`
 }
 
 func (User) TableName() string {
@@ -122,7 +122,10 @@ Then, you have to define your model columns using struct tags:
    * **uuid-v4**: Generate a [UUID V4](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random))
      to define primary key value
  * **default**(`bool`): On insert, if model has a zero value, it will use the db default value.
- * **pk**(`string`): Define column as a foreign key, reference table must be provided.
+ * **fk**(`string`): Define column as a foreign key, reference table must be provided.
+ * **relation**(`string`): Define which column to use for preload. The column must be prefixed by the table name
+   if it's not the model table name _(However, the prefix is optional if the table name is the same as the model)_.
+   See [Preload](https://github.com/ulule/makroud#preload) section for further information.
  * **-**(`bool`): Ignore this field.
 
 > **NOTE:** Tags of type `bool` can be set as `key:true` or just `key` for implicit `true`.
@@ -166,6 +169,80 @@ type User struct {
 	Name string `makroud:""`   // Column name is `name`
 }
 ```
+
+##### Preload relationships
+
+By default, if the `relation` tag is undefined, `makroud` will infer the column name to use for the preload mechanism.
+
+**Local foreign key:**
+
+Let's define a user with a profile:
+
+```go
+type User struct {
+	ID       string  `makroud:"column:id,pk"`
+	Email    string  `makroud:"column:email"`
+	PID      string  `makroud:"column:profile_id,fk:profiles"`
+	Profile  *Profile
+}
+
+func (User) TableName() string {
+	return "users"
+}
+
+type Profile struct {
+	ID         string  `makroud:"column:id,pk:ulid"`
+	FirstName  string  `makroud:"column:first_name"`
+	LastName   string  `makroud:"column:last_name"`
+	Enabled    bool    `makroud:"column:enabled"`
+}
+
+func (Profile) TableName() string {
+	return "profiles"
+}
+```
+
+Since the field `Profile` in the `User` has no `relation` tag, `makroud` will try to find, in the first pass,
+the field with the name `ProfileID` _(FieldName + ID)_ in `User` model.
+It's mandatory that this field is also a foreign key to the `profiles` table.
+
+Unfortunately for us, `User` model has no such field. So, `makroud` will try to find, in the second and final pass,
+the first field that is a foreign key to the `profiles` table. In our example, it will use the field `PID`.
+
+**Remote foreign key:**
+
+Let's define a user with a profile:
+
+```go
+type User struct {
+	ID       string  `makroud:"column:id,pk"`
+	Email    string  `makroud:"column:email"`
+	Profile  *Profile
+}
+
+func (User) TableName() string {
+	return "users"
+}
+
+type Profile struct {
+	ID         string  `makroud:"column:id,pk:ulid"`
+	FirstName  string  `makroud:"column:first_name"`
+	LastName   string  `makroud:"column:last_name"`
+	Enabled    bool    `makroud:"column:enabled"`
+	UID        string  `makroud:"column:user_id,fk:users"`
+}
+
+func (Profile) TableName() string {
+	return "profiles"
+}
+```
+
+Since the field `Profile` in the `User` has no `relation` tag, `makroud` will try to find, in the first pass,
+the field with the name `UserID` _(ModelName + ID)_ in `Profile` model.
+It's mandatory that this field is also a foreign key to the `users` table.
+
+Unfortunately for us, `Profile` model has no such field. So, `makroud` will try to find, in the second and final pass,
+the first field that is a foreign key to the `users` table. In our example, it will use the field `UID`.
 
 ##### CreatedAt tracking
 
@@ -451,7 +528,7 @@ Let's define a user with a profile:
 type User struct {
 	ID       string   `makroud:"column:id,pk"`
 	Email    string   `makroud:"column:email"`
-	Profile  *Profile
+	Profile  *Profile `makroud:"relation:profiles.user_id"`
 }
 
 func (User) TableName() string {
