@@ -10,8 +10,9 @@ fi
 SOURCE_DIRECTORY=$(dirname "${BASH_SOURCE[0]}")
 cd "${SOURCE_DIRECTORY}/.."
 
-if [[ -n $1 ]]; then
-    golangci-lint run "$1"
-else
-    golangci-lint run ./...
+OPTIONS=$(go list -f '{{.Dir}}' ./... | grep -v 'github.com/ulule/makroud/benchmark')
+if [ -n "$1" ]; then
+    OPTIONS="$@"
 fi
+
+golangci-lint run ${OPTIONS}
