@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	lkb "github.com/ulule/loukoum/builder"
+	lkb "github.com/ulule/loukoum/v3/builder"
 )
 
 // Queries is a list of Query instances.

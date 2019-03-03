@@ -364,7 +364,7 @@ func UpdateUser(ctx context.Context, driver makroud.Driver, user *User, name str
 Or for more complex statements, use a [Loukoum](https://github.com/ulule/loukoum) `UpdateBuilder` alongside the model.
 
 ```go
-import "github.com/ulule/loukoum"
+import "github.com/ulule/loukoum/v3"
 
 func UpdateUser(ctx context.Context, driver makroud.Driver, user *User, name string) error {
 	user.Name = name
@@ -400,7 +400,7 @@ func DeleteUser(ctx context.Context, driver makroud.Driver, user *User) error {
 Or for more complex statements, use a [Loukoum](https://github.com/ulule/loukoum) `DeleteBuilder` alongside the model.
 
 ```go
-import "github.com/ulule/loukoum"
+import "github.com/ulule/loukoum/v3"
 
 func DeleteUser(ctx context.Context, driver makroud.Driver, user *User) error {
 	stmt := loukoum.Delete("users").Where(loukoum.Condition("id").Equal(user.ID))
@@ -429,7 +429,7 @@ func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
 Or for more complex statements, use a [Loukoum](https://github.com/ulule/loukoum) `UpdateBuilder` alongside the model.
 
 ```go
-import "github.com/ulule/loukoum"
+import "github.com/ulule/loukoum/v3"
 
 func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
 	user.Name = name
@@ -456,7 +456,7 @@ func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
 By using a [Loukoum](https://github.com/ulule/loukoum) `SelectBuilder`.
 
 ```go
-import "github.com/ulule/loukoum"
+import "github.com/ulule/loukoum/v3"
 
 func GetUserByID(ctx context.Context, driver makroud.Driver, id string) (*User, error) {
 	user := &User{}
@@ -557,7 +557,7 @@ err := makroud.Preload(ctx, driver, &user, makroud.WithPreloadField("Profile"))
 **Or,** if preloading requires specific conditions, you can use a callback like this:
 
 ```go
-import "github.com/ulule/loukoum/builder"
+import "github.com/ulule/loukoum/v3/builder"
 
 err := makroud.Preload(ctx, driver, &user,
 	makroud.WithPreloadCallback("Profile", func(query builder.Select) builder.Select {

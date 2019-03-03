@@ -49,7 +49,7 @@
 //
 // Or execute a simple query without model:
 //
-//   import "github.com/ulule/loukoum"
+//   import "github.com/ulule/loukoum/v3"
 //
 //   list := []string{}
 //
