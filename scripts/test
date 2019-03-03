@@ -12,7 +12,7 @@ if [[ ! -x "${gotest_path}" ]]; then
     go get -d -u -v github.com/stretchr/testify/require
 fi
 
-OPTIONS="./..."
+OPTIONS=$(go list -f '{{.Dir}}' ./... | grep -v 'github.com/ulule/makroud/benchmark')
 if [ -n "$1" ]; then
     OPTIONS="$@"
 fi

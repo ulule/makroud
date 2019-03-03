@@ -2,6 +2,7 @@ package makroud
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -138,18 +139,28 @@ func (schema Schema) columns(withTable bool) Columns {
 	return columns
 }
 
-// ScanRow executes a scan from given row into model.
-func (schema Schema) ScanRow(row Row, model Model) error {
-	columns, err := row.Columns()
-	if err != nil {
-		return err
+// HasColumn returns if a schema has a column or not.
+func (schema Schema) HasColumn(column string) bool {
+	if schema.pk.ColumnName() == column || schema.pk.ColumnPath() == column {
+		return true
 	}
 
-	values := make([]interface{}, len(columns))
-	value := reflectx.GetIndirectValue(model)
-	if !reflectx.IsStruct(value) {
-		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
+	_, ok := schema.fields[column]
+	if ok {
+		return true
 	}
+
+	column = strings.TrimPrefix(column, fmt.Sprint(schema.TableName(), "."))
+	_, ok = schema.fields[column]
+
+	return ok
+}
+
+// nolint: gocyclo
+func (schema Schema) getValues(value reflect.Value, columns []string, model Model) ([]interface{}, error) {
+	values := make([]interface{}, len(columns))
+	rest := make([]string, 0)
+	associationsColumns := map[string]map[string]int{}
 
 	for i, column := range columns {
 		if schema.pk.ColumnName() == column || schema.pk.ColumnPath() == column {
@@ -170,7 +181,79 @@ func (schema Schema) ScanRow(row Row, model Model) error {
 			continue
 		}
 
-		return errors.Wrapf(ErrSchemaColumnRequired, "missing destination name %s in %T", column, model)
+		// sorting associations columns in case of JOIN
+		found := false
+		for key, association := range schema.associations {
+			trimed := strings.TrimPrefix(column, fmt.Sprint(association.Remote().TableName(), "."))
+			if trimed != column {
+				_, ok := associationsColumns[key]
+				if !ok {
+					associationsColumns[key] = map[string]int{}
+				}
+
+				// we keep the index in values for the scan
+				associationsColumns[key][trimed] = i
+				found = true
+				break
+			}
+		}
+
+		if found {
+			continue
+		}
+
+		rest = append(rest, column)
+	}
+
+	if len(rest) > 0 {
+		return nil, errors.Wrapf(ErrSchemaColumnRequired,
+			"missing destination name %s in %T", strings.Join(rest, ", "), model)
+	}
+
+	for key, columns := range associationsColumns {
+		// retrieve reflect field based on index
+		model := reflectx.GetReflectFieldByIndexes(value, schema.associations[key].Field.FieldIndex())
+		remote := schema.associations[key].Remote()
+
+		associationValue := reflectx.GetIndirectValue(model)
+
+		// columns concerned by the association
+		rest := make([]string, 0, len(columns))
+		for key := range columns {
+			rest = append(rest, key)
+		}
+
+		associationValues, err := remote.Schema().getValues(associationValue, rest, remote.Model())
+		if err != nil {
+			return nil, err
+		}
+
+		for i := range associationValues {
+			// index previous stored
+			index := associationsColumns[key][rest[i]]
+
+			values[index] = associationValues[i]
+		}
+	}
+
+	return values, nil
+}
+
+// ScanRow executes a scan from given row into model.
+func (schema Schema) ScanRow(row Row, model Model) error {
+	columns, err := row.Columns()
+	if err != nil {
+		return err
+	}
+
+	value := reflectx.GetIndirectValue(model)
+	if !reflectx.IsStruct(value) {
+		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
+	}
+
+	values, err := schema.getValues(value, columns, model)
+	if err != nil {
+		return err
 	}
 
 	return row.Scan(values...)
@@ -183,32 +266,14 @@ func (schema Schema) ScanRows(rows Rows, model Model) error {
 		return err
 	}
 
-	values := make([]interface{}, len(columns))
 	value := reflectx.GetIndirectValue(model)
 	if !reflectx.IsStruct(value) {
 		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
 	}
 
-	for i, column := range columns {
-		if schema.pk.ColumnName() == column || schema.pk.ColumnPath() == column {
-			values[i] = reflectx.GetReflectFieldByIndexes(value, schema.pk.FieldIndex())
-			continue
-		}
-
-		field, ok := schema.fields[column]
-		if ok {
-			values[i] = reflectx.GetReflectFieldByIndexes(value, field.FieldIndex())
-			continue
-		}
-
-		column = strings.TrimPrefix(column, fmt.Sprint(schema.TableName(), "."))
-		field, ok = schema.fields[column]
-		if ok {
-			values[i] = reflectx.GetReflectFieldByIndexes(value, field.FieldIndex())
-			continue
-		}
-
-		return errors.Wrapf(ErrSchemaColumnRequired, "missing destination name %s in %T", column, model)
+	values, err := schema.getValues(value, columns, model)
+	if err != nil {
+		return err
 	}
 
 	return rows.Scan(values...)
