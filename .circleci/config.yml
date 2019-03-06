@@ -27,4 +27,3 @@ jobs:
       - run:
           name: Run linters
           command: scripts/go-wrapper scripts/lint
-          no_output_timeout: 10m
