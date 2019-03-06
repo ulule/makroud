@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"github.com/ulule/loukoum"
-	"github.com/ulule/loukoum/builder"
+	"github.com/ulule/loukoum/v3"
+	"github.com/ulule/loukoum/v3/builder"
 
 	"github.com/ulule/makroud/reflectx"
 )

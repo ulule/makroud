@@ -9,7 +9,7 @@ export PGDATABASE='postgres'
 DOCKER_DB_PORT=${DOCKER_DB_PORT:-5432}
 
 CONTAINER_NAME="makroud-db"
-CONTAINER_IMAGE="postgres:10.5"
+CONTAINER_IMAGE="postgres:10.7"
 
 create_database() {
     declare dbname="$1"

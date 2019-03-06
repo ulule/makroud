@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/ulule/loukoum/format"
+	"github.com/ulule/loukoum/v3/format"
 
 	"github.com/ulule/makroud"
 )

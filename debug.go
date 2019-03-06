@@ -50,6 +50,7 @@ type debugValue struct {
 	v string
 }
 
+// nolint: interfacer
 func (val debugValue) write(buffer *bytes.Buffer) {
 	buffer.WriteString(`"`)
 	buffer.WriteString(val.k)
@@ -63,6 +64,7 @@ type debugValues struct {
 	v []debugWriter
 }
 
+// nolint: interfacer
 func (val debugValues) write(buffer *bytes.Buffer) {
 	buffer.WriteString(`"`)
 	buffer.WriteString(val.k)
@@ -81,6 +83,7 @@ type debugWrap struct {
 	v debugWriter
 }
 
+// nolint: interfacer
 func (val debugWrap) write(buffer *bytes.Buffer) {
 	buffer.WriteString(`"`)
 	buffer.WriteString(val.k)
@@ -90,6 +93,7 @@ func (val debugWrap) write(buffer *bytes.Buffer) {
 
 type debugObj []debugWriter
 
+// nolint: interfacer
 func (val debugObj) write(buffer *bytes.Buffer) {
 	buffer.WriteString("{")
 	for i := range val {
@@ -103,6 +107,7 @@ func (val debugObj) write(buffer *bytes.Buffer) {
 
 type debugArr []debugWriter
 
+// nolint: interfacer
 func (val debugArr) write(buffer *bytes.Buffer) {
 	buffer.WriteString("[")
 	for i := range val {
