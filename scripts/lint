@@ -10,7 +10,7 @@ fi
 SOURCE_DIRECTORY=$(dirname "${BASH_SOURCE[0]}")
 cd "${SOURCE_DIRECTORY}/.."
 
-OPTIONS=$(go list -f '{{.Dir}}' ./... | grep -v 'github.com/ulule/makroud/benchmark')
+OPTIONS=$(go list -f '{{.Dir}}' ./...)
 if [ -n "$1" ]; then
     OPTIONS="$@"
 fi
