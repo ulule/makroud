@@ -3288,6 +3288,7 @@ type Meow struct {
 	CreatedAt time.Time   `makroud:"column:created"`
 	UpdatedAt time.Time   `makroud:"column:updated"`
 	DeletedAt pq.NullTime `makroud:"column:deleted"`
+	Cat       *Cat
 }
 
 func (Meow) TableName() string {

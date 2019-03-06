@@ -461,3 +461,74 @@ func TestExec_ListModel(t *testing.T) {
 
 	})
 }
+
+func TestJoin_One(t *testing.T) {
+	Setup(t)(func(driver makroud.Driver) {
+		is := require.New(t)
+		ctx := context.Background()
+
+		GenerateZootopiaFixtures(ctx, driver, is)
+
+		stmt := loukoum.Select(`ztp_cat.id "ztp_cat.id"`, `ztp_meow.*`, `ztp_cat.name "ztp_cat.name"`).
+			From("ztp_meow").
+			Join("ztp_cat", "ON ztp_meow.cat_id = ztp_cat.id", loukoum.InnerJoin).Limit(1)
+
+		result := &Meow{}
+		err := makroud.Exec(ctx, driver, stmt, result)
+		is.NoError(err)
+		is.NotNil(result.Cat)
+		is.Equal(result.CatID, result.Cat.ID)
+		is.NotZero(result.Cat.Name)
+		is.Nil(result.Cat.Feeder)
+	})
+}
+
+func TestJoin_OneMany(t *testing.T) {
+	Setup(t)(func(driver makroud.Driver) {
+		is := require.New(t)
+		ctx := context.Background()
+
+		GenerateZootopiaFixtures(ctx, driver, is)
+
+		stmt := loukoum.Select(
+			`ztp_cat.id "ztp_cat.id"`, `ztp_human.cat_id "ztp_cat.ztp_human.cat_id"`, `ztp_meow.*`,
+			`ztp_cat.name "ztp_cat.name"`, `ztp_human.id "ztp_cat.ztp_human.id"`, `ztp_human.name "ztp_cat.ztp_human.name"`,
+		).
+			From("ztp_meow").
+			Join("ztp_cat", "ON ztp_meow.cat_id = ztp_cat.id", loukoum.InnerJoin).
+			Join("ztp_human", "ON ztp_human.cat_id = ztp_cat.id", loukoum.InnerJoin).
+			Limit(1)
+
+		result := &Meow{}
+		err := makroud.Exec(ctx, driver, stmt, result)
+		is.NoError(err)
+		is.NotNil(result.Cat)
+		is.Equal(result.CatID, result.Cat.ID)
+		is.NotZero(result.Cat.Name)
+		is.NotNil(result.Cat.Feeder)
+		is.Equal(result.Cat.ID, result.Cat.Feeder.CatID.String)
+	})
+}
+
+func TestJoin_Many(t *testing.T) {
+	Setup(t)(func(driver makroud.Driver) {
+		is := require.New(t)
+		ctx := context.Background()
+
+		GenerateZootopiaFixtures(ctx, driver, is)
+
+		stmt := loukoum.Select(`ztp_cat.id "ztp_cat.id"`, `ztp_meow.*`, `ztp_cat.name "ztp_cat.name"`).
+			From("ztp_meow").
+			Join("ztp_cat", "ON ztp_meow.cat_id = ztp_cat.id", loukoum.InnerJoin)
+
+		results := []Meow{}
+		err := makroud.Exec(ctx, driver, stmt, &results)
+		is.NoError(err)
+
+		for i := range results {
+			is.NotNil(results[i].Cat)
+			is.Equal(results[i].CatID, results[i].Cat.ID)
+			is.NotZero(results[i].Cat.Name)
+		}
+	})
+}
