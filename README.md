@@ -570,28 +570,29 @@ If there is no error and if the user record has a profile, then you should have 
 
 ## Benchmarks
 
-A [benchmark directory](benchmark/) containing result with other ORM using reflection is available.
+A [benchmark repository](https://github.com/ulule/makroud-benchmarks) containing result with
+other ORM or Mapper using reflection is available.
 
 > **NOTE:** A benchmark is always an observation, not a measurement of performance.
 
-![SelectAll NsOp](benchmark/graph/images/select_all_nsop.png)
-![SelectAll Bop](benchmark/graph/images/select_all_bop.png)
-![SelectAll Aop](benchmark/graph/images/select_all_aop.png)
-![SelectSubset NsOp](benchmark/graph/images/select_subset_nsop.png)
-![SelectSubset Bop](benchmark/graph/images/select_subset_bop.png)
-![SelectSubset Aop](benchmark/graph/images/select_subset_aop.png)
-![SelectComplex NsOp](benchmark/graph/images/select_complex_nsop.png)
-![SelectComplex Bop](benchmark/graph/images/select_complex_bop.png)
-![SelectComplex Aop](benchmark/graph/images/select_complex_aop.png)
-![Insert NsOp](benchmark/graph/images/insert_nsop.png)
-![Insert Bop](benchmark/graph/images/insert_bop.png)
-![Insert Aop](benchmark/graph/images/insert_aop.png)
-![Update NsOp](benchmark/graph/images/update_nsop.png)
-![Update Bop](benchmark/graph/images/update_bop.png)
-![Update Aop](benchmark/graph/images/update_aop.png)
-![Delete NsOp](benchmark/graph/images/delete_nsop.png)
-![Delete Bop](benchmark/graph/images/delete_bop.png)
-![Delete Aop](benchmark/graph/images/delete_aop.png)
+![SelectAll NsOp](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/select_all_nsop.png)
+![SelectAll Bop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/select_all_bop.png)
+![SelectAll Aop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/select_all_aop.png)
+![SelectSubset NsOp](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/select_subset_nsop.png)
+![SelectSubset Bop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/select_subset_bop.png)
+![SelectSubset Aop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/select_subset_aop.png)
+![SelectComplex NsOp](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/select_complex_nsop.png)
+![SelectComplex Bop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/select_complex_bop.png)
+![SelectComplex Aop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/select_complex_aop.png)
+![Insert NsOp](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/insert_nsop.png)
+![Insert Bop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/insert_bop.png)
+![Insert Aop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/insert_aop.png)
+![Update NsOp](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/update_nsop.png)
+![Update Bop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/update_bop.png)
+![Update Aop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/update_aop.png)
+![Delete NsOp](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/delete_nsop.png)
+![Delete Bop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/delete_bop.png)
+![Delete Aop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/delete_aop.png)
 
 ## Development
 
