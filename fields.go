@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/ulule/makroud/snaker"
 	"github.com/ulule/makroud/reflectx"
+	"github.com/ulule/makroud/snaker"
 )
 
 // Field defines the column name, field and options from model.
