@@ -5,8 +5,8 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	"github.com/serenize/snaker"
 
+	"github.com/ulule/makroud/snaker"
 	"github.com/ulule/makroud/reflectx"
 )
 
