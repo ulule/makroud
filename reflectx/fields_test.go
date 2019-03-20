@@ -1,11 +1,11 @@
 package reflectx_test
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 	"time"
 
-	"database/sql"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 
@@ -114,27 +114,58 @@ func TestReflectx_GetFields(t *testing.T) {
 		"Tension",
 	}
 
-	fields, err := reflectx.GetFields(&Elements{})
-	is.NoError(err)
-	is.NotEmpty(fields)
-	is.Equal(expected, fields)
-
-	fields, err = reflectx.GetFields(Elements{})
-	is.NoError(err)
-	is.NotEmpty(fields)
-	is.Equal(expected, fields)
-
-	fields, err = reflectx.GetFields(func() bool {
+	v1 := Elements{}
+	v2 := &v1
+	v3 := &v2
+	v4 := &v3
+	v5 := func() bool {
 		return false
-	})
+	}
+	v6 := &v5
+	v7 := "hello world!"
+	v8 := &v7
+
+	fields, err := reflectx.GetFields(v1)
+	is.NoError(err)
+	is.NotEmpty(fields)
+	is.Equal(expected, fields)
+
+	fields, err = reflectx.GetFields(v2)
+	is.NoError(err)
+	is.NotEmpty(fields)
+	is.Equal(expected, fields)
+
+	fields, err = reflectx.GetFields(v3)
+	is.NoError(err)
+	is.NotEmpty(fields)
+	is.Equal(expected, fields)
+
+	fields, err = reflectx.GetFields(v4)
+	is.NoError(err)
+	is.NotEmpty(fields)
+	is.Equal(expected, fields)
+
+	fields, err = reflectx.GetFields(v5)
 	is.Error(err)
 	is.Empty(fields)
 
-	fields, err = reflectx.GetFields("hello world!")
+	fields, err = reflectx.GetFields(v6)
 	is.Error(err)
 	is.Empty(fields)
 
-	fields, err = reflectx.GetFields(Elements{}.Sand)
+	fields, err = reflectx.GetFields(v7)
+	is.Error(err)
+	is.Empty(fields)
+
+	fields, err = reflectx.GetFields(v8)
+	is.Error(err)
+	is.Empty(fields)
+
+	fields, err = reflectx.GetFields(v1.Sand)
+	is.Error(err)
+	is.Empty(fields)
+
+	fields, err = reflectx.GetFields(v2.Sand)
 	is.Error(err)
 	is.Empty(fields)
 }
@@ -225,9 +256,21 @@ func TestReflectx_GetFieldByName(t *testing.T) {
 	field, ok = reflectx.GetFieldByName(Elements{}, "xE")
 	is.False(ok)
 	is.Empty(field)
+
+	field, ok = reflectx.GetFieldByName(false, "xD")
+	is.False(ok)
+	is.Empty(field)
+
+	field, ok = reflectx.GetFieldByName(42, "xC")
+	is.False(ok)
+	is.Empty(field)
+
+	field, ok = reflectx.GetFieldByName("foobar", "xB")
+	is.False(ok)
+	is.Empty(field)
 }
 
-func TestReflectx_GetFieldValue(t *testing.T) {
+func TestReflectx_GetFieldValueWithName(t *testing.T) {
 	is := require.New(t)
 
 	a := false
@@ -250,27 +293,29 @@ func TestReflectx_GetFieldValue(t *testing.T) {
 		xA:       []byte("hello"),
 	}
 
-	value, err := reflectx.GetFieldValue(elements, "Spirit")
+	input := reflectx.GetIndirectValue(elements)
+
+	value, err := reflectx.GetFieldValueWithName(input, "Spirit")
 	is.NoError(err)
 	is.Equal(false, value)
 
-	value, err = reflectx.GetFieldValue(elements, "Air")
+	value, err = reflectx.GetFieldValueWithName(input, "Air")
 	is.NoError(err)
 	is.Equal(uint8(3), value)
 
-	value, err = reflectx.GetFieldValue(elements, "Tension")
+	value, err = reflectx.GetFieldValueWithName(input, "Tension")
 	is.NoError(err)
 	is.Equal(&c, value)
 
-	value, err = reflectx.GetFieldValue(elements, "Sand")
+	value, err = reflectx.GetFieldValueWithName(input, "Sand")
 	is.NoError(err)
 	is.Equal("89db", value)
 
-	value, err = reflectx.GetFieldValue(elements, "Pressure")
+	value, err = reflectx.GetFieldValueWithName(input, "Pressure")
 	is.NoError(err)
 	is.Equal(f, value)
 
-	value, err = reflectx.GetFieldValue(elements, "xA")
+	value, err = reflectx.GetFieldValueWithName(input, "xA")
 	is.Error(err)
 	is.Nil(value)
 }

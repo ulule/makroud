@@ -228,7 +228,7 @@ func preloadExecForOne(value interface{}, name string, callback func(element Pre
 		return err
 	}
 
-	return callback(PreloadValue(CreateReflectPointer(value)))
+	return callback(PreloadValue(MakeReflectPointer(value)))
 }
 
 func preloadExecForEach(value interface{}, name string, callback func(element PreloadValue) error) error {

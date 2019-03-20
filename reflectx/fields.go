@@ -8,14 +8,9 @@ import (
 
 // GetFields returns a list of field name.
 func GetFields(element interface{}) ([]string, error) {
-	dest := reflect.TypeOf(element)
-	if dest == nil || (dest.Kind() != reflect.Ptr && dest.Kind() != reflect.Struct) {
+	value := GetIndirectValue(element)
+	if value.Kind() != reflect.Struct {
 		return nil, errors.New("makroud: cannot find fields on a non-struct interface")
-	}
-
-	value := reflect.ValueOf(element)
-	if dest.Kind() == reflect.Ptr {
-		value = value.Elem()
 	}
 
 	count := value.Type().NumField()
@@ -33,7 +28,11 @@ func GetFields(element interface{}) ([]string, error) {
 
 // GetFieldByName returns the field in element with given name.
 func GetFieldByName(element interface{}, name string) (reflect.StructField, bool) {
-	return reflect.Indirect(reflect.ValueOf(element)).Type().FieldByName(name)
+	value := GetIndirectValue(element)
+	if value.Kind() != reflect.Struct {
+		return reflect.StructField{}, false
+	}
+	return value.Type().FieldByName(name)
 }
 
 // GetFieldReflectTypeByName returns the field's type with given name.
@@ -44,7 +43,7 @@ func GetFieldReflectTypeByName(element interface{}, name string) (reflect.Type, 
 	}
 
 	kind := value.Type
-	if kind.Kind() == reflect.Ptr {
+	for kind.Kind() == reflect.Ptr {
 		kind = kind.Elem()
 	}
 
@@ -55,7 +54,7 @@ func GetFieldReflectTypeByName(element interface{}, name string) (reflect.Type, 
 func GetReflectFieldByIndexes(value reflect.Value, indexes []int) interface{} {
 	for _, i := range indexes {
 		value = reflect.Indirect(value).Field(i)
-		// if this is a pointer and it's nil, allocate a new value and set it
+		// If this is a pointer and it's nil, allocate a new value and set it.
 		if value.Kind() == reflect.Ptr && value.IsNil() {
 			instance := reflect.New(GetIndirectType(value))
 			value.Set(instance)
@@ -67,44 +66,18 @@ func GetReflectFieldByIndexes(value reflect.Value, indexes []int) interface{} {
 	return value.Addr().Interface()
 }
 
-// GetFieldValue returns the field's value with given name.
-func GetFieldValue(element interface{}, name string) (interface{}, error) {
-	value, ok := element.(reflect.Value)
-	if !ok {
-		value = reflect.Indirect(reflect.ValueOf(element))
-	}
-
-	// Avoid calling FieldByName on interface.
+// GetFieldValueWithIndexes returns the field's value with given traversal indexes.
+func GetFieldValueWithIndexes(value reflect.Value, indexes []int) (interface{}, error) {
+	// Avoid calling Field on interface.
 	if value.Kind() == reflect.Interface {
 		value = reflect.ValueOf(value.Interface())
 	}
 
-	// Avoid calling FieldByName on pointer.
-	if value.Kind() == reflect.Ptr {
+	// Avoid calling Field on pointer.
+	for value.Kind() == reflect.Ptr {
 		value = reflect.Indirect(value)
 	}
 
-	// Avoid calling FieldByName on zero value
-	if !value.IsValid() {
-		return nil, errors.Errorf("makroud: no such field %s in %T", name, element)
-	}
-
-	field := value.FieldByName(name)
-	if !field.IsValid() {
-		return nil, errors.Errorf("makroud: no such field %s in %T", name, element)
-	}
-	if field.Kind() == reflect.Ptr && field.IsNil() {
-		return nil, nil
-	}
-	if !field.CanInterface() {
-		return nil, errors.Errorf("makroud: cannot find field %s in %T", name, element)
-	}
-
-	return field.Interface(), nil
-}
-
-// GetFieldValueWithIndexes returns the field's value with given traversal indexes.
-func GetFieldValueWithIndexes(value reflect.Value, indexes []int) (interface{}, error) {
 	for _, i := range indexes {
 		value = reflect.Indirect(value).Field(i)
 		if !value.IsValid() {
@@ -114,15 +87,48 @@ func GetFieldValueWithIndexes(value reflect.Value, indexes []int) (interface{}, 
 			return nil, nil
 		}
 	}
+
 	if !value.CanInterface() {
 		return nil, errors.Errorf("makroud: cannot find required field in %T", value)
 	}
+	
 	return value.Interface(), nil
+}
+
+// GetFieldValueWithName returns the field's value with given name.
+func GetFieldValueWithName(value reflect.Value, name string) (interface{}, error) {
+	// Avoid calling FieldByName on interface.
+	if value.Kind() == reflect.Interface {
+		value = reflect.ValueOf(value.Interface())
+	}
+
+	// Avoid calling FieldByName on pointer.
+	for value.Kind() == reflect.Ptr {
+		value = reflect.Indirect(value)
+	}
+
+	// Avoid calling FieldByName on zero value
+	if !value.IsValid() {
+		return nil, errors.Errorf("makroud: no such field %s in %T", name, value)
+	}
+
+	field := value.FieldByName(name)
+	if !field.IsValid() {
+		return nil, errors.Errorf("makroud: no such field %s in %T", name, value)
+	}
+	if field.Kind() == reflect.Ptr && field.IsNil() {
+		return nil, nil
+	}
+	if !field.CanInterface() {
+		return nil, errors.Errorf("makroud: cannot find field %s in %T", name, value)
+	}
+
+	return field.Interface(), nil
 }
 
 // GetFieldValueInt64 returns int64 value for the given instance field.
 func GetFieldValueInt64(instance interface{}, field string) (int64, error) {
-	value, err := GetFieldValue(instance, field)
+	value, err := GetFieldValueWithName(GetIndirectValue(instance), field)
 	if err != nil {
 		return 0, err
 	}
@@ -137,7 +143,7 @@ func GetFieldValueInt64(instance interface{}, field string) (int64, error) {
 
 // GetFieldOptionalValueInt64 returns an optional int64 value for the given instance field.
 func GetFieldOptionalValueInt64(instance interface{}, field string) (int64, bool, error) {
-	value, err := GetFieldValue(instance, field)
+	value, err := GetFieldValueWithName(GetIndirectValue(instance), field)
 	if err != nil {
 		return 0, false, err
 	}
@@ -148,7 +154,7 @@ func GetFieldOptionalValueInt64(instance interface{}, field string) (int64, bool
 
 // GetFieldValueString returns string value for the given instance field.
 func GetFieldValueString(instance interface{}, field string) (string, error) {
-	value, err := GetFieldValue(instance, field)
+	value, err := GetFieldValueWithName(GetIndirectValue(instance), field)
 	if err != nil {
 		return "", err
 	}
@@ -163,7 +169,7 @@ func GetFieldValueString(instance interface{}, field string) (string, error) {
 
 // GetFieldOptionalValueString returns an optional string value for the given instance field.
 func GetFieldOptionalValueString(instance interface{}, field string) (string, bool, error) {
-	value, err := GetFieldValue(instance, field)
+	value, err := GetFieldValueWithName(GetIndirectValue(instance), field)
 	if err != nil {
 		return "", false, err
 	}

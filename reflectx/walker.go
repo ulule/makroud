@@ -99,7 +99,7 @@ func (w *Walker) onEach(levels []string) error {
 
 func (w *Walker) find(value interface{}, levels []string) error {
 
-	leaf, err := GetFieldValue(value, levels[0])
+	leaf, err := GetFieldValueWithName(GetIndirectValue(value), levels[0])
 	if err != nil {
 		return err
 	}
