@@ -91,7 +91,7 @@ func GetFieldValueWithIndexes(value reflect.Value, indexes []int) (interface{}, 
 	if !value.CanInterface() {
 		return nil, errors.Errorf("makroud: cannot find required field in %T", value)
 	}
-	
+
 	return value.Interface(), nil
 }
 
