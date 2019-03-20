@@ -29,16 +29,10 @@ Under the hood, it relies on three components:
 
 ## Installation
 
-Using [dep](https://github.com/golang/dep)
+Using [Go Modules](https://github.com/golang/go/wiki/Modules)
 
 ```console
-dep ensure -add github.com/ulule/makroud@master
-```
-
-or `go get`
-
-```console
-go get -u github.com/ulule/makroud
+go get github.com/ulule/makroud
 ```
 
 ## Usage
