@@ -2,6 +2,7 @@ package makroud
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"math/rand"
@@ -114,6 +115,42 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 
 	if options.Logger != nil {
 		client.log = options.Logger
+	}
+
+	return client, nil
+}
+
+func NewFromSQLDB(db *sql.DB, drivername string) (*Client, error) {
+	dbx := sqlx.NewDb(db, drivername)
+
+	connection, err := sqalx.New(dbx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "makroud: cannot instantiate %s client driver", ClientDriver)
+	}
+
+	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	client := &Client{
+		node: connection,
+		rnd:  entropy,
+	}
+
+	return client, nil
+}
+
+func NewFromSQLTx(tx *sql.Tx, drivername string) (*Client, error) {
+	txx := sqlx.NewTx(tx, drivername)
+
+	connection, err := sqalx.NewFromTransaction(txx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "makroud: cannot instantiate %s client driver", ClientDriver)
+	}
+
+	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	client := &Client{
+		node: connection,
+		rnd:  entropy,
 	}
 
 	return client, nil
