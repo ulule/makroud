@@ -17,10 +17,10 @@ import (
 func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...interface{}) error {
 	if driver.hasLogger() {
 		start := time.Now()
-		queries := Queries{NewQuery(stmt)}
+		query := NewQuery(stmt)
 
 		defer func() {
-			Log(driver, queries, time.Since(start))
+			Log(driver, query, time.Since(start))
 		}()
 	}
 
@@ -39,10 +39,10 @@ func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...inte
 func RawExec(ctx context.Context, driver Driver, query string, dest ...interface{}) error {
 	if driver.hasLogger() {
 		start := time.Now()
-		queries := Queries{NewRawQuery(query)}
+		query := NewRawQuery(query)
 
 		defer func() {
-			Log(driver, queries, time.Since(start))
+			Log(driver, query, time.Since(start))
 		}()
 	}
 

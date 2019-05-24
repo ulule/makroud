@@ -21,7 +21,6 @@ func (e *logger) Log(query string, duration time.Duration) {
 }
 
 var ErrLogTimeout = fmt.Errorf("logger timeout")
-var EOL = "\n"
 
 func (e *logger) read() (string, error) {
 	select {
@@ -50,7 +49,7 @@ func TestLogger(t *testing.T) {
 		is.NoError(err)
 		expected := fmt.Sprint(
 			`INSERT INTO ztp_owl (favorite_food, feather_color, group_id, name) VALUES `,
-			`('Shrimps', 'lavender', NULL, 'Guacamowle') RETURNING id;`, EOL,
+			`('Shrimps', 'lavender', NULL, 'Guacamowle') RETURNING id`,
 		)
 
 		log, err := logger.read()
@@ -62,7 +61,7 @@ func TestLogger(t *testing.T) {
 		is.NoError(err)
 		expected = fmt.Sprint(
 			`UPDATE ztp_owl SET favorite_food = 'Shrimps', feather_color = 'lavender', group_id = NULL, `,
-			`name = 'Nibbles' WHERE (id = `, format.Int(owl.ID), `);`, EOL,
+			`name = 'Nibbles' WHERE (id = `, format.Int(owl.ID), `)`,
 		)
 
 		log, err = logger.read()
@@ -71,7 +70,7 @@ func TestLogger(t *testing.T) {
 
 		err = makroud.Delete(ctx, driver, owl)
 		is.NoError(err)
-		expected = fmt.Sprint(`DELETE FROM ztp_owl WHERE (id = `, format.Int(owl.ID), `);`, EOL)
+		expected = fmt.Sprint(`DELETE FROM ztp_owl WHERE (id = `, format.Int(owl.ID), `)`)
 
 		log, err = logger.read()
 		is.NoError(err)
