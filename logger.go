@@ -10,13 +10,13 @@ type Logger interface {
 	Log(query string, duration time.Duration)
 }
 
-// Log will emmit given queries on driver's attached Logger.
-func Log(driver Driver, queries Queries, duration time.Duration) {
-	if driver == nil || len(queries) == 0 || !driver.hasLogger() {
+// Log will emmit given query on driver's attached Logger.
+func Log(driver Driver, query Query, duration time.Duration) {
+	if driver == nil && !driver.hasLogger() {
 		return
 	}
 	go func() {
-		query := queries.String()
+		query := query.String()
 		driver.logger().Log(query, duration)
 	}()
 }
