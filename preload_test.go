@@ -2794,6 +2794,99 @@ func TestPreload_Owl_Many(t *testing.T) {
 				*fixtures.Owls[5],
 			}
 
+			err := makroud.Preload(ctx, driver, owls,
+				makroud.WithPreloadField("Group"),
+				makroud.WithPreloadField("Bag"),
+				makroud.WithPreloadField("Packages"),
+			)
+			is.NoError(err)
+			is.Len(owls, 6)
+			is.Equal(fixtures.Owls[0].ID, owls[0].ID)
+			is.Equal(fixtures.Owls[1].ID, owls[1].ID)
+			is.Equal(fixtures.Owls[2].ID, owls[2].ID)
+			is.Equal(fixtures.Owls[3].ID, owls[3].ID)
+			is.Equal(fixtures.Owls[4].ID, owls[4].ID)
+			is.Equal(fixtures.Owls[5].ID, owls[5].ID)
+
+			is.NotNil(owls[0].Group)
+			is.Equal(fixtures.Groups[0].ID, owls[0].Group.ID)
+			is.Equal(fixtures.Groups[0].Name, owls[0].Group.Name)
+			is.NotEmpty(owls[0].Packages)
+			is.Len(owls[0].Packages, 2)
+			is.Contains(owls[0].Packages, *fixtures.Packages[0])
+			is.Contains(owls[0].Packages, *fixtures.Packages[1])
+			is.NotEmpty(owls[0].Bag)
+			is.Equal(fixtures.Bags[0].ID, owls[0].Bag.ID)
+			is.Equal(fixtures.Bags[0].Color, owls[0].Bag.Color)
+
+			is.Nil(owls[1].Group)
+			is.NotEmpty(owls[1].Packages)
+			is.Len(owls[1].Packages, 1)
+			is.Contains(owls[1].Packages, *fixtures.Packages[3])
+			is.NotEmpty(owls[1].Bag)
+			is.Equal(fixtures.Bags[1].ID, owls[1].Bag.ID)
+			is.Equal(fixtures.Bags[1].Color, owls[1].Bag.Color)
+
+			is.NotNil(owls[2].Group)
+			is.Equal(fixtures.Groups[0].ID, owls[2].Group.ID)
+			is.Equal(fixtures.Groups[0].Name, owls[2].Group.Name)
+			is.NotEmpty(owls[2].Packages)
+			is.Len(owls[2].Packages, 5)
+			is.Contains(owls[2].Packages, *fixtures.Packages[4])
+			is.Contains(owls[2].Packages, *fixtures.Packages[5])
+			is.Contains(owls[2].Packages, *fixtures.Packages[6])
+			is.Contains(owls[2].Packages, *fixtures.Packages[7])
+			is.Contains(owls[2].Packages, *fixtures.Packages[8])
+			is.Empty(owls[2].Bag)
+
+			is.NotNil(owls[3].Group)
+			is.Equal(fixtures.Groups[1].ID, owls[3].Group.ID)
+			is.Equal(fixtures.Groups[1].Name, owls[3].Group.Name)
+			is.NotEmpty(owls[3].Packages)
+			is.Len(owls[3].Packages, 4)
+			is.Contains(owls[3].Packages, *fixtures.Packages[9])
+			is.Contains(owls[3].Packages, *fixtures.Packages[10])
+			is.Contains(owls[3].Packages, *fixtures.Packages[11])
+			is.Contains(owls[3].Packages, *fixtures.Packages[12])
+			is.NotEmpty(owls[3].Bag)
+			is.Equal(fixtures.Bags[2].ID, owls[3].Bag.ID)
+			is.Equal(fixtures.Bags[2].Color, owls[3].Bag.Color)
+
+			is.NotNil(owls[4].Group)
+			is.Equal(fixtures.Groups[2].ID, owls[4].Group.ID)
+			is.Equal(fixtures.Groups[2].Name, owls[4].Group.Name)
+			is.Empty(owls[4].Packages)
+			is.NotEmpty(owls[4].Bag)
+			is.Equal(fixtures.Bags[3].ID, owls[4].Bag.ID)
+			is.Equal(fixtures.Bags[3].Color, owls[4].Bag.Color)
+
+			is.NotNil(owls[5].Group)
+			is.Equal(fixtures.Groups[3].ID, owls[5].Group.ID)
+			is.Equal(fixtures.Groups[3].Name, owls[5].Group.Name)
+			is.NotEmpty(owls[5].Packages)
+			is.Len(owls[5].Packages, 3)
+			is.Contains(owls[5].Packages, *fixtures.Packages[13])
+			is.Contains(owls[5].Packages, *fixtures.Packages[14])
+			is.Contains(owls[5].Packages, *fixtures.Packages[15])
+			is.NotEmpty(owls[5].Bag)
+			is.Equal(fixtures.Bags[4].ID, owls[5].Bag.ID)
+			is.Equal(fixtures.Bags[4].Color, owls[5].Bag.Color)
+
+		}
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckOwlFixtures(fixtures)
+
+			owls := []Owl{
+				*fixtures.Owls[0],
+				*fixtures.Owls[1],
+				*fixtures.Owls[2],
+				*fixtures.Owls[3],
+				*fixtures.Owls[4],
+				*fixtures.Owls[5],
+			}
+
 			err := makroud.Preload(ctx, driver, &owls,
 				makroud.WithPreloadField("Group"),
 				makroud.WithPreloadField("Bag"),
