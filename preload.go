@@ -11,9 +11,32 @@ import (
 	"github.com/ulule/makroud/reflectx"
 )
 
+type preloadRule uint8
+
+const (
+	preloadRulePointerOnly = preloadRule(iota)
+	preloadRulePointerAndSlice
+)
+
+func canPreload(rule preloadRule, dest interface{}) error {
+	switch rule {
+	case preloadRulePointerOnly:
+		if !reflectx.IsPointer(dest) {
+			return errors.Wrapf(ErrPointerRequired, "cannot preload %T", dest)
+		}
+	case preloadRulePointerAndSlice:
+		if !reflectx.IsPointer(dest) && !reflectx.IsSlice(dest) {
+			return errors.Wrapf(ErrPointerOrSliceRequired, "cannot preload %T", dest)
+		}
+	default:
+		return errors.Wrapf(ErrUnknownPreloadRule, "cannot preload with rule %v", rule)
+	}
+	return nil
+}
+
 // Preload preloads related fields.
 func Preload(ctx context.Context, driver Driver, out interface{}, handlers ...PreloadHandler) error {
-	err := preload(ctx, driver, out, handlers...)
+	err := preload(ctx, driver, preloadRulePointerAndSlice, out, handlers...)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot execute preload")
 	}
@@ -21,13 +44,14 @@ func Preload(ctx context.Context, driver Driver, out interface{}, handlers ...Pr
 }
 
 // preload preloads related fields.
-func preload(ctx context.Context, driver Driver, dest interface{}, handlers ...PreloadHandler) error {
+func preload(ctx context.Context, driver Driver, rule preloadRule, dest interface{}, handlers ...PreloadHandler) error {
 	if driver == nil {
 		return errors.WithStack(ErrInvalidDriver)
 	}
 
-	if !reflectx.IsPointer(dest) {
-		return errors.Wrapf(ErrPointerRequired, "cannot preload %T", dest)
+	err := canPreload(rule, dest)
+	if err != nil {
+		return err
 	}
 
 	groups := getPreloadGroupOperations(handlers)
@@ -267,7 +291,7 @@ func executePreloadWalker(ctx context.Context, driver Driver,
 		err := walker.Find(operation.Parent(), func(values interface{}) error {
 			op := WithPreloadCallback(operation.Name(), operation.Callback())
 			op.unscoped = operation.Unscoped()
-			return preload(ctx, driver, values, op)
+			return preload(ctx, driver, preloadRulePointerOnly, values, op)
 		})
 		if err != nil {
 			return err

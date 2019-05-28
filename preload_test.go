@@ -33,7 +33,7 @@ func TestPreload_CommonFailure(t *testing.T) {
 			value := Human{}
 			err := makroud.Preload(ctx, driver, value, makroud.WithPreloadField("Cat"))
 			is.Error(err)
-			is.Equal(makroud.ErrPointerRequired, errors.Cause(err))
+			is.Equal(makroud.ErrPointerOrSliceRequired, errors.Cause(err))
 		}
 		{
 			value := Human{}
@@ -152,6 +152,41 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 				*fixtures.Regions[2],
 			}
 
+			err := makroud.Preload(ctx, driver, regions, makroud.WithPreloadField("Buckets"))
+			is.NoError(err)
+			is.Len(regions, 3)
+			is.Equal(fixtures.Regions[0].ID, regions[0].ID)
+			is.Equal(fixtures.Regions[1].ID, regions[1].ID)
+			is.Equal(fixtures.Regions[2].ID, regions[2].ID)
+
+			is.NotNil(regions[0].Buckets)
+			is.NotEmpty((*regions[0].Buckets))
+			is.Len((*regions[0].Buckets), 2)
+			is.Contains((*regions[0].Buckets), *fixtures.Buckets[0])
+			is.Contains((*regions[0].Buckets), *fixtures.Buckets[1])
+
+			is.NotNil(regions[1].Buckets)
+			is.Empty((*regions[1].Buckets))
+			is.Len((*regions[1].Buckets), 0)
+
+			is.NotNil(regions[2].Buckets)
+			is.NotEmpty((*regions[2].Buckets))
+			is.Len((*regions[2].Buckets), 2)
+			is.Contains((*regions[2].Buckets), *fixtures.Buckets[2])
+			is.Contains((*regions[2].Buckets), *fixtures.Buckets[3])
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckExoCloudFixtures(fixtures)
+
+			regions := []ExoRegion{
+				*fixtures.Regions[0],
+				*fixtures.Regions[1],
+				*fixtures.Regions[2],
+			}
+
 			err := makroud.Preload(ctx, driver, &regions, makroud.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.Len(regions, 3)
@@ -188,6 +223,41 @@ func TestPreload_ExoRegion_Many(t *testing.T) {
 			}
 
 			err := makroud.Preload(ctx, driver, &regions, makroud.WithPreloadField("Buckets"))
+			is.NoError(err)
+			is.Len(regions, 3)
+			is.Equal(fixtures.Regions[0].ID, regions[0].ID)
+			is.Equal(fixtures.Regions[1].ID, regions[1].ID)
+			is.Equal(fixtures.Regions[2].ID, regions[2].ID)
+
+			is.NotNil(regions[0].Buckets)
+			is.NotEmpty((*regions[0].Buckets))
+			is.Len((*regions[0].Buckets), 2)
+			is.Contains((*regions[0].Buckets), *fixtures.Buckets[0])
+			is.Contains((*regions[0].Buckets), *fixtures.Buckets[1])
+
+			is.NotNil(regions[1].Buckets)
+			is.Empty((*regions[1].Buckets))
+			is.Len((*regions[1].Buckets), 0)
+
+			is.NotNil(regions[2].Buckets)
+			is.NotEmpty((*regions[2].Buckets))
+			is.Len((*regions[2].Buckets), 2)
+			is.Contains((*regions[2].Buckets), *fixtures.Buckets[2])
+			is.Contains((*regions[2].Buckets), *fixtures.Buckets[3])
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckExoCloudFixtures(fixtures)
+
+			regions := []*ExoRegion{
+				fixtures.Regions[0],
+				fixtures.Regions[1],
+				fixtures.Regions[2],
+			}
+
+			err := makroud.Preload(ctx, driver, regions, makroud.WithPreloadField("Buckets"))
 			is.NoError(err)
 			is.Len(regions, 3)
 			is.Equal(fixtures.Regions[0].ID, regions[0].ID)
@@ -407,7 +477,89 @@ func TestPreload_ExoBucket_Many(t *testing.T) {
 				*fixtures.Buckets[3],
 			}
 
+			err := makroud.Preload(ctx, driver, buckets, makroud.WithPreloadField("Region"))
+			is.NoError(err)
+			is.Len(buckets, 4)
+			is.Equal(fixtures.Buckets[0].ID, buckets[0].ID)
+			is.Equal(fixtures.Buckets[1].ID, buckets[1].ID)
+			is.Equal(fixtures.Buckets[2].ID, buckets[2].ID)
+			is.Equal(fixtures.Buckets[3].ID, buckets[3].ID)
+
+			is.NotEmpty(buckets[0].Region)
+			is.Equal(fixtures.Regions[0].ID, buckets[0].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, buckets[0].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, buckets[0].Region.Hostname)
+
+			is.NotEmpty(buckets[1].Region)
+			is.Equal(fixtures.Regions[0].ID, buckets[1].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, buckets[1].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, buckets[1].Region.Hostname)
+
+			is.NotEmpty(buckets[2].Region)
+			is.Equal(fixtures.Regions[2].ID, buckets[2].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, buckets[2].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, buckets[2].Region.Hostname)
+
+			is.NotEmpty(buckets[3].Region)
+			is.Equal(fixtures.Regions[2].ID, buckets[3].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, buckets[3].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, buckets[3].Region.Hostname)
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckExoCloudFixtures(fixtures)
+
+			buckets := []ExoBucket{
+				*fixtures.Buckets[0],
+				*fixtures.Buckets[1],
+				*fixtures.Buckets[2],
+				*fixtures.Buckets[3],
+			}
+
 			err := makroud.Preload(ctx, driver, &buckets, makroud.WithPreloadField("Region"))
+			is.NoError(err)
+			is.Len(buckets, 4)
+			is.Equal(fixtures.Buckets[0].ID, buckets[0].ID)
+			is.Equal(fixtures.Buckets[1].ID, buckets[1].ID)
+			is.Equal(fixtures.Buckets[2].ID, buckets[2].ID)
+			is.Equal(fixtures.Buckets[3].ID, buckets[3].ID)
+
+			is.NotEmpty(buckets[0].Region)
+			is.Equal(fixtures.Regions[0].ID, buckets[0].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, buckets[0].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, buckets[0].Region.Hostname)
+
+			is.NotEmpty(buckets[1].Region)
+			is.Equal(fixtures.Regions[0].ID, buckets[1].Region.ID)
+			is.Equal(fixtures.Regions[0].Name, buckets[1].Region.Name)
+			is.Equal(fixtures.Regions[0].Hostname, buckets[1].Region.Hostname)
+
+			is.NotEmpty(buckets[2].Region)
+			is.Equal(fixtures.Regions[2].ID, buckets[2].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, buckets[2].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, buckets[2].Region.Hostname)
+
+			is.NotEmpty(buckets[3].Region)
+			is.Equal(fixtures.Regions[2].ID, buckets[3].Region.ID)
+			is.Equal(fixtures.Regions[2].Name, buckets[3].Region.Name)
+			is.Equal(fixtures.Regions[2].Hostname, buckets[3].Region.Hostname)
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckExoCloudFixtures(fixtures)
+
+			buckets := []*ExoBucket{
+				fixtures.Buckets[0],
+				fixtures.Buckets[1],
+				fixtures.Buckets[2],
+				fixtures.Buckets[3],
+			}
+
+			err := makroud.Preload(ctx, driver, buckets, makroud.WithPreloadField("Region"))
 			is.NoError(err)
 			is.Len(buckets, 4)
 			is.Equal(fixtures.Buckets[0].ID, buckets[0].ID)
@@ -1993,7 +2145,147 @@ func TestPreload_ExoChunk_Many(t *testing.T) {
 				*fixtures.Chunks[28],
 			}
 
+			err := makroud.Preload(ctx, driver, chunks,
+				makroud.WithPreloadField("Mode"),
+				makroud.WithPreloadField("Signature"),
+			)
+			is.NoError(err)
+			is.Len(chunks, 6)
+			is.Equal(fixtures.Chunks[23].Hash, chunks[0].Hash)
+			is.Equal(fixtures.Chunks[24].Hash, chunks[1].Hash)
+			is.Equal(fixtures.Chunks[25].Hash, chunks[2].Hash)
+			is.Equal(fixtures.Chunks[26].Hash, chunks[3].Hash)
+			is.Equal(fixtures.Chunks[27].Hash, chunks[4].Hash)
+			is.Equal(fixtures.Chunks[28].Hash, chunks[5].Hash)
+
+			is.NotNil(chunks[0].Mode)
+			is.Equal(fixtures.Modes[3].ID, chunks[0].Mode.ID)
+			is.Equal(fixtures.Modes[3].Mode, chunks[0].Mode.Mode)
+			is.Nil(chunks[0].Signature)
+
+			is.NotNil(chunks[1].Mode)
+			is.Equal(fixtures.Modes[0].ID, chunks[1].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[1].Mode.Mode)
+			is.NotNil(chunks[1].Signature)
+			is.Equal(fixtures.Signatures[0].ID, chunks[1].Signature.ID)
+			is.Equal(fixtures.Signatures[0].ChunkID, chunks[1].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[0].Bytes, chunks[1].Signature.Bytes)
+
+			is.NotNil(chunks[2].Mode)
+			is.Equal(fixtures.Modes[0].ID, chunks[2].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[2].Mode.Mode)
+			is.NotNil(chunks[2].Signature)
+			is.Equal(fixtures.Signatures[1].ID, chunks[2].Signature.ID)
+			is.Equal(fixtures.Signatures[1].ChunkID, chunks[2].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[1].Bytes, chunks[2].Signature.Bytes)
+
+			is.NotNil(chunks[3].Mode)
+			is.Equal(fixtures.Modes[0].ID, chunks[3].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[3].Mode.Mode)
+			is.NotNil(chunks[3].Signature)
+			is.Equal(fixtures.Signatures[2].ID, chunks[3].Signature.ID)
+			is.Equal(fixtures.Signatures[2].ChunkID, chunks[3].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[2].Bytes, chunks[3].Signature.Bytes)
+
+			is.NotNil(chunks[4].Mode)
+			is.Equal(fixtures.Modes[0].ID, chunks[4].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[4].Mode.Mode)
+			is.NotNil(chunks[4].Signature)
+			is.Equal(fixtures.Signatures[3].ID, chunks[4].Signature.ID)
+			is.Equal(fixtures.Signatures[3].ChunkID, chunks[4].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[3].Bytes, chunks[4].Signature.Bytes)
+
+			is.NotNil(chunks[5].Mode)
+			is.Equal(fixtures.Modes[2].ID, chunks[5].Mode.ID)
+			is.Equal(fixtures.Modes[2].Mode, chunks[5].Mode.Mode)
+			is.Nil(chunks[5].Signature)
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckExoCloudFixtures(fixtures)
+
+			chunks := []ExoChunk{
+				*fixtures.Chunks[23],
+				*fixtures.Chunks[24],
+				*fixtures.Chunks[25],
+				*fixtures.Chunks[26],
+				*fixtures.Chunks[27],
+				*fixtures.Chunks[28],
+			}
+
 			err := makroud.Preload(ctx, driver, &chunks,
+				makroud.WithPreloadField("Mode"),
+				makroud.WithPreloadField("Signature"),
+			)
+			is.NoError(err)
+			is.Len(chunks, 6)
+			is.Equal(fixtures.Chunks[23].Hash, chunks[0].Hash)
+			is.Equal(fixtures.Chunks[24].Hash, chunks[1].Hash)
+			is.Equal(fixtures.Chunks[25].Hash, chunks[2].Hash)
+			is.Equal(fixtures.Chunks[26].Hash, chunks[3].Hash)
+			is.Equal(fixtures.Chunks[27].Hash, chunks[4].Hash)
+			is.Equal(fixtures.Chunks[28].Hash, chunks[5].Hash)
+
+			is.NotNil(chunks[0].Mode)
+			is.Equal(fixtures.Modes[3].ID, chunks[0].Mode.ID)
+			is.Equal(fixtures.Modes[3].Mode, chunks[0].Mode.Mode)
+			is.Nil(chunks[0].Signature)
+
+			is.NotNil(chunks[1].Mode)
+			is.Equal(fixtures.Modes[0].ID, chunks[1].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[1].Mode.Mode)
+			is.NotNil(chunks[1].Signature)
+			is.Equal(fixtures.Signatures[0].ID, chunks[1].Signature.ID)
+			is.Equal(fixtures.Signatures[0].ChunkID, chunks[1].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[0].Bytes, chunks[1].Signature.Bytes)
+
+			is.NotNil(chunks[2].Mode)
+			is.Equal(fixtures.Modes[0].ID, chunks[2].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[2].Mode.Mode)
+			is.NotNil(chunks[2].Signature)
+			is.Equal(fixtures.Signatures[1].ID, chunks[2].Signature.ID)
+			is.Equal(fixtures.Signatures[1].ChunkID, chunks[2].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[1].Bytes, chunks[2].Signature.Bytes)
+
+			is.NotNil(chunks[3].Mode)
+			is.Equal(fixtures.Modes[0].ID, chunks[3].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[3].Mode.Mode)
+			is.NotNil(chunks[3].Signature)
+			is.Equal(fixtures.Signatures[2].ID, chunks[3].Signature.ID)
+			is.Equal(fixtures.Signatures[2].ChunkID, chunks[3].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[2].Bytes, chunks[3].Signature.Bytes)
+
+			is.NotNil(chunks[4].Mode)
+			is.Equal(fixtures.Modes[0].ID, chunks[4].Mode.ID)
+			is.Equal(fixtures.Modes[0].Mode, chunks[4].Mode.Mode)
+			is.NotNil(chunks[4].Signature)
+			is.Equal(fixtures.Signatures[3].ID, chunks[4].Signature.ID)
+			is.Equal(fixtures.Signatures[3].ChunkID, chunks[4].Signature.ChunkID)
+			is.Equal(fixtures.Signatures[3].Bytes, chunks[4].Signature.Bytes)
+
+			is.NotNil(chunks[5].Mode)
+			is.Equal(fixtures.Modes[2].ID, chunks[5].Mode.ID)
+			is.Equal(fixtures.Modes[2].Mode, chunks[5].Mode.Mode)
+			is.Nil(chunks[5].Signature)
+
+		}
+		{
+
+			fixtures := GenerateExoCloudFixtures(ctx, driver, is)
+			CheckExoCloudFixtures(fixtures)
+
+			chunks := []*ExoChunk{
+				fixtures.Chunks[23],
+				fixtures.Chunks[24],
+				fixtures.Chunks[25],
+				fixtures.Chunks[26],
+				fixtures.Chunks[27],
+				fixtures.Chunks[28],
+			}
+
+			err := makroud.Preload(ctx, driver, chunks,
 				makroud.WithPreloadField("Mode"),
 				makroud.WithPreloadField("Signature"),
 			)
@@ -2488,6 +2780,99 @@ func TestPreload_Owl_Many(t *testing.T) {
 			is.Empty(fixtures.Owls[5].Bag)
 		}
 
+		{
+
+			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+			CheckOwlFixtures(fixtures)
+
+			owls := []Owl{
+				*fixtures.Owls[0],
+				*fixtures.Owls[1],
+				*fixtures.Owls[2],
+				*fixtures.Owls[3],
+				*fixtures.Owls[4],
+				*fixtures.Owls[5],
+			}
+
+			err := makroud.Preload(ctx, driver, owls,
+				makroud.WithPreloadField("Group"),
+				makroud.WithPreloadField("Bag"),
+				makroud.WithPreloadField("Packages"),
+			)
+			is.NoError(err)
+			is.Len(owls, 6)
+			is.Equal(fixtures.Owls[0].ID, owls[0].ID)
+			is.Equal(fixtures.Owls[1].ID, owls[1].ID)
+			is.Equal(fixtures.Owls[2].ID, owls[2].ID)
+			is.Equal(fixtures.Owls[3].ID, owls[3].ID)
+			is.Equal(fixtures.Owls[4].ID, owls[4].ID)
+			is.Equal(fixtures.Owls[5].ID, owls[5].ID)
+
+			is.NotNil(owls[0].Group)
+			is.Equal(fixtures.Groups[0].ID, owls[0].Group.ID)
+			is.Equal(fixtures.Groups[0].Name, owls[0].Group.Name)
+			is.NotEmpty(owls[0].Packages)
+			is.Len(owls[0].Packages, 2)
+			is.Contains(owls[0].Packages, *fixtures.Packages[0])
+			is.Contains(owls[0].Packages, *fixtures.Packages[1])
+			is.NotEmpty(owls[0].Bag)
+			is.Equal(fixtures.Bags[0].ID, owls[0].Bag.ID)
+			is.Equal(fixtures.Bags[0].Color, owls[0].Bag.Color)
+
+			is.Nil(owls[1].Group)
+			is.NotEmpty(owls[1].Packages)
+			is.Len(owls[1].Packages, 1)
+			is.Contains(owls[1].Packages, *fixtures.Packages[3])
+			is.NotEmpty(owls[1].Bag)
+			is.Equal(fixtures.Bags[1].ID, owls[1].Bag.ID)
+			is.Equal(fixtures.Bags[1].Color, owls[1].Bag.Color)
+
+			is.NotNil(owls[2].Group)
+			is.Equal(fixtures.Groups[0].ID, owls[2].Group.ID)
+			is.Equal(fixtures.Groups[0].Name, owls[2].Group.Name)
+			is.NotEmpty(owls[2].Packages)
+			is.Len(owls[2].Packages, 5)
+			is.Contains(owls[2].Packages, *fixtures.Packages[4])
+			is.Contains(owls[2].Packages, *fixtures.Packages[5])
+			is.Contains(owls[2].Packages, *fixtures.Packages[6])
+			is.Contains(owls[2].Packages, *fixtures.Packages[7])
+			is.Contains(owls[2].Packages, *fixtures.Packages[8])
+			is.Empty(owls[2].Bag)
+
+			is.NotNil(owls[3].Group)
+			is.Equal(fixtures.Groups[1].ID, owls[3].Group.ID)
+			is.Equal(fixtures.Groups[1].Name, owls[3].Group.Name)
+			is.NotEmpty(owls[3].Packages)
+			is.Len(owls[3].Packages, 4)
+			is.Contains(owls[3].Packages, *fixtures.Packages[9])
+			is.Contains(owls[3].Packages, *fixtures.Packages[10])
+			is.Contains(owls[3].Packages, *fixtures.Packages[11])
+			is.Contains(owls[3].Packages, *fixtures.Packages[12])
+			is.NotEmpty(owls[3].Bag)
+			is.Equal(fixtures.Bags[2].ID, owls[3].Bag.ID)
+			is.Equal(fixtures.Bags[2].Color, owls[3].Bag.Color)
+
+			is.NotNil(owls[4].Group)
+			is.Equal(fixtures.Groups[2].ID, owls[4].Group.ID)
+			is.Equal(fixtures.Groups[2].Name, owls[4].Group.Name)
+			is.Empty(owls[4].Packages)
+			is.NotEmpty(owls[4].Bag)
+			is.Equal(fixtures.Bags[3].ID, owls[4].Bag.ID)
+			is.Equal(fixtures.Bags[3].Color, owls[4].Bag.Color)
+
+			is.NotNil(owls[5].Group)
+			is.Equal(fixtures.Groups[3].ID, owls[5].Group.ID)
+			is.Equal(fixtures.Groups[3].Name, owls[5].Group.Name)
+			is.NotEmpty(owls[5].Packages)
+			is.Len(owls[5].Packages, 3)
+			is.Contains(owls[5].Packages, *fixtures.Packages[13])
+			is.Contains(owls[5].Packages, *fixtures.Packages[14])
+			is.Contains(owls[5].Packages, *fixtures.Packages[15])
+			is.NotEmpty(owls[5].Bag)
+			is.Equal(fixtures.Bags[4].ID, owls[5].Bag.ID)
+			is.Equal(fixtures.Bags[4].Color, owls[5].Bag.Color)
+
+		}
 		{
 
 			fixtures := GenerateZootopiaFixtures(ctx, driver, is)
