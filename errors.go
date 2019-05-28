@@ -12,6 +12,8 @@ var (
 	ErrInvalidDriver = fmt.Errorf("a makroud driver is required")
 	// ErrPointerRequired is returned when given value is not a pointer.
 	ErrPointerRequired = fmt.Errorf("a pointer is required")
+	// ErrPointerOrSliceRequired is returned when given value is not a pointer or a slice.
+	ErrPointerOrSliceRequired = fmt.Errorf("a pointer or a slice is required")
 	// ErrStructRequired is returned when given value is not a struct.
 	ErrStructRequired = fmt.Errorf("a struct is required")
 	// ErrSchemaColumnRequired is returned when we cannot find a column in current schema.

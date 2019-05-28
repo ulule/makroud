@@ -26,8 +26,8 @@ func preload(ctx context.Context, driver Driver, dest interface{}, handlers ...P
 		return errors.WithStack(ErrInvalidDriver)
 	}
 
-	if !reflectx.IsPointer(dest) {
-		return errors.Wrapf(ErrPointerRequired, "cannot preload %T", dest)
+	if !reflectx.IsPointer(dest) && !reflectx.IsSlice(dest) {
+		return errors.Wrapf(ErrPointerOrSliceRequired, "cannot preload %T", dest)
 	}
 
 	groups := getPreloadGroupOperations(handlers)

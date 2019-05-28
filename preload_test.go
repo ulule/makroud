@@ -33,7 +33,7 @@ func TestPreload_CommonFailure(t *testing.T) {
 			value := Human{}
 			err := makroud.Preload(ctx, driver, value, makroud.WithPreloadField("Cat"))
 			is.Error(err)
-			is.Equal(makroud.ErrPointerRequired, errors.Cause(err))
+			is.Equal(makroud.ErrPointerOrSliceRequired, errors.Cause(err))
 		}
 		{
 			value := Human{}
