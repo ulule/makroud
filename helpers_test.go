@@ -274,7 +274,7 @@ func TestRawExecArgs_Fetch(t *testing.T) {
 		}
 
 		id := ""
-		query := `SELECT id FROM ztp_cat WHERE name = ?`
+		query := `SELECT id FROM ztp_cat WHERE name = $1`
 		err := makroud.RawExecArgs(ctx, driver, query, []interface{}{"Eric"}, &id)
 		is.NoError(err)
 		is.Equal(expected.ID, id)
