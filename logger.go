@@ -13,7 +13,7 @@ type Logger interface {
 // Log will emmit given query on driver's attached Logger.
 // nolint: interfacer
 func Log(driver Driver, query Query, duration time.Duration) {
-	if driver == nil && !driver.hasLogger() {
+	if driver == nil || !driver.hasLogger() {
 		return
 	}
 	driver.logger().Log(query.String(), duration)
