@@ -16,8 +16,5 @@ func Log(driver Driver, query Query, duration time.Duration) {
 	if driver == nil || !driver.hasLogger() {
 		return
 	}
-	go func() {
-		query := query.String()
-		driver.logger().Log(query, duration)
-	}()
+	driver.logger().Log(query.String(), duration)
 }
