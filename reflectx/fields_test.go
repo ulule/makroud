@@ -33,7 +33,7 @@ type Elements struct {
 	Petrolium  *int64
 	Sand       string
 	Lightning  *string
-	Vaccum     float32
+	Vacuum     float32
 	Blood      *float32
 	Plastic    float64
 	Glass      *float64
@@ -90,7 +90,7 @@ func TestReflectx_GetFields(t *testing.T) {
 		"Petrolium",
 		"Sand",
 		"Lightning",
-		"Vaccum",
+		"Vacuum",
 		"Blood",
 		"Plastic",
 		"Glass",
