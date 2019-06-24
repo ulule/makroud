@@ -255,6 +255,32 @@ func TestRawExec_Fetch(t *testing.T) {
 	})
 }
 
+func TestRawExecArgs_Fetch(t *testing.T) {
+	Setup(t)(func(driver makroud.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		cat1 := &Cat{Name: "Ezekiel"}
+		cat2 := &Cat{Name: "Edouard"}
+		cat3 := &Cat{Name: "Eric"}
+		cat4 := &Cat{Name: "Elliot"}
+
+		cats := []*Cat{cat1, cat2, cat3, cat4}
+		expected := cat3
+
+		for i := range cats {
+			err := makroud.Save(ctx, driver, cats[i])
+			is.NoError(err)
+		}
+
+		id := ""
+		query := `SELECT id FROM ztp_cat WHERE name = $1`
+		err := makroud.RawExecArgs(ctx, driver, query, []interface{}{"Eric"}, &id)
+		is.NoError(err)
+		is.Equal(expected.ID, id)
+	})
+}
+
 func TestExec_FetchModel(t *testing.T) {
 	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()

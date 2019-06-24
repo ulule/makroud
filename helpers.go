@@ -54,6 +54,30 @@ func RawExec(ctx context.Context, driver Driver, query string, dest ...interface
 	return nil
 }
 
+// RawExecArgs will execute given query with given arguments.
+// If an object is given, it will mutate it to match the row values.
+func RawExecArgs(ctx context.Context, driver Driver, query string, args []interface{}, dest ...interface{}) error {
+	if driver.hasLogger() {
+		start := time.Now()
+		query := Query{
+			Raw:   query,
+			Query: query,
+			Args:  args,
+		}
+
+		defer func() {
+			Log(driver, query, time.Since(start))
+		}()
+	}
+
+	err := exec(ctx, driver, query, args, dest...)
+	if err != nil {
+		return errors.Wrap(err, "makroud: cannot execute query")
+	}
+
+	return nil
+}
+
 func exec(ctx context.Context, driver Driver, query string, args []interface{}, dest ...interface{}) error {
 	stmt, err := driver.Prepare(ctx, query)
 	if err != nil {
