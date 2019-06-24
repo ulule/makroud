@@ -59,7 +59,11 @@ func RawExec(ctx context.Context, driver Driver, query string, dest ...interface
 func RawExecArgs(ctx context.Context, driver Driver, query string, args []interface{}, dest ...interface{}) error {
 	if driver.hasLogger() {
 		start := time.Now()
-		query := NewRawQuery(query)
+		query := Query{
+			Raw:   query,
+			Query: query,
+			Args:  args,
+		}
 
 		defer func() {
 			Log(driver, query, time.Since(start))

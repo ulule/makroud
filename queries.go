@@ -6,7 +6,7 @@ import lkb "github.com/ulule/loukoum/v3/builder"
 type Query struct {
 	Raw   string
 	Query string
-	Args  map[string]interface{}
+	Args  []interface{}
 }
 
 // String returns query statement.
@@ -17,7 +17,7 @@ func (q Query) String() string {
 // NewQuery creates a new Query instance from given loukoum builder.
 func NewQuery(builder lkb.Builder) Query {
 	raw := builder.String()
-	query, args := builder.NamedQuery()
+	query, args := builder.Query()
 	return Query{
 		Raw:   raw,
 		Query: query,
