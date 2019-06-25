@@ -20,7 +20,7 @@ func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...inte
 		query := NewQuery(stmt)
 
 		defer func() {
-			Log(driver, query, time.Since(start))
+			Log(ctx, driver, query, time.Since(start))
 		}()
 	}
 
@@ -42,7 +42,7 @@ func RawExec(ctx context.Context, driver Driver, query string, dest ...interface
 		query := NewRawQuery(query)
 
 		defer func() {
-			Log(driver, query, time.Since(start))
+			Log(ctx, driver, query, time.Since(start))
 		}()
 	}
 
@@ -66,7 +66,7 @@ func RawExecArgs(ctx context.Context, driver Driver, query string, args []interf
 		}
 
 		defer func() {
-			Log(driver, query, time.Since(start))
+			Log(ctx, driver, query, time.Since(start))
 		}()
 	}
 
