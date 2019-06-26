@@ -16,7 +16,7 @@ type logger struct {
 	logs chan string
 }
 
-func (e *logger) Log(query string, duration time.Duration) {
+func (e *logger) Log(ctx context.Context, query string, duration time.Duration) {
 	e.logs <- query
 }
 
