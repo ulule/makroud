@@ -3,6 +3,7 @@ package makroud_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,6 @@ import (
 )
 
 import "fmt"
-import "time"
 
 func TestCount(t *testing.T) {
 	Setup(t)(func(driver makroud.Driver) {
@@ -562,19 +562,112 @@ func TestJoin_Many(t *testing.T) {
 	})
 }
 
-func TestExec_Foobar(t *testing.T) {
+func TestExec_ListPartial(t *testing.T) {
 	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()
 		is := require.New(t)
-
-		fixtures := GenerateZootopiaFixtures(ctx, driver, is)
-		cat := fixtures.Cats[3]
 
 		type PartialMeow struct {
 			Hash  string `db:"hash"`
 			Body  string `db:"body"`
 			CatID string `db:"cat_id"`
 		}
+
+		fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+		cat := fixtures.Cats[3]
+		meow1 := fixtures.Meows[4]
+		meow2 := fixtures.Meows[5]
+		meow3 := fixtures.Meows[6]
+
+		is.Equal(cat.ID, meow1.CatID)
+		is.Equal(cat.ID, meow2.CatID)
+		is.Equal(cat.ID, meow3.CatID)
+
+		{
+			stmt := loukoum.Select("hash").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+			expected := []string{meow1.Hash, meow2.Hash, meow3.Hash}
+			results := []string{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(len(expected), len(results))
+			is.Contains(expected, results[0])
+			is.Contains(expected, results[1])
+			is.Contains(expected, results[2])
+		}
+
+		{
+			stmt := loukoum.Select("hash").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+			expected := []string{meow1.Hash, meow2.Hash, meow3.Hash}
+			results := []*string{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(len(expected), len(results))
+			is.Contains(expected, *results[0])
+			is.Contains(expected, *results[1])
+			is.Contains(expected, *results[2])
+		}
+
+		{
+			stmt := loukoum.Select("created").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+			expected := []int64{
+				meow1.CreatedAt.UnixNano(),
+				meow2.CreatedAt.UnixNano(),
+				meow3.CreatedAt.UnixNano(),
+			}
+			results := []time.Time{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(len(expected), len(results))
+			is.Contains(expected, results[0].UnixNano())
+			is.Contains(expected, results[1].UnixNano())
+			is.Contains(expected, results[2].UnixNano())
+		}
+
+		{
+			stmt := loukoum.Select("created").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+			expected := []int64{
+				meow1.CreatedAt.UnixNano(),
+				meow2.CreatedAt.UnixNano(),
+				meow3.CreatedAt.UnixNano(),
+			}
+			results := []*time.Time{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(len(expected), len(results))
+			is.Contains(expected, results[0].UnixNano())
+			is.Contains(expected, results[1].UnixNano())
+			is.Contains(expected, results[2].UnixNano())
+		}
+
+		{
+			stmt := loukoum.Select("hash", "body").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+			results := []string{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.Error(err)
+			is.Equal(makroud.ErrSliceOfScalarMultipleColumns, errors.Cause(err))
+		}
+
+		// SANDBOX HERE
 
 		results := []time.Time{}
 
