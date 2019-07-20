@@ -29,6 +29,11 @@ func IsPointer(instance interface{}) bool {
 	return val.Kind() == reflect.Ptr && !val.IsNil()
 }
 
+// IsPointerType returns if given type is a pointer.
+func IsPointerType(val reflect.Type) bool {
+	return val.Kind() == reflect.Ptr
+}
+
 // MakeReflectPointer makes a pointer from given reflect value.
 func MakeReflectPointer(instance interface{}) reflect.Value {
 	val, ok := instance.(reflect.Value)

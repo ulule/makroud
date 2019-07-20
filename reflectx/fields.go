@@ -26,6 +26,25 @@ func GetFields(element interface{}) ([]string, error) {
 	return fields, nil
 }
 
+// GetFieldsCount returns the number of exported fields for given type.
+func GetFieldsCount(element reflect.Type) int {
+	if element.Kind() != reflect.Struct {
+		return 0
+	}
+
+	count := 0
+	max := element.NumField()
+	for i := 0; i < max; i++ {
+		field := element.Field(i)
+		// Ignore private or anonymous field...
+		if field.PkgPath == "" {
+			count++
+		}
+	}
+
+	return count
+}
+
 // GetFieldByName returns the field in element with given name.
 func GetFieldByName(element interface{}, name string) (reflect.StructField, bool) {
 	value := GetIndirectValue(element)
