@@ -12,6 +12,8 @@ import (
 	"github.com/ulule/makroud/reflectx"
 )
 
+import "fmt"
+
 // Exec will execute given query from a Loukoum builder.
 // If an object is given, it will mutate it to match the row values.
 func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...interface{}) error {
@@ -100,10 +102,55 @@ func exec(ctx context.Context, driver Driver, query string, args []interface{}, 
 	return stmt.Exec(ctx, args)
 }
 
+func execRowsOnOthers(ctx context.Context, stmt Statement, args []interface{}, dest interface{}) error {
+	v := reflectx.GetSliceType(dest)
+	fmt.Printf("::1-1 %+v\n", v)
+	scannable := reflectx.IsScannable(v)
+
+	if scannable {
+		return execRowsOnScannable(ctx, stmt, args, dest)
+	}
+
+	fmt.Println("::1-2 execute sqlx fallback", scannable)
+	return stmt.FindAll(ctx, dest, args)
+}
+
+func execRowsOnScannable(ctx context.Context, stmt Statement, args []interface{}, dest interface{}) error {
+	rows, err := stmt.QueryRows(ctx, args)
+	if err != nil {
+		return err
+	}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	base := reflectx.GetIndirectSliceType(dest)
+	list := reflectx.GetIndirectValue(dest)
+
+	if len(columns) > 1 {
+		return errors.Wrapf(ErrSliceOfScalarMultipleColumns,
+			"cannot exec rows on slice of type %s with %d columns", reflectx.GetSliceType(dest), len(columns))
+	}
+
+	for rows.Next() {
+		val := reflectx.NewValue(base)
+		err = rows.Scan(val)
+		if err != nil {
+			return err
+		}
+
+		reflectx.AppendReflectSlice(list, val)
+	}
+
+	return nil
+}
+
 func execRows(ctx context.Context, driver Driver, stmt Statement, args []interface{}, dest interface{}) error {
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
-		return stmt.FindAll(ctx, dest, args)
+		return execRowsOnOthers(ctx, stmt, args, dest)
 	}
 
 	schema, err := GetSchema(driver, model)

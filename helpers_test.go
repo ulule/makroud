@@ -11,6 +11,9 @@ import (
 	"github.com/ulule/makroud"
 )
 
+import "fmt"
+import "time"
+
 func TestCount(t *testing.T) {
 	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()
@@ -556,5 +559,39 @@ func TestJoin_Many(t *testing.T) {
 			is.Equal(results[i].CatID, results[i].Cat.ID)
 			is.NotZero(results[i].Cat.Name)
 		}
+	})
+}
+
+func TestExec_Foobar(t *testing.T) {
+	Setup(t)(func(driver makroud.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		fixtures := GenerateZootopiaFixtures(ctx, driver, is)
+		cat := fixtures.Cats[3]
+
+		type PartialMeow struct {
+			Hash  string `db:"hash"`
+			Body  string `db:"body"`
+			CatID string `db:"cat_id"`
+		}
+
+		results := []time.Time{}
+
+		fmt.Printf("::3 %d / %d\n", len(results), cap(results))
+
+		stmt := loukoum.Select("created").
+			From("ztp_meow").
+			Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+		err := makroud.Exec(ctx, driver, stmt, &results)
+		is.NoError(err)
+
+		for i := range results {
+			fmt.Printf("%+v\n", results[i])
+		}
+
+		fmt.Printf("::4 %d / %d\n", len(results), cap(results))
+
 	})
 }
