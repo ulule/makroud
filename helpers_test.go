@@ -572,6 +572,10 @@ func TestExec_ListPartial(t *testing.T) {
 			CatID string `mk:"cat_id"`
 		}
 
+		type PartialCat struct {
+			Name string `makroud:"name"`
+		}
+
 		fixtures := GenerateZootopiaFixtures(ctx, driver, is)
 		cat := fixtures.Cats[3]
 		meow1 := fixtures.Meows[4]
@@ -902,10 +906,6 @@ func TestExec_ListPartial(t *testing.T) {
 		}
 
 		{
-			type PartialCat struct {
-				Name string `makroud:"name"`
-			}
-
 			stmt := loukoum.Select("name").
 				From("ztp_cat").
 				Where(loukoum.Condition("id").Equal(cat.ID))
@@ -924,10 +924,6 @@ func TestExec_ListPartial(t *testing.T) {
 		}
 
 		{
-			type PartialCat struct {
-				Name string `makroud:"name"`
-			}
-
 			stmt := loukoum.Select("name").
 				From("ztp_cat").
 				Where(loukoum.Condition("id").Equal(cat.ID))
@@ -957,6 +953,10 @@ func TestExec_FetchPartial(t *testing.T) {
 			Hash  string `mk:"hash"`
 			Body  string `mk:"body"`
 			CatID string `mk:"cat_id"`
+		}
+
+		type PartialCat struct {
+			Name string `makroud:"name"`
 		}
 
 		fixtures := GenerateZootopiaFixtures(ctx, driver, is)
@@ -1183,10 +1183,6 @@ func TestExec_FetchPartial(t *testing.T) {
 		}
 
 		{
-			type PartialCat struct {
-				Name string `makroud:"name"`
-			}
-
 			stmt := loukoum.Select("name").
 				From("ztp_cat").
 				Where(loukoum.Condition("id").Equal(cat.ID))
@@ -1203,10 +1199,6 @@ func TestExec_FetchPartial(t *testing.T) {
 		}
 
 		{
-			type PartialCat struct {
-				Name string `makroud:"name"`
-			}
-
 			stmt := loukoum.Select("name").
 				From("ztp_cat").
 				Where(loukoum.Condition("id").Equal(cat.ID))
