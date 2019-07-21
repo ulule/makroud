@@ -43,6 +43,26 @@ func (schema Schemaless) Key(column string) (SchemalessKey, bool) {
 	return key, ok
 }
 
+// ScanRow executes a scan from given row into schemaless instance.
+func (schema Schemaless) ScanRow(row Row, val interface{}) error {
+	columns, err := row.Columns()
+	if err != nil {
+		return err
+	}
+
+	value := reflectx.GetIndirectValue(val)
+	if !reflectx.IsStruct(value) {
+		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", val)
+	}
+
+	values, err := schema.getValues(value, columns, val)
+	if err != nil {
+		return err
+	}
+
+	return row.Scan(values...)
+}
+
 // ScanRows executes a scan from current row into schemaless instance.
 func (schema Schemaless) ScanRows(rows Rows, val interface{}) error {
 	columns, err := rows.Columns()

@@ -209,10 +209,54 @@ func execRows(ctx context.Context, driver Driver, stmt Statement, args []interfa
 	return nil
 }
 
+func execRowOnOthers(ctx context.Context, driver Driver,
+	stmt Statement, args []interface{}, dest interface{}) error {
+
+	element := reflectx.GetIndirectType(dest)
+
+	scannable := reflectx.IsScannable(element)
+	if scannable {
+		return execRowOnScannable(ctx, driver, stmt, args, dest)
+	}
+
+	schemaless, err := GetSchemaless(driver, element)
+	if err != nil {
+		return err
+	}
+
+	row, err := stmt.QueryRow(ctx, args)
+	if err != nil {
+		return err
+	}
+
+	return schemaless.ScanRow(row, dest)
+}
+
+func execRowOnScannable(ctx context.Context, driver Driver,
+	stmt Statement, args []interface{}, dest interface{}) error {
+
+	row, err := stmt.QueryRow(ctx, args)
+	if err != nil {
+		return err
+	}
+
+	columns, err := row.Columns()
+	if err != nil {
+		return err
+	}
+
+	if len(columns) > 1 {
+		return errors.Wrapf(ErrSliceOfScalarMultipleColumns,
+			"cannot exec rows on slice of type %T with %d columns", dest, len(columns))
+	}
+
+	return row.Scan(dest)
+}
+
 func execRow(ctx context.Context, driver Driver, stmt Statement, args []interface{}, dest interface{}) error {
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
-		return stmt.FindOne(ctx, dest, args)
+		return execRowOnOthers(ctx, driver, stmt, args, dest)
 	}
 
 	schema, err := GetSchema(driver, model)
