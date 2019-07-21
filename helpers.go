@@ -12,8 +12,6 @@ import (
 	"github.com/ulule/makroud/reflectx"
 )
 
-import "fmt"
-
 // Exec will execute given query from a Loukoum builder.
 // If an object is given, it will mutate it to match the row values.
 func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...interface{}) error {
@@ -102,20 +100,46 @@ func exec(ctx context.Context, driver Driver, query string, args []interface{}, 
 	return stmt.Exec(ctx, args)
 }
 
-func execRowsOnOthers(ctx context.Context, stmt Statement, args []interface{}, dest interface{}) error {
-	v := reflectx.GetSliceType(dest)
-	fmt.Printf("::1-1 %+v\n", v)
-	scannable := reflectx.IsScannable(v)
+func execRowsOnOthers(ctx context.Context, driver Driver,
+	stmt Statement, args []interface{}, dest interface{}) error {
 
+	element := reflectx.GetIndirectSliceType(dest)
+
+	scannable := reflectx.IsScannable(element)
 	if scannable {
-		return execRowsOnScannable(ctx, stmt, args, dest)
+		return execRowsOnScannable(ctx, driver, stmt, args, dest)
 	}
 
-	fmt.Println("::1-2 execute sqlx fallback", scannable)
-	return stmt.FindAll(ctx, dest, args)
+	schemaless, err := GetSchemaless(driver, element)
+	if err != nil {
+		return err
+	}
+
+	rows, err := stmt.QueryRows(ctx, args)
+	if err != nil {
+		return err
+	}
+
+	base := reflectx.GetIndirectSliceType(dest)
+	list := reflectx.GetIndirectValue(dest)
+
+	for rows.Next() {
+		val := reflectx.NewValue(base)
+
+		err := schemaless.ScanRows(rows, val)
+		if err != nil {
+			return err
+		}
+
+		reflectx.AppendReflectSlice(list, val)
+	}
+
+	return nil
 }
 
-func execRowsOnScannable(ctx context.Context, stmt Statement, args []interface{}, dest interface{}) error {
+func execRowsOnScannable(ctx context.Context, driver Driver,
+	stmt Statement, args []interface{}, dest interface{}) error {
+
 	rows, err := stmt.QueryRows(ctx, args)
 	if err != nil {
 		return err
@@ -150,7 +174,7 @@ func execRowsOnScannable(ctx context.Context, stmt Statement, args []interface{}
 func execRows(ctx context.Context, driver Driver, stmt Statement, args []interface{}, dest interface{}) error {
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
-		return execRowsOnOthers(ctx, stmt, args, dest)
+		return execRowsOnOthers(ctx, driver, stmt, args, dest)
 	}
 
 	schema, err := GetSchema(driver, model)

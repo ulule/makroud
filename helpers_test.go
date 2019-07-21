@@ -12,8 +12,6 @@ import (
 	"github.com/ulule/makroud"
 )
 
-import "fmt"
-
 func TestCount(t *testing.T) {
 	Setup(t)(func(driver makroud.Driver) {
 		ctx := context.Background()
@@ -568,9 +566,9 @@ func TestExec_ListPartial(t *testing.T) {
 		is := require.New(t)
 
 		type PartialMeow struct {
-			Hash  string `db:"hash"`
-			Body  string `db:"body"`
-			CatID string `db:"cat_id"`
+			Hash  string `mk:"hash"`
+			Body  string `mk:"body"`
+			CatID string `mk:"cat_id"`
 		}
 
 		fixtures := GenerateZootopiaFixtures(ctx, driver, is)
@@ -594,9 +592,9 @@ func TestExec_ListPartial(t *testing.T) {
 			err := makroud.Exec(ctx, driver, stmt, &results)
 			is.NoError(err)
 			is.Equal(len(expected), len(results))
-			is.Contains(expected, results[0])
-			is.Contains(expected, results[1])
-			is.Contains(expected, results[2])
+			for i := range results {
+				is.Contains(expected, results[i])
+			}
 		}
 
 		{
@@ -610,9 +608,9 @@ func TestExec_ListPartial(t *testing.T) {
 			err := makroud.Exec(ctx, driver, stmt, &results)
 			is.NoError(err)
 			is.Equal(len(expected), len(results))
-			is.Contains(expected, *results[0])
-			is.Contains(expected, *results[1])
-			is.Contains(expected, *results[2])
+			for i := range results {
+				is.Contains(expected, *results[i])
+			}
 		}
 
 		{
@@ -630,9 +628,9 @@ func TestExec_ListPartial(t *testing.T) {
 			err := makroud.Exec(ctx, driver, stmt, &results)
 			is.NoError(err)
 			is.Equal(len(expected), len(results))
-			is.Contains(expected, results[0].UnixNano())
-			is.Contains(expected, results[1].UnixNano())
-			is.Contains(expected, results[2].UnixNano())
+			for i := range results {
+				is.Contains(expected, results[i].UnixNano())
+			}
 		}
 
 		{
@@ -650,9 +648,9 @@ func TestExec_ListPartial(t *testing.T) {
 			err := makroud.Exec(ctx, driver, stmt, &results)
 			is.NoError(err)
 			is.Equal(len(expected), len(results))
-			is.Contains(expected, results[0].UnixNano())
-			is.Contains(expected, results[1].UnixNano())
-			is.Contains(expected, results[2].UnixNano())
+			for i := range results {
+				is.Contains(expected, results[i].UnixNano())
+			}
 		}
 
 		{
@@ -667,24 +665,222 @@ func TestExec_ListPartial(t *testing.T) {
 			is.Equal(makroud.ErrSliceOfScalarMultipleColumns, errors.Cause(err))
 		}
 
-		// SANDBOX HERE
+		{
+			stmt := loukoum.Select("hash", "body", "cat_id").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
 
-		results := []time.Time{}
+			expected := []PartialMeow{
+				{
+					Hash:  meow1.Hash,
+					Body:  meow1.Body,
+					CatID: meow1.CatID,
+				},
+				{
+					Hash:  meow2.Hash,
+					Body:  meow2.Body,
+					CatID: meow2.CatID,
+				},
+				{
+					Hash:  meow3.Hash,
+					Body:  meow3.Body,
+					CatID: meow3.CatID,
+				},
+			}
 
-		fmt.Printf("::3 %d / %d\n", len(results), cap(results))
+			results := []PartialMeow{}
 
-		stmt := loukoum.Select("created").
-			From("ztp_meow").
-			Where(loukoum.Condition("cat_id").Equal(cat.ID))
-
-		err := makroud.Exec(ctx, driver, stmt, &results)
-		is.NoError(err)
-
-		for i := range results {
-			fmt.Printf("%+v\n", results[i])
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(len(expected), len(results))
+			for i := range results {
+				is.Contains(expected, results[i])
+			}
 		}
 
-		fmt.Printf("::4 %d / %d\n", len(results), cap(results))
+		{
+			stmt := loukoum.Select("hash", "body", "cat_id").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
 
+			expected := []*PartialMeow{
+				{
+					Hash:  meow1.Hash,
+					Body:  meow1.Body,
+					CatID: meow1.CatID,
+				},
+				{
+					Hash:  meow2.Hash,
+					Body:  meow2.Body,
+					CatID: meow2.CatID,
+				},
+				{
+					Hash:  meow3.Hash,
+					Body:  meow3.Body,
+					CatID: meow3.CatID,
+				},
+			}
+
+			results := []*PartialMeow{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(len(expected), len(results))
+			for i := range results {
+				is.Contains(expected, results[i])
+			}
+		}
+
+		{
+			type PartialMeow struct {
+				Hash  *string `mk:"hash"`
+				Body  *string `mk:"body"`
+				CatID *string `mk:"cat_id"`
+			}
+
+			stmt := loukoum.Select("hash", "body", "cat_id").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+			expected := []PartialMeow{
+				{
+					Hash:  &meow1.Hash,
+					Body:  &meow1.Body,
+					CatID: &meow1.CatID,
+				},
+				{
+					Hash:  &meow2.Hash,
+					Body:  &meow2.Body,
+					CatID: &meow2.CatID,
+				},
+				{
+					Hash:  &meow3.Hash,
+					Body:  &meow3.Body,
+					CatID: &meow3.CatID,
+				},
+			}
+
+			results := []PartialMeow{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(len(expected), len(results))
+			for i := range results {
+				is.Contains(expected, results[i])
+			}
+		}
+
+		{
+			type PartialMeow struct {
+				Hash  string `db:"hash"`
+				CatID string `db:"cat_id"`
+			}
+
+			stmt := loukoum.Select("hash", "cat_id").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+			expected := []PartialMeow{
+				{
+					Hash:  meow1.Hash,
+					CatID: meow1.CatID,
+				},
+				{
+					Hash:  meow2.Hash,
+					CatID: meow2.CatID,
+				},
+				{
+					Hash:  meow3.Hash,
+					CatID: meow3.CatID,
+				},
+			}
+
+			results := []PartialMeow{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(len(expected), len(results))
+			for i := range results {
+				is.Contains(expected, results[i])
+			}
+		}
+
+		{
+			type PartialMeow struct {
+				Hash  string `mk:"hash"`
+				CatID string `mk:"cat_id"`
+			}
+
+			stmt := loukoum.Select("hash", "body", "cat_id").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+			results := []PartialMeow{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.Error(err)
+			is.Equal(makroud.ErrSchemaColumnRequired, errors.Cause(err))
+		}
+
+		{
+			type PartialMeow struct {
+				Hash      string    `makroud:"hash"`
+				Body      string    `makroud:"body"`
+				CreatedAt time.Time `makroud:"created"`
+			}
+
+			stmt := loukoum.Select("hash", "created", "body").
+				From("ztp_meow").
+				Where(loukoum.Condition("cat_id").Equal(cat.ID))
+
+			expected := []PartialMeow{
+				{
+					Hash:      meow1.Hash,
+					CreatedAt: meow1.CreatedAt,
+					Body:      meow1.Body,
+				},
+				{
+					Hash:      meow2.Hash,
+					CreatedAt: meow2.CreatedAt,
+					Body:      meow2.Body,
+				},
+				{
+					Hash:      meow3.Hash,
+					CreatedAt: meow3.CreatedAt,
+					Body:      meow3.Body,
+				},
+			}
+
+			results := []PartialMeow{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(len(expected), len(results))
+			for i := range results {
+				is.Contains(expected, results[i])
+			}
+		}
+
+		{
+			type PartialCat struct {
+				Name string `makroud:"name"`
+			}
+
+			stmt := loukoum.Select("name").
+				From("ztp_cat").
+				Where(loukoum.Condition("id").Equal(cat.ID))
+
+			expected := []PartialCat{
+				{
+					Name: cat.Name,
+				},
+			}
+
+			results := []PartialCat{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(expected, results)
+		}
 	})
 }
