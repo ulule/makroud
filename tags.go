@@ -174,6 +174,19 @@ type TagsAnalyzerOptions struct {
 	KeyMapper map[string]string
 }
 
+// NewOnlyColumnTagsAnalyzerOption return a new TagsAnalyzerOption instance to only analyzes tag as column.
+// It removes the support of key:value system to analyzes only values.
+// For instance, "mk:column_name" or "makroud:column_name"
+func NewOnlyColumnTagsAnalyzerOption() TagsAnalyzerOption {
+	return func(opts *TagsAnalyzerOptions) {
+		opts.NameMapper = map[string]string{
+			TagNameAlt:   TagKeyColumn,
+			TagName:      TagKeyColumn,
+			TagNameShort: TagKeyColumn,
+		}
+	}
+}
+
 func getTagsOptions(args []TagsAnalyzerOption) *TagsAnalyzerOptions {
 	options := &TagsAnalyzerOptions{
 		Name:       TagName,
