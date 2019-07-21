@@ -135,8 +135,9 @@ func debugTagProperty(prop TagProperty) debugWriter {
 func debugTag(tag Tag) debugWriter {
 	props := make([]debugWriter, 0, len(tag.properties))
 	for i := range tag.properties {
-		props[i] = debugTagProperty(tag.properties[i])
+		props = append(props, debugTagProperty(tag.properties[i]))
 	}
+
 	return debugObj{
 		debugValue{
 			k: "name",
@@ -152,7 +153,7 @@ func debugTag(tag Tag) debugWriter {
 func debugTags(tags Tags) debugWriter {
 	props := make([]debugWriter, 0, len(tags))
 	for i := range tags {
-		props[i] = debugTag(tags[i])
+		props = append(props, debugTag(tags[i]))
 	}
 	return debugArr(props)
 }
