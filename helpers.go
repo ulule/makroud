@@ -197,10 +197,9 @@ func execRowsOnScannable(ctx context.Context, driver Driver,
 func execRows(ctx context.Context, driver Driver, stmt Statement, args []interface{}, dest interface{}) error {
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
-		element := reflectx.GetIndirectSliceType(dest)
 
-		scannable := reflectx.IsScannable(element)
-		if scannable {
+		element := reflectx.GetIndirectSliceType(dest)
+		if reflectx.IsScannable(element) {
 			return execRowsOnScannable(ctx, driver, stmt, args, dest)
 		}
 
@@ -242,8 +241,8 @@ func execRowOnSchemaless(ctx context.Context, driver Driver, stmt Statement,
 	return schemaless.ScanRow(row, dest)
 }
 
-func execRowOnScannable(ctx context.Context, driver Driver,
-	stmt Statement, args []interface{}, dest interface{}) error {
+func execRowOnScannable(ctx context.Context, driver Driver, stmt Statement,
+	args []interface{}, dest interface{}) error {
 
 	row, err := stmt.QueryRow(ctx, args)
 	if err != nil {
@@ -257,7 +256,7 @@ func execRowOnScannable(ctx context.Context, driver Driver,
 
 	if len(columns) > 1 {
 		return errors.Wrapf(ErrSliceOfScalarMultipleColumns,
-			"cannot exec rows on slice of type %T with %d columns", dest, len(columns))
+			"cannot exec row on type %T with %d columns", dest, len(columns))
 	}
 
 	return row.Scan(dest)
@@ -266,10 +265,9 @@ func execRowOnScannable(ctx context.Context, driver Driver,
 func execRow(ctx context.Context, driver Driver, stmt Statement, args []interface{}, dest interface{}) error {
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
-		element := reflectx.GetIndirectType(dest)
 
-		scannable := reflectx.IsScannable(element)
-		if scannable {
+		element := reflectx.GetIndirectType(dest)
+		if reflectx.IsScannable(element) {
 			return execRowOnScannable(ctx, driver, stmt, args, dest)
 		}
 
