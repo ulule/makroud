@@ -97,7 +97,7 @@ func exec(ctx context.Context, driver Driver, query string, args []interface{}, 
 		return execRow(ctx, driver, stmt, args, dest[0])
 	}
 
-	return stmt.Exec(ctx, args)
+	return stmt.Exec(ctx, args...)
 }
 
 func execRowsOnModel(ctx context.Context, driver Driver, stmt Statement,
@@ -108,7 +108,7 @@ func execRowsOnModel(ctx context.Context, driver Driver, stmt Statement,
 		return err
 	}
 
-	rows, err := stmt.QueryRows(ctx, args)
+	rows, err := stmt.QueryRows(ctx, args...)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func execRowsOnSchemaless(ctx context.Context, driver Driver,
 		return err
 	}
 
-	rows, err := stmt.QueryRows(ctx, args)
+	rows, err := stmt.QueryRows(ctx, args...)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func execRowsOnSchemaless(ctx context.Context, driver Driver,
 func execRowsOnScannable(ctx context.Context, driver Driver,
 	stmt Statement, args []interface{}, dest interface{}) error {
 
-	rows, err := stmt.QueryRows(ctx, args)
+	rows, err := stmt.QueryRows(ctx, args...)
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func execRowOnModel(ctx context.Context, driver Driver, stmt Statement,
 		return err
 	}
 
-	row, err := stmt.QueryRow(ctx, args)
+	row, err := stmt.QueryRow(ctx, args...)
 	if err != nil {
 		return err
 	}
@@ -233,7 +233,7 @@ func execRowOnSchemaless(ctx context.Context, driver Driver, stmt Statement,
 		return err
 	}
 
-	row, err := stmt.QueryRow(ctx, args)
+	row, err := stmt.QueryRow(ctx, args...)
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func execRowOnSchemaless(ctx context.Context, driver Driver, stmt Statement,
 func execRowOnScannable(ctx context.Context, driver Driver, stmt Statement,
 	args []interface{}, dest interface{}) error {
 
-	row, err := stmt.QueryRow(ctx, args)
+	row, err := stmt.QueryRow(ctx, args...)
 	if err != nil {
 		return err
 	}

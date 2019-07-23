@@ -3384,17 +3384,8 @@ type SetupHandler func(driver makroud.Driver)
 func Setup(t require.TestingT, options ...makroud.Option) SetupCallback {
 	is := require.New(t)
 	ctx := context.Background()
-	opts := []makroud.Option{
-		dbParamString(makroud.Host, "host", "PGHOST"),
-		dbParamInt(makroud.Port, "port", "PGPORT"),
-		dbParamString(makroud.User, "user", "PGUSER"),
-		dbParamString(makroud.Password, "password", "PGPASSWORD"),
-		dbParamString(makroud.Database, "name", "PGDATABASE"),
-		makroud.Cache(true),
-	}
-	opts = append(opts, options...)
 
-	db, err := makroud.New(opts...)
+	db, err := makroud.NewWithOptions(ClientOptions(options...))
 	is.NoError(err)
 	is.NotNil(db)
 
@@ -3408,6 +3399,32 @@ func Setup(t require.TestingT, options ...makroud.Option) SetupCallback {
 		handler(db)
 		env.shutdown(ctx)
 	}
+}
+
+func Options(options ...makroud.Option) []makroud.Option {
+	dbOpts := []makroud.Option{
+		dbParamString(makroud.Host, "host", "PGHOST"),
+		dbParamInt(makroud.Port, "port", "PGPORT"),
+		dbParamString(makroud.User, "user", "PGUSER"),
+		dbParamString(makroud.Password, "password", "PGPASSWORD"),
+		dbParamString(makroud.Database, "name", "PGDATABASE"),
+		makroud.Cache(true),
+	}
+	return append(dbOpts, options...)
+}
+
+func ClientOptions(options ...makroud.Option) *makroud.ClientOptions {
+	dbOpts := Options(options...)
+
+	cliOpts := makroud.NewClientOptions()
+	for _, option := range dbOpts {
+		err := option(cliOpts)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return cliOpts
 }
 
 func DropTables(ctx context.Context, db *makroud.Client) {
