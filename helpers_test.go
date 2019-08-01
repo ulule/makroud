@@ -31,7 +31,7 @@ func TestCount(t *testing.T) {
 			is.NoError(err)
 		}
 
-		query := loukoum.Select("COUNT(*)").From("ztp_cat").
+		query := loukoum.Select(loukoum.Count("*")).From("ztp_cat").
 			Where(loukoum.Condition("name").ILike("Rad%"))
 
 		{
@@ -43,6 +43,52 @@ func TestCount(t *testing.T) {
 			count, err := makroud.FloatCount(ctx, driver, query)
 			is.NoError(err)
 			is.Equal(float64(6), count)
+		}
+
+		query = loukoum.Select(loukoum.Count("*")).From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("Rod%"))
+
+		{
+			count, err := makroud.Count(ctx, driver, query)
+			is.NoError(err)
+			is.Equal(int64(0), count)
+		}
+		{
+			count, err := makroud.FloatCount(ctx, driver, query)
+			is.NoError(err)
+			is.Equal(float64(0), count)
+		}
+
+		query = loukoum.Select("count").From("cats").
+			With(loukoum.With("cats",
+				loukoum.Select(loukoum.Count("*")).From("ztp_cat").
+					Where(loukoum.Condition("name").ILike("Rod%")),
+			)).
+			Where(loukoum.Condition("count").GreaterThan(5))
+
+		{
+			count, err := makroud.Count(ctx, driver, query)
+			is.NoError(err)
+			is.Equal(int64(0), count)
+		}
+		{
+			count, err := makroud.FloatCount(ctx, driver, query)
+			is.NoError(err)
+			is.Equal(float64(0), count)
+		}
+
+		query = loukoum.Select("*").From("ztp_cat").
+			Where(loukoum.Condition("name").ILike("Rod%"))
+
+		{
+			count, err := makroud.Count(ctx, driver, query)
+			is.Error(err)
+			is.Equal(int64(0), count)
+		}
+		{
+			count, err := makroud.FloatCount(ctx, driver, query)
+			is.Error(err)
+			is.Equal(float64(0), count)
 		}
 
 	})
@@ -940,6 +986,50 @@ func TestExec_ListPartial(t *testing.T) {
 			is.NoError(err)
 			is.Equal(expected, results)
 		}
+
+		{
+			type PartialCat struct {
+				Name string
+			}
+
+			stmt := loukoum.Select("name").
+				From("ztp_cat").
+				Where(loukoum.Condition("id").Equal(cat.ID))
+
+			expected := []PartialCat{
+				{
+					Name: cat.Name,
+				},
+			}
+
+			results := []PartialCat{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(expected, results)
+		}
+
+		{
+			type PartialCat struct {
+				Name string
+			}
+
+			stmt := loukoum.Select("name").
+				From("ztp_cat").
+				Where(loukoum.Condition("id").Equal(cat.ID))
+
+			expected := []*PartialCat{
+				{
+					Name: cat.Name,
+				},
+			}
+
+			results := []*PartialCat{}
+
+			err := makroud.Exec(ctx, driver, stmt, &results)
+			is.NoError(err)
+			is.Equal(expected, results)
+		}
 	})
 }
 
@@ -1199,6 +1289,47 @@ func TestExec_FetchPartial(t *testing.T) {
 		}
 
 		{
+			stmt := loukoum.Select("name").
+				From("ztp_cat").
+				Where(loukoum.Condition("id").Equal(cat.ID))
+
+			expected := &PartialCat{
+				Name: cat.Name,
+			}
+
+			result := &PartialCat{}
+
+			err := makroud.Exec(ctx, driver, stmt, &result)
+			is.NoError(err)
+			is.Equal(expected, result)
+		}
+
+		{
+
+			type PartialCat struct {
+				Name string
+			}
+
+			stmt := loukoum.Select("name").
+				From("ztp_cat").
+				Where(loukoum.Condition("id").Equal(cat.ID))
+
+			expected := PartialCat{
+				Name: cat.Name,
+			}
+
+			result := PartialCat{}
+
+			err := makroud.Exec(ctx, driver, stmt, &result)
+			is.NoError(err)
+			is.Equal(expected, result)
+		}
+
+		{
+			type PartialCat struct {
+				Name string
+			}
+
 			stmt := loukoum.Select("name").
 				From("ztp_cat").
 				Where(loukoum.Condition("id").Equal(cat.ID))

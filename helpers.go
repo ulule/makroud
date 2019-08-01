@@ -279,7 +279,7 @@ func execRow(ctx context.Context, driver Driver, stmt Statement, args []interfac
 
 // Count will execute given query to return a number from a aggregate function.
 func Count(ctx context.Context, driver Driver, stmt builder.Builder) (int64, error) {
-	count := int64(-1)
+	count := int64(0)
 
 	err := Exec(ctx, driver, stmt, &count)
 	if IsErrNoRows(err) {
