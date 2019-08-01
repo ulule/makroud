@@ -44,7 +44,7 @@ do_start() {
     docker run --name "${CONTAINER_NAME}" \
         -e POSTGRES_USER="${PGUSER}" \
         -e POSTGRES_PASSWORD="${PGPASSWORD}" \
-        -e POSTGRES_DB='${PGDATABASE}' \
+        -e POSTGRES_DB="${PGDATABASE}" \
         -p ${DOCKER_DB_PORT}:5432 -d ${CONTAINER_IMAGE} >/dev/null
 
     for i in {30..0}; do
