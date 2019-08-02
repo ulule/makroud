@@ -108,6 +108,27 @@ func ToOptionalString(value interface{}) (string, bool) {
 }
 
 // ----------------------------------------------------------------------------
+// Scanner
+// ----------------------------------------------------------------------------
+
+// IsScannable returns if the given type is scannable:
+//   * It is not a struct
+//   * It implements sql.Scanner
+//   * It has no exported fields
+func IsScannable(value reflect.Type) bool {
+	if reflect.PtrTo(value).Implements(scannerType) {
+		return true
+	}
+	if value.Kind() != reflect.Struct {
+		return true
+	}
+	if GetFieldsCount(value) == 0 {
+		return true
+	}
+	return false
+}
+
+// ----------------------------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------------------------
 

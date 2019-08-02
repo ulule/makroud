@@ -277,33 +277,3 @@ func getFieldAssocitationType(driver Driver, instance *Field, rtype reflect.Type
 
 	return instance, nil
 }
-
-// ----------------------------------------------------------------------------
-// Foreign key field
-// ----------------------------------------------------------------------------
-
-// // ForeignKey is a foreign key
-// type ForeignKey struct {
-// 	Schema               *Schema
-// 	Model                Model
-// 	ModelName            string
-// 	TableName            string
-// 	FieldName            string
-// 	ColumnName           string
-// 	AssociationFieldName string
-// 	Reference            *ForeignKey
-// }
-
-// func (fk ForeignKey) String() string {
-// 	return fmt.Sprintf("{{ model:%s tb:%s field:%s col:%s assoc:%s -- reference: %s }}",
-// 		fk.ModelName, fk.TableName,
-// 		fk.FieldName, fk.ColumnName,
-// 		fk.AssociationFieldName, fk.Reference,
-// 	)
-// }
-
-// ColumnPath is the foreign key column path.
-// func (fk ForeignKey) ColumnPath() string {
-// 	return fmt.Sprintf("%s.%s", fk.TableName, fk.ColumnName)
-// }
-//

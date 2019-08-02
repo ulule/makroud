@@ -174,4 +174,62 @@ func TestTags_Analyze(t *testing.T) {
 		is.Equal("id", properties[0].Value())
 	}
 
+	{
+
+		hash := struct {
+			Hash1 string `makroud:"hash_1"`
+			Hash2 string `mk:"hash_2"`
+			Hash3 string `db:"hash_3"`
+		}{}
+
+		//
+		// Hash1
+		//
+
+		field, ok := reflectx.GetFieldByName(hash, "Hash1")
+		is.True(ok)
+		is.NotEmpty(field)
+
+		tags := makroud.GetTags(field, makroud.NewOnlyColumnTagsAnalyzerOption())
+		is.Len(tags, 1)
+		name := tags[0].Name()
+		properties := tags[0].Properties()
+		is.Equal(makroud.TagName, name)
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
+		is.Equal("hash_1", properties[0].Value())
+
+		//
+		// Hash2
+		//
+
+		field, ok = reflectx.GetFieldByName(hash, "Hash2")
+		is.True(ok)
+		is.NotEmpty(field)
+
+		tags = makroud.GetTags(field, makroud.NewOnlyColumnTagsAnalyzerOption())
+		is.Len(tags, 1)
+		name = tags[0].Name()
+		properties = tags[0].Properties()
+		is.Equal(makroud.TagName, name)
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
+		is.Equal("hash_2", properties[0].Value())
+
+		//
+		// Hash3
+		//
+
+		field, ok = reflectx.GetFieldByName(hash, "Hash3")
+		is.True(ok)
+		is.NotEmpty(field)
+
+		tags = makroud.GetTags(field, makroud.NewOnlyColumnTagsAnalyzerOption())
+		is.Len(tags, 1)
+		name = tags[0].Name()
+		properties = tags[0].Properties()
+		is.Equal(makroud.TagName, name)
+		is.Equal(makroud.TagKeyColumn, properties[0].Key())
+		is.Equal("hash_3", properties[0].Value())
+
+	}
+
 }

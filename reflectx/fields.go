@@ -8,15 +8,24 @@ import (
 
 // GetFields returns a list of field name.
 func GetFields(element interface{}) ([]string, error) {
+	v, ok := element.(reflect.Type)
+	if ok {
+		return getFields(v)
+	}
+
 	value := GetIndirectValue(element)
-	if value.Kind() != reflect.Struct {
+	return getFields(value.Type())
+}
+
+func getFields(element reflect.Type) ([]string, error) {
+	if element.Kind() != reflect.Struct {
 		return nil, errors.New("makroud: cannot find fields on a non-struct interface")
 	}
 
-	count := value.Type().NumField()
+	count := element.NumField()
 	fields := []string{}
 	for i := 0; i < count; i++ {
-		field := value.Type().Field(i)
+		field := element.Field(i)
 		// Ignore private or anonymous field...
 		if field.PkgPath == "" {
 			fields = append(fields, field.Name)
@@ -26,13 +35,42 @@ func GetFields(element interface{}) ([]string, error) {
 	return fields, nil
 }
 
+// GetFieldsCount returns the number of exported fields for given type.
+func GetFieldsCount(element reflect.Type) int {
+	if element.Kind() != reflect.Struct {
+		return 0
+	}
+
+	count := 0
+	max := element.NumField()
+	for i := 0; i < max; i++ {
+		field := element.Field(i)
+		// Ignore private or anonymous field...
+		if field.PkgPath == "" {
+			count++
+		}
+	}
+
+	return count
+}
+
 // GetFieldByName returns the field in element with given name.
 func GetFieldByName(element interface{}, name string) (reflect.StructField, bool) {
+	v, ok := element.(reflect.Type)
+	if ok {
+		return getFieldByName(v, name)
+	}
+
 	value := GetIndirectValue(element)
 	if value.Kind() != reflect.Struct {
 		return reflect.StructField{}, false
 	}
-	return value.Type().FieldByName(name)
+
+	return getFieldByName(value.Type(), name)
+}
+
+func getFieldByName(element reflect.Type, name string) (reflect.StructField, bool) {
+	return element.FieldByName(name)
 }
 
 // GetFieldReflectTypeByName returns the field's type with given name.

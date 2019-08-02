@@ -44,3 +44,8 @@ func MakeReflectZero(element interface{}) reflect.Value {
 func MakeZero(element interface{}) interface{} {
 	return MakeReflectZero(element).Interface()
 }
+
+// NewValue creates a new value from type.
+func NewValue(value reflect.Type) interface{} {
+	return reflect.New(value).Interface()
+}

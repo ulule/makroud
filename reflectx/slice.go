@@ -14,9 +14,18 @@ func IsSlice(instance interface{}) bool {
 	return GetIndirectType(value.Type()).Kind() == reflect.Slice
 }
 
-// GetSliceType returns the type if slice.
+// GetSliceType returns the type of a slice.
 func GetSliceType(instance interface{}) reflect.Type {
 	return GetIndirectType(instance).Elem()
+}
+
+// GetIndirectSliceType returns the indirect type of a slice.
+func GetIndirectSliceType(instance interface{}) reflect.Type {
+	t := GetSliceType(instance)
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t
 }
 
 // NewSliceValue creates a new value for slice type.
