@@ -114,27 +114,6 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 	return client, nil
 }
 
-// NewDebugClient returns a new client with a specific engine.
-// Use this with extreme caution, please use New() or NewWithOptions() instead...
-func NewDebugClient(driver string, dsn string) (*Client, error) {
-	_ = pq.Driver{}
-
-	node, err := Connect(driver, dsn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "makroud: cannot connect to %s server", driver)
-	}
-
-	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	client := &Client{
-		node:  node,
-		rnd:   entropy,
-		store: newCache(),
-	}
-
-	return client, nil
-}
-
 // Exec executes a statement using given arguments.
 func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) error {
 	_, err := c.node.ExecContext(ctx, query, args...)
