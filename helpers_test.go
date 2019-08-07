@@ -90,7 +90,6 @@ func TestCount(t *testing.T) {
 			is.Error(err)
 			is.Equal(float64(0), count)
 		}
-
 	})
 }
 

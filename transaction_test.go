@@ -137,6 +137,5 @@ func TestTransaction_Nested(t *testing.T) {
 		})
 		is.NoError(err)
 		is.Equal("Sibyl", getCatName(driver))
-
 	})
 }

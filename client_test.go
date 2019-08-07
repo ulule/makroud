@@ -156,7 +156,6 @@ func TestClient_PrepareExec(t *testing.T) {
 		count, err := makroud.Count(ctx, driver, query)
 		is.NoError(err)
 		is.Equal(int64(0), count)
-
 	})
 }
 
@@ -192,7 +191,6 @@ func TestClient_PrepareQueryRow(t *testing.T) {
 		}
 
 		verifyHuman := func(expected *Human, id string, name string, createdAt time.Time) {
-
 			is.Equal(expected.ID, id)
 			is.Equal(expected.Name, name)
 			is.Equal(expected.CreatedAt.UnixNano(), createdAt.UnixNano())
@@ -243,7 +241,6 @@ func TestClient_PrepareQueryRow(t *testing.T) {
 
 		err = stmt.Close()
 		is.NoError(err)
-
 	})
 }
 
@@ -382,6 +379,5 @@ func TestClient_PrepareQueryRows(t *testing.T) {
 			is.Error(err)
 			is.Empty(rows)
 		}
-
 	})
 }

@@ -94,7 +94,7 @@ type node struct {
 	nested           bool
 }
 
-// Connect to a database and verify with a ping.
+// Connect connects to a database and verifies connection with a ping.
 func Connect(driver string, dsn string) (Node, error) {
 	db, err := sql.Open(driver, dsn)
 	if err != nil {
@@ -137,7 +137,7 @@ func (node *node) Close() error {
 	return node.db.Close()
 }
 
-// Begin a new transaction.
+// Begin begins a new transaction.
 func (node *node) Begin() (Node, error) {
 
 	clone := node.clone()
@@ -174,7 +174,7 @@ func (node *node) Begin() (Node, error) {
 	return clone, nil
 }
 
-// Commit the associated transaction.
+// Commit commits the associated transaction.
 func (node *node) Commit() (err error) {
 	if node.tx == nil {
 		return ErrCommitNotInTransaction
@@ -199,7 +199,7 @@ func (node *node) Commit() (err error) {
 	return nil
 }
 
-// Rollback the associated transaction.
+// Rollback rollbacks the associated transaction.
 func (node *node) Rollback() (err error) {
 	if node.tx == nil {
 		return nil
@@ -318,7 +318,7 @@ func (node *node) SetMaxOpenConns(number int) {
 	node.db.SetMaxOpenConns(number)
 }
 
-// EnableSavepoint activate PostgreSQL savepoints for nested transactions.
+// EnableSavepoint activates PostgreSQL savepoints for nested transactions.
 func (node *node) EnableSavepoint(enabled bool) {
 	node.savePointEnabled = enabled
 }

@@ -476,7 +476,6 @@ func TestNode_Transaction(t *testing.T) {
 		is.Empty(tx2.Tx())
 		is.NotEmpty(tx3.DB())
 		is.Empty(tx3.Tx())
-
 	})
 }
 

@@ -120,7 +120,6 @@ func TestSchema_Cat(t *testing.T) {
 		is.True(schema.HasColumn("ztp_cat.deleted_at"))
 		is.False(schema.HasColumn("ztp_cat.human_id"))
 		is.False(schema.HasColumn("ztp_cat.favorite_food"))
-
 	})
 }
 

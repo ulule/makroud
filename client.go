@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ClientDriver define the driver name used in makroud.
+// ClientDriver defines the driver name used in makroud.
 const ClientDriver = "postgres"
 
 // Client is a wrapper that can interact with the database, it's an implementation of Driver.
@@ -261,12 +261,12 @@ func wrapClient(client *Client, connection Node) Driver {
 	}
 }
 
-// A stmtWrapper wraps a statement from sqlx.
+// A stmtWrapper wraps a statement from sql.
 type stmtWrapper struct {
 	stmt *sql.Stmt
 }
 
-// wrapStatement creates a new Statement using given named statement from sqlx.
+// wrapStatement creates a new Statement using given statement.
 func wrapStatement(stmt *sql.Stmt) Statement {
 	return &stmtWrapper{
 		stmt: stmt,
@@ -282,7 +282,7 @@ func (w *stmtWrapper) Close() error {
 	return nil
 }
 
-// Exec executes this named statement using the struct passed.
+// Exec executes this statement using the struct passed.
 func (w *stmtWrapper) Exec(ctx context.Context, args ...interface{}) error {
 	_, err := w.stmt.ExecContext(ctx, args...)
 	if err != nil {
@@ -291,7 +291,7 @@ func (w *stmtWrapper) Exec(ctx context.Context, args ...interface{}) error {
 	return nil
 }
 
-// QueryRow executes this named statement returning a single row.
+// QueryRow executes this statement returning a single row.
 func (w *stmtWrapper) QueryRow(ctx context.Context, args ...interface{}) (Row, error) {
 	rows, err := w.stmt.QueryContext(ctx, args...)
 	if err != nil {
@@ -300,7 +300,7 @@ func (w *stmtWrapper) QueryRow(ctx context.Context, args ...interface{}) (Row, e
 	return wrapRow(rows), nil
 }
 
-// QueryRows executes this named statement returning a list of rows.
+// QueryRows executes this statement returning a list of rows.
 func (w *stmtWrapper) QueryRows(ctx context.Context, args ...interface{}) (Rows, error) {
 	rows, err := w.stmt.QueryContext(ctx, args...)
 	if err != nil {
@@ -352,7 +352,7 @@ func (r *rowWrapper) Scan(dest ...interface{}) error {
 }
 
 func (r *rowWrapper) scan(dest ...interface{}) error {
-	// From sqlx source code: Discard sql.RawBytes to avoid weird issues with the SQL driver and memory management.
+	// From https://github.com/jmoiron/sqlx source code: Discard sql.RawBytes to avoid weird issues with the SQL driver and memory management.
 	defer func() {
 		// TODO (novln): Add an observer to collect this error.
 		_ = r.rows.Close()
@@ -391,7 +391,7 @@ type rowsWrapper struct {
 	rows *sql.Rows
 }
 
-// wrapRow creates a new Rows using given rows from sqlx.
+// wrapRow creates a new Rows using given rows from sql.
 func wrapRows(rows *sql.Rows) Rows {
 	return &rowsWrapper{
 		rows: rows,
