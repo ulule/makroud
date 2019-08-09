@@ -199,7 +199,11 @@ func (c *Client) Ping() error {
 	timeout := 1 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+	return c.PingContext(ctx)
+}
 
+// PingContext verifies that the underlying connection is healthy.
+func (c *Client) PingContext(ctx context.Context) error {
 	row, err := c.node.QueryContext(ctx, "SELECT true")
 	if row != nil {
 		defer c.close(row, map[string]string{
