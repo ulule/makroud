@@ -352,7 +352,8 @@ func (r *rowWrapper) Scan(dest ...interface{}) error {
 }
 
 func (r *rowWrapper) scan(dest ...interface{}) error {
-	// From https://github.com/jmoiron/sqlx source code: Discard sql.RawBytes to avoid weird issues with the SQL driver and memory management.
+	// From https://github.com/jmoiron/sqlx source code:
+	// Discard sql.RawBytes to avoid weird issues with the SQL driver and memory management.
 	defer func() {
 		// TODO (novln): Add an observer to collect this error.
 		_ = r.rows.Close()
