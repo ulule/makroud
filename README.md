@@ -21,18 +21,16 @@ data model in your database.
 
 It also support simple associations _(one, many)_ with preloading.
 
-Under the hood, it relies on three components:
-
- * [Loukoum](https://github.com/ulule/loukoum) for query generation
- * [Sqlx](https://github.com/ulule/sqlx) to have an extended mapper
- * [Sqalx](https://github.com/ulule/sqalx) to support nested transaction
+Under the hood, it relies on [Loukoum](https://github.com/ulule/loukoum) for query generation.
+In addition, it's heavily inspired by [Sqlx](https://github.com/jmoiron/sqlx) for its extended mapper and
+[Sqalx](https://github.com/heetch/sqalx) to support nested transaction.
 
 ## Installation
 
 Using [Go Modules](https://github.com/golang/go/wiki/Modules)
 
 ```console
-go get github.com/ulule/makroud
+go get github.com/ulule/makroud@v0.7.0
 ```
 
 ## Usage
@@ -71,7 +69,69 @@ driver, err := makroud.NewWithOptions(&makroud.ClientOptions{
 })
 ```
 
-### Define a Model
+### Advanced mapper
+
+If a lightweight ORM doesn't fit your requirements and an advanced mapper is enough for your usecase:
+makroud does that very well.
+
+You could either use primitive and compound types for your queries:
+
+```go
+import "github.com/ulule/makroud"
+
+stmt := `SELECT id FROM users WHERE email = 'john.doe@example.com'`
+id := int64(0)
+
+err := makroud.RawExec(ctx, driver, stmt, &id)
+if err != nil {
+	return err
+}
+
+stmt = `SELECT created_at FROM users WHERE id = 42`
+created := time.Time{}
+
+err := makroud.RawExec(ctx, driver, stmt, &created)
+if err != nil {
+	return err
+}
+
+stmt = `SELECT email FROM users WHERE id IN (1, 2, 3, 4)`
+list := []string{}
+
+err := makroud.RawExec(ctx, driver, stmt, &list)
+if err != nil {
+	return err
+}
+```
+
+Or, define a struct that contains your database table _(or view)_ columns:
+
+```go
+import "github.com/ulule/makroud"
+import "github.com/ulule/loukoum/v3"
+
+type User struct {
+	ID       int64  `mk:"id"`
+	Email    string `mk:"email"`
+	Password string `mk:"password"`
+	Country  string `mk:"country"`
+	Locale   string `mk:"locale"`
+}
+
+users := []User{}
+stmt := loukoum.Select("*").
+	From("users").
+	Where(loukoum.Condition("id").In(1, 2, 3, 4))
+
+err := makroud.Exec(ctx, driver, stmt, &users)
+if err != nil {
+	return err
+}
+```
+
+### Lightweight ORM
+
+#### Define a Model
 
 With the [**Active Record**](https://en.wikipedia.org/wiki/Active_record_pattern) approach, you have to define a
 model that wraps your database table _(or view)_ columns into properties.
@@ -138,6 +198,8 @@ The preload mechanism, which enables you to fetch relationships from database, s
  * `[]*Model`
  * `*[]Model`
  * `*[]*Model`
+
+> **NOTE:** You could either use `makroud` or `mk` as tag identifier.
 
 #### Conventions
 
@@ -324,7 +386,7 @@ func CreateUser(ctx context.Context, driver makroud.Driver, name string) (*User,
 Or for more complex statements, use a [Loukoum](https://github.com/ulule/loukoum) `InsertBuilder` alongside the model.
 
 ```go
-import "github.com/ulule/loukoum"
+import "github.com/ulule/loukoum/v3"
 
 func CreateUser(ctx context.Context, driver makroud.Driver, name string) (*User, error) {
 	user := &User{
@@ -629,11 +691,9 @@ Because sometimes it's hard to think of a good test fixture, using generators ca
 
 This website was a great help to write unit test: http://www.fantasynamegenerators.com
 
-
 ## License
 
 This is Free Software, released under the [`MIT License`][license-url].
-
 
 ## Contributing
 
