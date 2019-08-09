@@ -3333,14 +3333,14 @@ type environment struct {
 }
 
 func (e *environment) startup(ctx context.Context) {
-	DropTables(ctx, e.driver)
-	CreateTables(ctx, e.driver)
+	dropTables(ctx, e.driver)
+	createTables(ctx, e.driver)
 }
 
 func (e *environment) shutdown(ctx context.Context) {
 	value := os.Getenv("DB_KEEP")
 	if len(value) == 0 {
-		DropTables(ctx, e.driver)
+		dropTables(ctx, e.driver)
 	}
 	e.is.NoError(e.driver.Close())
 }
@@ -3427,7 +3427,7 @@ func ClientOptions(options ...makroud.Option) *makroud.ClientOptions {
 	return clientOpts
 }
 
-func DropTables(ctx context.Context, db *makroud.Client) {
+func dropTables(ctx context.Context, db *makroud.Client) {
 	db.MustExec(ctx, `
 
 		--
@@ -3464,7 +3464,7 @@ func DropTables(ctx context.Context, db *makroud.Client) {
 	`)
 }
 
-func CreateTables(ctx context.Context, db *makroud.Client) {
+func createTables(ctx context.Context, db *makroud.Client) {
 	db.MustExec(ctx, `
 
 		--
