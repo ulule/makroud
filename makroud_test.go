@@ -3416,15 +3416,15 @@ func Options(options ...makroud.Option) []makroud.Option {
 func ClientOptions(options ...makroud.Option) *makroud.ClientOptions {
 	dbOpts := Options(options...)
 
-	cliOpts := makroud.NewClientOptions()
+	clientOpts := makroud.NewClientOptions()
 	for _, option := range dbOpts {
-		err := option(cliOpts)
+		err := option(clientOpts)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	return cliOpts
+	return clientOpts
 }
 
 func DropTables(ctx context.Context, db *makroud.Client) {
