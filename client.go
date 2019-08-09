@@ -383,12 +383,7 @@ func (r *rowWrapper) scan(dest ...interface{}) error {
 	}
 
 	// Make sure the query can be processed to completion with no errors.
-	err = r.rows.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return r.rows.Close()
 }
 
 // A rowsWrapper wraps a rows from sql.
