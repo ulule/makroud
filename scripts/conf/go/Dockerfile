@@ -1,4 +1,4 @@
-FROM golang:1.12.7-buster
+FROM golang:1.12.8-buster
 
 MAINTAINER thomas.leroux@ulule.com
 
