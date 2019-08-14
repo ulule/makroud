@@ -1,6 +1,6 @@
 FROM golang:1.12.8-buster
 
-MAINTAINER thomas.leroux@ulule.com
+MAINTAINER thomas@leroux.io
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV LANG C.UTF-8
