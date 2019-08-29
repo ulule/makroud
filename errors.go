@@ -36,4 +36,8 @@ var (
 	ErrSelectorNotFoundConnection = fmt.Errorf("cannot find connection in selector")
 	// ErrSelectorMissingRetryConnection is returned when the retry mechanism has no connection available from selector.
 	ErrSelectorMissingRetryConnection = fmt.Errorf("cannot find a healthy connection in selector")
+	// ErrSliceOfScalarMultipleColumns is returned when a query return multiple columns for a slice of scalar.
+	ErrSliceOfScalarMultipleColumns = fmt.Errorf("slice of scalar with multiple columns")
+	// ErrCommitNotInTransaction is returned when using commit outside of a transaction.
+	ErrCommitNotInTransaction = fmt.Errorf("cannot commit outside of a transaction")
 )

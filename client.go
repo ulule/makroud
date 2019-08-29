@@ -2,6 +2,7 @@ package makroud
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"math/rand"
@@ -9,16 +10,14 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
-	"github.com/ulule/sqalx"
-	"github.com/ulule/sqlx"
 )
 
-// ClientDriver define the driver name used in makroud.
+// ClientDriver defines the driver name used in makroud.
 const ClientDriver = "postgres"
 
 // Client is a wrapper that can interact with the database, it's an implementation of Driver.
 type Client struct {
-	node  sqalx.Node
+	node  Node
 	store *cache
 	log   Logger
 	rnd   io.Reader
@@ -88,23 +87,19 @@ func New(options ...Option) (*Client, error) {
 func NewWithOptions(options *ClientOptions) (*Client, error) {
 	_ = pq.Driver{}
 
-	dbx, err := sqlx.Connect(ClientDriver, options.String())
+	node, err := Connect(ClientDriver, options.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "makroud: cannot connect to %s server", ClientDriver)
 	}
 
-	dbx.SetMaxIdleConns(options.MaxIdleConnections)
-	dbx.SetMaxOpenConns(options.MaxOpenConnections)
-
-	connection, err := sqalx.New(dbx, sqalx.SavePoint(options.SavepointEnabled))
-	if err != nil {
-		return nil, errors.Wrapf(err, "makroud: cannot instantiate %s client driver", ClientDriver)
-	}
+	node.SetMaxIdleConns(options.MaxIdleConnections)
+	node.SetMaxOpenConns(options.MaxOpenConnections)
+	node.EnableSavepoint(options.SavepointEnabled)
 
 	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	client := &Client{
-		node: connection,
+		node: node,
 		rnd:  entropy,
 	}
 
@@ -119,43 +114,9 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 	return client, nil
 }
 
-// NewDebugClient returns a new client with a specific engine.
-// Use this with extreme caution, please use New() or NewWithOptions() instead...
-func NewDebugClient(driver string, dsn string) (*Client, error) {
-	_ = pq.Driver{}
-
-	dbx, err := sqlx.Connect(driver, dsn)
-	if err != nil {
-		return nil, errors.Wrapf(err, "makroud: cannot connect to %s server", driver)
-	}
-
-	connection, err := sqalx.New(dbx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "makroud: cannot instantiate %s client driver", driver)
-	}
-
-	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	client := &Client{
-		node:  connection,
-		rnd:   entropy,
-		store: newCache(),
-	}
-
-	return client, nil
-}
-
-// Exec executes a named statement using given arguments.
+// Exec executes a statement using given arguments.
 func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) error {
-	if len(args) == 0 {
-		_, err := c.node.ExecContext(ctx, query)
-		if err != nil {
-			return errors.Wrap(err, "makroud: cannot execute query")
-		}
-		return nil
-	}
-
-	_, err := c.node.NamedExecContext(ctx, query, args[0])
+	_, err := c.node.ExecContext(ctx, query, args...)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot execute query")
 	}
@@ -163,7 +124,7 @@ func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) er
 	return nil
 }
 
-// MustExec executes a named statement using given arguments.
+// MustExec executes a statement using given arguments.
 // If an error has occurred, it panics.
 func (c *Client) MustExec(ctx context.Context, query string, args ...interface{}) {
 	err := c.Exec(ctx, query, args...)
@@ -172,19 +133,19 @@ func (c *Client) MustExec(ctx context.Context, query string, args ...interface{}
 	}
 }
 
-// Query executes a named statement that returns rows using given arguments.
-func (c *Client) Query(ctx context.Context, query string, arg interface{}) (Rows, error) {
-	rows, err := c.node.NamedQueryContext(ctx, query, arg)
+// Query executes a statement that returns rows using given arguments.
+func (c *Client) Query(ctx context.Context, query string, args ...interface{}) (Rows, error) {
+	rows, err := c.node.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot execute query")
 	}
 	return wrapRows(rows), nil
 }
 
-// MustQuery executes a named statement that returns rows using given arguments.
+// MustQuery executes a statement that returns rows using given arguments.
 // If an error has occurred, it panics.
-func (c *Client) MustQuery(ctx context.Context, query string, arg interface{}) Rows {
-	rows, err := c.Query(ctx, query, arg)
+func (c *Client) MustQuery(ctx context.Context, query string, args ...interface{}) Rows {
+	rows, err := c.Query(ctx, query, args...)
 	if err != nil {
 		panic(err)
 	}
@@ -194,39 +155,18 @@ func (c *Client) MustQuery(ctx context.Context, query string, arg interface{}) R
 // Prepare creates a prepared statement for later queries or executions.
 // Multiple queries or executions may be run concurrently from the returned statement.
 func (c *Client) Prepare(ctx context.Context, query string) (Statement, error) {
-	stmt, err := c.node.PreparexContext(ctx, query)
+	stmt, err := c.node.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot prepare statement")
 	}
 	return wrapStatement(stmt), nil
 }
 
-// FindOne executes this named statement to fetch one record.
-// If there is no row, an error is returned.
-// Output must be a pointer to a value.
-func (c *Client) FindOne(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	err := c.node.GetContext(ctx, dest, query, args...)
-	if err != nil {
-		return errors.Wrap(err, "makroud: cannot execute query")
-	}
-	return nil
-}
-
-// FindAll executes this named statement to fetch a list of records.
-// Output must be a pointer to a slice of value.
-func (c *Client) FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error {
-	err := c.node.SelectContext(ctx, dest, query, args...)
-	if err != nil {
-		return errors.Wrap(err, "makroud: cannot execute query")
-	}
-	return nil
-}
-
 // Begin a new transaction.
 func (c *Client) Begin() (Driver, error) {
-	node, err := c.node.Beginx()
+	node, err := c.node.Begin()
 	if err != nil {
-		return nil, errors.Wrap(err, "makroud: create a transaction")
+		return nil, errors.Wrap(err, "makroud: cannot create a transaction")
 	}
 	return wrapClient(c, node), nil
 }
@@ -256,7 +196,15 @@ func (c *Client) Close() error {
 
 // Ping verifies that the underlying connection is healthy.
 func (c *Client) Ping() error {
-	row, err := c.node.Query("SELECT true")
+	timeout := 1 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return c.PingContext(ctx)
+}
+
+// PingContext verifies that the underlying connection is healthy.
+func (c *Client) PingContext(ctx context.Context) error {
+	row, err := c.node.QueryContext(ctx, "SELECT true")
 	if row != nil {
 		defer c.close(row, map[string]string{
 			"query": "SELECT true;",
@@ -265,6 +213,7 @@ func (c *Client) Ping() error {
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot ping database")
 	}
+
 	return nil
 }
 
@@ -307,7 +256,7 @@ func (c *Client) close(closer io.Closer, flags map[string]string) {
 }
 
 // wrapClient creates a new Client using given database connection.
-func wrapClient(client *Client, connection sqalx.Node) Driver {
+func wrapClient(client *Client, connection Node) Driver {
 	return &Client{
 		node:  connection,
 		store: client.store,
@@ -316,13 +265,13 @@ func wrapClient(client *Client, connection sqalx.Node) Driver {
 	}
 }
 
-// A stmtWrapper wraps a statement from sqlx.
+// A stmtWrapper wraps a statement from sql.
 type stmtWrapper struct {
-	stmt *sqlx.Stmt
+	stmt *sql.Stmt
 }
 
-// wrapStatement creates a new Statement using given named statement from sqlx.
-func wrapStatement(stmt *sqlx.Stmt) Statement {
+// wrapStatement creates a new Statement using given statement.
+func wrapStatement(stmt *sql.Stmt) Statement {
 	return &stmtWrapper{
 		stmt: stmt,
 	}
@@ -337,8 +286,8 @@ func (w *stmtWrapper) Close() error {
 	return nil
 }
 
-// Exec executes this named statement using the struct passed.
-func (w *stmtWrapper) Exec(ctx context.Context, args []interface{}) error {
+// Exec executes this statement using the struct passed.
+func (w *stmtWrapper) Exec(ctx context.Context, args ...interface{}) error {
 	_, err := w.stmt.ExecContext(ctx, args...)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot execute statement")
@@ -346,61 +295,40 @@ func (w *stmtWrapper) Exec(ctx context.Context, args []interface{}) error {
 	return nil
 }
 
-// QueryRow executes this named statement returning a single row.
-func (w *stmtWrapper) QueryRow(ctx context.Context, args []interface{}) (Row, error) {
-	row := w.stmt.QueryRowxContext(ctx, args...)
-	err := row.Err()
+// QueryRow executes this statement returning a single row.
+func (w *stmtWrapper) QueryRow(ctx context.Context, args ...interface{}) (Row, error) {
+	rows, err := w.stmt.QueryContext(ctx, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot execute statement")
 	}
-	if row == nil {
-		return nil, errors.Wrap(ErrNoRows, "makroud: cannot execute statement")
-	}
-	return wrapRow(row), nil
+	return wrapRow(rows), nil
 }
 
-// QueryRows executes this named statement returning a list of rows.
-func (w *stmtWrapper) QueryRows(ctx context.Context, args []interface{}) (Rows, error) {
-	rows, err := w.stmt.QueryxContext(ctx, args...)
+// QueryRows executes this statement returning a list of rows.
+func (w *stmtWrapper) QueryRows(ctx context.Context, args ...interface{}) (Rows, error) {
+	rows, err := w.stmt.QueryContext(ctx, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot execute statement")
 	}
 	return wrapRows(rows), nil
 }
 
-// FindOne executes this named statement to fetch one record.
-func (w *stmtWrapper) FindOne(ctx context.Context, dest interface{}, args []interface{}) error {
-	err := w.stmt.GetContext(ctx, dest, args...)
-	if err != nil {
-		return errors.Wrap(err, "makroud: cannot execute statement")
-	}
-	return nil
-}
-
-// FindAll executes this named statement to fetch a list of records.
-func (w *stmtWrapper) FindAll(ctx context.Context, dest interface{}, args []interface{}) error {
-	err := w.stmt.SelectContext(ctx, dest, args...)
-	if err != nil {
-		return errors.Wrap(err, "makroud: cannot execute statement")
-	}
-	return nil
-}
-
-// A rowWrapper wraps a row from sqlx.
+// A rowWrapper is a reimplementation of sql.Row in order to gain access to the underlying
+// Columns() function.
 type rowWrapper struct {
-	row *sqlx.Row
+	rows *sql.Rows
 }
 
-// wrapRow creates a new Row using given row from sqlx.
-func wrapRow(row *sqlx.Row) Row {
+// wrapRow creates a new Row using given rows from sql.
+func wrapRow(rows *sql.Rows) Row {
 	return &rowWrapper{
-		row: row,
+		rows: rows,
 	}
 }
 
 // Write copies the columns in the current row into the given map.
 func (r *rowWrapper) Write(dest map[string]interface{}) error {
-	err := r.row.MapScan(dest)
+	err := mapScan(r, dest)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot write row")
 	}
@@ -409,40 +337,72 @@ func (r *rowWrapper) Write(dest map[string]interface{}) error {
 
 // Columns returns the column names.
 func (r *rowWrapper) Columns() ([]string, error) {
-	columns, err := r.row.Columns()
+	columns, err := r.rows.Columns()
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot return row columns")
 	}
+
 	return columns, nil
 }
 
 // Scan copies the columns in the current row into the values pointed at by dest.
 // The number of values in dest must be the same as the number of columns in Rows.
 func (r *rowWrapper) Scan(dest ...interface{}) error {
-	err := r.row.Scan(dest...)
+	err := r.scan(dest...)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot scan given values")
 	}
 	return nil
 }
 
-// A rowsWrapper wraps a rows from sqlx.
-type rowsWrapper struct {
-	rows *sqlx.Rows
+func (r *rowWrapper) scan(dest ...interface{}) error {
+	// From https://github.com/jmoiron/sqlx source code:
+	// Discard sql.RawBytes to avoid weird issues with the SQL driver and memory management.
+	defer func() {
+		// TODO (novln): Add an observer to collect this error.
+		_ = r.rows.Close()
+	}()
+	for i := range dest {
+		_, ok := dest[i].(*sql.RawBytes)
+		if ok {
+			return errors.New("sql.RawBytes isn't allowed on Row.Scan")
+		}
+	}
+
+	if !r.rows.Next() {
+		err := r.rows.Err()
+		if err != nil {
+			return err
+		}
+		return sql.ErrNoRows
+	}
+
+	err := r.rows.Scan(dest...)
+	if err != nil {
+		return err
+	}
+
+	// Make sure the query can be processed to completion with no errors.
+	return r.rows.Close()
 }
 
-// wrapRow creates a new Rows using given rows from sqlx.
-func wrapRows(rows *sqlx.Rows) Rows {
+// A rowsWrapper wraps a rows from sql.
+type rowsWrapper struct {
+	rows *sql.Rows
+}
+
+// wrapRow creates a new Rows using given rows from sql.
+func wrapRows(rows *sql.Rows) Rows {
 	return &rowsWrapper{
 		rows: rows,
 	}
 }
 
-// Next prepares the next result row for reading with the MapScan method.
+// Next prepares the next result row for reading with the Scan method.
 // It returns true on success, or false if there is no next result row or an error
 // happened while preparing it.
 // Err should be consulted to distinguish between the two cases.
-// Every call to MapScan, even the first one, must be preceded by a call to Next.
+// Every call to Scan, even the first one, must be preceded by a call to Next.
 func (r *rowsWrapper) Next() bool {
 	return r.rows.Next()
 }
@@ -461,15 +421,25 @@ func (r *rowsWrapper) Close() error {
 // Err returns the error, if any, that was encountered during iteration.
 // Err may be called after an explicit or implicit Close.
 func (r *rowsWrapper) Err() error {
-	return r.rows.Err()
+	err := r.rows.Err()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return err
 }
 
 // Write copies the columns in the current row into the given map.
 func (r *rowsWrapper) Write(dest map[string]interface{}) error {
-	err := r.rows.MapScan(dest)
+	err := mapScan(r, dest)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot write row")
 	}
+
+	err = r.Err()
+	if err != nil {
+		return errors.Wrap(err, "makroud: cannot write row")
+	}
+
 	return nil
 }
 
@@ -489,5 +459,36 @@ func (r *rowsWrapper) Scan(dest ...interface{}) error {
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot scan given values")
 	}
+	return nil
+}
+
+type mapScanner interface {
+	Columns() ([]string, error)
+	Scan(...interface{}) error
+}
+
+// mapScan scans the current row into the given map.
+// Use this for debugging or analysis if the results might not be under your control.
+// Please do not use this as a primary interface!
+func mapScan(scanner mapScanner, dest map[string]interface{}) error {
+	columns, err := scanner.Columns()
+	if err != nil {
+		return err
+	}
+
+	values := make([]interface{}, len(columns))
+	for i := range values {
+		values[i] = new(interface{})
+	}
+
+	err = scanner.Scan(values...)
+	if err != nil {
+		return err
+	}
+
+	for i, column := range columns {
+		dest[column] = *(values[i].(*interface{}))
+	}
+
 	return nil
 }

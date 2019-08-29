@@ -3333,14 +3333,14 @@ type environment struct {
 }
 
 func (e *environment) startup(ctx context.Context) {
-	DropTables(ctx, e.driver)
-	CreateTables(ctx, e.driver)
+	dropTables(ctx, e.driver)
+	createTables(ctx, e.driver)
 }
 
 func (e *environment) shutdown(ctx context.Context) {
 	value := os.Getenv("DB_KEEP")
 	if len(value) == 0 {
-		DropTables(ctx, e.driver)
+		dropTables(ctx, e.driver)
 	}
 	e.is.NoError(e.driver.Close())
 }
@@ -3384,17 +3384,8 @@ type SetupHandler func(driver makroud.Driver)
 func Setup(t require.TestingT, options ...makroud.Option) SetupCallback {
 	is := require.New(t)
 	ctx := context.Background()
-	opts := []makroud.Option{
-		dbParamString(makroud.Host, "host", "PGHOST"),
-		dbParamInt(makroud.Port, "port", "PGPORT"),
-		dbParamString(makroud.User, "user", "PGUSER"),
-		dbParamString(makroud.Password, "password", "PGPASSWORD"),
-		dbParamString(makroud.Database, "name", "PGDATABASE"),
-		makroud.Cache(true),
-	}
-	opts = append(opts, options...)
 
-	db, err := makroud.New(opts...)
+	db, err := makroud.NewWithOptions(ClientOptions(options...))
 	is.NoError(err)
 	is.NotNil(db)
 
@@ -3410,7 +3401,33 @@ func Setup(t require.TestingT, options ...makroud.Option) SetupCallback {
 	}
 }
 
-func DropTables(ctx context.Context, db *makroud.Client) {
+func Options(options ...makroud.Option) []makroud.Option {
+	dbOpts := []makroud.Option{
+		dbParamString(makroud.Host, "host", "PGHOST"),
+		dbParamInt(makroud.Port, "port", "PGPORT"),
+		dbParamString(makroud.User, "user", "PGUSER"),
+		dbParamString(makroud.Password, "password", "PGPASSWORD"),
+		dbParamString(makroud.Database, "name", "PGDATABASE"),
+		makroud.Cache(true),
+	}
+	return append(dbOpts, options...)
+}
+
+func ClientOptions(options ...makroud.Option) *makroud.ClientOptions {
+	dbOpts := Options(options...)
+
+	clientOpts := makroud.NewClientOptions()
+	for _, option := range dbOpts {
+		err := option(clientOpts)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return clientOpts
+}
+
+func dropTables(ctx context.Context, db *makroud.Client) {
 	db.MustExec(ctx, `
 
 		--
@@ -3447,7 +3464,7 @@ func DropTables(ctx context.Context, db *makroud.Client) {
 	`)
 }
 
-func CreateTables(ctx context.Context, db *makroud.Client) {
+func createTables(ctx context.Context, db *makroud.Client) {
 	db.MustExec(ctx, `
 
 		--
