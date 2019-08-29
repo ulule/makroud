@@ -10,6 +10,4 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.3.0
 	github.com/ulule/loukoum/v3 v3.2.0
-	github.com/ulule/sqalx v0.2.2
-	github.com/ulule/sqlx v0.0.0-20181206101355-bc85c1419961
 )

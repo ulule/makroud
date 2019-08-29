@@ -8,17 +8,33 @@ if [[ ! -x "$(command -v go)" ]]; then
   exit 1
 fi
 
-golinter_path="${GOPATH}/bin/golangci-lint"
-if [[ ! -x "${golinter_path}" ]]; then
-    go get -u -v github.com/golangci/golangci-lint/cmd/golangci-lint
-fi
-
 SOURCE_DIRECTORY=$(dirname "${BASH_SOURCE[0]}")
 cd "${SOURCE_DIRECTORY}/.."
 
-OPTIONS=$(go list -f '{{.Dir}}' ./...)
-if [ -n "$1" ]; then
-    OPTIONS="$@"
-fi
+do_analyze() {
 
-golangci-lint run ${OPTIONS}
+    mkdir -p testdata
+    go test -coverprofile=testdata/coverage.out ./...
+
+}
+
+do_view() {
+
+    go tool cover -html=testdata/coverage.out
+
+}
+
+
+case "$1" in
+    --view)
+        do_view
+    ;;
+    --analyze)
+        do_analyze
+    ;;
+    *)
+        do_analyze
+        do_view
+    ;;
+esac
+exit 0

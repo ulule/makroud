@@ -1,9 +1,11 @@
 package makroud_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ulule/makroud"
@@ -35,6 +37,14 @@ func TestSchema_Owl(t *testing.T) {
 		is.Contains(columns, "favorite_food")
 		is.Contains(columns, "group_id")
 
+		is.True(schema.HasColumn("id"))
+		is.True(schema.HasColumn("name"))
+		is.True(schema.HasColumn("feather_color"))
+		is.True(schema.HasColumn("favorite_food"))
+		is.True(schema.HasColumn("group_id"))
+		is.False(schema.HasColumn("human_id"))
+		is.False(schema.HasColumn("eyesight"))
+
 		columns = schema.ColumnPaths()
 		is.Len(columns, 5)
 		is.Contains(columns, "ztp_owl.id")
@@ -42,6 +52,14 @@ func TestSchema_Owl(t *testing.T) {
 		is.Contains(columns, "ztp_owl.feather_color")
 		is.Contains(columns, "ztp_owl.favorite_food")
 		is.Contains(columns, "ztp_owl.group_id")
+
+		is.True(schema.HasColumn("ztp_owl.id"))
+		is.True(schema.HasColumn("ztp_owl.name"))
+		is.True(schema.HasColumn("ztp_owl.feather_color"))
+		is.True(schema.HasColumn("ztp_owl.favorite_food"))
+		is.True(schema.HasColumn("ztp_owl.group_id"))
+		is.False(schema.HasColumn("ztp_owl.human_id"))
+		is.False(schema.HasColumn("ztp_owl.eyesight"))
 
 	})
 }
@@ -79,6 +97,14 @@ func TestSchema_Cat(t *testing.T) {
 		is.Contains(columns, "updated_at")
 		is.Contains(columns, "deleted_at")
 
+		is.True(schema.HasColumn("id"))
+		is.True(schema.HasColumn("name"))
+		is.True(schema.HasColumn("created_at"))
+		is.True(schema.HasColumn("updated_at"))
+		is.True(schema.HasColumn("deleted_at"))
+		is.False(schema.HasColumn("human_id"))
+		is.False(schema.HasColumn("favorite_food"))
+
 		columns = schema.ColumnPaths()
 		is.Len(columns, 5)
 		is.Contains(columns, "ztp_cat.id")
@@ -87,6 +113,13 @@ func TestSchema_Cat(t *testing.T) {
 		is.Contains(columns, "ztp_cat.updated_at")
 		is.Contains(columns, "ztp_cat.deleted_at")
 
+		is.True(schema.HasColumn("ztp_cat.id"))
+		is.True(schema.HasColumn("ztp_cat.name"))
+		is.True(schema.HasColumn("ztp_cat.created_at"))
+		is.True(schema.HasColumn("ztp_cat.updated_at"))
+		is.True(schema.HasColumn("ztp_cat.deleted_at"))
+		is.False(schema.HasColumn("ztp_cat.human_id"))
+		is.False(schema.HasColumn("ztp_cat.favorite_food"))
 	})
 }
 
@@ -173,6 +206,148 @@ func TestSchema_ExoChunk(t *testing.T) {
 		is.Contains(columns, "exo_chunk.mode_id")
 		is.Contains(columns, "exo_chunk.file_id")
 
+	})
+}
+
+func TestSchema_Human(t *testing.T) {
+	Setup(t)(func(driver makroud.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		human1 := &Human{Name: "Aurélien"}
+		err := makroud.Save(ctx, driver, human1)
+		is.NoError(err)
+
+		human2 := &Human{Name: "Carl"}
+		err = makroud.Save(ctx, driver, human2)
+		is.NoError(err)
+
+		human3 := &Human{Name: "Clémence"}
+		err = makroud.Save(ctx, driver, human3)
+		is.NoError(err)
+
+		human4 := &Human{Name: "Renzo"}
+		err = makroud.Save(ctx, driver, human4)
+		is.NoError(err)
+
+		verifyHuman := func(expected *Human, actual *Human) {
+			is.Equal(expected.ID, actual.ID)
+			is.Equal(expected.Name, actual.Name)
+			is.Equal(expected.CreatedAt.UnixNano(), actual.CreatedAt.UnixNano())
+			is.Equal(expected.UpdatedAt.UnixNano(), actual.UpdatedAt.UnixNano())
+			is.Equal(expected.DeletedAt.Valid, actual.DeletedAt.Valid)
+			is.Equal(expected.DeletedAt.Time.UnixNano(), actual.DeletedAt.Time.UnixNano())
+			is.Equal(expected.CatID.Valid, actual.CatID.Valid)
+			is.Equal(expected.CatID.String, actual.CatID.String)
+		}
+
+		{
+			schema, err := makroud.GetSchema(driver, &Human{})
+			is.NoError(err)
+			is.NotEmpty(schema)
+
+			stmt, err := driver.Prepare(ctx, `SELECT * FROM ztp_human WHERE id = $1`)
+			is.NoError(err)
+			is.NotEmpty(stmt)
+
+			row, err := stmt.QueryRow(ctx, human3.ID)
+			is.NoError(err)
+			is.NotEmpty(row)
+
+			human := &Human{}
+			err = schema.ScanRow(row, human)
+			is.NoError(err)
+			verifyHuman(human3, human)
+
+			err = schema.ScanRow(row, human)
+			is.Error(err)
+
+			row, err = stmt.QueryRow(ctx, human4.ID)
+			is.NoError(err)
+			is.NotEmpty(row)
+
+			var model makroud.Model
+
+			err = schema.ScanRow(row, model)
+			is.Error(err)
+			is.Equal(makroud.ErrStructRequired, errors.Cause(err))
+
+			err = stmt.Close()
+			is.NoError(err)
+		}
+
+		{
+			schema, err := makroud.GetSchema(driver, &Human{})
+			is.NoError(err)
+			is.NotEmpty(schema)
+
+			stmt, err := driver.Prepare(ctx, `SELECT * FROM ztp_human`)
+			is.NoError(err)
+			is.NotEmpty(stmt)
+
+			rows, err := stmt.QueryRows(ctx)
+			is.NoError(err)
+			is.NotEmpty(rows)
+
+			expected := []string{
+				human1.ID,
+				human2.ID,
+				human3.ID,
+				human4.ID,
+			}
+
+			resp := map[string]*Human{}
+
+			for rows.Next() {
+				human := &Human{}
+				err = schema.ScanRows(rows, human)
+				is.NoError(err)
+				resp[human.ID] = human
+			}
+
+			err = rows.Err()
+			is.NoError(err)
+
+			err = schema.ScanRows(rows, &Human{})
+			is.Error(err)
+
+			err = rows.Close()
+			is.NoError(err)
+
+			for _, id := range expected {
+				is.NotEmpty(resp[id])
+				human := resp[id]
+				switch id {
+				case human1.ID:
+					verifyHuman(human1, human)
+				case human2.ID:
+					verifyHuman(human2, human)
+				case human3.ID:
+					verifyHuman(human3, human)
+				case human4.ID:
+					verifyHuman(human4, human)
+				}
+			}
+
+			rows, err = stmt.QueryRows(ctx)
+			is.NoError(err)
+			is.NotEmpty(rows)
+
+			var model makroud.Model
+
+			err = schema.ScanRows(rows, model)
+			is.Error(err)
+			is.Equal(makroud.ErrStructRequired, errors.Cause(err))
+
+			err = rows.Err()
+			is.NoError(err)
+
+			err = rows.Close()
+			is.NoError(err)
+
+			err = stmt.Close()
+			is.NoError(err)
+		}
 	})
 }
 

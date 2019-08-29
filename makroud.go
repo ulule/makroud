@@ -12,32 +12,23 @@ type Driver interface {
 	// Query
 	// ----------------------------------------------------------------------------
 
-	// Exec executes a named statement using given arguments.
+	// Exec executes a statement using given arguments.
 	Exec(ctx context.Context, query string, args ...interface{}) error
 
-	// MustExec executes a named statement using given arguments.
+	// MustExec executes a statement using given arguments.
 	// If an error has occurred, it panics.
 	MustExec(ctx context.Context, query string, args ...interface{})
 
-	// Query executes a named statement that returns rows using given arguments.
-	Query(ctx context.Context, query string, arg interface{}) (Rows, error)
+	// Query executes a statement that returns rows using given arguments.
+	Query(ctx context.Context, query string, args ...interface{}) (Rows, error)
 
-	// MustQuery executes a named statement that returns rows using given arguments.
+	// MustQuery executes a statement that returns rows using given arguments.
 	// If an error has occurred, it panics.
-	MustQuery(ctx context.Context, query string, arg interface{}) Rows
+	MustQuery(ctx context.Context, query string, args ...interface{}) Rows
 
 	// Prepare creates a prepared statement for later queries or executions.
 	// Multiple queries or executions may be run concurrently from the returned statement.
 	Prepare(ctx context.Context, query string) (Statement, error)
-
-	// FindOne executes this named statement to fetch one record.
-	// If there is no row, an error is returned.
-	// Output must be a pointer to a value.
-	FindOne(ctx context.Context, dest interface{}, query string, args ...interface{}) error
-
-	// FindAll executes this named statement to fetch a list of records.
-	// Output must be a pointer to a slice of value.
-	FindAll(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 
 	// ----------------------------------------------------------------------------
 	// Connection
@@ -83,23 +74,18 @@ type Statement interface {
 	// Close closes the statement.
 	Close() error
 	// Exec executes this named statement using the struct passed.
-	Exec(ctx context.Context, args []interface{}) error
+	Exec(ctx context.Context, args ...interface{}) error
 	// QueryRow executes this named statement returning a single row.
-	QueryRow(ctx context.Context, args []interface{}) (Row, error)
+	QueryRow(ctx context.Context, args ...interface{}) (Row, error)
 	// QueryRows executes this named statement returning a list of rows.
-	QueryRows(ctx context.Context, args []interface{}) (Rows, error)
-	// FindOne executes this named statement to fetch one record.
-	// If there is no row, an error is returned.
-	// Output must be a pointer to a value.
-	FindOne(ctx context.Context, dest interface{}, args []interface{}) error
-	// FindAll executes this named statement to fetch a list of records.
-	// Output must be a pointer to a slice of value.
-	FindAll(ctx context.Context, dest interface{}, args []interface{}) error
+	QueryRows(ctx context.Context, args ...interface{}) (Rows, error)
 }
 
 // A Row is a simple row.
 type Row interface {
 	// Write copies the columns in the current row into the given map.
+	// Use this for debugging or analysis if the results might not be under your control.
+	// Please do not use this as a primary interface!
 	Write(dest map[string]interface{}) error
 	// Columns returns the column names.
 	Columns() ([]string, error)
@@ -124,6 +110,8 @@ type Rows interface {
 	// Err may be called after an explicit or implicit Close.
 	Err() error
 	// Write copies the columns in the current row into the given map.
+	// Use this for debugging or analysis if the results might not be under your control.
+	// Please do not use this as a primary interface!
 	Write(dest map[string]interface{}) error
 	// Columns returns the column names.
 	Columns() ([]string, error)
