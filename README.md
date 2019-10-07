@@ -30,7 +30,7 @@ In addition, it's heavily inspired by [Sqlx](https://github.com/jmoiron/sqlx) fo
 Using [Go Modules](https://github.com/golang/go/wiki/Modules)
 
 ```console
-go get github.com/ulule/makroud@v0.7.0
+go get github.com/ulule/makroud@v0.7.1
 ```
 
 ## Usage
