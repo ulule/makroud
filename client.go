@@ -3,7 +3,6 @@ package makroud
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"io"
 	"math/rand"
 	"time"
@@ -21,52 +20,6 @@ type Client struct {
 	store *cache
 	log   Logger
 	rnd   io.Reader
-}
-
-// ClientOptions configure a Client instance.
-type ClientOptions struct {
-	Port               int
-	Host               string
-	User               string
-	Password           string
-	DBName             string
-	SSLMode            string
-	Timezone           string
-	MaxOpenConnections int
-	MaxIdleConnections int
-	WithCache          bool
-	SavepointEnabled   bool
-	Logger             Logger
-}
-
-func (e ClientOptions) String() string {
-	return fmt.Sprintf("%s://%s:%s@%s:%d/%s?sslmode=%s;timezone=%s",
-		ClientDriver,
-		e.User,
-		e.Password,
-		e.Host,
-		e.Port,
-		e.DBName,
-		e.SSLMode,
-		e.Timezone,
-	)
-}
-
-// NewClientOptions creates a new ClientOptions instance with default options.
-func NewClientOptions() *ClientOptions {
-	return &ClientOptions{
-		Host:               "localhost",
-		Port:               5432,
-		User:               "postgres",
-		Password:           "",
-		DBName:             "postgres",
-		SSLMode:            "disable",
-		Timezone:           "UTC",
-		MaxOpenConnections: 5,
-		MaxIdleConnections: 2,
-		WithCache:          true,
-		SavepointEnabled:   false,
-	}
 }
 
 // New returns a new Client instance.
