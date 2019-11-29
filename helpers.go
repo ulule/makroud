@@ -78,6 +78,45 @@ func RawExecArgs(ctx context.Context, driver Driver, query string, args []interf
 	return nil
 }
 
+// Count will execute the given query to return a number from an aggregate function.
+func Count(ctx context.Context, driver Driver, stmt builder.Builder) (int64, error) {
+	count := int64(0)
+
+	err := Exec(ctx, driver, stmt, &count)
+	if IsErrNoRows(err) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// FloatCount will execute given query to return a number (in float) from a aggregate function.
+func FloatCount(ctx context.Context, driver Driver, stmt builder.Builder) (float64, error) {
+	count := float64(0)
+
+	err := Exec(ctx, driver, stmt, &count)
+	if IsErrNoRows(err) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// IsErrNoRows returns if given error is a "no rows" error.
+func IsErrNoRows(err error) bool {
+	if err == nil {
+		return false
+	}
+	err = errors.Cause(err)
+	return err == sql.ErrNoRows || err == ErrNoRows
+}
+
 func exec(ctx context.Context, driver Driver, query string, args []interface{}, dest ...interface{}) error {
 	stmt, err := driver.Prepare(ctx, query)
 	if err != nil {
@@ -275,45 +314,6 @@ func execRow(ctx context.Context, driver Driver, stmt Statement, args []interfac
 	}
 
 	return execRowOnModel(ctx, driver, stmt, args, model)
-}
-
-// Count will execute the given query to return a number from an aggregate function.
-func Count(ctx context.Context, driver Driver, stmt builder.Builder) (int64, error) {
-	count := int64(0)
-
-	err := Exec(ctx, driver, stmt, &count)
-	if IsErrNoRows(err) {
-		return 0, nil
-	}
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
-}
-
-// FloatCount will execute given query to return a number (in float) from a aggregate function.
-func FloatCount(ctx context.Context, driver Driver, stmt builder.Builder) (float64, error) {
-	count := float64(0)
-
-	err := Exec(ctx, driver, stmt, &count)
-	if IsErrNoRows(err) {
-		return 0, nil
-	}
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
-}
-
-// IsErrNoRows returns if given error is a "no rows" error.
-func IsErrNoRows(err error) bool {
-	if err == nil {
-		return false
-	}
-	err = errors.Cause(err)
-	return err == sql.ErrNoRows || err == ErrNoRows
 }
 
 // toModel converts the given type to a Model instance.
