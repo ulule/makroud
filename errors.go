@@ -18,6 +18,8 @@ var (
 	ErrUnknownPreloadRule = fmt.Errorf("unknown rule")
 	// ErrStructRequired is returned when given value is not a struct.
 	ErrStructRequired = fmt.Errorf("a struct is required")
+	// ErrModelRequired is returned when given value is not a model.
+	ErrModelRequired = fmt.Errorf("a model is required")
 	// ErrSchemaColumnRequired is returned when we cannot find a column in current schema.
 	ErrSchemaColumnRequired = fmt.Errorf("cannot find column in schema")
 	// ErrSchemaCreatedKey is returned when we cannot find a created key in given schema.

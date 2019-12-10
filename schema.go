@@ -48,6 +48,16 @@ func (schema Schema) PrimaryKey() PrimaryKey {
 	return schema.pk
 }
 
+// PrimaryKeyPath returns schema primary key column path.
+func (schema Schema) PrimaryKeyPath() string {
+	return schema.pk.ColumnPath()
+}
+
+// PrimaryKeyName returns schema primary key column name.
+func (schema Schema) PrimaryKeyName() string {
+	return schema.pk.ColumnName()
+}
+
 // HasCreatedKey returns if a created key is defined for current schema.
 func (schema Schema) HasCreatedKey() bool {
 	return schema.createdKey != nil
