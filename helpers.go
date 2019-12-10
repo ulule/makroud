@@ -128,7 +128,7 @@ func exec(ctx context.Context, driver Driver, query string, args []interface{}, 
 
 	if len(dest) > 0 {
 		if !reflectx.IsPointer(dest[0]) {
-			return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
+			return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest[0])
 		}
 		if reflectx.IsSlice(dest[0]) {
 			return execRows(ctx, driver, stmt, args, dest[0])
