@@ -13,7 +13,7 @@ type ClientOptions struct {
 	Host               string
 	User               string
 	Password           string
-	DBName             string
+	Database           string
 	SSLMode            string
 	Timezone           string
 	MaxOpenConnections int
@@ -21,19 +21,28 @@ type ClientOptions struct {
 	WithCache          bool
 	SavepointEnabled   bool
 	Logger             Logger
+	ApplicationName    string
+	ConnectTimeout     int
 }
 
 func (e ClientOptions) String() string {
-	return fmt.Sprintf("%s://%s:%s@%s:%d/%s?sslmode=%s;timezone=%s",
+	uri := fmt.Sprintf("%s://%s:%s@%s:%d/%s?sslmode=%s&timezone=%s",
 		ClientDriver,
 		url.QueryEscape(e.User),
 		url.QueryEscape(e.Password),
 		e.Host,
 		e.Port,
-		e.DBName,
+		e.Database,
 		e.SSLMode,
 		e.Timezone,
 	)
+	if e.ApplicationName != "" {
+		uri = fmt.Sprintf("%s&application_name=%s", uri, e.ApplicationName)
+	}
+	if e.ConnectTimeout > 0 {
+		uri = fmt.Sprintf("%s&connect_timeout=%d", uri, e.ConnectTimeout)
+	}
+	return uri
 }
 
 // NewClientOptions creates a new ClientOptions instance with default options.
@@ -43,13 +52,15 @@ func NewClientOptions() *ClientOptions {
 		Port:               5432,
 		User:               "postgres",
 		Password:           "",
-		DBName:             "postgres",
+		Database:           "postgres",
 		SSLMode:            "disable",
 		Timezone:           "UTC",
 		MaxOpenConnections: 5,
 		MaxIdleConnections: 2,
 		WithCache:          true,
 		SavepointEnabled:   false,
+		ApplicationName:    "Makroud",
+		ConnectTimeout:     10,
 	}
 }
 
@@ -91,7 +102,7 @@ func Password(password string) Option {
 // Database will configure the Client to use the given database name.
 func Database(dbname string) Option {
 	return func(options *ClientOptions) error {
-		options.DBName = dbname
+		options.Database = dbname
 		return nil
 	}
 }
@@ -131,6 +142,9 @@ func Timezone(timezone string) Option {
 // MaxOpenConnections will configure the Client to use this maximum number of open connections to the database.
 func MaxOpenConnections(maximum int) Option {
 	return func(options *ClientOptions) error {
+		if maximum < 0 {
+			return errors.New("makroud: the maximum number of open connections must be a positive number")
+		}
 		options.MaxOpenConnections = maximum
 		return nil
 	}
@@ -140,6 +154,9 @@ func MaxOpenConnections(maximum int) Option {
 // connection pool.
 func MaxIdleConnections(maximum int) Option {
 	return func(options *ClientOptions) error {
+		if maximum < 0 {
+			return errors.New("makroud: the maximum number of idle connections must be a positive number")
+		}
 		options.MaxIdleConnections = maximum
 		return nil
 	}
@@ -168,6 +185,29 @@ func WithLogger(logger Logger) Option {
 func EnableSavepoint() Option {
 	return func(options *ClientOptions) error {
 		options.SavepointEnabled = true
+		return nil
+	}
+}
+
+// ApplicationName will configure the Client to use given application name.
+func ApplicationName(name string) Option {
+	return func(options *ClientOptions) error {
+		if len(name) >= 64 {
+			return errors.New("makroud: application name must be less than 64 characters")
+		}
+		options.ApplicationName = name
+		return nil
+	}
+}
+
+// ConnectTimeout will configure the Client to wait this maximum number of seconds to obtain a connection.
+// Zero or not specified means wait indefinitely.
+func ConnectTimeout(timeout int) Option {
+	return func(options *ClientOptions) error {
+		if timeout < 0 {
+			return errors.New("makroud: the maximum wait for a connection must be a positive number")
+		}
+		options.ConnectTimeout = timeout
 		return nil
 	}
 }
