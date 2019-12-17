@@ -26,7 +26,7 @@ type ClientOptions struct {
 }
 
 func (e ClientOptions) String() string {
-	return fmt.Sprintf("%s://%s:%s@%s:%d/%s?sslmode=%s&timezone=%s&application_name=%s&connect_timeout=%d",
+	uri := fmt.Sprintf("%s://%s:%s@%s:%d/%s?sslmode=%s&timezone=%s",
 		ClientDriver,
 		url.QueryEscape(e.User),
 		url.QueryEscape(e.Password),
@@ -35,9 +35,14 @@ func (e ClientOptions) String() string {
 		e.Database,
 		e.SSLMode,
 		e.Timezone,
-		e.ApplicationName,
-		e.ConnectTimeout,
 	)
+	if e.ApplicationName != "" {
+		uri = fmt.Sprintf("%s&application_name=%s", uri, e.ApplicationName)
+	}
+	if e.ConnectTimeout > 0 {
+		uri = fmt.Sprintf("%s&connect_timeout=%d", uri, e.ConnectTimeout)
+	}
+	return uri
 }
 
 // NewClientOptions creates a new ClientOptions instance with default options.
