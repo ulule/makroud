@@ -115,16 +115,21 @@ func (c *Client) Prepare(ctx context.Context, query string) (Statement, error) {
 	return wrapStatement(stmt), nil
 }
 
-// Begin a new transaction.
+// Begin begins a new transaction.
 func (c *Client) Begin() (Driver, error) {
-	node, err := c.node.Begin()
+	return c.BeginContext(context.Background(), nil)
+}
+
+// BeginContext begins a new transaction.
+func (c *Client) BeginContext(ctx context.Context, opts *TxOptions) (Driver, error) {
+	node, err := c.node.BeginContext(ctx, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot create a transaction")
 	}
 	return wrapClient(c, node), nil
 }
 
-// Rollback the associated transaction.
+// Rollback rollbacks the associated transaction.
 func (c *Client) Rollback() error {
 	err := c.node.Rollback()
 	if err != nil {
@@ -133,7 +138,7 @@ func (c *Client) Rollback() error {
 	return nil
 }
 
-// Commit the associated transaction.
+// Commit commits the associated transaction.
 func (c *Client) Commit() error {
 	err := c.node.Commit()
 	if err != nil {

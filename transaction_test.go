@@ -2,6 +2,7 @@ package makroud_test
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -137,5 +138,80 @@ func TestTransaction_Nested(t *testing.T) {
 		})
 		is.NoError(err)
 		is.Equal("Sibyl", getCatName(driver))
+	})
+}
+
+func TestTransaction_IsolationLevel(t *testing.T) {
+	Setup(t, makroud.EnableSavepoint())(func(driver makroud.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		cat := &Cat{Name: "Harlay"}
+
+		err := makroud.Save(ctx, driver, cat)
+		is.NoError(err)
+
+		handler := func(driver makroud.Driver) error {
+			cat.Name = "Harley"
+			err := makroud.Save(ctx, driver, cat)
+			return err
+		}
+
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelDefault,
+			}
+			err = makroud.TransactionWithOptions(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelReadUncommitted,
+			}
+			err = makroud.TransactionWithOptions(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelReadCommitted,
+			}
+			err = makroud.TransactionWithOptions(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelWriteCommitted,
+			}
+			err = makroud.TransactionWithOptions(ctx, driver, opts, handler)
+			is.Error(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelRepeatableRead,
+			}
+			err = makroud.TransactionWithOptions(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelSnapshot,
+			}
+			err = makroud.TransactionWithOptions(ctx, driver, opts, handler)
+			is.Error(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelSerializable,
+			}
+			err = makroud.TransactionWithOptions(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelLinearizable,
+			}
+			err = makroud.TransactionWithOptions(ctx, driver, opts, handler)
+			is.Error(err)
+		}
 	})
 }

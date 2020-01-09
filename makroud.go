@@ -47,13 +47,16 @@ type Driver interface {
 	// Transaction
 	// ----------------------------------------------------------------------------
 
-	// Begin a new transaction.
+	// Begin begins a new transaction.
 	Begin() (Driver, error)
 
-	// Rollback the associated transaction.
+	// BeginContext begins a new transaction.
+	BeginContext(ctx context.Context, opts *TxOptions) (Driver, error)
+
+	// Rollback rollbacks the associated transaction.
 	Rollback() error
 
-	// Commit the associated transaction.
+	// Commit commits the associated transaction.
 	Commit() error
 
 	// ----------------------------------------------------------------------------

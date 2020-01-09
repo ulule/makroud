@@ -68,11 +68,13 @@ type Node interface {
 	// Transaction
 	// ----------------------------------------------------------------------------
 
-	// Begin a new transaction.
+	// Begin begins a new transaction.
 	Begin() (Node, error)
-	// Rollback the associated transaction.
+	// BeginContext begins a new transaction.
+	BeginContext(ctx context.Context, opts *sql.TxOptions) (Node, error)
+	// Rollback rollbacks the associated transaction.
 	Rollback() error
-	// Commit the associated transaction.
+	// Commit commits the associated transaction.
 	Commit() error
 
 	// ----------------------------------------------------------------------------
@@ -139,6 +141,11 @@ func (node *node) Close() error {
 
 // Begin begins a new transaction.
 func (node *node) Begin() (Node, error) {
+	return node.BeginContext(context.Background(), nil)
+}
+
+// BeginContext begins a new transaction.
+func (node *node) BeginContext(ctx context.Context, opts *sql.TxOptions) (Node, error) {
 
 	clone := node.clone()
 
@@ -146,7 +153,7 @@ func (node *node) Begin() (Node, error) {
 	case clone.tx == nil:
 
 		// Create new transaction.
-		tx, err := clone.db.Begin()
+		tx, err := clone.db.BeginTx(ctx, opts)
 		if err != nil {
 			return nil, err
 		}
