@@ -7,7 +7,7 @@ require (
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/lib/pq v1.2.0
 	github.com/oklog/ulid v1.3.1
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.0
 	github.com/stretchr/testify v1.4.0
 	github.com/ulule/loukoum/v3 v3.2.1
 )
