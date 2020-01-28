@@ -21,12 +21,7 @@ const (
 )
 
 // Transaction will creates a transaction.
-func Transaction(driver Driver, handler func(driver Driver) error) error {
-	return TransactionWithOptions(context.Background(), driver, nil, handler)
-}
-
-// TransactionWithOptions will creates a transaction.
-func TransactionWithOptions(ctx context.Context, driver Driver, opts *TxOptions,
+func Transaction(ctx context.Context, driver Driver, opts *TxOptions,
 	handler func(driver Driver) error) error {
 
 	if driver == nil {
