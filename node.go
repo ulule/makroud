@@ -69,9 +69,18 @@ type Node interface {
 	// ----------------------------------------------------------------------------
 
 	// Begin begins a new transaction.
+	//
+	// The default isolation level is dependent on the driver.
 	Begin() (Node, error)
-	// BeginContext begins a new transaction.
-	BeginContext(ctx context.Context, opts *sql.TxOptions) (Node, error)
+	// BeginTx begins a new transaction.
+	//
+	// The provided context is used until the transaction is committed or rolled back.
+	// If the context is canceled, the sql package will roll back the transaction.
+	// Commit will return an error if the context provided to BeginTx is canceled.
+	//
+	// The provided TxOptions is optional and may be nil if defaults should be used.
+	// If a non-default isolation level is used that the driver doesn't support, an error will be returned.
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (Node, error)
 	// Rollback rollbacks the associated transaction.
 	Rollback() error
 	// Commit commits the associated transaction.
@@ -140,13 +149,21 @@ func (node *node) Close() error {
 }
 
 // Begin begins a new transaction.
+//
+// The default isolation level is dependent on the driver.
 func (node *node) Begin() (Node, error) {
-	return node.BeginContext(context.Background(), nil)
+	return node.BeginTx(context.Background(), nil)
 }
 
-// BeginContext begins a new transaction.
-func (node *node) BeginContext(ctx context.Context, opts *sql.TxOptions) (Node, error) {
-
+// BeginTx begins a new transaction.
+//
+// The provided context is used until the transaction is committed or rolled back.
+// If the context is canceled, the sql package will roll back the transaction.
+// Commit will return an error if the context provided to BeginTx is canceled.
+//
+// The provided TxOptions is optional and may be nil if defaults should be used.
+// If a non-default isolation level is used that the driver doesn't support, an error will be returned.
+func (node *node) BeginTx(ctx context.Context, opts *sql.TxOptions) (Node, error) {
 	clone := node.clone()
 
 	switch {

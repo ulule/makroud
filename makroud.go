@@ -48,10 +48,15 @@ type Driver interface {
 	// ----------------------------------------------------------------------------
 
 	// Begin begins a new transaction.
-	Begin() (Driver, error)
-
-	// BeginContext begins a new transaction.
-	BeginContext(ctx context.Context, opts *TxOptions) (Driver, error)
+	//
+	// The provided context is used until the transaction is committed or rolled back.
+	// If the context is canceled, the driver will roll back the transaction.
+	// Commit will return an error if the context provided to Begin is canceled.
+	//
+	// The provided TxOptions is optional.
+	// If a non-default isolation level is used that the driver doesn't support, an error will be returned.
+	// If no option is provided, the default isolation level of the driver will be used.
+	Begin(ctx context.Context, opts ...*TxOptions) (Driver, error)
 
 	// Rollback rollbacks the associated transaction.
 	Rollback() error

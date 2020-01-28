@@ -114,12 +114,15 @@ func TestNode_Exec(t *testing.T) {
 		}
 
 		{
-			// Transaction without context
+			// Transaction with context and options
 
 			saveCat(driver)
 			is.True(hasCat(driver))
 
-			tx, err := node.Begin()
+			tx, err := node.BeginTx(ctx, &sql.TxOptions{
+				ReadOnly:  false,
+				Isolation: sql.LevelDefault,
+			})
 			is.NoError(err)
 			is.NotEmpty(tx)
 
@@ -200,9 +203,12 @@ func TestNode_Query(t *testing.T) {
 		}
 
 		{
-			// Transaction without context
+			// Transaction with context and options
 
-			tx, err := node.Begin()
+			tx, err := node.BeginTx(ctx, &sql.TxOptions{
+				ReadOnly:  false,
+				Isolation: sql.LevelDefault,
+			})
 			is.NoError(err)
 			is.NotEmpty(tx)
 
@@ -269,9 +275,12 @@ func TestNode_QueryRow(t *testing.T) {
 		}
 
 		{
-			// Transaction without context
+			// Transaction with context and options
 
-			tx, err := node.Begin()
+			tx, err := node.BeginTx(ctx, &sql.TxOptions{
+				ReadOnly:  false,
+				Isolation: sql.LevelDefault,
+			})
 			is.NoError(err)
 			is.NotEmpty(tx)
 
@@ -365,9 +374,12 @@ func TestNode_Prepare(t *testing.T) {
 		}
 
 		{
-			// Transaction with context
+			// Transaction with context and options
 
-			tx, err := node.Begin()
+			tx, err := node.BeginTx(ctx, &sql.TxOptions{
+				ReadOnly:  false,
+				Isolation: sql.LevelDefault,
+			})
 			is.NoError(err)
 			is.NotEmpty(tx)
 

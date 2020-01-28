@@ -28,7 +28,7 @@ func Transaction(ctx context.Context, driver Driver, opts *TxOptions,
 		return errors.Wrap(ErrInvalidDriver, "makroud: cannot create a transaction")
 	}
 
-	tx, err := driver.BeginContext(ctx, opts)
+	tx, err := driver.Begin(ctx, opts)
 	if err != nil {
 		return err
 	}
