@@ -47,7 +47,7 @@ type Driver interface {
 	// Transaction
 	// ----------------------------------------------------------------------------
 
-	// Begin begins a new transaction.
+	// Begin starts a new transaction.
 	//
 	// The provided context is used until the transaction is committed or rolled back.
 	// If the context is canceled, the driver will roll back the transaction.

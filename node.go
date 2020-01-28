@@ -68,7 +68,7 @@ type Node interface {
 	// Transaction
 	// ----------------------------------------------------------------------------
 
-	// Begin begins a new transaction.
+	// Begin starts a new transaction.
 	//
 	// The default isolation level is dependent on the driver.
 	Begin() (Node, error)
@@ -148,7 +148,7 @@ func (node *node) Close() error {
 	return node.db.Close()
 }
 
-// Begin begins a new transaction.
+// Begin starts a new transaction.
 //
 // The default isolation level is dependent on the driver.
 func (node *node) Begin() (Node, error) {
