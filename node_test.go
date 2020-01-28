@@ -434,7 +434,7 @@ func TestNode_Transaction(t *testing.T) {
 		is.NoError(err)
 		is.NotEmpty(tx3)
 
-		is.NotEmpty(tx1.DB())
+		is.NotEmpty(node.DB())
 		is.Empty(node.Tx())
 		is.NotEmpty(tx1.DB())
 		is.NotEmpty(tx1.Tx())
