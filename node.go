@@ -68,11 +68,22 @@ type Node interface {
 	// Transaction
 	// ----------------------------------------------------------------------------
 
-	// Begin a new transaction.
+	// Begin starts a new transaction.
+	//
+	// The default isolation level is dependent on the driver.
 	Begin() (Node, error)
-	// Rollback the associated transaction.
+	// BeginTx begins a new transaction.
+	//
+	// The provided context is used until the transaction is committed or rolled back.
+	// If the context is canceled, the sql package will roll back the transaction.
+	// Commit will return an error if the context provided to BeginTx is canceled.
+	//
+	// The provided TxOptions is optional and may be nil if defaults should be used.
+	// If a non-default isolation level is used that the driver doesn't support, an error will be returned.
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (Node, error)
+	// Rollback rollbacks the associated transaction.
 	Rollback() error
-	// Commit the associated transaction.
+	// Commit commits the associated transaction.
 	Commit() error
 
 	// ----------------------------------------------------------------------------
@@ -137,16 +148,29 @@ func (node *node) Close() error {
 	return node.db.Close()
 }
 
-// Begin begins a new transaction.
+// Begin starts a new transaction.
+//
+// The default isolation level is dependent on the driver.
 func (node *node) Begin() (Node, error) {
+	return node.BeginTx(context.Background(), nil)
+}
 
+// BeginTx begins a new transaction.
+//
+// The provided context is used until the transaction is committed or rolled back.
+// If the context is canceled, the sql package will roll back the transaction.
+// Commit will return an error if the context provided to BeginTx is canceled.
+//
+// The provided TxOptions is optional and may be nil if defaults should be used.
+// If a non-default isolation level is used that the driver doesn't support, an error will be returned.
+func (node *node) BeginTx(ctx context.Context, opts *sql.TxOptions) (Node, error) {
 	clone := node.clone()
 
 	switch {
 	case clone.tx == nil:
 
 		// Create new transaction.
-		tx, err := clone.db.Begin()
+		tx, err := clone.db.BeginTx(ctx, opts)
 		if err != nil {
 			return nil, err
 		}
