@@ -16,8 +16,8 @@ import (
 )
 
 var dbDefaultOptions = map[string]makroud.Option{
-	"USER":     makroud.User("postgres"),
-	"PASSWORD": makroud.Password(""),
+	"USER":     makroud.User("mkuser"),
+	"PASSWORD": makroud.Password("41c5dcd2a"),
 	"HOST":     makroud.Host("localhost"),
 	"PORT":     makroud.Port(5432),
 	"NAME":     makroud.Database("makroud_test"),
