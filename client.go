@@ -120,16 +120,29 @@ func (c *Client) Prepare(ctx context.Context, query string) (Statement, error) {
 	return wrapStatement(stmt), nil
 }
 
-// Begin a new transaction.
-func (c *Client) Begin() (Driver, error) {
-	node, err := c.node.Begin()
+// Begin starts a new transaction.
+//
+// The provided context is used until the transaction is committed or rolled back.
+// If the context is canceled, the driver will roll back the transaction.
+// Commit will return an error if the context provided to Begin is canceled.
+//
+// The provided TxOptions is optional.
+// If a non-default isolation level is used that the driver doesn't support, an error will be returned.
+// If no option is provided, the default isolation level of the driver will be used.
+func (c *Client) Begin(ctx context.Context, opts ...*TxOptions) (Driver, error) {
+	var txOpts *TxOptions
+	if len(opts) > 0 {
+		txOpts = opts[0]
+	}
+
+	node, err := c.node.BeginTx(ctx, txOpts)
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot create a transaction")
 	}
 	return wrapClient(c, node), nil
 }
 
-// Rollback the associated transaction.
+// Rollback rollbacks the associated transaction.
 func (c *Client) Rollback() error {
 	err := c.node.Rollback()
 	if err != nil {
@@ -138,7 +151,7 @@ func (c *Client) Rollback() error {
 	return nil
 }
 
-// Commit the associated transaction.
+// Commit commits the associated transaction.
 func (c *Client) Commit() error {
 	err := c.node.Commit()
 	if err != nil {
