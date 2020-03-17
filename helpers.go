@@ -123,7 +123,8 @@ func exec(ctx context.Context, driver Driver, query string, args []interface{}, 
 		return errors.Wrap(err, "makroud: cannot prepare statement")
 	}
 	defer driver.close(stmt, map[string]string{
-		"query": query,
+		"query":  query,
+		"action": "exec",
 	})
 
 	if len(dest) > 0 {

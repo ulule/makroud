@@ -19,6 +19,7 @@ type Client struct {
 	node  Node
 	store *cache
 	log   Logger
+	obs   Observer
 	rnd   io.Reader
 }
 
@@ -62,6 +63,10 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 
 	if options.Logger != nil {
 		client.log = options.Logger
+	}
+
+	if options.Observer != nil {
+		client.obs = options.Observer
 	}
 
 	return client, nil
@@ -144,7 +149,21 @@ func (c *Client) Commit() error {
 
 // Close closes the underlying connection.
 func (c *Client) Close() error {
-	return c.node.Close()
+	err := c.node.Close()
+	if err == nil {
+		return nil
+	}
+
+	err = errors.Wrapf(err, "makroud: trying to close %T", c.node)
+	if c.obs == nil {
+		return err
+	}
+
+	c.obs.OnClose(err, map[string]string{
+		"action": "close",
+	})
+
+	return err
 }
 
 // Ping verifies that the underlying connection is healthy.
@@ -160,7 +179,8 @@ func (c *Client) PingContext(ctx context.Context) error {
 	row, err := c.node.QueryContext(ctx, "SELECT true")
 	if row != nil {
 		defer c.close(row, map[string]string{
-			"query": "SELECT true;",
+			"query":  "SELECT true;",
+			"action": "ping",
 		})
 	}
 	if err != nil {
@@ -201,10 +221,9 @@ func (c *Client) entropy() io.Reader {
 
 func (c *Client) close(closer io.Closer, flags map[string]string) {
 	thr := closer.Close()
-	if thr != nil {
-		// thr = errors.Wrapf(thr, "trying to close: %T", closer)
-		// // TODO (novln): Add an observer to collect this error.
-		_ = thr
+	if thr != nil && c.obs != nil {
+		thr = errors.Wrapf(thr, "makroud: trying to close %T", closer)
+		c.obs.OnClose(thr, flags)
 	}
 }
 
@@ -312,7 +331,6 @@ func (r *rowWrapper) scan(dest ...interface{}) error {
 	// From https://github.com/jmoiron/sqlx source code:
 	// Discard sql.RawBytes to avoid weird issues with the SQL driver and memory management.
 	defer func() {
-		// TODO (novln): Add an observer to collect this error.
 		_ = r.rows.Close()
 	}()
 	for i := range dest {
