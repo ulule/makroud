@@ -28,6 +28,8 @@ github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/ulule/loukoum/v3 v3.2.1 h1:HDCsfZI6H2UrOyhxgyrg001P04M3E0Zk+aMGEpsLN3M=
 github.com/ulule/loukoum/v3 v3.2.1/go.mod h1:NFdYIhh/wucEHL/lJYvui79DZwRh5kHXWr9pziou1fo=
+github.com/ulule/loukoum/v3 v3.4.0 h1:gmYYXYo5DbySaQii8QRnxHGg9izzvJGy/anBjTe5WvE=
+github.com/ulule/loukoum/v3 v3.4.0/go.mod h1:sqGijCM8VJM85XYXd9BW30r9yjqlTvjWDQk8oIw7axc=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
