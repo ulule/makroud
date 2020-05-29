@@ -516,7 +516,8 @@ func inferSchemaPrimaryKey(model Model, opts ModelOpts, schema *Schema) error {
 	if schema.pk.TableName() != "" {
 		return nil
 	}
-	for key, field := range schema.fields {
+	for key := range schema.fields {
+		field := schema.fields[key]
 		if field.ColumnName() == opts.PrimaryKey {
 			pk, err := NewPrimaryKey(&field)
 			if err != nil {
