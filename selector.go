@@ -22,17 +22,9 @@ type SelectorConfigurations map[string]*ClientOptions
 // Selector contains a pool of drivers indexed by their name.
 type Selector struct {
 	mutex          sync.RWMutex
-	store          *cache
+	cache          *DriverCache
 	configurations map[string]*ClientOptions
 	connections    map[string]Driver
-}
-
-func (selector *Selector) cache() *cache {
-	return selector.store
-}
-
-func (selector *Selector) hasCache() bool {
-	return selector.store != nil
 }
 
 // NewSelector returns a new selector containing a pool of drivers with given configuration.
@@ -41,8 +33,8 @@ func NewSelector(configurations map[string]*ClientOptions) (*Selector, error) {
 
 	selector := &Selector{
 		configurations: configurations,
+		cache:          NewDriverCache(),
 		connections:    connections,
-		store:          newCache(),
 	}
 
 	return selector, nil
@@ -52,7 +44,7 @@ func NewSelector(configurations map[string]*ClientOptions) (*Selector, error) {
 func NewSelectorWithDriver(driver Driver) (*Selector, error) {
 	selector := &Selector{
 		configurations: map[string]*ClientOptions{},
-		store:          driver.getCache(),
+		cache:          driver.GetCache(),
 		connections: map[string]Driver{
 			DefaultSelector: driver,
 		},
@@ -89,8 +81,8 @@ func (selector *Selector) Using(alias string) (Driver, error) {
 				return nil, err
 			}
 
-			if selector.hasCache() {
-				connection.setCache(selector.cache())
+			if selector.cache != nil {
+				connection.SetCache(selector.cache)
 			}
 
 			selector.connections[alias] = connection

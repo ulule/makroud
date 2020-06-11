@@ -135,11 +135,11 @@ func (key SchemalessKey) FieldIndex() []int {
 // GetSchemaless returns the schema information from given type that are not models.
 // If no information could be gathered, it returns an error.
 func GetSchemaless(driver Driver, value reflect.Type) (*Schemaless, error) {
-	if !driver.hasCache() {
+	if !driver.HasCache() {
 		return newSchemaless(driver, value)
 	}
 
-	schema := driver.getCache().GetSchemaless(value)
+	schema := driver.GetCache().GetSchemaless(value)
 	if schema != nil {
 		return schema, nil
 	}
@@ -149,7 +149,7 @@ func GetSchemaless(driver Driver, value reflect.Type) (*Schemaless, error) {
 		return nil, err
 	}
 
-	driver.getCache().SetSchemaless(schema)
+	driver.GetCache().SetSchemaless(schema)
 
 	return schema, nil
 }

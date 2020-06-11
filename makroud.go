@@ -68,13 +68,41 @@ type Driver interface {
 	// System
 	// ----------------------------------------------------------------------------
 
-	close(closer io.Closer, flags map[string]string)
-	hasCache() bool
-	getCache() *cache
-	setCache(store *cache)
-	hasLogger() bool
-	logger() Logger
-	entropy() io.Reader
+	// HasCache returns if current driver has an internal cache.
+	HasCache() bool
+
+	// GetCache returns the driver internal cache.
+	//
+	// WARNING: Please, do not use this method unless you know what you are doing:
+	// YOU COULD BREAK YOUR DRIVER.
+	GetCache() *DriverCache
+
+	// SetCache replace the driver internal cache by the given one.
+	//
+	// WARNING: Please, do not use this method unless you know what you are doing:
+	// YOU COULD BREAK YOUR DRIVER.
+	SetCache(cache *DriverCache)
+
+	// HasLogger returns if the driver has a logger.
+	HasLogger() bool
+
+	// Logger returns the driver logger.
+	//
+	// WARNING: Please, do not use this method unless you know what you are doing.
+	Logger() Logger
+
+	// HasObserver returns if the driver has an observer.
+	HasObserver() bool
+
+	// Observer returns the driver observer.
+	//
+	// WARNING: Please, do not use this method unless you know what you are doing.
+	Observer() Observer
+
+	// Entropy returns an entropy source, used for primary key generation (if required).
+	//
+	// WARNING: Please, do not use this method unless you know what you are doing.
+	Entropy() io.Reader
 }
 
 // A Statement from prepare.
