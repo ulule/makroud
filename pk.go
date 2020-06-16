@@ -168,7 +168,7 @@ func (key PrimaryKey) ValueOpt(model Model) (interface{}, bool) {
 
 // GenerateULID generates a new ulid.
 func GenerateULID(driver Driver) string {
-	return ulid.MustNew(ulid.Now(), driver.entropy()).String()
+	return ulid.MustNew(ulid.Now(), driver.Entropy()).String()
 }
 
 // GenerateUUIDV1 generates a new uuid v1.

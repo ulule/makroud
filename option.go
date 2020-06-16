@@ -2,6 +2,7 @@ package makroud
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/pkg/errors"
@@ -21,6 +22,8 @@ type ClientOptions struct {
 	WithCache          bool
 	SavepointEnabled   bool
 	Logger             Logger
+	Observer           Observer
+	Entropy            io.Reader
 	ApplicationName    string
 	ConnectTimeout     int
 }
@@ -177,6 +180,28 @@ func WithLogger(logger Logger) Option {
 			return errors.New("makroud: a logger instance is required")
 		}
 		options.Logger = logger
+		return nil
+	}
+}
+
+// WithObserver will attach an observer on Client.
+func WithObserver(observer Observer) Option {
+	return func(options *ClientOptions) error {
+		if observer == nil {
+			return errors.New("makroud: a observer instance is required")
+		}
+		options.Observer = observer
+		return nil
+	}
+}
+
+// WithEntropy will attach a custom entropy source on Client.
+func WithEntropy(entropy io.Reader) Option {
+	return func(options *ClientOptions) error {
+		if entropy == nil {
+			return errors.New("makroud: an entropy source is required")
+		}
+		options.Entropy = entropy
 		return nil
 	}
 }

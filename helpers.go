@@ -3,6 +3,7 @@ package makroud
 import (
 	"context"
 	"database/sql"
+	"io"
 	"reflect"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 // Exec will execute given query from a Loukoum builder.
 // If an object is given, it will mutate it to match the row values.
 func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...interface{}) error {
-	if driver.hasLogger() {
+	if driver.HasLogger() {
 		start := time.Now()
 		query := NewQuery(stmt)
 
@@ -37,7 +38,7 @@ func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...inte
 // RawExec will execute given query.
 // If an object is given, it will mutate it to match the row values.
 func RawExec(ctx context.Context, driver Driver, query string, dest ...interface{}) error {
-	if driver.hasLogger() {
+	if driver.HasLogger() {
 		start := time.Now()
 		query := NewRawQuery(query)
 
@@ -57,7 +58,7 @@ func RawExec(ctx context.Context, driver Driver, query string, dest ...interface
 // RawExecArgs will execute given query with given arguments.
 // If an object is given, it will mutate it to match the row values.
 func RawExecArgs(ctx context.Context, driver Driver, query string, args []interface{}, dest ...interface{}) error {
-	if driver.hasLogger() {
+	if driver.HasLogger() {
 		start := time.Now()
 		query := Query{
 			Raw:   query,
@@ -122,8 +123,9 @@ func exec(ctx context.Context, driver Driver, query string, args []interface{}, 
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot prepare statement")
 	}
-	defer driver.close(stmt, map[string]string{
-		"query": query,
+	defer close(driver, stmt, map[string]string{
+		"query":  query,
+		"action": "exec",
 	})
 
 	if len(dest) > 0 {
@@ -330,4 +332,12 @@ func toModel(value reflect.Type) Model {
 	}
 
 	return nil
+}
+
+func close(driver Driver, closer io.Closer, flags map[string]string) {
+	thr := closer.Close()
+	if thr != nil && driver.HasObserver() {
+		thr = errors.Wrapf(thr, "makroud: trying to close %T", closer)
+		driver.Observer().OnClose(thr, flags)
+	}
 }

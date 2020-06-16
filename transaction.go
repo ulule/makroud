@@ -37,9 +37,9 @@ func Transaction(ctx context.Context, driver Driver, opts *TxOptions,
 	if err != nil {
 
 		thr := tx.Rollback()
-		if thr != nil {
-			// TODO (novln): Add an observer to collect this error.
-			_ = thr
+		if thr != nil && driver.HasObserver() {
+			thr = errors.Wrap(thr, "makroud: trying to rollback transaction")
+			driver.Observer().OnRollback(thr, nil)
 		}
 
 		return err
