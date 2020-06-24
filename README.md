@@ -4,7 +4,7 @@
 [![Documentation][godoc-img]][godoc-url]
 ![License][license-img]
 
-*A high level SQL Connector.*
+_A high level SQL Connector._
 
 ## Introduction
 
@@ -167,20 +167,20 @@ Without that information, `makroud` cannot uses that struct as a `Model`.
 
 Then, you have to define your model columns using struct tags:
 
- * **column**(`string`): Define column name.
- * **pk**(`bool|string`): Define column as a primary key, it accepts the following argument:
-   * **true**: Uses internal db mechanism to define primary key value
-   * **ulid**: Generate a [ULID](https://github.com/ulid/spec) to define primary key value
-   * **uuid-v1**: Generate a [UUID V1](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_1_(date-time_and_MAC_address))
-     to define primary key value
-   * **uuid-v4**: Generate a [UUID V4](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random))
-     to define primary key value
- * **default**(`bool`): On insert, if model has a zero value, it will use the db default value.
- * **fk**(`string`): Define column as a foreign key, reference table must be provided.
- * **relation**(`string`): Define which column to use for preload. The column must be prefixed by the table name
-   if it's not the model table name _(However, the prefix is optional if the table name is the same as the model)_.
-   See [Preload](https://github.com/ulule/makroud#preload) section for further information.
- * **-**(`bool`): Ignore this field.
+- **column**(`string`): Define column name.
+- **pk**(`bool|string`): Define column as a primary key, it accepts the following argument:
+  - **true**: Uses internal db mechanism to define primary key value
+  - **ulid**: Generate a [ULID](https://github.com/ulid/spec) to define primary key value
+  - **uuid-v1**: Generate a [UUID V1](<https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_1_(date-time_and_MAC_address)>)
+    to define primary key value
+  - **uuid-v4**: Generate a [UUID V4](<https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)>)
+    to define primary key value
+- **default**(`bool`): On insert, if model has a zero value, it will use the db default value.
+- **fk**(`string`): Define column as a foreign key, reference table must be provided.
+- **relation**(`string`): Define which column to use for preload. The column must be prefixed by the table name
+  if it's not the model table name _(However, the prefix is optional if the table name is the same as the model)_.
+  See [Preload](https://github.com/ulule/makroud#preload) section for further information.
+- **-**(`bool`): Ignore this field.
 
 > **NOTE:** Tags of type `bool` can be set as `key:true` or just `key` for implicit `true`.
 
@@ -192,12 +192,12 @@ key can be specified and it can't be a composite key.
 After that, you can define optional relationships _(or associations)_ that can be preloaded later.
 The preload mechanism, which enables you to fetch relationships from database, support these types:
 
- * `Model`
- * `*Model`
- * `[]Model`
- * `[]*Model`
- * `*[]Model`
- * `*[]*Model`
+- `Model`
+- `*Model`
+- `[]Model`
+- `[]*Model`
+- `*[]Model`
+- `*[]*Model`
 
 > **NOTE:** You could either use `makroud` or `mk` as tag identifier.
 
@@ -697,12 +697,12 @@ This is Free Software, released under the [`MIT License`][license-url].
 
 ## Contributing
 
-* Ping us on twitter:
-  * [@novln_](https://twitter.com/novln_)
-  * [@oibafsellig](https://twitter.com/oibafsellig)
-  * [@thoas](https://twitter.com/thoas)
-* Fork the [project](https://github.com/ulule/loukoum)
-* Fix [bugs](https://github.com/ulule/loukoum/issues)
+- Ping us on twitter:
+  - [@novln\_](https://twitter.com/novln_)
+  - [@oibafsellig](https://twitter.com/oibafsellig)
+  - [@thoas](https://twitter.com/thoas)
+- Fork the [project](https://github.com/ulule/loukoum)
+- Fix [bugs](https://github.com/ulule/loukoum/issues)
 
 **Don't hesitate ;)**
 
