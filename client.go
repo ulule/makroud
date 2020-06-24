@@ -50,6 +50,25 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 	node.SetMaxOpenConns(options.MaxOpenConnections)
 	node.EnableSavepoint(options.SavepointEnabled)
 
+	return newClient(node, options)
+}
+
+// NewWithNode returns a new Client instance with a custom node as connector.
+// NOTE: This is used by makroud benchmarks.
+func NewWithNode(node Node, options ...Option) (*Client, error) {
+	opts := NewClientOptions()
+
+	for _, option := range options {
+		err := option(opts)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return newClient(node, opts)
+}
+
+func newClient(node Node, options *ClientOptions) (*Client, error) {
 	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	client := &Client{
