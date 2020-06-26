@@ -39,37 +39,12 @@ func New(options ...Option) (*Client, error) {
 
 // NewWithOptions returns a new Client instance.
 func NewWithOptions(options *ClientOptions) (*Client, error) {
-	_ = pq.Driver{}
-
-	node, err := Connect(ClientDriver, options.String())
+	node, err := getNodeForClient(options)
 	if err != nil {
-		return nil, errors.Wrapf(err, "makroud: cannot connect to %s server", ClientDriver)
+		return nil, err
 	}
 
-	node.SetMaxIdleConns(options.MaxIdleConnections)
-	node.SetMaxOpenConns(options.MaxOpenConnections)
-	node.EnableSavepoint(options.SavepointEnabled)
-
-	return newClient(node, options)
-}
-
-// NewWithNode returns a new Client instance with a custom node as connector.
-// NOTE: This is used by makroud benchmarks.
-func NewWithNode(node Node, options ...Option) (*Client, error) {
-	opts := NewClientOptions()
-
-	for _, option := range options {
-		err := option(opts)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return newClient(node, opts)
-}
-
-func newClient(node Node, options *ClientOptions) (*Client, error) {
-	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
+	entropy := getEntropyForClient(options)
 
 	client := &Client{
 		node: node,
@@ -86,10 +61,6 @@ func newClient(node Node, options *ClientOptions) (*Client, error) {
 
 	if options.Observer != nil {
 		client.obs = options.Observer
-	}
-
-	if options.Entropy != nil {
-		client.rnd = options.Entropy
 	}
 
 	return client, nil
@@ -291,6 +262,35 @@ func wrapClient(client *Client, connection Node) Driver {
 		log:   client.log,
 		rnd:   client.rnd,
 	}
+}
+
+// getNodeForClient returns the required node for client creation.
+func getNodeForClient(options *ClientOptions) (Node, error) {
+	if options.Node != nil {
+		return options.Node, nil
+	}
+
+	_ = pq.Driver{}
+
+	node, err := Connect(ClientDriver, options.String())
+	if err != nil {
+		return nil, errors.Wrapf(err, "makroud: cannot connect to %s server", ClientDriver)
+	}
+
+	node.SetMaxIdleConns(options.MaxIdleConnections)
+	node.SetMaxOpenConns(options.MaxOpenConnections)
+	node.EnableSavepoint(options.SavepointEnabled)
+
+	return node, nil
+}
+
+// getEntropyForClient returns the required entropy source for client creation.
+func getEntropyForClient(options *ClientOptions) io.Reader {
+	if options.Entropy != nil {
+		return options.Entropy
+	}
+
+	return rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 // A stmtWrapper wraps a statement from sql.
