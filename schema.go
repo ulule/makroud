@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -168,7 +169,7 @@ func (schema Schema) HasColumn(column string) bool {
 
 // nolint: gocyclo
 func (schema Schema) getValues(value reflect.Value, columns []string, model Model) ([]interface{}, error) {
-	values := make([]interface{}, len(columns))
+	values := getValMap(len(columns))
 	rest := make([]string, 0)
 	associationsColumns := map[string]map[string]int{}
 
@@ -271,7 +272,13 @@ func (schema Schema) scanRow(row Row, model Model, check bool) error {
 		return err
 	}
 
-	return row.Scan(values...)
+	err = row.Scan(values...)
+	if err != nil {
+		return err
+	}
+
+	putValMap(values)
+	return nil
 }
 
 // ScanRows executes a scan from current row into model.
@@ -296,7 +303,13 @@ func (schema Schema) scanRows(rows Rows, model Model, check bool) error {
 		return err
 	}
 
-	return rows.Scan(values...)
+	err = rows.Scan(values...)
+	if err != nil {
+		return err
+	}
+
+	putValMap(values)
+	return nil
 }
 
 // ----------------------------------------------------------------------------
@@ -578,4 +591,25 @@ func GetColumns(driver Driver, model Model) (Columns, error) {
 
 	columns := schema.ColumnPaths()
 	return columns, nil
+}
+
+var valPool = &sync.Pool{
+	New: func() interface{} {
+		return make([]interface{}, 0, 1024)
+	},
+}
+
+func getValMap(size int) []interface{} {
+	val := valPool.Get().([]interface{})
+	if cap(val) < size {
+		val = make([]interface{}, size)
+	}
+	val = val[:size]
+	return val
+}
+
+func putValMap(val []interface{}) {
+	if cap(val) < (1 << 16) {
+		valPool.Put(val)
+	}
 }
