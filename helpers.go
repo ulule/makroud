@@ -160,7 +160,7 @@ func execRowsOnModel(ctx context.Context, driver Driver, stmt Statement,
 	for rows.Next() {
 		model := reflectx.NewValue(base).(Model)
 
-		err := schema.ScanRows(rows, model)
+		err := schema.scanRows(rows, model, false)
 		if err != nil {
 			return err
 		}
@@ -190,7 +190,7 @@ func execRowsOnSchemaless(ctx context.Context, driver Driver,
 	for rows.Next() {
 		val := reflectx.NewValue(base)
 
-		err := schemaless.ScanRows(rows, val)
+		err := schemaless.scanRows(rows, val, false)
 		if err != nil {
 			return err
 		}
@@ -263,7 +263,7 @@ func execRowOnModel(ctx context.Context, driver Driver, stmt Statement,
 		return err
 	}
 
-	return schema.ScanRow(row, model)
+	return schema.scanRow(row, model, false)
 }
 
 func execRowOnSchemaless(ctx context.Context, driver Driver, stmt Statement,
@@ -279,7 +279,7 @@ func execRowOnSchemaless(ctx context.Context, driver Driver, stmt Statement,
 		return err
 	}
 
-	return schemaless.ScanRow(row, dest)
+	return schemaless.scanRow(row, dest, false)
 }
 
 func execRowOnScannable(ctx context.Context, driver Driver, stmt Statement,

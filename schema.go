@@ -251,13 +251,18 @@ func (schema Schema) getValues(value reflect.Value, columns []string, model Mode
 
 // ScanRow executes a scan from given row into model.
 func (schema Schema) ScanRow(row Row, model Model) error {
+	return schema.scanRow(row, model, true)
+}
+
+// scanRow executes a scan from given row into model.
+func (schema Schema) scanRow(row Row, model Model, check bool) error {
 	columns, err := row.Columns()
 	if err != nil {
 		return err
 	}
 
 	value := reflectx.GetIndirectValue(model)
-	if !reflectx.IsStruct(value) {
+	if check && !reflectx.IsStruct(value) {
 		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
 	}
 
@@ -271,13 +276,18 @@ func (schema Schema) ScanRow(row Row, model Model) error {
 
 // ScanRows executes a scan from current row into model.
 func (schema Schema) ScanRows(rows Rows, model Model) error {
+	return schema.scanRows(rows, model, true)
+}
+
+// scanRows executes a scan from current row into model.
+func (schema Schema) scanRows(rows Rows, model Model, check bool) error {
 	columns, err := rows.Columns()
 	if err != nil {
 		return err
 	}
 
 	value := reflectx.GetIndirectValue(model)
-	if !reflectx.IsStruct(value) {
+	if check && !reflectx.IsStruct(value) {
 		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", model)
 	}
 

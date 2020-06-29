@@ -45,13 +45,18 @@ func (schema Schemaless) Key(column string) (SchemalessKey, bool) {
 
 // ScanRow executes a scan from given row into schemaless instance.
 func (schema Schemaless) ScanRow(row Row, val interface{}) error {
+	return schema.scanRow(row, val, true)
+}
+
+// scanRow executes a scan from given row into schemaless instance.
+func (schema Schemaless) scanRow(row Row, val interface{}, check bool) error {
 	columns, err := row.Columns()
 	if err != nil {
 		return err
 	}
 
 	value := reflectx.GetIndirectValue(val)
-	if !reflectx.IsStruct(value) {
+	if check && !reflectx.IsStruct(value) {
 		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", val)
 	}
 
@@ -65,13 +70,18 @@ func (schema Schemaless) ScanRow(row Row, val interface{}) error {
 
 // ScanRows executes a scan from current row into schemaless instance.
 func (schema Schemaless) ScanRows(rows Rows, val interface{}) error {
+	return schema.scanRows(rows, val, true)
+}
+
+// scanRows executes a scan from current row into schemaless instance.
+func (schema Schemaless) scanRows(rows Rows, val interface{}, check bool) error {
 	columns, err := rows.Columns()
 	if err != nil {
 		return err
 	}
 
 	value := reflectx.GetIndirectValue(val)
-	if !reflectx.IsStruct(value) {
+	if check && !reflectx.IsStruct(value) {
 		return errors.Wrapf(ErrStructRequired, "cannot use mapper on %T", val)
 	}
 
