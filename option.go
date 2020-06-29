@@ -21,11 +21,12 @@ type ClientOptions struct {
 	MaxIdleConnections int
 	WithCache          bool
 	SavepointEnabled   bool
+	ApplicationName    string
+	ConnectTimeout     int
 	Logger             Logger
 	Observer           Observer
 	Entropy            io.Reader
-	ApplicationName    string
-	ConnectTimeout     int
+	Node               Node
 }
 
 func (e ClientOptions) String() string {
@@ -64,6 +65,10 @@ func NewClientOptions() *ClientOptions {
 		SavepointEnabled:   false,
 		ApplicationName:    "Makroud",
 		ConnectTimeout:     10,
+		Logger:             nil,
+		Observer:           nil,
+		Entropy:            nil,
+		Node:               nil,
 	}
 }
 
@@ -202,6 +207,18 @@ func WithEntropy(entropy io.Reader) Option {
 			return errors.New("makroud: an entropy source is required")
 		}
 		options.Entropy = entropy
+		return nil
+	}
+}
+
+// WithNode will attach a custom node connector on Client.
+// If you use this option, EnableSavepoint, MaxOpenConnections and MaxIdleConnections will be ignored.
+func WithNode(node Node) Option {
+	return func(options *ClientOptions) error {
+		if node == nil {
+			return errors.New("makroud: a node is required")
+		}
+		options.Node = node
 		return nil
 	}
 }
