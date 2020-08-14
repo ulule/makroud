@@ -22,6 +22,11 @@ func (schema Schemaless) Type() reflect.Type {
 	return schema.rtype
 }
 
+// Name returns the type's name of the schema.
+func (schema Schemaless) Name() string {
+	return schema.rtype.Name()
+}
+
 // Columns returns schema columns.
 func (schema Schemaless) Columns() Columns {
 	columns := Columns{}
