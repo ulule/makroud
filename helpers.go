@@ -153,7 +153,10 @@ func execRowsOnModel(ctx context.Context, driver Driver, stmt Statement,
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer close(driver, rows, map[string]string{
+		"name":   schema.ModelName(),
+		"action": "exec-rows-on-model",
+	})
 
 	base := reflectx.GetIndirectSliceType(dest)
 	list := reflectx.GetIndirectValue(dest)
@@ -184,7 +187,10 @@ func execRowsOnSchemaless(ctx context.Context, driver Driver,
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer close(driver, rows, map[string]string{
+		"name":   schemaless.Name(),
+		"action": "exec-rows-on-schemaless",
+	})
 
 	base := reflectx.GetIndirectSliceType(dest)
 	list := reflectx.GetIndirectValue(dest)
@@ -210,7 +216,9 @@ func execRowsOnScannable(ctx context.Context, driver Driver,
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer close(driver, rows, map[string]string{
+		"action": "exec-rows-on-scannable",
+	})
 
 	columns, err := rows.Columns()
 	if err != nil {
