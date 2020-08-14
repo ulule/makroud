@@ -30,7 +30,7 @@ In addition, it's heavily inspired by [Sqlx](https://github.com/jmoiron/sqlx) fo
 Using [Go Modules](https://github.com/golang/go/wiki/Modules)
 
 ```console
-go get github.com/ulule/makroud@v0.7.1
+go get github.com/ulule/makroud@v0.8.0
 ```
 
 ## Usage
@@ -366,7 +366,7 @@ For the following sections, we assume that you have a `context.Context` and a `m
 
 #### Insert
 
-For a simple insert, you can use save a model like this:
+For a simple insert, you can save a model like this:
 
 ```go
 func CreateUser(ctx context.Context, driver makroud.Driver, name string) (*User, error) {
@@ -509,24 +509,14 @@ func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
 
 #### Query
 
-By using a [Loukoum](https://github.com/ulule/loukoum) `SelectBuilder`.
+Because querying data is a bit more complex than just writing or deleting stuff. By using [Loukoum](https://github.com/ulule/loukoum) components, you can either execute simple query:
 
 ```go
 import "github.com/ulule/loukoum/v3"
 
 func GetUserByID(ctx context.Context, driver makroud.Driver, id string) (*User, error) {
 	user := &User{}
-
-	columns, err := makroud.GetColumns(driver, user)
-	if err != nil {
-		return nil, err
-	}
-
-	stmt := loukoum.Select(columns...).
-		From(user.TableName()).
-		Where(loukoum.Condition("id").Equal(id))
-
-	err := makroud.Exec(ctx, driver, stmt, user)
+	err := makroud.Select(ctx, driver, user, loukoum.Condition("id").Equal(id))
 	if err != nil {
 		return nil, err
 	}
@@ -534,24 +524,47 @@ func GetUserByID(ctx context.Context, driver makroud.Driver, id string) (*User, 
 	return user, nil
 }
 
-func GetUserByName(ctx context.Context, driver makroud.Driver, name string) (*User, error) {
-	user := &User{}
-
-	columns, err := makroud.GetColumns(driver, user)
+func ListMessagesByUserID(ctx context.Context, driver makroud.Driver, userID string, page int) ([]*Message, error) {
+	messages := []*Message{}
+	err := makroud.Select(ctx, driver, &messages,
+		loukoum.Condition("user_id").Equal(id),
+		loukoum.Order("created_at", loukoum.Desc),
+		loukoum.Limit(50),
+		loukoum.Offset(50 * (page - 1)),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	stmt := loukoum.Select(columns...).
-		From(user.TableName()).
-		Where(loukoum.Condition("name").Equal(name))
+	return messages, nil
+}
+```
 
-	err := makroud.Exec(ctx, driver, stmt, user)
+Or execute more complex statements:
+
+```go
+import "github.com/ulule/loukoum/v3"
+
+func FindStaffComments(ctx context.Context, driver makroud.Driver) ([]*Comment, error) {
+	comments := []*Comment{}
+
+	stmt := loukoum.Select("id", "email", "status", "user_id", "message", "created_at").
+		From("comments").
+		Where(loukoum.Condition("deleted_at").IsNull(true)).
+		Where(
+			loukoum.Condition("user_id").In(
+				loukoum.Select("id").
+					From("users").
+					Where(loukoum.Condition("is_staff").Equal(true)),
+			),
+		)
+
+	err := makroud.Exec(ctx, driver, stmt, &comments)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return comments, nil
 }
 ```
 
