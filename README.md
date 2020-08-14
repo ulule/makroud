@@ -557,7 +557,7 @@ func FindStaffComments(ctx context.Context, driver makroud.Driver) ([]*Comment, 
 			loukoum.Condition("user_id").In(
 				loukoum.Select("id").
 					From("users").
-					Where(loukoum.Condition("is_staff").Equal(true)),
+					Where(loukoum.Condition("role").Equal("staff")),
 			),
 		)
 
@@ -591,7 +591,76 @@ func FindUserIDWithStaffRole(ctx context.Context, driver makroud.Driver) ([]stri
 
 ### Transaction
 
-TODO
+Sometimes, you need to execute queries and/or commands inside a transaction block, that bundles
+multiple steps into a single, all-or-nothing operation.
+
+This is achieved by declaring a lambda function.
+If this function returns an error, the transaction rollbacks automatically.
+Otherwise, the transaction will be committed.
+
+```go
+func SetupUsers(ctx context.Context, driver makroud.Driver) error {
+	return makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
+
+		err := makroud.Save(ctx, tx, &User{
+			Name: "Benjamin",
+		})
+		if err != nil {
+			return err
+		}
+
+		err = makroud.Save(ctx, tx, &User{
+			Name: "Taha",
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+```
+
+And other times, transactions with an isolation level.
+
+```go
+func Withdraw(ctx context.Context, driver makroud.Driver) error {
+	return makroud.Transaction(ctx, driver, makroud.LevelSerializable,
+		func(tx makroud.Driver) error {
+			// Withdraw operation...
+			return nil
+		},
+	)
+}
+```
+
+Or even, nested transaction with the option `SavepointEnabled`.
+
+```go
+func AcceptOffer(ctx context.Context, driver makroud.Driver) error {
+	return makroud.Transaction(ctx, driver, nil, func(tx1 makroud.Driver) error {
+		//
+		// Execute several operations.
+		//
+		err := makroud.Transaction(ctx, tx1, nil, func(tx2 makroud.Driver) error {
+			//
+			// Execute complex operations that may succeed...
+			//
+			return err
+		})
+		if err != nil {
+			//
+			// Execute fallback operations if an error has occurred...
+			//
+			return nil
+		}
+		//
+		// Execute normal operations otherwise...
+		//
+		return nil
+	})
+}
+```
 
 ### Preload
 
