@@ -2,6 +2,7 @@ package makroud_test
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -21,9 +22,9 @@ func TestTransaction_Commit(t *testing.T) {
 		err := makroud.Save(ctx, driver, cat)
 		is.NoError(err)
 
-		err = makroud.Transaction(driver, func(driver makroud.Driver) error {
+		err = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 			cat.Name = "Harley"
-			err := makroud.Save(ctx, driver, cat)
+			err := makroud.Save(ctx, tx, cat)
 			is.NoError(err)
 			return nil
 		})
@@ -49,7 +50,7 @@ func TestTransaction_Rollback(t *testing.T) {
 		err := makroud.Save(ctx, driver, cat)
 		is.NoError(err)
 
-		err = makroud.Transaction(driver, func(driver makroud.Driver) error {
+		err = makroud.Transaction(ctx, driver, nil, func(driver makroud.Driver) error {
 			cat.Name = "Gemma"
 			err := makroud.Save(ctx, driver, cat)
 			is.NoError(err)
@@ -69,9 +70,10 @@ func TestTransaction_Rollback(t *testing.T) {
 
 func TestTransaction_ErrInvalidDriver(t *testing.T) {
 	Setup(t)(func(driver makroud.Driver) {
+		ctx := context.Background()
 		is := require.New(t)
 
-		err := makroud.Transaction(nil, func(tx makroud.Driver) error {
+		err := makroud.Transaction(ctx, nil, nil, func(tx makroud.Driver) error {
 			return nil
 		})
 		is.Error(err)
@@ -107,18 +109,18 @@ func TestTransaction_Nested(t *testing.T) {
 		}
 
 		// First transaction.
-		err = makroud.Transaction(driver, func(tx1 makroud.Driver) error {
+		err = makroud.Transaction(ctx, driver, nil, func(tx1 makroud.Driver) error {
 
 			setCatName(tx1, "Sibyl")
 
 			// Second transaction.
-			err = makroud.Transaction(tx1, func(tx2 makroud.Driver) error {
+			err = makroud.Transaction(ctx, tx1, nil, func(tx2 makroud.Driver) error {
 
 				is.Equal("Sibyl", getCatName(tx2))
 				setCatName(tx2, "Sibil")
 
 				// Third transaction.
-				err = makroud.Transaction(tx2, func(tx3 makroud.Driver) error {
+				err = makroud.Transaction(ctx, tx2, nil, func(tx3 makroud.Driver) error {
 					is.Equal("Sibil", getCatName(tx3))
 					setCatName(tx3, "Sibilll")
 					is.Equal("Sibilll", getCatName(tx3))
@@ -137,5 +139,80 @@ func TestTransaction_Nested(t *testing.T) {
 		})
 		is.NoError(err)
 		is.Equal("Sibyl", getCatName(driver))
+	})
+}
+
+func TestTransaction_IsolationLevel(t *testing.T) {
+	Setup(t, makroud.EnableSavepoint())(func(driver makroud.Driver) {
+		ctx := context.Background()
+		is := require.New(t)
+
+		cat := &Cat{Name: "Harlay"}
+
+		err := makroud.Save(ctx, driver, cat)
+		is.NoError(err)
+
+		handler := func(driver makroud.Driver) error {
+			cat.Name = "Harley"
+			err := makroud.Save(ctx, driver, cat)
+			return err
+		}
+
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelDefault,
+			}
+			err = makroud.Transaction(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelReadUncommitted,
+			}
+			err = makroud.Transaction(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelReadCommitted,
+			}
+			err = makroud.Transaction(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelWriteCommitted,
+			}
+			err = makroud.Transaction(ctx, driver, opts, handler)
+			is.Error(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelRepeatableRead,
+			}
+			err = makroud.Transaction(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelSnapshot,
+			}
+			err = makroud.Transaction(ctx, driver, opts, handler)
+			is.Error(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelSerializable,
+			}
+			err = makroud.Transaction(ctx, driver, opts, handler)
+			is.NoError(err)
+		}
+		{
+			opts := &makroud.TxOptions{
+				Isolation: sql.LevelLinearizable,
+			}
+			err = makroud.Transaction(ctx, driver, opts, handler)
+			is.Error(err)
+		}
 	})
 }

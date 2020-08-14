@@ -17,8 +17,9 @@ const ClientDriver = "postgres"
 // Client is a wrapper that can interact with the database, it's an implementation of Driver.
 type Client struct {
 	node  Node
-	store *cache
+	cache *DriverCache
 	log   Logger
+	obs   Observer
 	rnd   io.Reader
 }
 
@@ -38,18 +39,12 @@ func New(options ...Option) (*Client, error) {
 
 // NewWithOptions returns a new Client instance.
 func NewWithOptions(options *ClientOptions) (*Client, error) {
-	_ = pq.Driver{}
-
-	node, err := Connect(ClientDriver, options.String())
+	node, err := getNodeForClient(options)
 	if err != nil {
-		return nil, errors.Wrapf(err, "makroud: cannot connect to %s server", ClientDriver)
+		return nil, err
 	}
 
-	node.SetMaxIdleConns(options.MaxIdleConnections)
-	node.SetMaxOpenConns(options.MaxOpenConnections)
-	node.EnableSavepoint(options.SavepointEnabled)
-
-	entropy := rand.New(rand.NewSource(time.Now().UnixNano()))
+	entropy := getEntropyForClient(options)
 
 	client := &Client{
 		node: node,
@@ -57,11 +52,15 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 	}
 
 	if options.WithCache {
-		client.store = newCache()
+		client.cache = NewDriverCache()
 	}
 
 	if options.Logger != nil {
 		client.log = options.Logger
+	}
+
+	if options.Observer != nil {
+		client.obs = options.Observer
 	}
 
 	return client, nil
@@ -115,16 +114,29 @@ func (c *Client) Prepare(ctx context.Context, query string) (Statement, error) {
 	return wrapStatement(stmt), nil
 }
 
-// Begin a new transaction.
-func (c *Client) Begin() (Driver, error) {
-	node, err := c.node.Begin()
+// Begin starts a new transaction.
+//
+// The provided context is used until the transaction is committed or rolled back.
+// If the context is canceled, the driver will roll back the transaction.
+// Commit will return an error if the context provided to Begin is canceled.
+//
+// The provided TxOptions is optional.
+// If a non-default isolation level is used that the driver doesn't support, an error will be returned.
+// If no option is provided, the default isolation level of the driver will be used.
+func (c *Client) Begin(ctx context.Context, opts ...*TxOptions) (Driver, error) {
+	var txOpts *TxOptions
+	if len(opts) > 0 {
+		txOpts = opts[0]
+	}
+
+	node, err := c.node.BeginTx(ctx, txOpts)
 	if err != nil {
 		return nil, errors.Wrap(err, "makroud: cannot create a transaction")
 	}
 	return wrapClient(c, node), nil
 }
 
-// Rollback the associated transaction.
+// Rollback rollbacks the associated transaction.
 func (c *Client) Rollback() error {
 	err := c.node.Rollback()
 	if err != nil {
@@ -133,7 +145,7 @@ func (c *Client) Rollback() error {
 	return nil
 }
 
-// Commit the associated transaction.
+// Commit commits the associated transaction.
 func (c *Client) Commit() error {
 	err := c.node.Commit()
 	if err != nil {
@@ -144,7 +156,21 @@ func (c *Client) Commit() error {
 
 // Close closes the underlying connection.
 func (c *Client) Close() error {
-	return c.node.Close()
+	err := c.node.Close()
+	if err == nil {
+		return nil
+	}
+
+	err = errors.Wrapf(err, "makroud: trying to close %T", c.node)
+	if c.obs == nil {
+		return err
+	}
+
+	c.obs.OnClose(err, map[string]string{
+		"action": "close",
+	})
+
+	return err
 }
 
 // Ping verifies that the underlying connection is healthy.
@@ -159,8 +185,9 @@ func (c *Client) Ping() error {
 func (c *Client) PingContext(ctx context.Context) error {
 	row, err := c.node.QueryContext(ctx, "SELECT true")
 	if row != nil {
-		defer c.close(row, map[string]string{
-			"query": "SELECT true;",
+		defer close(c, row, map[string]string{
+			"query":  "SELECT true;",
+			"action": "ping",
 		})
 	}
 	if err != nil {
@@ -175,47 +202,95 @@ func (c *Client) DriverName() string {
 	return c.node.DriverName()
 }
 
-func (c *Client) hasCache() bool {
-	return c.store != nil
+// HasCache returns if current driver has an internal cache.
+func (c *Client) HasCache() bool {
+	return c.cache != nil
 }
 
-func (c *Client) getCache() *cache {
-	return c.store
+// GetCache returns the driver internal cache.
+//
+// WARNING: Please, do not use this method unless you know what you are doing:
+// YOU COULD BREAK YOUR DRIVER.
+func (c *Client) GetCache() *DriverCache {
+	return c.cache
 }
 
-func (c *Client) setCache(store *cache) {
-	c.store = store
+// SetCache replace the driver internal cache by the given one.
+//
+// WARNING: Please, do not use this method unless you know what you are doing:
+// YOU COULD BREAK YOUR DRIVER.
+func (c *Client) SetCache(cache *DriverCache) {
+	c.cache = cache
 }
 
-func (c *Client) hasLogger() bool {
+// HasLogger returns if the driver has a logger.
+func (c *Client) HasLogger() bool {
 	return c.log != nil
 }
 
-func (c *Client) logger() Logger {
+// Logger returns the driver logger.
+//
+// WARNING: Please, do not use this method unless you know what you are doing.
+func (c *Client) Logger() Logger {
 	return c.log
 }
 
-func (c *Client) entropy() io.Reader {
-	return c.rnd
+// HasObserver returns if the driver has an observer.
+func (c *Client) HasObserver() bool {
+	return c.obs != nil
 }
 
-func (c *Client) close(closer io.Closer, flags map[string]string) {
-	thr := closer.Close()
-	if thr != nil {
-		// thr = errors.Wrapf(thr, "trying to close: %T", closer)
-		// // TODO (novln): Add an observer to collect this error.
-		_ = thr
-	}
+// Observer returns the driver observer.
+//
+// WARNING: Please, do not use this method unless you know what you are doing.
+func (c *Client) Observer() Observer {
+	return c.obs
+}
+
+// Entropy returns an entropy source, used for primary key generation (if required).
+//
+// WARNING: Please, do not use this method unless you know what you are doing.
+func (c *Client) Entropy() io.Reader {
+	return c.rnd
 }
 
 // wrapClient creates a new Client using given database connection.
 func wrapClient(client *Client, connection Node) Driver {
 	return &Client{
 		node:  connection,
-		store: client.store,
+		cache: client.cache,
 		log:   client.log,
 		rnd:   client.rnd,
 	}
+}
+
+// getNodeForClient returns the required node for client creation.
+func getNodeForClient(options *ClientOptions) (Node, error) {
+	if options.Node != nil {
+		return options.Node, nil
+	}
+
+	_ = pq.Driver{}
+
+	node, err := Connect(ClientDriver, options.String())
+	if err != nil {
+		return nil, errors.Wrapf(err, "makroud: cannot connect to %s server", ClientDriver)
+	}
+
+	node.SetMaxIdleConns(options.MaxIdleConnections)
+	node.SetMaxOpenConns(options.MaxOpenConnections)
+	node.EnableSavepoint(options.SavepointEnabled)
+
+	return node, nil
+}
+
+// getEntropyForClient returns the required entropy source for client creation.
+func getEntropyForClient(options *ClientOptions) io.Reader {
+	if options.Entropy != nil {
+		return options.Entropy
+	}
+
+	return rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 // A stmtWrapper wraps a statement from sql.
@@ -312,7 +387,6 @@ func (r *rowWrapper) scan(dest ...interface{}) error {
 	// From https://github.com/jmoiron/sqlx source code:
 	// Discard sql.RawBytes to avoid weird issues with the SQL driver and memory management.
 	defer func() {
-		// TODO (novln): Add an observer to collect this error.
 		_ = r.rows.Close()
 	}()
 	for i := range dest {

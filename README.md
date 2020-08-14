@@ -4,7 +4,7 @@
 [![Documentation][godoc-img]][godoc-url]
 ![License][license-img]
 
-*A high level SQL Connector.*
+_A high level SQL Connector._
 
 ## Introduction
 
@@ -30,7 +30,7 @@ In addition, it's heavily inspired by [Sqlx](https://github.com/jmoiron/sqlx) fo
 Using [Go Modules](https://github.com/golang/go/wiki/Modules)
 
 ```console
-go get github.com/ulule/makroud@v0.7.2
+go get github.com/ulule/makroud@v0.8.0
 ```
 
 ## Usage
@@ -167,20 +167,20 @@ Without that information, `makroud` cannot uses that struct as a `Model`.
 
 Then, you have to define your model columns using struct tags:
 
- * **column**(`string`): Define column name.
- * **pk**(`bool|string`): Define column as a primary key, it accepts the following argument:
-   * **true**: Uses internal db mechanism to define primary key value
-   * **ulid**: Generate a [ULID](https://github.com/ulid/spec) to define primary key value
-   * **uuid-v1**: Generate a [UUID V1](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_1_(date-time_and_MAC_address))
-     to define primary key value
-   * **uuid-v4**: Generate a [UUID V4](https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random))
-     to define primary key value
- * **default**(`bool`): On insert, if model has a zero value, it will use the db default value.
- * **fk**(`string`): Define column as a foreign key, reference table must be provided.
- * **relation**(`string`): Define which column to use for preload. The column must be prefixed by the table name
-   if it's not the model table name _(However, the prefix is optional if the table name is the same as the model)_.
-   See [Preload](https://github.com/ulule/makroud#preload) section for further information.
- * **-**(`bool`): Ignore this field.
+- **column**(`string`): Define column name.
+- **pk**(`bool|string`): Define column as a primary key, it accepts the following argument:
+  - **true**: Uses internal db mechanism to define primary key value
+  - **ulid**: Generate a [ULID](https://github.com/ulid/spec) to define primary key value
+  - **uuid-v1**: Generate a [UUID V1](<https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_1_(date-time_and_MAC_address)>)
+    to define primary key value
+  - **uuid-v4**: Generate a [UUID V4](<https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)>)
+    to define primary key value
+- **default**(`bool`): On insert, if model has a zero value, it will use the db default value.
+- **fk**(`string`): Define column as a foreign key, reference table must be provided.
+- **relation**(`string`): Define which column to use for preload. The column must be prefixed by the table name
+  if it's not the model table name _(However, the prefix is optional if the table name is the same as the model)_.
+  See [Preload](https://github.com/ulule/makroud#preload) section for further information.
+- **-**(`bool`): Ignore this field.
 
 > **NOTE:** Tags of type `bool` can be set as `key:true` or just `key` for implicit `true`.
 
@@ -192,12 +192,12 @@ key can be specified and it can't be a composite key.
 After that, you can define optional relationships _(or associations)_ that can be preloaded later.
 The preload mechanism, which enables you to fetch relationships from database, support these types:
 
- * `Model`
- * `*Model`
- * `[]Model`
- * `[]*Model`
- * `*[]Model`
- * `*[]*Model`
+- `Model`
+- `*Model`
+- `[]Model`
+- `[]*Model`
+- `*[]Model`
+- `*[]*Model`
 
 > **NOTE:** You could either use `makroud` or `mk` as tag identifier.
 
@@ -366,7 +366,7 @@ For the following sections, we assume that you have a `context.Context` and a `m
 
 #### Insert
 
-For a simple insert, you can use save a model like this:
+For a simple insert, you can save a model like this:
 
 ```go
 func CreateUser(ctx context.Context, driver makroud.Driver, name string) (*User, error) {
@@ -509,24 +509,14 @@ func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
 
 #### Query
 
-By using a [Loukoum](https://github.com/ulule/loukoum) `SelectBuilder`.
+Because querying data is a bit more complex than just writing and/or deleting stuff. By using [Loukoum](https://github.com/ulule/loukoum) components, you can either execute simple query:
 
 ```go
 import "github.com/ulule/loukoum/v3"
 
 func GetUserByID(ctx context.Context, driver makroud.Driver, id string) (*User, error) {
 	user := &User{}
-
-	columns, err := makroud.GetColumns(driver, user)
-	if err != nil {
-		return nil, err
-	}
-
-	stmt := loukoum.Select(columns...).
-		From(user.TableName()).
-		Where(loukoum.Condition("id").Equal(id))
-
-	err := makroud.Exec(ctx, driver, stmt, user)
+	err := makroud.Select(ctx, driver, user, loukoum.Condition("id").Equal(id))
 	if err != nil {
 		return nil, err
 	}
@@ -534,24 +524,49 @@ func GetUserByID(ctx context.Context, driver makroud.Driver, id string) (*User, 
 	return user, nil
 }
 
-func GetUserByName(ctx context.Context, driver makroud.Driver, name string) (*User, error) {
-	user := &User{}
+func ListMessagesByUserID(ctx context.Context, driver makroud.Driver,
+	userID string, page int) ([]*Message, error) {
 
-	columns, err := makroud.GetColumns(driver, user)
+	messages := []*Message{}
+	err := makroud.Select(ctx, driver, &messages,
+		loukoum.Condition("user_id").Equal(id),
+		loukoum.Order("created_at", loukoum.Desc),
+		loukoum.Limit(50),
+		loukoum.Offset(50 * (page - 1)),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	stmt := loukoum.Select(columns...).
-		From(user.TableName()).
-		Where(loukoum.Condition("name").Equal(name))
+	return messages, nil
+}
+```
 
-	err := makroud.Exec(ctx, driver, stmt, user)
+Or execute more complex statements:
+
+```go
+import "github.com/ulule/loukoum/v3"
+
+func FindStaffComments(ctx context.Context, driver makroud.Driver) ([]*Comment, error) {
+	comments := []*Comment{}
+
+	stmt := loukoum.Select("id", "email", "status", "user_id", "message", "created_at").
+		From("comments").
+		Where(loukoum.Condition("deleted_at").IsNull(true)).
+		Where(
+			loukoum.Condition("user_id").In(
+				loukoum.Select("id").
+					From("users").
+					Where(loukoum.Condition("role").Equal("staff")),
+			),
+		)
+
+	err := makroud.Exec(ctx, driver, stmt, &comments)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return comments, nil
 }
 ```
 
@@ -571,6 +586,79 @@ func FindUserIDWithStaffRole(ctx context.Context, driver makroud.Driver) ([]stri
 	}
 
 	return list, nil
+}
+```
+
+### Transaction
+
+Sometimes, you need to execute queries and/or commands inside a transaction block, that bundles
+multiple steps into a single, all-or-nothing operation.
+
+This is achieved by declaring a lambda function.
+If this function returns an error, the transaction rollbacks automatically.
+Otherwise, the transaction will be committed.
+
+```go
+func SetupUsers(ctx context.Context, driver makroud.Driver) error {
+	return makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
+
+		err := makroud.Save(ctx, tx, &User{
+			Name: "Benjamin",
+		})
+		if err != nil {
+			return err
+		}
+
+		err = makroud.Save(ctx, tx, &User{
+			Name: "Taha",
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+```
+
+And other times, transactions with an isolation level.
+
+```go
+func Withdraw(ctx context.Context, driver makroud.Driver) error {
+	return makroud.Transaction(ctx, driver, makroud.LevelSerializable,
+		func(tx makroud.Driver) error {
+			// Withdraw operation...
+			return nil
+		},
+	)
+}
+```
+
+Or even, nested transaction with the option `SavepointEnabled`.
+
+```go
+func AcceptOffer(ctx context.Context, driver makroud.Driver) error {
+	return makroud.Transaction(ctx, driver, nil, func(tx1 makroud.Driver) error {
+		//
+		// Execute several operations.
+		//
+		err := makroud.Transaction(ctx, tx1, nil, func(tx2 makroud.Driver) error {
+			//
+			// Execute complex operations that may succeed...
+			//
+			return err
+		})
+		if err != nil {
+			//
+			// Execute fallback operations if an error has occurred...
+			//
+			return nil
+		}
+		//
+		// Execute normal operations otherwise...
+		//
+		return nil
+	})
 }
 ```
 
@@ -701,12 +789,12 @@ This is Free Software, released under the [`MIT License`][license-url].
 
 ## Contributing
 
-* Ping us on twitter:
-  * [@novln_](https://twitter.com/novln_)
-  * [@oibafsellig](https://twitter.com/oibafsellig)
-  * [@thoas](https://twitter.com/thoas)
-* Fork the [project](https://github.com/ulule/loukoum)
-* Fix [bugs](https://github.com/ulule/loukoum/issues)
+- Ping us on twitter:
+  - [@novln\_](https://twitter.com/novln_)
+  - [@oibafsellig](https://twitter.com/oibafsellig)
+  - [@thoas](https://twitter.com/thoas)
+- Fork the [project](https://github.com/ulule/loukoum)
+- Fix [bugs](https://github.com/ulule/loukoum/issues)
 
 **Don't hesitate ;)**
 

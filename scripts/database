@@ -79,7 +79,7 @@ do_client() {
     docker run --rm -it \
         -e PGUSER="${PGUSER}" \
         -e PGPASSWORD="${PGPASSWORD}" \
-        -e PGDATABASE="${PGDATABASE}" \
+        -e PGDATABASE="makroud_test" \
         --link "${CONTAINER_NAME}:postgres" \
         "${CONTAINER_IMAGE}" psql -h postgres
 

@@ -97,9 +97,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Regions = append(fixtures.Regions, region3)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Regions {
-			err := makroud.Save(ctx, dbx, fixtures.Regions[i])
+			err := makroud.Save(ctx, tx, fixtures.Regions[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Regions[i].ID)
 		}
@@ -148,9 +148,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Addresses = append(fixtures.Addresses, address3)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Addresses {
-			err := makroud.Save(ctx, dbx, fixtures.Addresses[i])
+			err := makroud.Save(ctx, tx, fixtures.Addresses[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Addresses[i].ID)
 		}
@@ -191,9 +191,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Organizations = append(fixtures.Organizations, organization3)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Organizations {
-			err := makroud.Save(ctx, dbx, fixtures.Organizations[i])
+			err := makroud.Save(ctx, tx, fixtures.Organizations[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Organizations[i].ID)
 		}
@@ -333,9 +333,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Avatars = append(fixtures.Avatars, avatar19)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Avatars {
-			err := makroud.Save(ctx, dbx, fixtures.Avatars[i])
+			err := makroud.Save(ctx, tx, fixtures.Avatars[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Avatars[i].ID)
 		}
@@ -532,9 +532,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Profiles = append(fixtures.Profiles, profile19)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Profiles {
-			err := makroud.Save(ctx, dbx, fixtures.Profiles[i])
+			err := makroud.Save(ctx, tx, fixtures.Profiles[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Profiles[i].ID)
 		}
@@ -712,9 +712,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Users = append(fixtures.Users, user19)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Users {
-			err := makroud.Save(ctx, dbx, fixtures.Users[i])
+			err := makroud.Save(ctx, tx, fixtures.Users[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Users[i].ID)
 		}
@@ -931,9 +931,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Groups = append(fixtures.Groups, group30)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Groups {
-			err := makroud.Save(ctx, dbx, fixtures.Groups[i])
+			err := makroud.Save(ctx, tx, fixtures.Groups[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Groups[i].ID)
 		}
@@ -972,9 +972,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Buckets = append(fixtures.Buckets, bucket4)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Buckets {
-			err := makroud.Save(ctx, dbx, fixtures.Buckets[i])
+			err := makroud.Save(ctx, tx, fixtures.Buckets[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Buckets[i].ID)
 		}
@@ -1023,9 +1023,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Directories = append(fixtures.Directories, directory6)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Directories {
-			err := makroud.Save(ctx, dbx, fixtures.Directories[i])
+			err := makroud.Save(ctx, tx, fixtures.Directories[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Directories[i].ID)
 		}
@@ -1159,12 +1159,12 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Directories = append(fixtures.Directories, directory19)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Directories {
 			if fixtures.Directories[i].ID != "" {
 				continue
 			}
-			err := makroud.Save(ctx, dbx, fixtures.Directories[i])
+			err := makroud.Save(ctx, tx, fixtures.Directories[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Directories[i].ID)
 		}
@@ -1369,9 +1369,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Files = append(fixtures.Files, file22)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Files {
-			err := makroud.Save(ctx, dbx, fixtures.Files[i])
+			err := makroud.Save(ctx, tx, fixtures.Files[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Files[i].ID)
 		}
@@ -1408,9 +1408,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Modes = append(fixtures.Modes, mode6)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Modes {
-			err := makroud.Save(ctx, dbx, fixtures.Modes[i])
+			err := makroud.Save(ctx, tx, fixtures.Modes[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Modes[i].ID)
 		}
@@ -2131,9 +2131,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Chunks = append(fixtures.Chunks, chunk51)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Chunks {
-			err := makroud.Save(ctx, dbx, fixtures.Chunks[i])
+			err := makroud.Save(ctx, tx, fixtures.Chunks[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Chunks[i].Hash)
 		}
@@ -2218,9 +2218,9 @@ func GenerateExoCloudFixtures(ctx context.Context, driver makroud.Driver, is *re
 	}
 	fixtures.Signatures = append(fixtures.Signatures, signature13)
 
-	_ = makroud.Transaction(driver, func(dbx makroud.Driver) error {
+	_ = makroud.Transaction(ctx, driver, nil, func(tx makroud.Driver) error {
 		for i := range fixtures.Signatures {
-			err := makroud.Save(ctx, dbx, fixtures.Signatures[i])
+			err := makroud.Save(ctx, tx, fixtures.Signatures[i])
 			is.NoError(err)
 			is.NotEmpty(fixtures.Signatures[i].ID)
 		}

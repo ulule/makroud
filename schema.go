@@ -48,6 +48,16 @@ func (schema Schema) PrimaryKey() PrimaryKey {
 	return schema.pk
 }
 
+// PrimaryKeyPath returns schema primary key column path.
+func (schema Schema) PrimaryKeyPath() string {
+	return schema.pk.ColumnPath()
+}
+
+// PrimaryKeyName returns schema primary key column name.
+func (schema Schema) PrimaryKeyName() string {
+	return schema.pk.ColumnName()
+}
+
 // HasCreatedKey returns if a created key is defined for current schema.
 func (schema Schema) HasCreatedKey() bool {
 	return schema.createdKey != nil
@@ -294,11 +304,11 @@ func GetSchema(driver Driver, model Model) (*Schema, error) {
 // If throughout is true, it will execute a full scan of given model:
 // this is a trick to allow circular import of model.
 func getSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
-	if !driver.hasCache() {
+	if !driver.HasCache() {
 		return newSchema(driver, model, throughout)
 	}
 
-	schema := driver.getCache().GetSchema(model)
+	schema := driver.GetCache().GetSchema(model)
 	if schema != nil {
 		return schema, nil
 	}
@@ -309,7 +319,7 @@ func getSchema(driver Driver, model Model, throughout bool) (*Schema, error) {
 	}
 
 	if throughout {
-		driver.getCache().SetSchema(schema)
+		driver.GetCache().SetSchema(schema)
 	}
 
 	return schema, nil
