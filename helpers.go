@@ -151,6 +151,7 @@ func execRowsOnModel(ctx context.Context, driver Driver, stmt Statement,
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
 	base := reflectx.GetIndirectSliceType(dest)
 	list := reflectx.GetIndirectValue(dest)
@@ -181,6 +182,7 @@ func execRowsOnSchemaless(ctx context.Context, driver Driver,
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
 	base := reflectx.GetIndirectSliceType(dest)
 	list := reflectx.GetIndirectValue(dest)
@@ -206,6 +208,7 @@ func execRowsOnScannable(ctx context.Context, driver Driver,
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 
 	columns, err := rows.Columns()
 	if err != nil {
