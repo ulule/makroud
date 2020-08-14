@@ -509,7 +509,7 @@ func ArchiveUser(ctx context.Context, driver makroud.Driver, user *User) error {
 
 #### Query
 
-Because querying data is a bit more complex than just writing or deleting stuff. By using [Loukoum](https://github.com/ulule/loukoum) components, you can either execute simple query:
+Because querying data is a bit more complex than just writing and/or deleting stuff. By using [Loukoum](https://github.com/ulule/loukoum) components, you can either execute simple query:
 
 ```go
 import "github.com/ulule/loukoum/v3"
@@ -524,7 +524,9 @@ func GetUserByID(ctx context.Context, driver makroud.Driver, id string) (*User, 
 	return user, nil
 }
 
-func ListMessagesByUserID(ctx context.Context, driver makroud.Driver, userID string, page int) ([]*Message, error) {
+func ListMessagesByUserID(ctx context.Context, driver makroud.Driver,
+	userID string, page int) ([]*Message, error) {
+
 	messages := []*Message{}
 	err := makroud.Select(ctx, driver, &messages,
 		loukoum.Condition("user_id").Equal(id),
@@ -586,6 +588,10 @@ func FindUserIDWithStaffRole(ctx context.Context, driver makroud.Driver) ([]stri
 	return list, nil
 }
 ```
+
+### Transaction
+
+TODO
 
 ### Preload
 
