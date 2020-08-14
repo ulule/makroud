@@ -624,6 +624,8 @@ err := makroud.Preload(ctx, driver, &user,
 
 If there is no error and if the user record has a profile, then you should have the `Profile` value loaded.
 
+<!---
+
 ## Benchmarks
 
 A [benchmark repository](https://github.com/ulule/makroud-benchmarks) containing result with
@@ -649,6 +651,8 @@ other ORM or Mapper using reflection is available.
 ![Delete NsOp](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/delete_nsop.png)
 ![Delete Bop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/delete_bop.png)
 ![Delete Aop](https://raw.githubusercontent.com/ulule/makroud-benchmarks/master/graph/images/delete_aop.png)
+
+-->
 
 ## Development
 
