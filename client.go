@@ -94,6 +94,15 @@ func (c *Client) Query(ctx context.Context, query string, args ...interface{}) (
 	return wrapRows(rows), nil
 }
 
+// QueryRow executes a statement returning a single row.
+func (c *Client) QueryRow(ctx context.Context, query string, args ...interface{}) (Row, error) {
+	rows, err := c.node.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrap(err, "makroud: cannot execute query")
+	}
+	return wrapRow(rows), nil
+}
+
 // MustQuery executes a statement that returns rows using given arguments.
 // If an error has occurred, it panics.
 func (c *Client) MustQuery(ctx context.Context, query string, args ...interface{}) Rows {
