@@ -22,6 +22,9 @@ type Driver interface {
 	// Query executes a statement that returns rows using given arguments.
 	Query(ctx context.Context, query string, args ...interface{}) (Rows, error)
 
+	// QueryRow executes a statement returning a single row.
+	QueryRow(ctx context.Context, query string, args ...interface{}) (Row, error)
+
 	// MustQuery executes a statement that returns rows using given arguments.
 	// If an error has occurred, it panics.
 	MustQuery(ctx context.Context, query string, args ...interface{}) Rows

@@ -119,29 +119,20 @@ func IsErrNoRows(err error) bool {
 }
 
 func exec(ctx context.Context, driver Driver, query string, args []interface{}, dest ...interface{}) error {
-	stmt, err := driver.Prepare(ctx, query)
-	if err != nil {
-		return errors.Wrap(err, "makroud: cannot prepare statement")
-	}
-	defer close(driver, stmt, map[string]string{
-		"query":  query,
-		"action": "exec",
-	})
-
 	if len(dest) > 0 {
 		if !reflectx.IsPointer(dest[0]) {
 			return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest[0])
 		}
 		if reflectx.IsSlice(dest[0]) {
-			return execRows(ctx, driver, stmt, args, dest[0])
+			return execRows(ctx, driver, query, args, dest[0])
 		}
-		return execRow(ctx, driver, stmt, args, dest[0])
+		return execRow(ctx, driver, query, args, dest[0])
 	}
 
-	return stmt.Exec(ctx, args...)
+	return driver.Exec(ctx, query, args...)
 }
 
-func execRowsOnModel(ctx context.Context, driver Driver, stmt Statement,
+func execRowsOnModel(ctx context.Context, driver Driver, query string,
 	args []interface{}, dest interface{}, model Model) error {
 
 	schema, err := GetSchema(driver, model)
@@ -149,7 +140,7 @@ func execRowsOnModel(ctx context.Context, driver Driver, stmt Statement,
 		return err
 	}
 
-	rows, err := stmt.QueryRows(ctx, args...)
+	rows, err := driver.Query(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -176,14 +167,14 @@ func execRowsOnModel(ctx context.Context, driver Driver, stmt Statement,
 }
 
 func execRowsOnSchemaless(ctx context.Context, driver Driver,
-	stmt Statement, args []interface{}, dest interface{}, element reflect.Type) error {
+	query string, args []interface{}, dest interface{}, element reflect.Type) error {
 
 	schemaless, err := GetSchemaless(driver, element)
 	if err != nil {
 		return err
 	}
 
-	rows, err := stmt.QueryRows(ctx, args...)
+	rows, err := driver.Query(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -210,9 +201,9 @@ func execRowsOnSchemaless(ctx context.Context, driver Driver,
 }
 
 func execRowsOnScannable(ctx context.Context, driver Driver,
-	stmt Statement, args []interface{}, dest interface{}) error {
+	query string, args []interface{}, dest interface{}) error {
 
-	rows, err := stmt.QueryRows(ctx, args...)
+	rows, err := driver.Query(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -246,22 +237,22 @@ func execRowsOnScannable(ctx context.Context, driver Driver,
 	return nil
 }
 
-func execRows(ctx context.Context, driver Driver, stmt Statement, args []interface{}, dest interface{}) error {
+func execRows(ctx context.Context, driver Driver, query string, args []interface{}, dest interface{}) error {
 	model, ok := reflectx.NewSliceValue(dest).(Model)
 	if !ok {
 
 		element := reflectx.GetIndirectSliceType(dest)
 		if reflectx.IsScannable(element) {
-			return execRowsOnScannable(ctx, driver, stmt, args, dest)
+			return execRowsOnScannable(ctx, driver, query, args, dest)
 		}
 
-		return execRowsOnSchemaless(ctx, driver, stmt, args, dest, element)
+		return execRowsOnSchemaless(ctx, driver, query, args, dest, element)
 	}
 
-	return execRowsOnModel(ctx, driver, stmt, args, dest, model)
+	return execRowsOnModel(ctx, driver, query, args, dest, model)
 }
 
-func execRowOnModel(ctx context.Context, driver Driver, stmt Statement,
+func execRowOnModel(ctx context.Context, driver Driver, query string,
 	args []interface{}, model Model) error {
 
 	schema, err := GetSchema(driver, model)
@@ -269,7 +260,7 @@ func execRowOnModel(ctx context.Context, driver Driver, stmt Statement,
 		return err
 	}
 
-	row, err := stmt.QueryRow(ctx, args...)
+	row, err := driver.QueryRow(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -277,7 +268,7 @@ func execRowOnModel(ctx context.Context, driver Driver, stmt Statement,
 	return schema.ScanRow(row, model)
 }
 
-func execRowOnSchemaless(ctx context.Context, driver Driver, stmt Statement,
+func execRowOnSchemaless(ctx context.Context, driver Driver, query string,
 	args []interface{}, dest interface{}, element reflect.Type) error {
 
 	schemaless, err := GetSchemaless(driver, element)
@@ -285,7 +276,7 @@ func execRowOnSchemaless(ctx context.Context, driver Driver, stmt Statement,
 		return err
 	}
 
-	row, err := stmt.QueryRow(ctx, args...)
+	row, err := driver.QueryRow(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -293,10 +284,10 @@ func execRowOnSchemaless(ctx context.Context, driver Driver, stmt Statement,
 	return schemaless.ScanRow(row, dest)
 }
 
-func execRowOnScannable(ctx context.Context, driver Driver, stmt Statement,
+func execRowOnScannable(ctx context.Context, driver Driver, query string,
 	args []interface{}, dest interface{}) error {
 
-	row, err := stmt.QueryRow(ctx, args...)
+	row, err := driver.QueryRow(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -314,19 +305,19 @@ func execRowOnScannable(ctx context.Context, driver Driver, stmt Statement,
 	return row.Scan(dest)
 }
 
-func execRow(ctx context.Context, driver Driver, stmt Statement, args []interface{}, dest interface{}) error {
+func execRow(ctx context.Context, driver Driver, query string, args []interface{}, dest interface{}) error {
 	model, ok := reflectx.GetFlattenValue(dest).(Model)
 	if !ok {
 
 		element := reflectx.GetIndirectType(dest)
 		if reflectx.IsScannable(element) {
-			return execRowOnScannable(ctx, driver, stmt, args, dest)
+			return execRowOnScannable(ctx, driver, query, args, dest)
 		}
 
-		return execRowOnSchemaless(ctx, driver, stmt, args, dest, element)
+		return execRowOnSchemaless(ctx, driver, query, args, dest, element)
 	}
 
-	return execRowOnModel(ctx, driver, stmt, args, model)
+	return execRowOnModel(ctx, driver, query, args, model)
 }
 
 // toModel converts the given type to a Model instance.
