@@ -128,6 +128,11 @@ func Connect(driver string, dsn string) (Node, error) {
 	return node, nil
 }
 
+// NewNode returns a new Node.
+func NewNode(db *sql.DB) Node {
+	return &node{db: db}
+}
+
 // DriverName returns the driver name used by this connector.
 func (node *node) DriverName() string {
 	return node.driver

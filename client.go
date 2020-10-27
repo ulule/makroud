@@ -66,38 +66,6 @@ func NewWithOptions(options *ClientOptions) (*Client, error) {
 	return client, nil
 }
 
-// NewFromDB returns a new Client instance from an existing *sql.DB.
-func NewFromDB(db *sql.DB, options ...Option) (*Client, error) {
-	opts := NewClientOptions()
-	for _, option := range options {
-		if err := option(opts); err != nil {
-			return nil, err
-		}
-	}
-
-	node := &node{db: db}
-	node.EnableSavepoint(opts.SavepointEnabled)
-
-	client := &Client{
-		node: node,
-		rnd:  getEntropyForClient(opts),
-	}
-
-	if opts.WithCache {
-		client.cache = NewDriverCache()
-	}
-
-	if opts.Logger != nil {
-		client.log = opts.Logger
-	}
-
-	if opts.Observer != nil {
-		client.obs = opts.Observer
-	}
-
-	return client, nil
-}
-
 // Exec executes a statement using given arguments.
 func (c *Client) Exec(ctx context.Context, query string, args ...interface{}) error {
 	_, err := c.node.ExecContext(ctx, query, args...)
