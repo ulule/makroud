@@ -76,6 +76,7 @@ type conn struct {
 }
 
 func (c *conn) Begin() (driver.Tx, error) {
+	// nolint:staticcheck
 	return c.wrapped.Begin()
 }
 
