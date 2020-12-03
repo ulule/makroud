@@ -53,6 +53,17 @@ func NewSelectorWithDriver(driver Driver) (*Selector, error) {
 	return selector, nil
 }
 
+// NewSelectorWithDrivers returns a new selector containing the given connections.
+func NewSelectorWithDrivers(drivers map[string]Driver) (*Selector, error) {
+	selector := &Selector{
+		configurations: map[string]*ClientOptions{},
+		cache:          NewDriverCache(),
+		connections:    drivers,
+	}
+
+	return selector, nil
+}
+
 // Using returns the underlying drivers if it's alias exists.
 func (selector *Selector) Using(alias string) (Driver, error) {
 	alias = strings.ToLower(alias)
