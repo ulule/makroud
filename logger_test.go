@@ -67,14 +67,5 @@ func TestLogger(t *testing.T) {
 		log, err = logger.read()
 		is.NoError(err)
 		is.Equal(expected, log)
-
-		err = makroud.Delete(ctx, driver, owl)
-		is.NoError(err)
-		expected = fmt.Sprint(`DELETE FROM ztp_owl WHERE (id = `, format.Int(owl.ID), `)`)
-
-		log, err = logger.read()
-		is.NoError(err)
-		is.Equal(expected, log)
-
 	})
 }

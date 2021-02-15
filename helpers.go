@@ -15,7 +15,7 @@ import (
 
 // Exec will execute given query from a Loukoum builder.
 // If an object is given, it will mutate it to match the row values.
-func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...interface{}) error {
+func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest interface{}) error {
 	if driver.HasLogger() {
 		start := time.Now()
 		query := NewQuery(stmt)
@@ -27,7 +27,7 @@ func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...inte
 
 	query, args := stmt.Query()
 
-	err := exec(ctx, driver, query, args, dest...)
+	err := exec(ctx, driver, query, args, dest)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot execute query")
 	}
@@ -37,7 +37,7 @@ func Exec(ctx context.Context, driver Driver, stmt builder.Builder, dest ...inte
 
 // RawExec will execute given query.
 // If an object is given, it will mutate it to match the row values.
-func RawExec(ctx context.Context, driver Driver, query string, dest ...interface{}) error {
+func RawExec(ctx context.Context, driver Driver, query string, dest interface{}) error {
 	if driver.HasLogger() {
 		start := time.Now()
 		query := NewRawQuery(query)
@@ -47,7 +47,7 @@ func RawExec(ctx context.Context, driver Driver, query string, dest ...interface
 		}()
 	}
 
-	err := exec(ctx, driver, query, nil, dest...)
+	err := exec(ctx, driver, query, nil, dest)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot execute query")
 	}
@@ -57,7 +57,7 @@ func RawExec(ctx context.Context, driver Driver, query string, dest ...interface
 
 // RawExecArgs will execute given query with given arguments.
 // If an object is given, it will mutate it to match the row values.
-func RawExecArgs(ctx context.Context, driver Driver, query string, args []interface{}, dest ...interface{}) error {
+func RawExecArgs(ctx context.Context, driver Driver, query string, args []interface{}, dest interface{}) error {
 	if driver.HasLogger() {
 		start := time.Now()
 		query := Query{
@@ -71,7 +71,7 @@ func RawExecArgs(ctx context.Context, driver Driver, query string, args []interf
 		}()
 	}
 
-	err := exec(ctx, driver, query, args, dest...)
+	err := exec(ctx, driver, query, args, dest)
 	if err != nil {
 		return errors.Wrap(err, "makroud: cannot execute query")
 	}
@@ -118,18 +118,14 @@ func IsErrNoRows(err error) bool {
 	return err == sql.ErrNoRows || err == ErrNoRows
 }
 
-func exec(ctx context.Context, driver Driver, query string, args []interface{}, dest ...interface{}) error {
-	if len(dest) > 0 {
-		if !reflectx.IsPointer(dest[0]) {
-			return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest[0])
-		}
-		if reflectx.IsSlice(dest[0]) {
-			return execRows(ctx, driver, query, args, dest[0])
-		}
-		return execRow(ctx, driver, query, args, dest[0])
+func exec(ctx context.Context, driver Driver, query string, args []interface{}, dest interface{}) error {
+	if !reflectx.IsPointer(dest) {
+		return errors.Wrapf(ErrPointerRequired, "cannot execute query on %T", dest)
 	}
-
-	return driver.Exec(ctx, query, args...)
+	if reflectx.IsSlice(dest) {
+		return execRows(ctx, driver, query, args, dest)
+	}
+	return execRow(ctx, driver, query, args, dest)
 }
 
 func execRowsOnModel(ctx context.Context, driver Driver, query string,

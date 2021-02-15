@@ -102,10 +102,10 @@ func TestTransaction_Nested(t *testing.T) {
 		}
 
 		setCatName := func(driver makroud.Driver, name string) {
-			query := loukoum.Update("ztp_cat").Set(loukoum.Map{"name": name}).
-				Where(loukoum.Condition("id").Equal(cat.ID))
-			err := makroud.Exec(ctx, driver, query)
-			is.NoError(err)
+			q, args := loukoum.Update("ztp_cat").Set(loukoum.Map{"name": name}).
+				Where(loukoum.Condition("id").Equal(cat.ID)).
+				Query()
+			is.NoError(driver.Exec(ctx, q, args...))
 		}
 
 		// First transaction.
