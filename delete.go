@@ -41,10 +41,11 @@ func remove(ctx context.Context, driver Driver, model Model) error {
 		return errors.Wrapf(err, "%T cannot be deleted", model)
 	}
 
-	builder := loukoum.Delete(schema.TableName()).
-		Where(loukoum.Condition(pk.ColumnName()).Equal(id))
+	q, args := loukoum.Delete(schema.TableName()).
+		Where(loukoum.Condition(pk.ColumnName()).Equal(id)).
+		Query()
 
-	return Exec(ctx, driver, builder)
+	return driver.Exec(ctx, q, args...)
 }
 
 func archive(ctx context.Context, driver Driver, model Model) error {
@@ -67,10 +68,11 @@ func archive(ctx context.Context, driver Driver, model Model) error {
 		return errors.Wrapf(err, "%T cannot be archived", model)
 	}
 
-	builder := loukoum.Update(schema.TableName()).
+	q, args := loukoum.Update(schema.TableName()).
 		Set(loukoum.Pair(schema.DeletedKeyName(), loukoum.Raw("NOW()"))).
 		Where(loukoum.Condition(pk.ColumnName()).Equal(id)).
-		Returning(schema.DeletedKeyName())
+		Returning(schema.DeletedKeyName()).
+		Query()
 
-	return Exec(ctx, driver, builder)
+	return driver.Exec(ctx, q, args...)
 }
